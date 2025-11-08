@@ -305,7 +305,7 @@ frontend/
 │   │   ├── Footer.tsx          # Page footer
 │   │   ├── CourseCard.tsx      # Course display card
 │   │   ├── CoursesSection.tsx  # Course listing section
-│   │   ├── VideoPlayer.tsx     # Video.js player component
+│   │   ├── VideoPlayer.tsx     # Custom Video player component
 │   │   ├── CTASection.tsx      # Call-to-action section
 │   │   ├── FaqSection.tsx      # FAQ accordion
 │   │   ├── connectButton.tsx   # Custom wallet connect button
