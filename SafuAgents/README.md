@@ -455,6 +455,6 @@ See the main Safuverse repository for license information.
 
 ---
 
-**Powered by BNB Chain** - Leveraging BSC's speed, efficiency, and low costs for AI-enhanced Web3 experiences.
+**Powered by BNB Chain and .safu** - Leveraging BSC's speed, efficiency, and low costs for AI-enhanced Web3 experiences.
 
 **Official BNB Chain Deployment** | Chain ID: 56 | Network: BSC Mainnet
