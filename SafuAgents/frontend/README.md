@@ -9,13 +9,13 @@ AI agents interface with Web3 wallet integration, **deployed on BNB Chain** (BNB
 - Wagmi configuration: Explicitly set to BSC mainnet (chain ID: 56)
 - See configuration: `src/main.tsx:13,19`
 
-This frontend application is specifically configured to interact with smart contracts and services deployed on BNB Chain through the wagmi library and RainbowKit wallet connector.
+This frontend application is specifically configured to interact with custom agents created using OpenAI's Responses API to give users an edge in the crypto space all gated by .safu domain name ownership.
 
 ## Features
 
 - **AI Agent Integration**: OpenAI-powered conversational agents
 - **BNB Chain Wallet Connection**: RainbowKit integration configured for BSC
-- **Multi-Chain Support**: Primary support for BNB Chain, with Solana wallet adapters for cross-chain features
+- **Multi-Chain Support**: Primary support for BNB Chain
 - **Modern UI**: React 19 with TypeScript and Vite build system
 - **Web3 Ready**: Full wagmi/viem integration for BNB Chain interactions
 
@@ -39,10 +39,6 @@ This frontend application is specifically configured to interact with smart cont
 
 - **AI SDK**: OpenAI 6.7.0
 - **HTTP Client**: Axios 1.13.1
-
-### Additional Chain Support
-
-- **Solana**: Wallet adapters and SPL token support for multi-chain features
 
 ## BNB Chain Configuration
 
