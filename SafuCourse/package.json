@@ -5,13 +5,10 @@
   "main": "index.js",
   "scripts": {
     "local:start": "hardhat node",
-    "local:deploy": "hardhat run scripts/deploy.js --network local",
-    "local:sign": "hardhat run scripts/sign.js --network local",
-    "create-relayer": "npx ts-node scripts/createRelayer.js",
-    "deploy": "npx hardhat run scripts/deploy.js --network bsc",
+    "local:deploy": "hardhat run scripts/deploy.ts --network local",
+    "deploy": "npx hardhat run scripts/deploy.s --network bsc",
     "build": "rollup -c",
     "invoke": "bash ./scripts/invoke.sh",
-    "create-action": "yarn build && npx ts-node scripts/createAction.ts",
     "test": "NODE_ENV=test hardhat test"
   },
   "devDependencies": {

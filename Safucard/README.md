@@ -5,6 +5,7 @@ Dynamic NFT scorecard system **deployed on BNB Chain** that analyzes wallet meme
 ## Overview
 
 Safucard is a comprehensive NFT scorecard platform on BNB Smart Chain consisting of three main components:
+
 1. **Smart Contracts** (SafucardNFT): ERC721 NFT with Chainlink-powered dynamic pricing
 2. **Backend API** (Safucardserver): Wallet analysis and memecoin scoring engine
 3. **Frontend**: User interface for minting and viewing scorecards
@@ -14,6 +15,7 @@ All components integrate with **BNB Chain** infrastructure for minting, pricing,
 ## Deployment Information
 
 **Primary Network**: BNB Chain (BNB Smart Chain)
+
 - **Chain ID**: 56 (BSC Mainnet)
 - **Testnet Chain ID**: 97 (BSC Testnet)
 
@@ -24,9 +26,11 @@ The NFT contracts are deployed on BNB Chain, leveraging Chainlink price oracles 
 ## System Architecture
 
 ### 1. SafucardNFT (Smart Contracts)
+
 ERC721 NFT contract with dynamic BNB pricing based on USD value.
 
 **Key Features**:
+
 - $5 USD mint fee (converted to BNB via Chainlink oracle on BSC)
 - URI freezing after mint for permanence
 - Owner withdrawal functionality
@@ -35,9 +39,11 @@ ERC721 NFT contract with dynamic BNB pricing based on USD value.
 **Directory**: `SafucardNFT/`
 
 ### 2. Safucardserver (Backend API)
+
 Node.js/Express API that calculates wallet memecoin scores.
 
 **Key Features**:
+
 - Wallet activity analysis
 - Memecoin portfolio scoring
 - Integration with BSC blockchain data
@@ -46,9 +52,11 @@ Node.js/Express API that calculates wallet memecoin scores.
 **Directory**: `Safucardserver/`
 
 ### 3. Frontend (User Interface)
+
 React application for users to check scores and mint NFTs.
 
 **Key Features**:
+
 - Wallet connection (BNB Chain)
 - Score visualization
 - NFT minting interface
@@ -91,15 +99,17 @@ npm run dev
 ### SafucardNFT Smart Contract
 
 **Features**:
+
 - Chainlink BNB/USD price oracle integration on BSC
 - Dynamic minting fee calculation
 - ERC721 standard compliance
 - Secure ownership and withdrawal
 
 **Deployment**:
+
 ```bash
 cd SafucardNFT
-npx hardhat run scripts/deploy.js --network bsc
+npx hardhat run scripts/deploy.ts --network bsc
 ```
 
 See `SafucardNFT/README.md` for detailed documentation.
@@ -107,12 +117,14 @@ See `SafucardNFT/README.md` for detailed documentation.
 ### Safucardserver Backend
 
 **Features**:
+
 - Memecoin score calculation algorithm
 - BSC blockchain data integration
 - RESTful API endpoints
 - Wallet analysis engine
 
 **Running**:
+
 ```bash
 cd Safucardserver
 npm run dev
@@ -123,12 +135,14 @@ See `Safucardserver/README.md` for API documentation.
 ### Frontend Application
 
 **Features**:
+
 - Web3 wallet connection (BSC)
 - Score checking interface
 - NFT minting UI
 - Transaction status tracking
 
 **Running**:
+
 ```bash
 cd frontend
 npm run dev
@@ -171,17 +185,20 @@ NFT Minted on BNB Chain
 ## BNB Chain Integration
 
 ### Smart Contract Integration
+
 - Deployed on BSC Mainnet/Testnet
 - Uses Chainlink price feeds available on BNB Chain
 - Verified on BSCScan
 - ERC721 standard on BSC
 
 ### Backend Integration
+
 - Fetches wallet data from BSC RPC nodes
 - Analyzes memecoin transactions on BNB Chain
 - Tracks portfolio values in BNB
 
 ### Frontend Integration
+
 - wagmi/viem configured for BSC
 - RPC endpoints pointing to BNB Chain
 - Transaction signing through BSC network
@@ -192,6 +209,7 @@ NFT Minted on BNB Chain
 Each component requires BNB Chain-specific configuration:
 
 ### SafucardNFT
+
 ```bash
 PRIVATE_KEY=your_wallet_private_key
 BSC_RPC_URL=https://bsc-dataseed.binance.org/
@@ -200,6 +218,7 @@ CHAINLINK_BNB_USD_FEED=0x... # BSC oracle address
 ```
 
 ### Safucardserver
+
 ```bash
 BSC_RPC_URL=https://bsc-dataseed.binance.org/
 PORT=3000
@@ -208,6 +227,7 @@ UPLOAD_KEY=your_custom_generated_api_key_for_uploads
 ```
 
 ### Frontend
+
 ```bash
 VITE_BSC_RPC=https://bsc-dataseed.binance.org/
 VITE_CONTRACT_ADDRESS=deployed_nft_contract_address
@@ -218,6 +238,7 @@ VITE_KEY=UPLOAD_KEY
 ## Technology Stack
 
 ### Blockchain
+
 - **Network**: BNB Smart Chain (BSC)
 - **Smart Contracts**: Solidity
 - **Development**: Hardhat
@@ -225,12 +246,14 @@ VITE_KEY=UPLOAD_KEY
 - **Standard**: ERC721
 
 ### Backend
+
 - **Runtime**: Node.js
 - **Framework**: Express
 - **Blockchain**: ethers.js / web3.js (BSC RPC)
 - **Database**: PostgreSQL / MongoDB
 
 ### Frontend
+
 - **Framework**: React
 - **Web3**: wagmi, viem, ethers.js
 - **Build**: Vite
@@ -273,12 +296,14 @@ npm run build
 ## Network Information
 
 ### BSC Mainnet
+
 - **Chain ID**: 56
 - **RPC**: https://bsc-dataseed.binance.org/
 - **Explorer**: https://bscscan.com
 - **Chainlink BNB/USD**: Available on BSC mainnet
 
 ### BSC Testnet
+
 - **Chain ID**: 97
 - **RPC**: https://data-seed-prebsc-1-s1.binance.org:8545/
 - **Explorer**: https://testnet.bscscan.com
@@ -287,6 +312,7 @@ npm run build
 ## Integration with Safuverse
 
 Safucard integrates with other Safuverse components on BNB Chain:
+
 - **safudomains**: Domain holder scorecard bonuses
 - **SafuCourse**: Achievement-based NFT updates
 - **safupad**: Token launch participation scoring
@@ -297,6 +323,7 @@ All integrations occur on-chain on BNB Chain.
 ## Contributing
 
 Contributions welcome! Please:
+
 1. Fork the repository
 2. Create a feature branch
 3. Test on BSC Testnet

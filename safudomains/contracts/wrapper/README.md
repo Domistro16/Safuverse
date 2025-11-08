@@ -448,7 +448,7 @@ NOTE: If you want to override the default metadata url, set `METADATA_HOST=` to 
 
 ```
 $ bun run deploy:rinkeby
-$ npx hardhat run --network rinkeby scripts/deploy.js
+$ npx hardhat run --network rinkeby scripts/deploy.ts
 Deploying contracts to rinkeby with the account:0x97bA55F61345665cF08c4233b9D6E61051A43B18
 Account balance: 1934772596667918724 true
 {
