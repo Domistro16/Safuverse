@@ -1,0 +1,233 @@
+@import url("https://fonts.cdnfonts.com/css/gilroy-bold");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --font-bold: "Gilroy-bold", sans-serif;
+  --font-extrabold: "Gilroy-Heavy", sans-serif;
+  --font-light: "Gilroy-Light", sans-serif;
+  --font-semibold: "Gilroy-Medium", sans-serif;
+  --font-medium: "Gilroy-Medium", sans-serif;
+  --font-gilroy: "Gilroy-Regular", sans-serif;
+}
+
+:root {
+  --background: 50 2% 2% / 1; /* last value is alpha (1 = opaque) */
+  --foreground: 210 40% 98%; /* Brighter, cleaner white */
+  --card: 222 47% 13%; /* Slightly darker card */
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 13%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 41 100% 50%; /* #FFB000 */
+  --primary-foreground: 222 47% 11%; /* Darker for contrast on primary */
+  --secondary: 217 33% 17%; /* Slightly more saturated secondary */
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%; /* Softer muted text */
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62% 40%; /* Slightly brighter destructive */
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 33% 22%; /* More defined border */
+  --input: 217 33% 17%;
+  --ring: 41 100% 50%; /* #FFB000 */
+  --radius: 0.75rem; /* Slightly larger radius for modern feel */
+}
+
+* {
+  border-color: hsl(var(--border));
+  @apply antialiased;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: "Gilroy-Regular", sans-serif;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+body {
+  @apply font-gilroy;
+}
+
+.primary-gradient-text {
+  background: linear-gradient(
+    120deg,
+    hsl(var(--primary)) 0%,
+    #ffc34d 70%,
+    #ffe08d 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.secondary-gradient-text {
+  background: linear-gradient(120deg, #8b5cf6 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-effect {
+  background: hsla(222, 40%, 15%, 0.5); /* Adjusted alpha and color */
+  backdrop-filter: blur(16px) saturate(180%); /* Enhanced blur and saturation */
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid hsla(var(--primary), 0.15); /* Softer border */
+  border-radius: var(--radius);
+}
+
+.neon-glow {
+  box-shadow: 0 0 18px hsla(var(--primary), 0.5),
+    0 0 36px hsla(var(--primary), 0.25);
+}
+
+.floating-animation {
+  animation: float 7s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(1deg);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow {
+  from {
+    box-shadow: 0 0 18px hsla(var(--primary), 0.6);
+    transform: scale(1);
+  }
+  to {
+    box-shadow: 0 0 30px hsla(var(--primary), 1),
+      0 0 40px hsla(var(--primary), 0.6);
+    transform: scale(1.02);
+  }
+}
+
+.crypto-pattern {
+  background-image: radial-gradient(
+      circle at 15% 20%,
+      hsla(var(--primary), 0.06) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      hsla(197, 90%, 49%, 0.07) 0%,
+      transparent 40%
+    ),
+    linear-gradient(
+      170deg,
+      hsla(222, 47%, 11%, 0) 60%,
+      hsla(260, 50%, 20%, 0.1) 100%
+    );
+  background-size: cover;
+}
+
+.subtle-bg-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23ffb000' fill-opacity='0.04'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Scrollbar styles for a modern look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.6);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.8);
+}
+
+.section-title {
+  @apply text-3xl md:text-5xl font-extrabold mb-3;
+}
+.section-subtitle {
+  @apply text-lg md:text-xl text-muted-foreground mb-10 md:mb-16 max-w-3xl mx-auto leading-relaxed;
+}
+
+.card-hover-effect {
+  @apply transition-all duration-300 ease-out;
+}
+.card-hover-effect:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 10px 20px hsla(var(--primary), 0.1),
+    0 6px 6px hsla(var(--primary), 0.08);
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

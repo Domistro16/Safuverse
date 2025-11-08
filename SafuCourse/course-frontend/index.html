@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script type="module">
+      import { Buffer } from "buffer";
+      import process from "process";
+      window.Buffer = Buffer;
+      window.process = process;
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafuAcademy - AI-Powered Web3 Learning Platform</title>
+    <meta
+      name="description"
+      content="SafuAcademy offers AI-created courses for content creators and crypto earning opportunities through tasks. Access courses by minting your .safu domain."
+    />
+    <link rel="icon" type="image/png" href="/small.png" class="h-10" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
