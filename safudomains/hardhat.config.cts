@@ -1,5 +1,6 @@
 // from @nomicfoundation/hardhat-toolbox-viem to avoid module issue
-import '@nomicfoundation/hardhat-ignition-viem'
+// Temporarily disabled due to dependency issues without bun
+// import '@nomicfoundation/hardhat-ignition-viem'
 import '@nomicfoundation/hardhat-verify'
 import '@nomicfoundation/hardhat-viem'
 import 'hardhat-gas-reporter'
