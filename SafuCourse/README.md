@@ -8,7 +8,7 @@ Decentralized educational platform **deployed on BNB Chain** with on-chain cours
 - **BSC Mainnet**: Chain ID 56
 - **BSC Testnet**: Chain ID 97
 
-**Live Production**: [learn.level3labs.fun](https://learn.level3labs.fun) - Running on BNB Chain
+**Live Production**: [academy.safuverse.com](https://academy.safuverse.com) - Running on BNB Chain
 
 The contracts are configured for BNB Chain deployment as specified in `hardhat.config.ts`:
 ```typescript

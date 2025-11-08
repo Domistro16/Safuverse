@@ -15,7 +15,6 @@ import '@nomicfoundation/hardhat-ethers'
 import { HardhatUserConfig } from 'hardhat/config'
 
 import('@ensdomains/hardhat-chai-matchers-viem')
-
 // hardhat actions
 import './tasks/esm_fix.cjs'
 
@@ -24,7 +23,6 @@ import './tasks/esm_fix.cjs'
 // that have already been set.
 // https://github.com/motdotla/dotenv
 dotenv.config({ debug: false })
-
 let real_accounts = undefined
 if (process.env.DEPLOYER_KEY) {
   real_accounts = [
@@ -126,6 +124,12 @@ const config = {
             enabled: true,
             runs: 1200,
           },
+          outputSelection: {
+            '*': {
+              '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'metadata'],
+              '': ['ast'], // Make sure AST is included
+            },
+          },
         },
       },
       // for DummyOldResolver contract
@@ -137,6 +141,12 @@ const config = {
             enabled: true,
             runs: 1200,
           },
+          outputSelection: {
+            '*': {
+              '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'metadata'],
+              '': ['ast'], // Make sure AST is included
+            },
+          },
         },
       },
       {
@@ -146,6 +156,13 @@ const config = {
           optimizer: {
             enabled: true,
             runs: 1200,
+          },
+
+          outputSelection: {
+            '*': {
+              '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'metadata'],
+              '': ['ast'], // Make sure AST is included
+            },
           },
         },
       },
@@ -158,6 +175,12 @@ const config = {
           optimizer: {
             enabled: true,
             runs: 1200,
+          },
+          outputSelection: {
+            '*': {
+              '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'metadata'],
+              '': ['ast'], // Make sure AST is included
+            },
           },
         },
       },
@@ -187,7 +210,8 @@ const config = {
     owner: {
       default: 1,
       9745: '0x2A0D7311fA7e9aC2890CFd8219b2dEf0c206E79B',
-      56: '0x2A0D7311fA7e9aC2890CFd8219b2dEf0c206E79B',
+      56: '0x235799785E387C2612d4A881919436B612ed391D',
+      97: '0xd83defba240568040b39bb2c8b4db7db02d40593',
     },
   },
   external: {

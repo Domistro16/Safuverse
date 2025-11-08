@@ -5,6 +5,7 @@ Marketing and landing page for the **Safuverse ecosystem on BNB Chain**. This we
 ## Overview
 
 SafuLanding is the public-facing website that introduces users to the Safuverse ecosystem, including:
+
 - SafuCourse: Educational platform on BNB Chain
 - safudomains: .safu domain name system on BSC
 - safupad: Token launchpad on BNB Chain
@@ -17,8 +18,8 @@ SafuLanding is the public-facing website that introduces users to the Safuverse 
 
 While this is a static marketing website, it connects users to the Safuverse ecosystem that is **entirely deployed on BNB Chain**:
 
-- **Course Platform**: Links to learn.level3labs.fun (deployed on BSC)
-- **Domain System**: Links to dns.level3labs.fun (deployed on BSC)
+- **Course Platform**: Links to academy.safuverse.com (deployed on BSC)
+- **Domain System**: Links to names.safuverse.com (deployed on BSC)
 - **Token Launches**: References to safupad platform on BNB Chain
 - **Wallet Integration**: Promotes connecting to BNB Chain networks
 
@@ -35,12 +36,14 @@ All interactive features and blockchain operations referenced on this landing pa
 ## Technology Stack
 
 ### Frontend
+
 - **Framework**: React 18.2.0
 - **Language**: TypeScript 5.2
 - **Build Tool**: Vite 4.4.5
 - **Routing**: React Router DOM 6.16.0
 
 ### UI/UX
+
 - **CSS Framework**: Tailwind CSS 3.3.3
 - **Component Library**: Radix UI
 - **Animations**: Framer Motion 10.16.4
@@ -134,6 +137,7 @@ The landing page emphasizes:
 ### Tailwind CSS
 
 Custom Tailwind configuration with:
+
 - Extended color palette
 - Custom animations
 - Responsive breakpoints
@@ -144,6 +148,7 @@ See `tailwind.config.js` for full configuration.
 ### Vite Configuration
 
 Custom Vite setup with:
+
 - React plugin
 - TypeScript support
 - Custom build optimizations
@@ -156,16 +161,19 @@ See `vite.config.js` for details.
 The website can be deployed to any static hosting service:
 
 ### Vercel
+
 ```bash
 vercel
 ```
 
 ### Netlify
+
 ```bash
 netlify deploy --prod
 ```
 
 ### Traditional Hosting
+
 ```bash
 npm run build
 # Upload dist/ folder to web server
@@ -177,8 +185,8 @@ If you need to configure environment-specific settings:
 
 ```bash
 # .env
-VITE_COURSE_URL=https://learn.level3labs.fun
-VITE_DNS_URL=https://dns.level3labs.fun
+VITE_COURSE_URL=https://academy.safuverse.com
+VITE_DNS_URL=https://names.safuverse.com
 VITE_BSC_NETWORK=mainnet
 ```
 
@@ -186,8 +194,8 @@ VITE_BSC_NETWORK=mainnet
 
 This landing page serves as the entry point to:
 
-- **SafuCourse** (learn.level3labs.fun): Educational platform on BNB Chain
-- **safudomains** (dns.level3labs.fun): Domain registration on BSC
+- **SafuCourse** (academy.safuverse.com): Educational platform on BNB Chain
+- **safudomains** (names.safuverse.com): Domain registration on BSC
 - **safupad**: Token launchpad on BNB Chain
 - **Safucard**: NFT scorecard minting on BSC
 - **SafuAgents**: AI agents with BNB Chain wallet integration
@@ -221,6 +229,7 @@ To contribute to the landing page:
 ## SEO
 
 The landing page is optimized for search engines:
+
 - Semantic HTML structure
 - Meta descriptions emphasizing BNB Chain
 - Open Graph tags for social sharing
@@ -229,6 +238,7 @@ The landing page is optimized for search engines:
 ## Brand Guidelines
 
 When updating content, maintain consistency with:
+
 - Safuverse brand colors
 - Typography (Gilroy Bold font)
 - Messaging emphasizing BNB Chain deployment
@@ -237,6 +247,7 @@ When updating content, maintain consistency with:
 ## Support
 
 For issues or questions:
+
 - Check existing documentation
 - Visit the main Safuverse repository
 - Contact: info@level3labs.fun

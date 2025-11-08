@@ -5,6 +5,7 @@ A comprehensive Web3 ecosystem **deployed on BNB Chain** (BNB Smart Chain - BSC)
 ## Deployment Information
 
 **Primary Network**: BNB Smart Chain (BSC)
+
 - **BSC Mainnet** (Chain ID: 56)
 - **BSC Testnet** (Chain ID: 97)
 
@@ -13,11 +14,13 @@ All smart contracts in this ecosystem are deployed and operational on BNB Chain,
 ## Ecosystem Components
 
 ### 1. SafuCourse - Decentralized Education Platform
+
 On-chain educational platform with gasless transactions, allowing domain owners to create and participate in blockchain courses.
 
-**Live on BNB Chain**: https://learn.level3labs.fun
+**Live on BNB Chain**: https://academy.safuverse.com
 
 **Features**:
+
 - Gasless on-chain courses via OpenZeppelin Defender relayer
 - Domain-gated access control
 - Progress tracking stored on BSC
@@ -26,11 +29,13 @@ On-chain educational platform with gasless transactions, allowing domain owners 
 **Directory**: `SafuCourse/`
 
 ### 2. safudomains - Decentralized Naming Service
+
 ENS-inspired domain name system with custom .safu TLD deployed on BNB Chain.
 
-**Live on BNB Chain**: https://dns.level3labs.fun
+**Live on BNB Chain**: https://names.safuverse.com
 
 **Features**:
+
 - Custom .safu TLD on BSC
 - Multi-token pricing (BNB, CAKE, USD1)
 - Built-in referral rewards system
@@ -40,9 +45,11 @@ ENS-inspired domain name system with custom .safu TLD deployed on BNB Chain.
 **Directory**: `safudomains/`
 
 ### 3. safupad-contracts - Token Launchpad
+
 Fair launch platform with bonding curve mechanics and automatic PancakeSwap integration on BNB Chain.
 
 **Features**:
+
 - Two launch modes: Project Raise & Instant Launch
 - Bonding curve DEX with dynamic fees
 - Automatic graduation to PancakeSwap V2
@@ -52,9 +59,11 @@ Fair launch platform with bonding curve mechanics and automatic PancakeSwap inte
 **Directory**: `safupad-contracts/`
 
 ### 4. safupadsdk - TypeScript SDK
+
 Comprehensive TypeScript SDK for interacting with SafuPad launchpad on BNB Chain.
 
 **Features**:
+
 - Full type safety with TypeScript
 - Multi-network support (BSC Mainnet, BSC Testnet, localhost)
 - Event handling and volume tracking
@@ -63,23 +72,28 @@ Comprehensive TypeScript SDK for interacting with SafuPad launchpad on BNB Chain
 **Directory**: `safupadsdk/`
 
 ### 5. Safucard - NFT Scorecard System
+
 Dynamic NFT scorecard system with USD-pegged minting deployed on BNB Chain.
 
 **Features**:
+
 - ERC721 NFT with $5 USD dynamic pricing via Chainlink oracle
 - Wallet memecoin score analysis
 - Backend API for score calculation
 - URI freezing after mint
 
 **Directory**: `Safucard/`
+
 - `SafucardNFT/` - Smart contracts
 - `Safucardserver/` - Backend API
 - `frontend/` - User interface
 
 ### 6. SafuAgents - AI Agents Interface
+
 React-based frontend for interacting with AI agents, with Web3 wallet integration.
 
 **Features**:
+
 - Multi-chain wallet support (primary: BNB Chain)
 - RainbowKit integration
 - OpenAI-powered agents
@@ -88,6 +102,7 @@ React-based frontend for interacting with AI agents, with Web3 wallet integratio
 **Directory**: `SafuAgents/`
 
 ### 7. SafuLanding - Marketing Website
+
 Landing page and marketing website for the Safuverse ecosystem.
 
 **Directory**: `SafuLanding/`
@@ -95,18 +110,21 @@ Landing page and marketing website for the Safuverse ecosystem.
 ## Technology Stack
 
 ### Blockchain Infrastructure
+
 - **Primary Network**: BNB Smart Chain (BSC Mainnet & Testnet)
 - **Smart Contracts**: Solidity 0.8.17 - 0.8.28
 - **Development**: Hardhat 2.x & 3.0
 - **Standards**: ERC20, ERC721, ERC1155, EIP-2771
 
 ### BNB Chain Integrations
+
 - **PancakeSwap V2/V3**: Automated liquidity provision and token trading
 - **WBNB**: Wrapped BNB token integration
 - **Chainlink on BSC**: Price oracles for BNB/USD and dynamic pricing
 - **BSCScan**: Contract verification and transparency
 
 ### Frontend
+
 - **Framework**: React 18-19, TypeScript
 - **Build Tool**: Vite
 - **Web3**: wagmi, viem (configured for BSC)
@@ -114,6 +132,7 @@ Landing page and marketing website for the Safuverse ecosystem.
 - **UI**: Radix UI, Tailwind CSS
 
 ### Backend
+
 - **Runtime**: Node.js with TypeScript
 - **Relayer**: OpenZeppelin Defender (gasless transactions)
 - **APIs**: Express-based REST APIs
@@ -139,6 +158,7 @@ Safuverse/
 Each sub-project contains its own README with detailed setup instructions. General steps:
 
 ### Prerequisites
+
 - Node.js 18+ or Bun
 - BNB Chain wallet (MetaMask recommended)
 - BSC testnet BNB for development (get from https://testnet.bnbchain.org/faucet-smart)
@@ -163,6 +183,7 @@ RELAYER_API_KEY=your_openzeppelin_defender_key
 ### Network Configuration
 
 All projects are configured to deploy to:
+
 - **BSC Mainnet**: Chain ID 56
 - **BSC Testnet**: Chain ID 97
 
@@ -224,8 +245,8 @@ This ecosystem leverages BNB Chain's unique advantages:
 
 ## Live Deployments on BNB Chain
 
-- **SafuCourse**: https://learn.level3labs.fun
-- **safudomains**: https://dns.level3labs.fun
+- **SafuCourse**: https://academy.safuverse.com
+- **safudomains**: https://names.safuverse.com
 
 ## Contributing
 
@@ -238,6 +259,7 @@ See individual project directories for specific license information.
 ## Security
 
 Smart contracts deployed on BNB Chain have been developed with security best practices:
+
 - OpenZeppelin contract libraries
 - Reentrancy guards
 - Access control mechanisms
@@ -248,6 +270,7 @@ For security concerns, please review individual project documentation.
 ## Support & Documentation
 
 For detailed documentation on each component:
+
 - Navigate to individual project directories
 - Check project-specific README files
 - Review smart contract comments and NatSpec documentation
@@ -255,12 +278,14 @@ For detailed documentation on each component:
 ## Network Information
 
 ### BSC Mainnet
+
 - Chain ID: 56
 - RPC: https://bsc-dataseed.binance.org/
 - Explorer: https://bscscan.com
 - Native Token: BNB
 
 ### BSC Testnet
+
 - Chain ID: 97
 - RPC: https://data-seed-prebsc-1-s1.binance.org:8545/
 - Explorer: https://testnet.bscscan.com
