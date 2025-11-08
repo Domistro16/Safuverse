@@ -10,6 +10,15 @@ Decentralized educational platform **deployed on BNB Chain** with on-chain cours
 
 **Live Production**: [academy.safuverse.com](https://academy.safuverse.com) - Running on BNB Chain
 
+## Deployed Contracts (BSC Mainnet)
+
+The following contracts are deployed on BNB Chain Mainnet (Chain ID: 56):
+
+- **Course Factory**: `0xE796bc81c3F372237641998c24C755e710832bA9`
+- **CourseContract/Level3Course**: `0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13`
+
+## Configuration
+
 The contracts are configured for BNB Chain deployment as specified in `hardhat.config.ts`:
 ```typescript
 networks: {

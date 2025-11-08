@@ -12,6 +12,18 @@ A decentralized naming system **deployed on BNB Chain** (BNB Smart Chain), inspi
 
 All smart contracts are deployed and operational on BNB Chain networks, leveraging BSC's low gas costs and fast finality for affordable domain registration.
 
+## Deployed Contracts (BSC Mainnet)
+
+The following contracts are deployed on BNB Chain Mainnet (Chain ID: 56):
+
+- **Controller**: `0x48511b6c15fe1F89bAf6b30dBFA35bF0eAaEB751`
+- **Registry**: `0x6aEFc7ac590096c08187a9052030dA59dEd7E996`
+- **ReverseRegistrar**: `0xc070aAcE207ad5eb2A460D059785ffC9D4D2C536`
+- **BaseRegistrar**: `0xc85f95FCe09b582D546606f591CEEC88D88714f5`
+- **NameWrapper**: `0x86a930d1931C11e3Ec46b3A050E27F29bF94B612`
+- **PublicResolver**: `0xcAa73Cd19614523F9F3cfCa4A447120ceA8fd357`
+- **Referral**: `0x182690bD985ef02Ae44A6F8a2e71666bDe1196E2`
+
 ## Live Application
 
 **Production**: [names.safuverse.com](https://names.safuverse.com) - Running on BNB Chain
