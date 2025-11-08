@@ -141,7 +141,7 @@ See `frontend/README.md` for setup details.
 ### User Flow
 
 1. **Connect Wallet**: User connects BNB Chain wallet (MetaMask, Trust Wallet)
-2. **Check Score**: Frontend calls backend API to calculate wallet memecoin score
+2. **Check Score**: Frontend calls backend API to calculate wallet memecoin score and other metrics
 3. **View Results**: Score and analysis displayed to user
 4. **Mint NFT**: User initiates mint transaction on BNB Chain
 5. **Price Calculation**: Smart contract fetches BNB/USD price from Chainlink oracle on BSC

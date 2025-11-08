@@ -360,8 +360,8 @@ console.log('Graduated:', pool.graduated);
 
 **Graduation Threshold:**
 
-- All tokens graduate at **15 BNB** in bonding curve
-- Both PROJECT_RAISE and INSTANT_LAUNCH use same threshold
+- All INSTANT_LAUNCH tokens graduate at **15 BNB** in bonding curve
+- PROJECT_RAISE require their raise target to be met before graduation
 
 #### Get Fee Information
 
