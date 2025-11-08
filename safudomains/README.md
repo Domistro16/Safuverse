@@ -396,6 +396,250 @@ The .safu domain system integrates with other Safuverse components on BNB Chain:
 
 All integrations occur on-chain on BNB Chain.
 
+## Frontend Application
+
+The safudomains frontend is a modern React-based web application deployed at [names.safuverse.com](https://names.safuverse.com), providing a user-friendly interface for domain registration and management on BNB Chain.
+
+### Frontend Technology Stack
+
+- **Framework**: React 18.3+ with TypeScript
+- **Build Tool**: Vite 5.x for fast development and optimized production builds
+- **Styling**: Tailwind CSS 4.x with custom theme
+- **Web3 Integration**:
+  - **Wagmi v2**: React hooks for Ethereum/BSC
+  - **RainbowKit**: Wallet connection UI with multi-wallet support
+  - **Ethers v5**: Blockchain interactions
+  - **Viem**: Modern alternative to ethers for some operations
+- **State Management**:
+  - TanStack Query (React Query) for server state
+  - React Context for app state
+- **Data Fetching**:
+  - Apollo Client for GraphQL queries
+  - Axios for REST API calls
+- **Additional Features**:
+  - Web3Auth for social login options
+  - Binance W3W connector for Binance Wallet
+  - Transak SDK for fiat on-ramp
+  - Fabric.js for canvas-based NFT rendering
+  - Flutterwave for payment processing
+
+### Frontend Setup
+
+#### Prerequisites
+
+- Node.js 18+ and npm/yarn/bun
+- Git
+- A code editor (VS Code recommended)
+
+#### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/Level3AI-hub/Safuverse.git
+cd Safuverse/safudomains/frontend
+
+# Install dependencies
+npm install
+# or
+bun install
+```
+
+#### Environment Configuration
+
+Create a `.env` file in the `frontend` directory:
+
+```bash
+# Web3Auth Client ID (for social login)
+VITE_CLIENT_ID=your_web3auth_client_id
+
+# Flutterwave Public Key (for payments)
+VITE_FLUTTERWAVE_KEY=your_flutterwave_public_key
+
+# Backend API URL (if applicable)
+VITE_API_URL=https://api.safuverse.com
+
+# API Key (if required)
+VITE_API_KEY=your_api_key
+
+# WalletConnect Project ID (for wallet connections)
+VITE_WC_PROJECT_ID=your_walletconnect_project_id
+```
+
+**Note**: Replace placeholder values with your actual API keys and configuration.
+
+#### Development Commands
+
+```bash
+# Start development server (http://localhost:5173)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run linter
+npm run lint
+```
+
+### Frontend Architecture
+
+#### Key Files and Structure
+
+```
+frontend/
+├── src/
+│   ├── components/          # React components
+│   ├── hooks/              # Custom React hooks
+│   ├── lib/                # Utility libraries
+│   ├── App.tsx             # Main app component
+│   ├── main.tsx            # App entry point with providers
+│   ├── wagmi.ts            # Wagmi configuration
+│   ├── web3auth.ts         # Web3Auth configuration
+│   ├── constant.ts         # Contract addresses and constants
+│   └── index.css           # Global styles
+├── public/                 # Static assets
+├── index.html             # HTML template
+├── vite.config.ts         # Vite configuration
+├── tsconfig.json          # TypeScript configuration
+└── package.json           # Dependencies and scripts
+```
+
+#### Contract Integration
+
+The frontend connects to deployed contracts on BNB Chain using addresses defined in `src/constant.ts`:
+
+```typescript
+export const constants = {
+  Controller: '0x48511b6c15fe1F89bAf6b30dBFA35bF0eAaEB751',
+  Registry: '0x6aEFc7ac590096c08187a9052030dA59dEd7E996',
+  ReverseRegistrar: '0xc070aAcE207ad5eb2A460D059785ffC9D4D2C536',
+  BaseRegistrar: '0xc85f95FCe09b582D546606f591CEEC88D88714f5',
+  NameWrapper: '0x86a930d1931C11e3Ec46b3A050E27F29bF94B612',
+  PublicResolver: '0xcAa73Cd19614523F9F3cfCa4A447120ceA8fd357',
+  Referral: '0x182690bD985ef02Ae44A6F8a2e71666bDe1196E2',
+}
+```
+
+#### Wallet Support
+
+The application supports multiple wallet providers through RainbowKit:
+
+- **Rainbow Wallet**
+- **Binance Wallet** (W3W connector)
+- **MetaMask**
+- **Coinbase Wallet**
+- **WalletConnect** (for mobile wallets)
+- **Web3Auth** (social login)
+
+#### Network Configuration
+
+Configured for BNB Smart Chain (BSC) in `src/main.tsx` and `src/wagmi.ts`:
+
+```typescript
+import { bsc } from 'wagmi/chains'
+
+const config = createConfig({
+  chains: [bsc],
+  transports: {
+    [bsc.id]: http(),
+  },
+})
+```
+
+#### GraphQL Integration
+
+The app uses Apollo Client to query The Graph subgraph for domain data:
+
+```typescript
+const client = new ApolloClient({
+  link: new HttpLink({
+    uri: 'https://api.studio.thegraph.com/query/112443/ens-subgraph/v0.0.1',
+  }),
+  cache: new InMemoryCache(),
+})
+```
+
+### Deployment
+
+#### Build for Production
+
+```bash
+npm run build
+```
+
+This creates an optimized production build in the `dist/` directory with:
+- Code splitting for wagmi, RainbowKit, and Apollo Client
+- Minified JavaScript and CSS
+- Optimized assets
+
+#### Deploy to Vercel
+
+The project includes `vercel.json` for easy deployment:
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+#### Other Deployment Options
+
+The built static files in `dist/` can be deployed to:
+- Netlify
+- Cloudflare Pages
+- AWS S3 + CloudFront
+- Any static hosting service
+
+### Frontend Features
+
+1. **Domain Search & Registration**
+   - Real-time availability checking
+   - Multi-token payment (BNB, CAKE, USD1)
+   - Price calculation with Chainlink oracles
+
+2. **Domain Management**
+   - Set resolver records (addresses, text records, etc.)
+   - Transfer ownership
+   - Renew domains
+   - Manage subdomains
+
+3. **Referral System**
+   - Share referral links
+   - Track referral earnings
+   - Automatic reward distribution
+
+4. **Wallet Integration**
+   - Multi-wallet support via RainbowKit
+   - Social login via Web3Auth
+   - Seamless BNB Chain connection
+
+5. **Responsive Design**
+   - Mobile-first approach
+   - Dark theme with custom orange accent
+   - Smooth animations and transitions
+
+### Troubleshooting
+
+**Common Issues:**
+
+1. **Wallet connection fails**
+   - Ensure you're on BNB Chain (Chain ID: 56)
+   - Try clearing browser cache
+   - Update MetaMask/wallet extension
+
+2. **Build errors with polyfills**
+   - The project uses `vite-plugin-node-polyfills` for Node.js compatibility
+   - Buffer and process are polyfilled in `index.html`
+
+3. **Environment variables not working**
+   - Ensure `.env` file is in the `frontend/` directory
+   - All Vite env vars must be prefixed with `VITE_`
+   - Restart dev server after changing `.env`
+
 ## Technology Stack
 
 - **Blockchain**: BNB Smart Chain (BSC)
@@ -405,6 +649,7 @@ All integrations occur on-chain on BNB Chain.
 - **Price Oracles**: Chainlink on BSC
 - **DEX Integration**: PancakeSwap V3
 - **Verification**: BSCScan
+- **Frontend**: React 18 + TypeScript + Vite + Wagmi + RainbowKit
 
 ## Support & Resources
 
