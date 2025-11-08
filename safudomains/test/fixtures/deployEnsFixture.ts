@@ -19,9 +19,12 @@ export type EnsStack = {
   baseRegistrarImplementation: Contracts['BaseRegistrarImplementation']
   ethOwnedResolver: Contracts['OwnedResolver']
   dummyOracle: Contracts['DummyOracle']
-  exponentialPremiumPriceOracle: Contracts['ExponentialPremiumPriceOracle']
+  dummyCakeOracle: Contracts['DummyOracle']
+  dummyUsd1Oracle: Contracts['DummyOracle']
+  tokenPriceOracle: Contracts['TokenPriceOracle']
   staticMetadataService: Contracts['StaticMetadataService']
   nameWrapper: Contracts['NameWrapper']
+  referralController: Contracts['ReferralController']
   ethRegistrarController: Contracts['ETHRegistrarController']
   staticBulkRenewal: Contracts['StaticBulkRenewal']
   publicResolver: Contracts['PublicResolver']
@@ -163,10 +166,18 @@ export async function deployEnsStack(): Promise<EnsStack> {
   const dummyOracle = await hre.viem.deployContract('DummyOracle', [
     160000000000n,
   ])
-  const exponentialPremiumPriceOracle = await hre.viem.deployContract(
-    'ExponentialPremiumPriceOracle',
+  const dummyCakeOracle = await hre.viem.deployContract('DummyOracle', [
+    160000000000n,
+  ])
+  const dummyUsd1Oracle = await hre.viem.deployContract('DummyOracle', [
+    160000000000n,
+  ])
+  const tokenPriceOracle = await hre.viem.deployContract(
+    'TokenPriceOracle',
     [
       dummyOracle.address,
+      dummyCakeOracle.address,
+      dummyUsd1Oracle.address,
       [0n, 0n, 20294266869609n, 5073566717402n, 158548959919n],
       100000000000000000000000000n,
       21n,
@@ -194,16 +205,18 @@ export async function deployEnsStack(): Promise<EnsStack> {
     contract: nameWrapper,
   })
 
+  const referralController = await hre.viem.deployContract('ReferralController', [])
   const ethRegistrarController = await hre.viem.deployContract(
     'ETHRegistrarController',
     [
       baseRegistrarImplementation.address,
-      exponentialPremiumPriceOracle.address,
+      tokenPriceOracle.address,
       60n,
       86400n,
       reverseRegistrar.address,
       nameWrapper.address,
       ensRegistry.address,
+      referralController.address,
     ],
   )
 
@@ -262,9 +275,12 @@ export async function deployEnsStack(): Promise<EnsStack> {
     baseRegistrarImplementation,
     ethOwnedResolver,
     dummyOracle,
-    exponentialPremiumPriceOracle,
+    dummyCakeOracle,
+    dummyUsd1Oracle,
+    tokenPriceOracle,
     staticMetadataService,
     nameWrapper,
+    referralController,
     ethRegistrarController,
     staticBulkRenewal,
     publicResolver,

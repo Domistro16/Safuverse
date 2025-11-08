@@ -48,10 +48,17 @@ async function fixture() {
 
   // Set up a dummy price oracle and a controller
   const dummyOracle = await hre.viem.deployContract('DummyOracle', [100000000n])
-  const priceOracle = await hre.viem.deployContract('StablePriceOracle', [
+  const dummyCakeOracle = await hre.viem.deployContract('DummyOracle', [100000000n])
+  const dummyUsd1Oracle = await hre.viem.deployContract('DummyOracle', [100000000n])
+  const priceOracle = await hre.viem.deployContract('TokenPriceOracle', [
     dummyOracle.address,
+    dummyCakeOracle.address,
+    dummyUsd1Oracle.address,
     [0n, 0n, 4n, 2n, 1n],
+    100000000000000000000000000n,
+    21n,
   ])
+  const referralController = await hre.viem.deployContract('ReferralController', [])
   const controller = await hre.viem.deployContract('ETHRegistrarController', [
     baseRegistrar.address,
     priceOracle.address,
@@ -60,6 +67,7 @@ async function fixture() {
     zeroAddress,
     nameWrapper.address,
     ensRegistry.address,
+    referralController.address,
   ])
 
   await baseRegistrar.write.addController([controller.address])

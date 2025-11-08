@@ -74,10 +74,17 @@ async function fixture() {
   ])
 
   const dummyOracle = await hre.viem.deployContract('DummyOracle', [100000000n])
-  const priceOracle = await hre.viem.deployContract('StablePriceOracle', [
+  const dummyCakeOracle = await hre.viem.deployContract('DummyOracle', [100000000n])
+  const dummyUsd1Oracle = await hre.viem.deployContract('DummyOracle', [100000000n])
+  const priceOracle = await hre.viem.deployContract('TokenPriceOracle', [
     dummyOracle.address,
+    dummyCakeOracle.address,
+    dummyUsd1Oracle.address,
     [0n, 0n, 4n, 2n, 1n],
+    100000000000000000000000000n,
+    21n,
   ])
+  const referralController = await hre.viem.deployContract('ReferralController', [])
   const ethRegistrarController = await hre.viem.deployContract(
     'ETHRegistrarController',
     [
@@ -88,6 +95,7 @@ async function fixture() {
       reverseRegistrar.address,
       nameWrapper.address,
       ensRegistry.address,
+      referralController.address,
     ],
   )
 
@@ -124,7 +132,10 @@ async function fixture() {
     reverseRegistrar,
     nameWrapper,
     dummyOracle,
+    dummyCakeOracle,
+    dummyUsd1Oracle,
     priceOracle,
+    referralController,
     ethRegistrarController,
     publicResolver,
     callData,
