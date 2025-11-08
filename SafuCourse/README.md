@@ -196,6 +196,279 @@ SafuCourse integrates with other BNB Chain components:
 
 All components deployed on BNB Chain for seamless interoperability.
 
+## Frontend Application
+
+The SafuCourse platform is live at [academy.safuverse.com](https://academy.safuverse.com), providing a user-friendly interface for course enrollment, progress tracking, and educational content delivery on BNB Chain.
+
+### Frontend Status
+
+The frontend application is currently deployed and operational. The `frontend/` directory in this repository is reserved for future frontend source code integration.
+
+**Live Application**: [academy.safuverse.com](https://academy.safuverse.com)
+
+### Expected Frontend Technology Stack
+
+Based on the Safuverse ecosystem architecture, the frontend is expected to include:
+
+- **Framework**: React 18+ with TypeScript
+- **Build Tool**: Vite 5.x for modern, fast development
+- **Styling**: Tailwind CSS with custom theming
+- **Web3 Integration**:
+  - **Wagmi v2**: React hooks for BNB Chain interactions
+  - **RainbowKit**: Multi-wallet connection support
+  - **Ethers/Viem**: Smart contract interactions
+- **State Management**:
+  - TanStack Query (React Query) for server state
+  - React Context for application state
+- **Backend Integration**:
+  - REST API for course content and user data
+  - OpenZeppelin Defender relayer for gasless transactions
+  - GraphQL (optional) for complex data queries
+
+### Frontend Setup (When Available)
+
+Once the frontend source code is added to this repository, follow these steps:
+
+#### Installation
+
+```bash
+# Navigate to frontend directory
+cd SafuCourse/frontend
+
+# Install dependencies
+npm install
+# or
+bun install
+```
+
+#### Environment Configuration
+
+Create a `.env` file in the `frontend` directory:
+
+```bash
+# Backend API Configuration
+VITE_API_URL=https://api.safuverse.com/courses
+
+# OpenZeppelin Defender Relayer (for gasless transactions)
+VITE_RELAYER_URL=your_defender_relayer_url
+VITE_RELAYER_API_KEY=your_relayer_api_key
+
+# Contract Addresses (BNB Chain)
+VITE_COURSE_FACTORY_ADDRESS=0xE796bc81c3F372237641998c24C755e710832bA9
+VITE_LEVEL3_COURSE_ADDRESS=0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13
+
+# safudomains Integration
+VITE_DNS_REGISTRY_ADDRESS=0x6aEFc7ac590096c08187a9052030dA59dEd7E996
+VITE_DNS_RESOLVER_ADDRESS=0xcAa73Cd19614523F9F3cfCa4A447120ceA8fd357
+
+# WalletConnect Project ID
+VITE_WC_PROJECT_ID=your_walletconnect_project_id
+
+# Web3Auth (for social login)
+VITE_WEB3AUTH_CLIENT_ID=your_web3auth_client_id
+
+# Analytics (optional)
+VITE_ANALYTICS_ID=your_analytics_id
+```
+
+#### Development Commands
+
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run tests
+npm run test
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+```
+
+### Frontend Architecture
+
+#### Expected Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/          # React components
+│   │   ├── courses/        # Course-related components
+│   │   ├── enrollment/     # Enrollment flow
+│   │   ├── progress/       # Progress tracking
+│   │   └── common/         # Shared UI components
+│   ├── hooks/              # Custom React hooks
+│   │   ├── useCourses.ts  # Course data hooks
+│   │   ├── useEnrollment.ts
+│   │   └── useRelayer.ts  # Gasless transaction hooks
+│   ├── lib/                # Utility libraries
+│   │   ├── contracts.ts   # Contract ABIs and addresses
+│   │   └── relayer.ts     # Defender relayer integration
+│   ├── pages/              # Route pages
+│   │   ├── Courses.tsx    # Course catalog
+│   │   ├── CourseDetail.tsx
+│   │   ├── Dashboard.tsx  # User dashboard
+│   │   └── Profile.tsx    # User profile
+│   ├── App.tsx             # Main app component
+│   ├── main.tsx            # Entry point with providers
+│   └── wagmi.config.ts     # Wagmi/RainbowKit setup
+├── public/                 # Static assets
+├── index.html             # HTML template
+├── vite.config.ts         # Vite configuration
+├── tsconfig.json          # TypeScript config
+└── package.json           # Dependencies
+```
+
+#### Contract Integration
+
+The frontend will interact with deployed contracts on BNB Chain:
+
+```typescript
+// Expected contract configuration
+export const contracts = {
+  courseFactory: {
+    address: '0xE796bc81c3F372237641998c24C755e710832bA9',
+    abi: CourseFactoryABI,
+    chainId: 56, // BSC Mainnet
+  },
+  level3Course: {
+    address: '0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13',
+    abi: Level3CourseABI,
+    chainId: 56,
+  },
+}
+```
+
+#### Gasless Transaction Flow
+
+The frontend implements gasless transactions using OpenZeppelin Defender:
+
+```typescript
+// Simplified gasless enrollment flow
+async function enrollInCourse(courseId: string) {
+  // 1. User signs enrollment request (no gas required)
+  const signature = await signTypedData(enrollmentParams)
+
+  // 2. Send to relayer backend
+  const response = await fetch(RELAYER_URL, {
+    method: 'POST',
+    body: JSON.stringify({ signature, params: enrollmentParams })
+  })
+
+  // 3. Relayer submits transaction on-chain
+  // 4. User receives confirmation without paying gas
+}
+```
+
+### Key Frontend Features
+
+1. **Course Catalog**
+   - Browse available courses on BNB Chain
+   - Filter by category, difficulty, and duration
+   - View course details and prerequisites
+
+2. **Domain-Gated Enrollment**
+   - Verify .safu domain ownership
+   - Automatic eligibility checking
+   - Gasless enrollment via relayer
+
+3. **Progress Tracking**
+   - Real-time on-chain progress updates
+   - Lesson completion tracking
+   - Achievement badges and certificates
+
+4. **User Dashboard**
+   - View enrolled courses
+   - Track learning progress
+   - Access course materials
+   - Download certificates (NFT-based)
+
+5. **Wallet Integration**
+   - Multi-wallet support (MetaMask, Binance Wallet, etc.)
+   - BNB Chain network auto-switching
+   - Domain ownership verification
+
+### Deployment
+
+#### Build for Production
+
+```bash
+npm run build
+```
+
+The production build will be optimized for:
+- Code splitting
+- Asset optimization
+- Tree shaking
+- Minification
+
+#### Deployment Options
+
+Deploy the built `dist/` folder to:
+
+- **Vercel** (recommended for Next.js/Vite apps)
+  ```bash
+  vercel --prod
+  ```
+
+- **Netlify**
+  ```bash
+  netlify deploy --prod
+  ```
+
+- **AWS S3 + CloudFront**
+- **Cloudflare Pages**
+- **Traditional hosting** (any static file server)
+
+### Integration with Safuverse Ecosystem
+
+The SafuCourse frontend integrates with:
+
+1. **safudomains** - Verify domain ownership for enrollment
+2. **Safucard** - Issue NFT-based course certificates
+3. **SafuAgents** - AI-powered course recommendations
+4. **SafuLanding** - Ecosystem navigation and discovery
+
+All integrations occur seamlessly on BNB Chain.
+
+### Development Roadmap
+
+Planned frontend features:
+
+- [ ] Advanced course progress analytics
+- [ ] Social features (discussion forums, study groups)
+- [ ] NFT certificate marketplace
+- [ ] Course creator dashboard
+- [ ] Video streaming integration
+- [ ] Mobile app (React Native)
+
+### Troubleshooting
+
+**Common Issues:**
+
+1. **Gasless transactions failing**
+   - Verify relayer has sufficient BNB balance
+   - Check OpenZeppelin Defender configuration
+   - Ensure meta-transaction signatures are valid
+
+2. **Domain verification not working**
+   - Confirm user owns a .safu domain
+   - Check safudomains contract integration
+   - Verify resolver is set correctly
+
+3. **Network connection issues**
+   - Ensure wallet is connected to BNB Chain (Chain ID: 56)
+   - Try switching networks manually
+   - Clear wallet cache and reconnect
+
 ## Technology Stack
 
 - **Blockchain**: BNB Smart Chain (BSC)
@@ -205,6 +478,7 @@ All components deployed on BNB Chain for seamless interoperability.
 - **Relayer**: OpenZeppelin Defender (BSC network)
 - **Libraries**: OpenZeppelin Contracts 5.3.0
 - **Verification**: BSCScan
+- **Frontend**: React 18+ with TypeScript, Vite, Wagmi (deployed separately)
 
 ## Network Information
 
