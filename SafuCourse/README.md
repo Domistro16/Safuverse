@@ -202,32 +202,44 @@ The SafuCourse platform is live at [academy.safuverse.com](https://academy.safuv
 
 ### Frontend Status
 
-The frontend application is currently deployed and operational. The `frontend/` directory in this repository is reserved for future frontend source code integration.
+The frontend application is **fully implemented** and operational. The `frontend/` directory contains the complete source code for the SafuCourse web application.
 
 **Live Application**: [academy.safuverse.com](https://academy.safuverse.com)
 
-### Expected Frontend Technology Stack
+### Frontend Technology Stack
 
-Based on the Safuverse ecosystem architecture, the frontend is expected to include:
+The SafuCourse frontend is built with modern web technologies:
 
-- **Framework**: React 18+ with TypeScript
-- **Build Tool**: Vite 5.x for modern, fast development
-- **Styling**: Tailwind CSS with custom theming
+- **Framework**: React 18.2.0 with TypeScript
+- **Build Tool**: Vite 5.2.11 for fast, modern development
+- **Styling**: Tailwind CSS 3.3.3 with custom theming and animations
+- **UI Components**: Radix UI primitives with custom shadcn/ui components
 - **Web3 Integration**:
-  - **Wagmi v2**: React hooks for BNB Chain interactions
-  - **RainbowKit**: Multi-wallet connection support
-  - **Ethers/Viem**: Smart contract interactions
+  - **Wagmi v2.15.6**: React hooks for BNB Chain interactions
+  - **RainbowKit v2.2.8**: Multi-wallet connection support with custom theming
+  - **Ethers v5.8.0**: Contract interactions and utilities
+  - **Viem v2.29.0**: TypeScript-first Ethereum library
+  - **Binance W3W Connector**: Native Binance Web3 Wallet support
 - **State Management**:
-  - TanStack Query (React Query) for server state
+  - **TanStack Query v5.82.0**: Server state management and caching
   - React Context for application state
-- **Backend Integration**:
-  - REST API for course content and user data
-  - OpenZeppelin Defender relayer for gasless transactions
-  - GraphQL (optional) for complex data queries
+- **Media & Content**:
+  - **Video.js v7.21**: Video player for course lessons
+  - **Pinata SDK v2.4.9**: IPFS integration for content storage
+- **Additional Libraries**:
+  - **Framer Motion v10.16.4**: Smooth animations and transitions
+  - **React Router DOM v6.16.0**: Client-side routing
+  - **Lucide React**: Modern icon library
 
-### Frontend Setup (When Available)
+### Frontend Setup
 
-Once the frontend source code is added to this repository, follow these steps:
+The frontend source code is available in the `frontend/` directory. Follow these steps to set up and run the application locally:
+
+#### Prerequisites
+
+- Node.js 18+ (specified in `.nvmrc`)
+- npm or yarn package manager
+- A BNB Chain-compatible wallet (MetaMask, Binance Wallet, etc.)
 
 #### Installation
 
@@ -237,44 +249,36 @@ cd SafuCourse/frontend
 
 # Install dependencies
 npm install
-# or
-bun install
 ```
 
 #### Environment Configuration
 
-Create a `.env` file in the `frontend` directory:
+Create a `.env` file in the `frontend` directory based on `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Configure the following environment variables:
 
 ```bash
 # Backend API Configuration
-VITE_API_URL=https://api.safuverse.com/courses
+VITE_API_KEY=your_api_key_here
+VITE_API_URL=your_backend_api_url_here
 
-# OpenZeppelin Defender Relayer (for gasless transactions)
-VITE_RELAYER_URL=your_defender_relayer_url
-VITE_RELAYER_API_KEY=your_relayer_api_key
-
-# Contract Addresses (BNB Chain)
-VITE_COURSE_FACTORY_ADDRESS=0xE796bc81c3F372237641998c24C755e710832bA9
-VITE_LEVEL3_COURSE_ADDRESS=0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13
-
-# safudomains Integration
-VITE_DNS_REGISTRY_ADDRESS=0x6aEFc7ac590096c08187a9052030dA59dEd7E996
-VITE_DNS_RESOLVER_ADDRESS=0xcAa73Cd19614523F9F3cfCa4A447120ceA8fd357
-
-# WalletConnect Project ID
-VITE_WC_PROJECT_ID=your_walletconnect_project_id
-
-# Web3Auth (for social login)
-VITE_WEB3AUTH_CLIENT_ID=your_web3auth_client_id
-
-# Analytics (optional)
-VITE_ANALYTICS_ID=your_analytics_id
+# Pinata IPFS Integration
+VITE_PINATA_KEY=your_pinata_api_key_here
 ```
+
+**Note**: The contract addresses and network configuration are hardcoded in `src/constants.ts`:
+- **ERC2771 Forwarder**: `0xa579e4F7158826e4C0E6842779580f524bD6188C`
+- **Level3Course Contract**: `0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13`
+- **BNB Chain**: Chain ID 56 (BSC Mainnet)
 
 #### Development Commands
 
 ```bash
-# Start development server
+# Start development server (default: http://localhost:5173)
 npm run dev
 
 # Build for production
@@ -282,151 +286,174 @@ npm run build
 
 # Preview production build
 npm run preview
-
-# Run tests
-npm run test
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
 ```
+
+**Available Scripts** (from `package.json`):
+- `dev`: Start Vite development server with hot module replacement
+- `build`: TypeScript compilation followed by Vite production build
+- `preview`: Preview the production build locally
 
 ### Frontend Architecture
 
-#### Expected Project Structure
+#### Project Structure
 
 ```
 frontend/
 ├── src/
-│   ├── components/          # React components
-│   │   ├── courses/        # Course-related components
-│   │   ├── enrollment/     # Enrollment flow
-│   │   ├── progress/       # Progress tracking
-│   │   └── common/         # Shared UI components
-│   ├── hooks/              # Custom React hooks
-│   │   ├── useCourses.ts  # Course data hooks
-│   │   ├── useEnrollment.ts
-│   │   └── useRelayer.ts  # Gasless transaction hooks
-│   ├── lib/                # Utility libraries
-│   │   ├── contracts.ts   # Contract ABIs and addresses
-│   │   └── relayer.ts     # Defender relayer integration
-│   ├── pages/              # Route pages
-│   │   ├── Courses.tsx    # Course catalog
-│   │   ├── CourseDetail.tsx
-│   │   ├── Dashboard.tsx  # User dashboard
-│   │   └── Profile.tsx    # User profile
-│   ├── App.tsx             # Main app component
-│   ├── main.tsx            # Entry point with providers
-│   └── wagmi.config.ts     # Wagmi/RainbowKit setup
-├── public/                 # Static assets
-├── index.html             # HTML template
-├── vite.config.ts         # Vite configuration
-├── tsconfig.json          # TypeScript config
-└── package.json           # Dependencies
+│   ├── components/              # React components
+│   │   ├── ui/                 # Radix UI components (shadcn/ui)
+│   │   ├── Navbar.tsx          # Navigation bar
+│   │   ├── Footer.tsx          # Page footer
+│   │   ├── CourseCard.tsx      # Course display card
+│   │   ├── CoursesSection.tsx  # Course listing section
+│   │   ├── VideoPlayer.tsx     # Video.js player component
+│   │   ├── CTASection.tsx      # Call-to-action section
+│   │   ├── FaqSection.tsx      # FAQ accordion
+│   │   ├── connectButton.tsx   # Custom wallet connect button
+│   │   ├── walletModal.tsx     # Wallet connection modal
+│   │   ├── useAvatar.tsx       # Avatar display component
+│   │   └── ScrollToTop.tsx     # Scroll to top utility
+│   ├── pages/                  # Route pages
+│   │   ├── CoursesLandingPage.tsx  # Main landing page
+│   │   ├── CourseListPage.tsx      # Course catalog
+│   │   ├── CourseDetailPage.tsx    # Individual course view
+│   │   └── LessonPage.tsx          # Lesson viewer with video
+│   ├── hooks/                  # Custom React hooks
+│   │   ├── getPrimaryName.ts   # Fetch user's primary domain
+│   │   ├── progress.ts         # Course progress management
+│   │   └── use-toast.ts        # Toast notifications
+│   ├── lib/                    # Utility libraries
+│   │   ├── constant.ts         # Application constants
+│   │   ├── useWriteContractMeta.ts  # Meta-transaction helper
+│   │   └── utils.ts            # Utility functions
+│   ├── constants.ts            # Contract ABIs and addresses
+│   ├── App.tsx                 # Main app component with routing
+│   ├── main.tsx                # Entry point with Wagmi/RainbowKit providers
+│   ├── index.css               # Global styles and Tailwind imports
+│   └── vite-env.d.ts           # Vite environment types
+├── public/                     # Static assets
+├── plugins/                    # Custom Vite plugins
+├── index.html                  # HTML template
+├── vite.config.ts              # Vite configuration with polyfills
+├── tailwind.config.js          # Tailwind CSS configuration
+├── postcss.config.js           # PostCSS configuration
+├── tsconfig.json               # TypeScript configuration
+├── tsconfig.node.json          # TypeScript config for Node
+├── components.json             # shadcn/ui configuration
+├── vercel.json                 # Vercel deployment config
+├── .nvmrc                      # Node version specification
+└── package.json                # Dependencies and scripts
 ```
 
 #### Contract Integration
 
-The frontend will interact with deployed contracts on BNB Chain:
+The frontend interacts with deployed contracts on BNB Chain through `src/constants.ts`:
 
 ```typescript
-// Expected contract configuration
-export const contracts = {
-  courseFactory: {
-    address: '0xE796bc81c3F372237641998c24C755e710832bA9',
-    abi: CourseFactoryABI,
-    chainId: 56, // BSC Mainnet
-  },
-  level3Course: {
-    address: '0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13',
-    abi: Level3CourseABI,
-    chainId: 56,
-  },
-}
+// Contract configuration (from src/constants.ts)
+export const ERC2771Forwarder = "0xa579e4F7158826e4C0E6842779580f524bD6188C";
+export const Deploy = "0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13"; // Level3Course contract
+
+// Contract ABI is exported in the same file
+export const abi = [...]; // Full Level3Course ABI
 ```
+
+The frontend uses Wagmi hooks for contract interactions:
+- Read operations: `useReadContract` for fetching courses, progress, and enrollment status
+- Write operations: Custom `useWriteContractMeta` hook for gasless meta-transactions via ERC2771Forwarder
 
 #### Gasless Transaction Flow
 
-The frontend implements gasless transactions using OpenZeppelin Defender:
+The frontend implements gasless transactions using ERC2771 meta-transactions:
 
-```typescript
-// Simplified gasless enrollment flow
-async function enrollInCourse(courseId: string) {
-  // 1. User signs enrollment request (no gas required)
-  const signature = await signTypedData(enrollmentParams)
+**Implementation** (from `src/lib/useWriteContractMeta.ts`):
+1. User initiates an action (enroll, update progress) via the UI
+2. Frontend creates a meta-transaction request with user's signature
+3. Request is sent to backend relayer with the trusted forwarder address
+4. Backend relayer submits the transaction on-chain, paying gas fees
+5. User receives confirmation without paying gas
 
-  // 2. Send to relayer backend
-  const response = await fetch(RELAYER_URL, {
-    method: 'POST',
-    body: JSON.stringify({ signature, params: enrollmentParams })
-  })
-
-  // 3. Relayer submits transaction on-chain
-  // 4. User receives confirmation without paying gas
-}
-```
+**Key Features**:
+- Uses `eth-sig-util` for signature generation
+- Supports multiple wallet types through RainbowKit
+- Automatic network switching to BNB Chain
+- Transaction status tracking with TanStack Query
 
 ### Key Frontend Features
 
-1. **Course Catalog**
-   - Browse available courses on BNB Chain
-   - Filter by category, difficulty, and duration
-   - View course details and prerequisites
+#### 1. **Multi-Wallet Connection**
+   - **RainbowKit Integration**: Supports MetaMask, Binance Wallet, Rainbow, Coinbase, WalletConnect
+   - **Custom Theming**: Dark theme with orange accent color (#FF7000)
+   - **Automatic Network Switching**: Defaults to BNB Chain (Chain ID 56)
+   - **Session Sync**: Cross-domain session synchronization via iframe
 
-2. **Domain-Gated Enrollment**
-   - Verify .safu domain ownership
-   - Automatic eligibility checking
-   - Gasless enrollment via relayer
+#### 2. **Course Catalog** (CourseListPage.tsx)
+   - Browse all available courses from on-chain data
+   - View course details including title, description, instructor, and duration
+   - Course cards display level, category, and enrollment count
+   - Direct enrollment from catalog with domain verification
 
-3. **Progress Tracking**
+#### 3. **Course Detail Page** (CourseDetailPage.tsx)
+   - Comprehensive course information display
+   - Course objectives and prerequisites
+   - Lesson list with completion status
+   - Enrollment button with gasless transaction support
+   - Domain ownership verification before enrollment
+
+#### 4. **Video Learning Platform** (LessonPage.tsx)
+   - **Video.js Player**: Professional video playback with quality selection
+   - **IPFS Integration**: Content delivery via Pinata
+   - Progress tracking per lesson
+   - Automatic progress updates on lesson completion
+   - Quiz integration support
+
+#### 5. **Domain-Gated Access**
+   - Verify .safu domain ownership via `getPrimaryName` hook
+   - Automatic eligibility checking using safudomains reverse registrar
+   - Gasless enrollment via ERC2771 meta-transactions
+   - User points and achievement tracking
+
+#### 6. **Progress Tracking**
    - Real-time on-chain progress updates
-   - Lesson completion tracking
-   - Achievement badges and certificates
-
-4. **User Dashboard**
-   - View enrolled courses
-   - Track learning progress
-   - Access course materials
-   - Download certificates (NFT-based)
-
-5. **Wallet Integration**
-   - Multi-wallet support (MetaMask, Binance Wallet, etc.)
-   - BNB Chain network auto-switching
-   - Domain ownership verification
+   - Lesson completion percentage
+   - User points accumulation
+   - Course completion certificates (on-chain verification)
 
 ### Deployment
 
 #### Build for Production
 
 ```bash
+cd SafuCourse/frontend
 npm run build
 ```
 
-The production build will be optimized for:
-- Code splitting
-- Asset optimization
-- Tree shaking
-- Minification
+The production build creates an optimized `dist/` folder with:
+- **Code splitting**: Separate chunks for wagmi, RainbowKit, and Video.js
+- **Asset optimization**: Minified CSS and JavaScript
+- **Tree shaking**: Unused code elimination
+- **TypeScript compilation**: Pre-build type checking
 
-#### Deployment Options
+#### Deployment Configuration
 
-Deploy the built `dist/` folder to:
+The project includes a `vercel.json` configuration for Vercel deployment:
 
-- **Vercel** (recommended for Next.js/Vite apps)
-  ```bash
-  vercel --prod
-  ```
+**Current Deployment**: [academy.safuverse.com](https://academy.safuverse.com)
 
-- **Netlify**
-  ```bash
-  netlify deploy --prod
-  ```
+**Deployment Steps**:
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in Vercel dashboard:
+   - `VITE_API_KEY`
+   - `VITE_API_URL`
+   - `VITE_PINATA_KEY`
+3. Deploy from the `SafuCourse/frontend` directory
+4. Vercel automatically builds and deploys on push
 
-- **AWS S3 + CloudFront**
-- **Cloudflare Pages**
-- **Traditional hosting** (any static file server)
+**Alternative Deployment Options**:
+- **Netlify**: Deploy the `dist/` folder
+- **Cloudflare Pages**: Connect GitHub and deploy
+- **AWS S3 + CloudFront**: Upload dist folder to S3 bucket
+- **Traditional hosting**: Any static file server supporting SPA routing
 
 ### Integration with Safuverse Ecosystem
 
@@ -439,46 +466,87 @@ The SafuCourse frontend integrates with:
 
 All integrations occur seamlessly on BNB Chain.
 
-### Development Roadmap
+### Technical Highlights
 
-Planned frontend features:
+**Vite Configuration** (`vite.config.ts`):
+- **Node.js Polyfills**: Buffer and process polyfills for Web3 compatibility
+- **Path Aliases**: `@/` alias for clean imports
+- **Code Splitting**: Manual chunks for wagmi, RainbowKit, and Video.js
+- **External Dependencies**: Babel packages excluded from bundle
 
-- [ ] Advanced course progress analytics
-- [ ] Social features (discussion forums, study groups)
-- [ ] NFT certificate marketplace
-- [ ] Course creator dashboard
-- [ ] Video streaming integration
-- [ ] Mobile app (React Native)
+**Tailwind Configuration** (`tailwind.config.js`):
+- **Custom Fonts**: Gilroy font family (Regular, Bold, Medium, Light, Heavy)
+- **Custom Animations**: Float, pulse-glow, accordion animations
+- **Theme Extension**: Custom color system with HSL variables
+- **Dark Mode**: Class-based dark mode support
+
+**TypeScript Configuration**:
+- **Target**: ES2020 with bundler module resolution
+- **Strict Mode**: Enabled with unused locals/parameters checking
+- **Path Mapping**: `@/*` resolves to `src/*`
 
 ### Troubleshooting
 
-**Common Issues:**
+**Common Frontend Issues:**
 
-1. **Gasless transactions failing**
-   - Verify relayer has sufficient BNB balance
-   - Check OpenZeppelin Defender configuration
-   - Ensure meta-transaction signatures are valid
+1. **Wallet Connection Problems**
+   - Ensure you have MetaMask or a compatible wallet installed
+   - Check that your wallet is connected to BNB Chain (Chain ID: 56)
+   - Try refreshing the page and reconnecting
+   - Clear browser cache if connection persists failing
 
-2. **Domain verification not working**
-   - Confirm user owns a .safu domain
-   - Check safudomains contract integration
-   - Verify resolver is set correctly
+2. **Gasless Transactions Failing**
+   - Verify backend relayer has sufficient BNB balance
+   - Check that ERC2771Forwarder address is correct
+   - Ensure meta-transaction signatures are properly generated
+   - Confirm API_URL environment variable is set correctly
 
-3. **Network connection issues**
-   - Ensure wallet is connected to BNB Chain (Chain ID: 56)
-   - Try switching networks manually
-   - Clear wallet cache and reconnect
+3. **Domain Verification Issues**
+   - Confirm user owns a .safu domain on BNB Chain
+   - Check safudomains reverse registrar integration
+   - Verify the primary name is set for the wallet address
+   - Use the `getPrimaryName` hook to debug domain lookup
+
+4. **Video Playback Issues**
+   - Ensure IPFS content is accessible via Pinata gateway
+   - Check VITE_PINATA_KEY is configured correctly
+   - Verify Video.js player loaded successfully
+   - Check browser console for video loading errors
+
+5. **Build/Development Errors**
+   - Run `npm install` to ensure all dependencies are installed
+   - Clear `node_modules` and reinstall if persistent errors
+   - Check Node.js version matches `.nvmrc` (Node 18+)
+   - Ensure TypeScript compilation succeeds before Vite build
 
 ## Technology Stack
 
-- **Blockchain**: BNB Smart Chain (BSC)
+### Backend (Smart Contracts)
+- **Blockchain**: BNB Smart Chain (BSC) - Chain ID 56
 - **Smart Contracts**: Solidity 0.8.28
-- **Development**: Hardhat 2.x
+- **Development Framework**: Hardhat 2.x
 - **Meta-Transactions**: EIP-2771 (ERC2771Context)
-- **Relayer**: OpenZeppelin Defender (BSC network)
-- **Libraries**: OpenZeppelin Contracts 5.3.0
+- **Relayer**: Backend relayer with ERC2771Forwarder
+- **Contract Libraries**: OpenZeppelin Contracts 5.3.0
 - **Verification**: BSCScan
-- **Frontend**: React 18+ with TypeScript, Vite, Wagmi (deployed separately)
+- **Testing**: Hardhat test suite
+
+### Frontend (Web Application)
+- **Framework**: React 18.2.0 with TypeScript 5.2.2
+- **Build Tool**: Vite 5.2.11
+- **Styling**: Tailwind CSS 3.3.3 + PostCSS
+- **UI Components**: Radix UI + shadcn/ui
+- **Web3 Libraries**:
+  - Wagmi 2.15.6 (React hooks)
+  - Viem 2.29.0 (Ethereum library)
+  - Ethers 5.8.0 (utilities)
+  - RainbowKit 2.2.8 (wallet connection)
+- **State Management**: TanStack Query 5.82.0
+- **Routing**: React Router DOM 6.16.0
+- **Animation**: Framer Motion 10.16.4
+- **Media**: Video.js 7.21
+- **Storage**: Pinata SDK 2.4.9 (IPFS)
+- **Deployment**: Vercel (live at academy.safuverse.com)
 
 ## Network Information
 
@@ -512,19 +580,35 @@ REPORT_GAS=true npx hardhat test
 
 ```
 SafuCourse/
-├── contracts/
-│   ├── CourseFactory.sol       # Course deployment factory
-│   ├── Coursecontract.sol      # Main course logic
-│   ├── ILevel3Course.sol       # Interface
-│   ├── INameResolver.sol       # DNS integration
-│   ├── ENS.sol                 # DNS integration
-│   └── IReverseRegistrar.sol   # DNS integration
+├── contracts/                      # Smart contracts
+│   ├── CourseFactory.sol          # Course deployment factory
+│   ├── Coursecontract.sol         # Main course logic (Level3Course)
+│   ├── ILevel3Course.sol          # Course interface
+│   ├── INameResolver.sol          # safudomains DNS integration
+│   ├── ENS.sol                    # ENS registry integration
+│   └── IReverseRegistrar.sol      # Reverse registrar integration
+├── frontend/                       # React web application
+│   ├── src/
+│   │   ├── components/           # React components
+│   │   ├── pages/                # Route pages
+│   │   ├── hooks/                # Custom React hooks
+│   │   ├── lib/                  # Utility libraries
+│   │   ├── constants.ts          # Contract ABIs and addresses
+│   │   ├── App.tsx               # Main app component
+│   │   └── main.tsx              # Entry point
+│   ├── public/                   # Static assets
+│   ├── vite.config.ts            # Vite configuration
+│   ├── tailwind.config.js        # Tailwind CSS config
+│   ├── tsconfig.json             # TypeScript config
+│   ├── package.json              # Frontend dependencies
+│   └── .env.example              # Environment variables template
 ├── scripts/
-│   ├── deploy.ts               # Deployment to BSC
-│   ├── createCourse.ts         # Course creation
-├── test/                       # Contract tests
-├── hardhat.config.ts           # BSC network configuration
-└── package.json
+│   ├── deploy.ts                 # Smart contract deployment to BSC
+│   └── createCourse.ts           # Course creation script
+├── test/                          # Smart contract tests
+├── hardhat.config.ts              # Hardhat & BSC network configuration
+├── package.json                   # Backend dependencies
+└── README.md                      # This file
 ```
 
 ## Contributing
