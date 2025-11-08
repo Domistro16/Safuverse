@@ -1,6 +1,14 @@
 # SafuPad SDK
 
-A comprehensive TypeScript SDK for interacting with SafuPad smart contracts on Binance Smart Chain.
+A comprehensive TypeScript SDK for interacting with SafuPad smart contracts **deployed on BNB Chain** (BNB Smart Chain - BSC).
+
+## Deployment Information
+
+**Primary Network**: BNB Smart Chain (BSC)
+- **BSC Mainnet**: Chain ID 56
+- **BSC Testnet**: Chain ID 97
+
+This SDK provides TypeScript/JavaScript bindings for the SafuPad token launchpad platform deployed on BNB Chain, enabling developers to integrate fair token launches, bonding curve trading, and PancakeSwap graduation features into their applications.
 
 ## Features
 
@@ -778,6 +786,88 @@ if (raiseTarget >= 50000 && raiseTarget <= 500000) // USD
 if (raiseTarget >= 50 && raiseTarget <= 500) // BNB
 ```
 
+## BNB Chain Integration Details
+
+This SDK is specifically designed for BNB Chain (BNB Smart Chain) deployment:
+
+### Network Configuration
+
+The SDK includes pre-configured support for BSC networks:
+
+```typescript
+// BSC Mainnet (default for 'bsc')
+{
+  chainId: 56,
+  rpcUrl: 'https://bsc-dataseed.binance.org/',
+  explorerUrl: 'https://bscscan.com',
+  nativeCurrency: 'BNB'
+}
+
+// BSC Testnet
+{
+  chainId: 97,
+  rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
+  explorerUrl: 'https://testnet.bscscan.com',
+  nativeCurrency: 'tBNB'
+}
+```
+
+### BNB Chain Specific Features
+
+1. **BNB-Denominated Launches**: All token raises are denominated in BNB (50-500 BNB range)
+2. **PancakeSwap Integration**: Automatic graduation to PancakeSwap V2 on BSC at 15 BNB threshold
+3. **Chainlink Price Feeds**: Uses Chainlink BNB/USD oracle deployed on BSC for accurate pricing
+4. **Low Gas Costs**: Optimized for BSC's affordable transaction fees
+5. **BSCScan Integration**: Built-in support for BSCScan transaction and contract links
+
+### PancakeSwap on BNB Chain
+
+The SDK integrates with PancakeSwap V2 contracts on BSC:
+- **Router**: 0x10ED43C718714eb63d5aA57B78B54704E256024E (BSC Mainnet)
+- **Factory**: 0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73 (BSC Mainnet)
+
+Tokens automatically graduate from bonding curve to PancakeSwap when reaching 15 BNB liquidity.
+
+### BSCScan Verification
+
+All contract addresses and transactions can be verified on BSCScan:
+
+```typescript
+// Get BSCScan URL for transaction
+const txUrl = sdk.getExplorerUrl('tx', txHash);
+// https://bscscan.com/tx/0x...
+
+// Get BSCScan URL for token
+const tokenUrl = sdk.getExplorerUrl('address', tokenAddress);
+// https://bscscan.com/address/0x...
+```
+
+### Network Information
+
+#### BSC Mainnet
+- **Chain ID**: 56
+- **RPC URL**: https://bsc-dataseed.binance.org/
+- **Explorer**: https://bscscan.com
+- **Native Token**: BNB
+- **Faucet**: N/A (use exchanges to acquire BNB)
+
+#### BSC Testnet
+- **Chain ID**: 97
+- **RPC URL**: https://data-seed-prebsc-1-s1.binance.org:8545/
+- **Explorer**: https://testnet.bscscan.com
+- **Native Token**: tBNB
+- **Faucet**: https://testnet.bnbchain.org/faucet-smart
+
+### Integration with Safuverse Ecosystem
+
+The SafuPad SDK is part of the larger Safuverse ecosystem on BNB Chain:
+- **safudomains**: Domain verification for enhanced launch permissions
+- **SafuCourse**: Token economics education integration
+- **Safucard**: Project scorecard NFTs on BSC
+- **SafuAgents**: AI-powered launch analytics
+
+All ecosystem components are deployed on BNB Chain for seamless interoperability.
+
 ## Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
@@ -813,3 +903,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - Event handling
 - Comprehensive documentation
 - Browser and Node.js support
+
+---
+
+**Built for BNB Chain** - TypeScript SDK for SafuPad token launchpad platform on BNB Smart Chain.

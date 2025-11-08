@@ -1,10 +1,21 @@
-# dns-contracts
+# safudomains (dns-contracts)
 
-A decentralized naming system on BNB Chain, inspired by ENS, with dynamic token pricing in native currency, CAKE, and USD1, plus a built-in referral system that rewards users for successful mints.
+A decentralized naming system **deployed on BNB Chain** (BNB Smart Chain), inspired by ENS, with the custom .safu TLD. Features dynamic pricing in BNB, CAKE, and USD1 tokens via Chainlink oracles, plus a built-in referral rewards system.
 
-# Live Link
+## Deployment Information
 
-- [dns.level3labs.fun](https://dns.level3labs.fun)
+**Primary Network**: BNB Chain (BNB Smart Chain)
+- **BSC Mainnet**: Chain ID 56
+- **BSC Testnet**: Chain ID 97
+- **Plasma Network**: Chain ID 9745 (alternative deployment)
+
+All smart contracts are deployed and operational on BNB Chain networks, leveraging BSC's low gas costs and fast finality for affordable domain registration.
+
+## Live Application
+
+**Production**: [dns.level3labs.fun](https://dns.level3labs.fun) - Running on BNB Chain
+
+Register your .safu domain on BNB Smart Chain today!
 
 # ENS
 
@@ -183,10 +194,35 @@ This repo runs a husky precommit to prettify all contract files to keep them con
 
 ### How to setup
 
+```bash
+git clone https://github.com/Level3AI-Hub/Safuverse
+cd Safuverse/safudomains
+bun install
+# or
+npm install
 ```
-git clone https://github.com/Level3AI-Hub/ens-contracts
-cd ens-contracts
-bun i
+
+### Environment Configuration
+
+Create a `.env` file for BNB Chain deployment:
+
+```bash
+# BNB Chain RPC URLs
+BSC_RPC_URL=https://bsc-dataseed.binance.org/
+BSC_TESTNET_RPC_URL=https://data-seed-prebsc-1-s1.binance.org:8545/
+
+# Deployer wallet
+DEPLOYER_KEY=your_private_key_here
+
+# BSCScan verification
+BSCSCAN_API_KEY=your_bscscan_api_key
+
+# Optional: Alchemy for BSC
+ALCHEMY_KEY=your_alchemy_api_key_for_bsc
+
+# Chainlink price feed addresses on BSC
+BNB_USD_ORACLE=chainlink_bnb_usd_feed_address
+CAKE_USD_ORACLE=chainlink_cake_usd_feed_address
 ```
 
 ### How to run tests
@@ -201,13 +237,34 @@ bun run test
 bun run pub
 ```
 
-### Deployment
+### Deployment to BNB Chain
 
-```
-NODE_OPTIONS='--experimental-loader ts-node/esm/transpile-only' bun run hardhat --network <network_name> deploy
+Deploy to BSC Testnet:
+
+```bash
+NODE_OPTIONS='--experimental-loader ts-node/esm/transpile-only' bun run hardhat --network bscTestnet deploy
 ```
 
-Full list of available networks for deployment is [here](hardhat.config.cts#L38).
+Deploy to BSC Mainnet:
+
+```bash
+NODE_OPTIONS='--experimental-loader ts-node/esm/transpile-only' bun run hardhat --network bsc deploy
+```
+
+**Available BNB Chain Networks**: The hardhat configuration includes support for:
+- `bsc` - BSC Mainnet (Chain ID: 56)
+- `bscTestnet` - BSC Testnet (Chain ID: 97)
+- `plasma` - Plasma Network (Chain ID: 9745)
+
+Full list of available networks is in [hardhat.config.cts](hardhat.config.cts#L38).
+
+### Verify on BSCScan
+
+After deployment, verify your contracts on BSCScan:
+
+```bash
+npx hardhat verify --network bsc <CONTRACT_ADDRESS> <CONSTRUCTOR_ARGS>
+```
 
 ### Release flow
 
@@ -253,3 +310,89 @@ Certain changes can be released in isolation via cherry-picking, although ideall
 - Code on `staging` and `main` will always be a subset of what is deployed, as smart contracts cannot be undeployed.
 - Release candidates, `staging` and `main` branch are subject to our bug bounty
 - Releases follow semantic versioning and releases should contain a description of changes with developers being the intended audience
+
+## BNB Chain Specific Features
+
+This DNS system is specifically designed and optimized for BNB Chain:
+
+### Multi-Token Pricing on BSC
+
+The TokenPriceOracle contract supports three payment methods, all native to BNB Chain:
+1. **BNB** - Native currency of BNB Smart Chain
+2. **CAKE** - PancakeSwap's native token on BSC
+3. **USD1** - Stablecoin on BSC
+
+Prices are determined via Chainlink price feeds deployed on BNB Chain for accurate BNB/USD and CAKE/USD conversion.
+
+### PancakeSwap Integration
+
+The system integrates with PancakeSwap V3 deployed on BNB Chain:
+- Uses PancakeSwap's pool factory for liquidity
+- Leverages CAKE token for payment options
+- Benefits from BSC's DeFi ecosystem
+
+### Referral Rewards on BSC
+
+The ReferralController allocates a portion of each domain registration fee to referrers:
+- Referral tracking on-chain on BSC
+- Instant rewards in BNB, CAKE, or USD1
+- Transparent referral analytics
+
+### Why BNB Chain?
+
+1. **Low Gas Costs**: Domain registration costs pennies in gas fees on BSC
+2. **Fast Finality**: 3-second block times for instant domain confirmation
+3. **Chainlink Integration**: Reliable price oracles for multi-token pricing
+4. **PancakeSwap Ecosystem**: Native CAKE token payment option
+5. **BSCScan Verification**: Full contract transparency and verification
+
+## Network Information
+
+### BSC Mainnet (Primary Deployment)
+- **Chain ID**: 56
+- **RPC**: https://bsc-dataseed.binance.org/
+- **Explorer**: https://bscscan.com
+- **ENS Registry**: Deployed on BSC
+- **Chainlink Oracles**: BNB/USD, CAKE/USD price feeds available
+
+### BSC Testnet (Development)
+- **Chain ID**: 97
+- **RPC**: https://data-seed-prebsc-1-s1.binance.org:8545/
+- **Explorer**: https://testnet.bscscan.com
+- **Faucet**: https://testnet.bnbchain.org/faucet-smart
+
+### Plasma Network (Alternative)
+- **Chain ID**: 9745
+- **Custom BNB Chain deployment option**
+
+## Integration with Safuverse
+
+The .safu domain system integrates with other Safuverse components on BNB Chain:
+- **SafuCourse**: Domain-gated course enrollment
+- **Safucard**: Domain holder NFT bonuses
+- **safupad**: Enhanced launch permissions for domain owners
+- **SafuAgents**: Domain-based identity for AI agents
+
+All integrations occur on-chain on BNB Chain.
+
+## Technology Stack
+
+- **Blockchain**: BNB Smart Chain (BSC)
+- **Smart Contracts**: Solidity 0.8.17
+- **Development**: Hardhat 2.x with TypeScript
+- **Testing**: Mocha, Chai
+- **Price Oracles**: Chainlink on BSC
+- **DEX Integration**: PancakeSwap V3
+- **Verification**: BSCScan
+
+## Support & Resources
+
+- **Live App**: https://dns.level3labs.fun (on BNB Chain)
+- **ENS Documentation**: https://docs.ens.domains
+- **BNB Chain Docs**: https://docs.bnbchain.org
+- **Chainlink BSC**: https://docs.chain.link/data-feeds/price-feeds/addresses?network=bnb-chain
+- **Email**: info@level3labs.fun
+
+---
+
+**Deployed on BNB Chain** - Decentralized .safu domains on BNB Smart Chain with multi-token pricing and referral rewards.
