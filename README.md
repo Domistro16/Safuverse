@@ -21,7 +21,7 @@ On-chain educational platform with gasless transactions, allowing domain owners 
 
 **Features**:
 
-- Gasless on-chain courses via OpenZeppelin Defender relayer
+- Gasless on-chain courses via a backend relayer
 - Domain-gated access control
 - Progress tracking stored on BSC
 - Integration with Safudomains naming service
@@ -174,9 +174,6 @@ BSC_TESTNET_RPC_URL=https://data-seed-prebsc-1-s1.binance.org:8545/
 
 # BSCScan Verification
 BSCSCAN_API_KEY=your_bscscan_api_key
-
-# For SafuCourse gasless transactions
-RELAYER_API_KEY=your_openzeppelin_defender_key
 ```
 
 ### Network Configuration
