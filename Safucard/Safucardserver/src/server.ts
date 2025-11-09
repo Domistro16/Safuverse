@@ -4,7 +4,14 @@ import cors from "cors"; // Import cors
 import routes from "./router";
 const app = express();
 
-app.use(cors());
+const ORIGIN = process.env.FRONTEND_ORIGIN || "https://safucard.xyz";
+
+app.use(
+  cors({
+    origin: ORIGIN,
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 const port = process.env.PORT || 800;
