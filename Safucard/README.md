@@ -171,7 +171,7 @@ Frontend (React)
     ↓
 Safucardserver API → Analyzes BSC wallet activity
     ↓
-Frontend displays score
+Frontend displays information
     ↓
 User approves mint transaction
     ↓
