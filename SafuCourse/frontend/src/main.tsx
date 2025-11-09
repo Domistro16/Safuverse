@@ -10,7 +10,6 @@ import {
   darkTheme,
   RainbowKitProvider,
 } from "@rainbow-me/rainbowkit";
-
 import { bsc } from "viem/chains";
 import {
   rainbowWallet,
