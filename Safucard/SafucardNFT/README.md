@@ -183,18 +183,18 @@ CHAINLINK_BNB_USD_ORACLE=0x... # Chainlink oracle address on BSC
 ### Deploy to BSC Testnet
 
 ```bash
-npx hardhat run scripts/deploy.js --network bscTestnet
+npx hardhat run scripts/deploy.ts --network bscTestnet
 ```
 
 ### Deploy to BSC Mainnet
 
 ```bash
-npx hardhat run scripts/deploy.js --network bsc
+npx hardhat run scripts/deploy.ts --network bsc
 ```
 
 ### Deployment Script Example
 
-Create `scripts/deploy.js`:
+Create `scripts/deploy.ts`:
 
 ```javascript
 const hre = require("hardhat");

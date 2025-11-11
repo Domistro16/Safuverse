@@ -277,7 +277,14 @@ function getClientIp(req) {
 // ----- Express app -----
 const app = express();
 app.use(bodyParser.json());
-app.use(cors());
+const ORIGIN = process.env.FRONTEND_ORIGIN || "https://ai.safuverse.com";
+
+app.use(
+  cors({
+    origin: ORIGIN,
+    credentials: true,
+  })
+);
 
 // POST /api/assistant - Handle chat requests with rate limiting
 app.post("/api/assistant", async (req, res) => {

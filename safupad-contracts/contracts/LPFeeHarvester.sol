@@ -88,7 +88,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     /// @notice Fee distribution percentages (basis points out of 10000)
     uint256 public constant CREATOR_FEE_BPS = 7000; // 70%
     uint256 public constant PROJECT_INFOFI_BPS = 0; // 0%
-    uint256 public constant PLATFORM_FEE_BPS = 3000; // 10%
+    uint256 public constant PLATFORM_FEE_BPS = 3000; // 30%
     uint256 public constant BASIS_POINTS = 10000;
 
     /// @notice Lock duration constraints
