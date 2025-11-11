@@ -1,15 +1,15 @@
 import { BigNumberish } from 'ethers'
 
 export const constants = {
-  Controller: '0x48511b6c15fe1F89bAf6b30dBFA35bF0eAaEB751' as `0x${string}`,
-  Registry: '0x6aEFc7ac590096c08187a9052030dA59dEd7E996' as `0x${string}`,
+  Controller: '0xBC6932F08f07f47F78285249d1A4937C99b4A955' as `0x${string}`,
+  Registry: '0xa886B8897814193f99A88701d70b31b4a8E27a1E' as `0x${string}`,
   ReverseRegistrar:
-    '0xc070aAcE207ad5eb2A460D059785ffC9D4D2C536' as `0x${string}`,
-  BaseRegistrar: '0xc85f95FCe09b582D546606f591CEEC88D88714f5' as `0x${string}`,
-  NameWrapper: '0x86a930d1931C11e3Ec46b3A050E27F29bF94B612' as `0x${string}`,
-  BulkRenewal: '0x32f3f7D65282d8941FE12b00b63a708e9333fC06' as `0x${string}`,
-  PublicResolver: '0xcAa73Cd19614523F9F3cfCa4A447120ceA8fd357' as `0x${string}`,
-  Referral: '0x182690bD985ef02Ae44A6F8a2e71666bDe1196E2' as `0x${string}`,
+    '0x1D0831eA9486Fada3887a737E8d6f8C6Ad72a125' as `0x${string}`,
+  BaseRegistrar: '0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c' as `0x${string}`,
+  NameWrapper: '0xbf4B53F867dfE5A78Cf268AfBfC1f334044e61ae' as `0x${string}`,
+  BulkRenewal: '0x2156C655d4668E7DB7584CA9B2a8Bc18A9125254' as `0x${string}`,
+  PublicResolver: '0x50143d9f7e496fF58049dE0db6FaDfB43FfE18e7' as `0x${string}`,
+  Referral: '0x9fd7Bb7d8A6B3EF32C5435896aE5478aF80F6F2D' as `0x${string}`,
   Course: '0x2967A3EDA537630Fb4eb144Fa02f5081457506BE' as `0x${string}`,
 }
 

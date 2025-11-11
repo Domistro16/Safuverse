@@ -14,6 +14,7 @@ import { buildTextRecords } from './setText'
 import { Controller, ERC20_ABI, addrResolver } from '../constants/registerAbis'
 import { constants, Params } from '../constant'
 import { useEthersSigner } from './gasEstimation'
+import { normalize } from 'viem/ens'
 
 export const useRegistration = () => {
   const [secret, setSecret] = useState<`0x${string}`>('0x')
@@ -118,6 +119,7 @@ export const useRegistration = () => {
     token: `0x${string}`,
     usd1TokenData: any,
     cakeTokenData: any,
+    priceData: any
   ) => {
     setIsLoading(true)
     const resolver = constants.PublicResolver
@@ -147,9 +149,13 @@ export const useRegistration = () => {
       )
 
       if (!useToken) {
+        const { base, premium } = (priceData as any) || {
+          base: 0n,
+          premium: 0n,
+        }
         try {
-          await controller.callStatic.registerWithCard(
-            label,
+          await controller.callStatic.register(
+            normalize(label as string),
             address,
             BigInt(seconds),
             secret,
@@ -158,7 +164,8 @@ export const useRegistration = () => {
             isPrimary,
             0,
             lifetime,
-            referrer || '',
+            normalize(referrer) || '',
+            { value: base + premium },
           )
         } catch (e: any) {
           console.error('Revert error name:', e.errorName)
@@ -168,9 +175,9 @@ export const useRegistration = () => {
         await registerContract({
           address: constants.Controller,
           abi: Controller,
-          functionName: 'registerWithCard',
+          functionName: 'register',
           args: [
-            label,
+            normalize(label as string),
             address,
             BigInt(seconds),
             secret,
@@ -179,8 +186,9 @@ export const useRegistration = () => {
             isPrimary,
             0,
             lifetime,
-            referrer || '',
+            normalize(referrer) || '',
           ],
+          value: base + premium,
         })
       } else {
         await approve({

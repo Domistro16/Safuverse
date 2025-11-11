@@ -3,7 +3,6 @@ import DatePicker from 'react-datepicker'
 import { Check } from 'lucide-react'
 import { intervalToDuration, startOfDay } from 'date-fns'
 import { useAccount, useReadContract } from 'wagmi'
-import { namehash, zeroAddress } from 'viem'
 import { useParams, useNavigate } from 'react-router'
 import Countdown from 'react-countdown'
 import { useENSName } from '../hooks/getPrimaryName'
@@ -20,6 +19,7 @@ import ConfirmDetailsModal from './register/ConfirmDetailsModal'
 import RegisterDetailsModal from './register/RegisterDetailsModal'
 import RegistrationSteps from './register/RegistrationSteps'
 import PriceDisplay from './register/PriceDisplay'
+import { Input } from './ui/input'
 
 type RegisterParams = {
   domain: string
@@ -112,14 +112,12 @@ const Register = () => {
   })
 
   const {
-    secret,
     commitData,
     isLoading,
     commithash,
     registerhash,
     registerError,
     registerPending,
-    setIsLoading,
     buildCommitDataFn,
     commit: commitFn,
     register: registerFn,
@@ -129,7 +127,7 @@ const Register = () => {
   const [estimateUsd, setEstimateUsd] = useState('')
 
   useEffect(() => {
-    const ref = localStorage.getItem('000000000x000000x00000x0x0000000')
+    const ref = localStorage.getItem('ref')
     if (ref) {
       setReferrer(normalize(ref))
     }
@@ -262,7 +260,7 @@ const Register = () => {
 
   const commit = async () => {
     await commitFn(
-      label as string,
+      normalize(label as string),
       address as `0x${string}`,
       seconds,
       isPrimary,
@@ -285,6 +283,7 @@ const Register = () => {
       token,
       usd1TokenData,
       cakeTokenData,
+      priceData
     )
     setIsOpen(false)
   }
@@ -516,6 +515,19 @@ const Register = () => {
                 </div>
                 <div className="mt-5">
                   <h1 className="text-lg font-semibold">Referrer</h1>
+                  <Input
+                    value={referrer}
+                    placeholder="The primary name of the referrer (Optional)"
+                    className="mt-2 py-2 placeholder:text-gray-400 max-w-2/3 w-3/4"
+                    type="text"
+                    onChange={(e) => {
+                      if (e.target.value.includes('.') ) {
+                        setReferrer('')
+                      } else {
+                        setReferrer(e.target.value.toLowerCase())
+                      }
+                    }}
+                  />
                 </div>
                 <div className="flex mt-5 items-center">
                   <div>

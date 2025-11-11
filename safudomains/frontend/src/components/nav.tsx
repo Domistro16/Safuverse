@@ -120,7 +120,7 @@ export default function Nav() {
       animate={{ opacity: 1, y: 0 }} // Animation to visible state
       transition={{ duration: 0.7, ease: 'easeOut' }} // Animation transition properties
       // Adjusted background color to the specific hex code #141b33
-      className={`fixed top-4 left-0 right-0 max-w-6xl mx-auto z-50 transition-all duration-300 px-4 sm:pl-6 lg:pl-8
+      className={`fixed top-4 left-0 right-0 max-w-[90%] mx-auto z-50 transition-all duration-300 px-4 sm:pl-6 lg:pl-8
                   ${
                     isScrolled || mobileMenuOpen
                       ? 'bg-neutral-950 py-2 shadow-xl'
@@ -179,7 +179,7 @@ export default function Nav() {
             </ul>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-7">
+        <div className="hidden md:flex items-center gap-4">
           <div
             className="text-gray-200 hover:text-yellow-400 font-semibold hidden md:flex items-center duration-200 cursor-pointer max-w-max gap-1 flex-nowrap"
             onClick={() => navigate(`/mynames`)}
@@ -214,7 +214,7 @@ export default function Nav() {
           )}
           <a
             href="https://academy.safuverse.com/courses/all"
-            className={`text-gray-200 hover:text-yellow-400 transition-colors duration-200 flex items-center -ml-7 font-semibold`}
+            className={`text-gray-200 hover:text-yellow-400 transition-colors mr-4 duration-200 flex items-center font-semibold`}
           >
             <BookOpen className="w-4 h-4 mr-1" />
             View Courses
