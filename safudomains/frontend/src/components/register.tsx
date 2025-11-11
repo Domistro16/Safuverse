@@ -2,30 +2,24 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import DatePicker from 'react-datepicker'
 import { Check } from 'lucide-react'
 import { intervalToDuration, startOfDay } from 'date-fns'
-import { useAccount } from 'wagmi'
-import { useWriteContract, useReadContract } from 'wagmi'
-import {
-  bytesToHex,
-  encodeFunctionData,
-  namehash,
-  encodeAbiParameters,
-  keccak256,
-  toBytes,
-  parseEther,
-  zeroAddress,
-} from 'viem'
+import { useAccount, useReadContract } from 'wagmi'
+import { namehash, zeroAddress } from 'viem'
 import { useParams, useNavigate } from 'react-router'
 import Countdown from 'react-countdown'
-import Modal from 'react-modal'
-import { buildTextRecords } from '../hooks/setText'
-import { useEstimateENSFees, useEthersSigner } from '../hooks/gasEstimation'
-import { ethers } from 'ethers'
-import { constants, Params } from '../constant'
-import UserForm from './userForm'
-import { FaPlus } from 'react-icons/fa6'
 import { useENSName } from '../hooks/getPrimaryName'
 import { normalize } from 'viem/ens'
-// import { Input } from './ui/input'
+import { useEstimateENSFees } from '../hooks/gasEstimation'
+import { constants } from '../constant'
+import UserForm from './userForm'
+import { formatDuration } from '../utils/domainUtils'
+import { Controller } from '../constants/registerAbis'
+import { useRegistrationPrice } from '../hooks/useRegistrationPrice'
+import { useRegistration } from '../hooks/useRegistration'
+import SetupModal from './register/SetupModal'
+import ConfirmDetailsModal from './register/ConfirmDetailsModal'
+import RegisterDetailsModal from './register/RegisterDetailsModal'
+import RegistrationSteps from './register/RegistrationSteps'
+import PriceDisplay from './register/PriceDisplay'
 
 type RegisterParams = {
   domain: string
@@ -38,466 +32,7 @@ type RegisterParams = {
   referree: string
 }
 
-/* 
-const Referral = [
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'referrer',
-        type: 'address',
-      },
-    ],
-    name: 'totalNativeEarnings',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'referrer',
-        type: 'address',
-      },
-    ],
-    name: 'totalReferrals',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-]
- */
-const ERC20_ABI = [
-  {
-    constant: false,
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'spender',
-        type: 'address',
-      },
-      {
-        internalType: 'uint256',
-        name: 'amount',
-        type: 'uint256',
-      },
-    ],
-    name: 'approve',
-    outputs: [
-      {
-        internalType: 'bool',
-        name: '',
-        type: 'bool',
-      },
-    ],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'owner',
-        type: 'address',
-      },
-      {
-        internalType: 'address',
-        name: 'spender',
-        type: 'address',
-      },
-    ],
-    name: 'allowance',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-]
-const Controller = [
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: 'string',
-            name: 'name',
-            type: 'string',
-          },
-          {
-            internalType: 'address',
-            name: 'owner',
-            type: 'address',
-          },
-          {
-            internalType: 'uint256',
-            name: 'duration',
-            type: 'uint256',
-          },
-          {
-            internalType: 'bytes32',
-            name: 'secret',
-            type: 'bytes32',
-          },
-          {
-            internalType: 'address',
-            name: 'resolver',
-            type: 'address',
-          },
-          {
-            internalType: 'bytes[]',
-            name: 'data',
-            type: 'bytes[]',
-          },
-          {
-            internalType: 'bool',
-            name: 'reverseRecord',
-            type: 'bool',
-          },
-          {
-            internalType: 'uint16',
-            name: 'ownerControlledFuses',
-            type: 'uint16',
-          },
-        ],
-        internalType: 'struct IETHRegistrarController.RegisterParams',
-        name: 'registerParams',
-        type: 'tuple',
-      },
-      {
-        internalType: 'address',
-        name: 'tokenAddress',
-        type: 'address',
-      },
-      {
-        internalType: 'bool',
-        name: 'lifetime',
-        type: 'bool',
-      },
-      {
-        internalType: 'string',
-        name: 'referree',
-        type: 'string',
-      },
-    ],
-    name: 'registerWithToken',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string',
-      },
-      {
-        internalType: 'address',
-        name: 'owner',
-        type: 'address',
-      },
-      {
-        internalType: 'uint256',
-        name: 'duration',
-        type: 'uint256',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'secret',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'address',
-        name: 'resolver',
-        type: 'address',
-      },
-      {
-        internalType: 'bytes[]',
-        name: 'data',
-        type: 'bytes[]',
-      },
-      {
-        internalType: 'bool',
-        name: 'reverseRecord',
-        type: 'bool',
-      },
-      {
-        internalType: 'uint16',
-        name: 'ownerControlledFuses',
-        type: 'uint16',
-      },
-      {
-        internalType: 'bool',
-        name: 'lifetime',
-        type: 'bool',
-      },
-      {
-        internalType: 'string',
-        name: 'referree',
-        type: 'string',
-      },
-    ],
-    name: 'registerWithCard',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string',
-      },
-      {
-        internalType: 'uint256',
-        name: 'duration',
-        type: 'uint256',
-      },
-      {
-        internalType: 'string',
-        name: 'token',
-        type: 'string',
-      },
-      {
-        internalType: 'bool',
-        name: 'lifetime',
-        type: 'bool',
-      },
-    ],
-    name: 'rentPriceToken',
-    outputs: [
-      {
-        components: [
-          {
-            internalType: 'uint256',
-            name: 'base',
-            type: 'uint256',
-          },
-          {
-            internalType: 'uint256',
-            name: 'premium',
-            type: 'uint256',
-          },
-        ],
-        internalType: 'struct IPriceOracle.Price',
-        name: 'price',
-        type: 'tuple',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string',
-      },
-      {
-        internalType: 'uint256',
-        name: 'duration',
-        type: 'uint256',
-      },
-      {
-        internalType: 'bool',
-        name: 'lifetime',
-        type: 'bool',
-      },
-    ],
-    name: 'rentPrice',
-    outputs: [
-      {
-        components: [
-          {
-            internalType: 'uint256',
-            name: 'base',
-            type: 'uint256',
-          },
-          {
-            internalType: 'uint256',
-            name: 'premium',
-            type: 'uint256',
-          },
-        ],
-        internalType: 'struct IPriceOracle.Price',
-        name: 'price',
-        type: 'tuple',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string',
-      },
-    ],
-    name: 'available',
-    outputs: [
-      {
-        internalType: 'bool',
-        name: '',
-        type: 'bool',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string',
-      },
-      {
-        internalType: 'address',
-        name: 'owner',
-        type: 'address',
-      },
-      {
-        internalType: 'uint256',
-        name: 'duration',
-        type: 'uint256',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'secret',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'address',
-        name: 'resolver',
-        type: 'address',
-      },
-      {
-        internalType: 'bytes[]',
-        name: 'data',
-        type: 'bytes[]',
-      },
-      {
-        internalType: 'bool',
-        name: 'reverseRecord',
-        type: 'bool',
-      },
-      {
-        internalType: 'uint16',
-        name: 'ownerControlledFuses',
-        type: 'uint16',
-      },
-      {
-        internalType: 'bool',
-        name: 'lifetime',
-        type: 'bool',
-      },
-      {
-        internalType: 'string',
-        name: 'referree',
-        type: 'string',
-      },
-    ],
-    name: 'register',
-    outputs: [],
-    stateMutability: 'payable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'bytes32',
-        name: 'commitment',
-        type: 'bytes32',
-      },
-    ],
-    name: 'commit',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-]
-const PriceAbi = [
-  {
-    inputs: [],
-    name: 'latestRoundData',
-    outputs: [
-      {
-        internalType: 'uint80',
-        name: 'roundId',
-        type: 'uint80',
-      },
-      {
-        internalType: 'int256',
-        name: 'answer',
-        type: 'int256',
-      },
-      {
-        internalType: 'uint256',
-        name: 'startedAt',
-        type: 'uint256',
-      },
-      {
-        internalType: 'uint256',
-        name: 'updatedAt',
-        type: 'uint256',
-      },
-      {
-        internalType: 'uint80',
-        name: 'answeredInRound',
-        type: 'uint80',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-]
-
-const addrResolver = [
-  {
-    inputs: [
-      {
-        internalType: 'bytes32',
-        name: 'node',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'address',
-        name: 'a',
-        type: 'address',
-      },
-    ],
-    name: 'setAddr',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-]
-
 const Register = () => {
-  const signer = useEthersSigner()
   const navigate = useNavigate()
   const { label } = useParams<string>()
   const [years, setYears] = useState(1)
@@ -509,13 +44,10 @@ const Register = () => {
   const { name: myName } = useENSName({ owner: address as `0x${string}` })
   const [isPrimary, setIsPrimary] = useState(myName ? false : true)
 
-  const [isLoading, setIsLoading] = useState(false)
   const [next, setNext] = useState(0)
   const [isOpen, setIsOpen] = useState(true)
   const [useToken, setUseToken] = useState(false)
   const [token, setToken] = useState<`0x${string}`>('0x')
-  const { data: commithash, writeContractAsync } = useWriteContract()
-  const { writeContractAsync: approve } = useWriteContract()
 
   useEffect(() => {
     if (!myName) {
@@ -523,12 +55,6 @@ const Register = () => {
     }
   }, [myName, isPrimary])
 
-  const {
-    data: registerhash,
-    error: registerError,
-    isPending: registerPending,
-    writeContractAsync: registerContract,
-  } = useWriteContract()
   const [owner, setOwner] = useState(
     address || ('0x0000000000000000000000000000000000000000' as `0x${string}`),
   )
@@ -538,6 +64,7 @@ const Register = () => {
     d.setFullYear(d.getFullYear() + 1)
     return d
   }, [now])
+
   const minDate = useMemo(() => {
     const d = new Date(now)
     d.setDate(d.getDate() + 28)
@@ -561,36 +88,42 @@ const Register = () => {
   const [done, setDone] = useState(false)
   const [referrer, setReferrer] = useState('')
   const [lifetime, setLifetime] = useState(false)
+  const [newRecords, setNewRecords] = useState<
+    { key: string; value: string }[]
+  >([])
 
-  const { data: latest, isPending: loading } = useReadContract({
-    address: constants.Controller, // Replace with actual contract address
-    abi: Controller as any, // Replace with actual ABI
-    functionName: 'rentPrice',
-    args: [label as string, seconds, lifetime],
-  })
-  const { data: usd1TokenData, isPending: tokenLoading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any, // Replace with actual ABI
-    functionName: 'rentPriceToken',
-    args: [label as string, seconds, 'usd1', lifetime],
-  })
-  const { data: cakeTokenData, isPending: caketokenLoading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any, // Replace with actual ABI
-    functionName: 'rentPriceToken',
-    args: [label as string, seconds, 'cake', lifetime],
-  })
-  const { data: priceData } = useReadContract({
-    address: '0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526',
-    abi: PriceAbi as any, // Replace with actual ABI
-    functionName: 'latestRoundData',
+  // Use custom hooks
+  const {
+    price,
+    loading,
+    usd1TokenData,
+    cakeTokenData,
+    priceData,
+  } = useRegistrationPrice({
+    label: label as string,
+    seconds,
+    lifetime,
   })
 
   const { fees, loading: estimateLoading } = useEstimateENSFees({
     name: `${label}`,
     owner: address as `0x${string}`,
-    duration: seconds, // seconds
+    duration: seconds,
   })
+
+  const {
+    secret,
+    commitData,
+    isLoading,
+    commithash,
+    registerhash,
+    registerError,
+    registerPending,
+    setIsLoading,
+    buildCommitDataFn,
+    commit: commitFn,
+    register: registerFn,
+  } = useRegistration()
 
   const [estimateBnb, setEstimateBnb] = useState('')
   const [estimateUsd, setEstimateUsd] = useState('')
@@ -601,6 +134,7 @@ const Register = () => {
       setReferrer(normalize(ref))
     }
   }, [label])
+
   useEffect(() => {
     const bnb = Number(fees?.fee.totalEth).toFixed(4)
     setEstimateBnb(bnb as string)
@@ -610,62 +144,25 @@ const Register = () => {
     setEstimateUsd(usd.toFixed(2))
   }, [fees, priceData])
 
-  const price = useMemo(() => {
-    // Safe access to nested values
-    let usd1priceInBNB = 0
-    let cakepriceInBNB = 0
-    if (!tokenLoading) {
-      const { base, premium } = (usd1TokenData as any) || {
-        base: 0,
-        premium: 0,
-      }
-      usd1priceInBNB = (Number(base) + Number(premium)) / 1e18 // Convert to readable
-    }
-    if (!caketokenLoading) {
-      const { base, premium } = (cakeTokenData as any) || {
-        base: 0,
-        premium: 0,
-      }
-      cakepriceInBNB = (Number(base) + Number(premium)) / 1e18 // Convert to readable
-    }
-
-    const { base } = (latest as any) || { base: 0 }
-    const [, answer, , ,] = (priceData as any) || [0, 0, 0, 0, 0]
-    const bnbPrice = Number(answer) / 1e8 // Chainlink ETH/USD has 8 decimals
-    const costInEth = Number(base) / 1e18 // your base is in wei
-    const usdCost = costInEth * bnbPrice
-    const usd1cost = usd1priceInBNB
-    const cakecost = cakepriceInBNB
-    return {
-      bnb: costInEth.toFixed(4),
-      usd: usdCost.toFixed(2),
-      usd1: usd1cost.toFixed(2),
-      cake: cakecost.toFixed(2),
-    }
-  }, [latest, priceData, seconds, usd1TokenData, cakeTokenData])
-
   const inputRef = useRef<HTMLInputElement>(null)
-
-  // close on outside click
   const containerRef = useRef<HTMLDivElement>(null)
 
   const duration = useMemo(() => {
     if (!dateText) {
       return { years: 0, months: 0, days: 0 }
     }
-    // normalize both to midnight
     const start = startOfDay(now)
     const end = startOfDay(dateText)
-
     const d = intervalToDuration({ start, end })
     return { years: d.years || 0, months: d.months || 0, days: d.days || 0 }
   }, [nextYear, dateText])
+
   useEffect(() => {
     if (label != undefined && label.includes('.')) {
       navigate('/')
     }
   }, [])
-  // close when clicking outside
+
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (
@@ -707,10 +204,8 @@ const Register = () => {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Guard: must have both elements
       if (!input && inputRef.current) {
         const clickedNode = event.target as Node
-        // If click is outside *both* the input and the box, close
         if (!inputRef.current.contains(clickedNode)) {
           setInput(true)
         }
@@ -722,6 +217,7 @@ const Register = () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [input])
+
   useEffect(() => {
     document.title = `Register – ${label}.safu`
   }, [label])
@@ -746,25 +242,8 @@ const Register = () => {
       setYears(Number(event.target.value))
     }
   }
-  let durationString =
-    (duration.years > 0
-      ? ` ${duration.years} year${duration.years > 1 ? 's' : ''}`
-      : '') +
-    (duration.months > 0
-      ? `${duration.years > 0 ? ',' : ''} ${duration.months} month${
-          duration.months > 1 ? 's' : ''
-        }`
-      : '') +
-    (duration.days > 0
-      ? `${duration.months > 0 || duration.years > 0 ? ',' : ''} ${
-          duration.days
-        } day${duration.days > 1 ? 's' : ''}`
-      : '')
-  const [secret, setSecret] = useState<`0x${string}`>('0x')
-  const [commitData, setCommitData] = useState<`0x${string}`[]>([])
-  const [newRecords, setNewRecords] = useState<
-    { key: string; value: string }[]
-  >([])
+
+  let durationString = formatDuration(duration)
 
   const buildCommitData = () => {
     const textRecords = [
@@ -778,184 +257,36 @@ const Register = () => {
       { key: 'phone', value: phone },
     ]
 
-    const complete = [...textRecords, ...newRecords]
-
-    const validTextRecords = complete.filter(
-      (r) => r.key.trim() !== '' && r.value.trim() !== '',
-    )
-
-    const builtData = buildTextRecords(
-      validTextRecords,
-      namehash(`${label as string}.safu`),
-    )
-    const addrEncoded = encodeFunctionData({
-      abi: addrResolver,
-      functionName: 'setAddr',
-      args: [namehash(`${label}.safu`), owner],
-    })
-    const fullData = [...builtData, addrEncoded]
-    setCommitData(fullData)
+    buildCommitDataFn(textRecords, newRecords, label as string, owner)
   }
+
   const commit = async () => {
-    const secretBytes = crypto.getRandomValues(new Uint8Array(32))
-    const secretGenerated = bytesToHex(secretBytes) as `0x${string}`
-    setSecret(secretGenerated)
-    const resolver = constants.PublicResolver
-    try {
-      const labelHash = keccak256(toBytes(label || ''))
-      const encoded = encodeAbiParameters(
-        [
-          { type: 'bytes32' }, // label
-          { type: 'address' }, // owner
-          { type: 'uint256' }, // duration
-          { type: 'bytes32' }, // secret
-          { type: 'address' }, // resolver
-          { type: 'bytes[]' }, // data
-          { type: 'bool' }, // reverseRecord
-          { type: 'uint16' }, // fuses
-          { type: 'bool' }, // lifetime
-        ],
-        [
-          labelHash,
-          address as `0x${string}`,
-          BigInt(seconds),
-          secretGenerated,
-          resolver,
-          commitData,
-          isPrimary,
-          0,
-          lifetime,
-        ],
-      )
-      const commitment = keccak256(encoded)
-      await writeContractAsync({
-        address: constants.Controller,
-        account: address,
-        abi: Controller,
-        functionName: 'commit',
-        args: [commitment],
-      })
-      setWait(60)
-      setIsOpen(false)
-    } catch (error) {
-      console.error('Error during Commit', error)
-      setIsLoading(false)
-    }
+    await commitFn(
+      label as string,
+      address as `0x${string}`,
+      seconds,
+      isPrimary,
+      lifetime,
+    )
+    setWait(60)
+    setIsOpen(false)
   }
+
   const register = async () => {
-    setIsLoading(true)
-    const resolver = constants.PublicResolver
-    try {
-      let value = 0n
-      // const { base, premium } = latest as { base: bigint; premium: bigint }
-
-      if (token == '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82') {
-        const { base, premium } = (cakeTokenData as any) || {
-          base: 0n,
-          premium: 0n,
-        }
-        value = base + premium // Convert to readable
-      } else {
-        const { base, premium } = (usd1TokenData as any) || {
-          base: 0n,
-          premium: 0n,
-        }
-        value = base + premium // Convert to readable
-      }
-      const totalAmount = value
-      const controller = new ethers.Contract(
-        constants.Controller,
-        Controller,
-        signer,
-      )
-      if (!useToken) {
-        try {
-          await controller.callStatic.registerWithCard(
-            label,
-            address,
-            BigInt(seconds),
-            secret,
-            resolver,
-            commitData,
-            isPrimary,
-            0,
-            lifetime,
-            referrer || '',
-          )
-        } catch (e: any) {
-          console.error('Revert error name:', e.errorName)
-          console.error('Revert reason   :', e.data)
-        }
-        await registerContract({
-          address: constants.Controller,
-          abi: Controller,
-          functionName: 'registerWithCard',
-          args: [
-            label,
-            address,
-            BigInt(seconds),
-            secret,
-            resolver,
-            commitData,
-            isPrimary,
-            0,
-            lifetime,
-            referrer || '',
-          ],
-        })
-        setIsOpen(false)
-      } else {
-        await approve({
-          address: token,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [constants.Controller, totalAmount + parseEther('1')],
-        })
-        /*   const publicClient = usePublicClient()
-        await publicClient.waitForTransactionReceipt({ hash: ap })
- */
-
-        await new Promise((r) => setTimeout(r, 2000))
-        try {
-        } catch (e: any) {
-          console.error('Error checking allowance:', e)
-        }
-
-        const params: Params = {
-          name: label as string,
-          owner: address as `0x${string}`,
-          duration: BigInt(seconds),
-          secret,
-          resolver,
-          data: commitData,
-          reverseRecord: isPrimary,
-          ownerControlledFuses: 0,
-        }
-
-        try {
-          await controller.callStatic.registerWithToken(
-            params,
-            token,
-            lifetime,
-            referrer || '',
-          )
-        } catch (e: any) {
-          console.error('Revert error name:', e.errorName)
-          console.error('Revert reason   :', e.data)
-        }
-
-        await registerContract({
-          address: constants.Controller,
-          abi: Controller,
-          functionName: 'registerWithToken',
-          args: [params, token, lifetime, referrer || ''],
-        })
-        setIsOpen(false)
-      }
-    } catch (error) {
-      console.error('Error during Registration', error)
-      setIsLoading(false)
-    }
+    setIsOpen(true)
+    await registerFn(
+      label as string,
+      address as `0x${string}`,
+      seconds,
+      isPrimary,
+      lifetime,
+      referrer,
+      useToken,
+      token,
+      usd1TokenData,
+      cakeTokenData,
+    )
+    setIsOpen(false)
   }
 
   const { data: available } = useReadContract({
@@ -975,15 +306,17 @@ const Register = () => {
 
   const registerParams: RegisterParams = {
     domain: label as string,
-    duration: seconds, // number of years
+    duration: seconds,
     resolver: constants.PublicResolver,
-    data: commitData, // extra on-chain args
+    data: commitData,
     reverseRecord: isPrimary,
     ownerControlledFuses: 0,
     lifetime: lifetime,
     referree: referrer || '',
   }
+
   const card = false
+
   return (
     <div className="mb-25 md:mb-0">
       <div className="flex flex-col mx-auto px-2 md:px-30 mt-20 lg:px-60 md:mt-15">
@@ -1057,7 +390,6 @@ const Register = () => {
                     popperPlacement="bottom-start"
                     className="z-50 mt-50"
                     disabled={lifetime}
-                    // ◀️ Custom wrapper for the calendar popper
                     calendarContainer={({ className, children }) => (
                       <div
                         className={`${className} absolute top-full left-0 mt-7 z-50`}
@@ -1094,18 +426,7 @@ const Register = () => {
                 </p>
               ) : !date && !lifetime ? (
                 <p className="text-center mt-5 text-sm flex justify-center font-semibold">
-                  {duration.years > 0
-                    ? ` ${duration.years} year${duration.years > 1 ? 's' : ''}`
-                    : ''}
-                  {duration.months > 0
-                    ? `${duration.years > 0 ? ',' : ''} ${
-                        duration.months
-                      } months`
-                    : ''}
-                  {duration.days > 0
-                    ? `${duration.months > 0 ? ',' : ''} ${duration.days} days`
-                    : ''}{' '}
-                  registration.{' '}
+                  {formatDuration(duration)} registration.{' '}
                   <span
                     className="text-[#FFF700] text-center ml-2 cursor-pointer"
                     onClick={() => {
@@ -1142,12 +463,12 @@ const Register = () => {
                           setBnb(!bnb)
                         }}
                         className={`
-                            px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer 
+                            px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer
                             ${
                               isActive
-                                ? 'bg-[#FFF700] text-neutral-800' // active
+                                ? 'bg-[#FFF700] text-neutral-800'
                                 : 'text-gray-400 hover:text-white'
-                            } // inactive
+                            }
                             `}
                       >
                         {curr}
@@ -1155,148 +476,18 @@ const Register = () => {
                     )
                   })}
                 </div>
-                <div className="rounded-xl bg-neutral-900 px-5 py-5 mt-5">
-                  {bnb ? (
-                    <div className="space-y-1">
-                      <div className="flex">
-                        {date ? (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {lifetime
-                              ? 'Lifetime'
-                              : `${years} years ${years > 1 ? 's' : ''}`}{' '}
-                            registration
-                          </div>
-                        ) : (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {duration.years > 0
-                              ? ` ${duration.years} year${
-                                  duration.years > 1 ? 's' : ''
-                                }`
-                              : ''}
-                            {duration.months > 0
-                              ? `${duration.years > 0 ? ',' : ''} ${
-                                  duration.months
-                                } months`
-                              : ''}
-                            {duration.days > 0
-                              ? `${duration.months > 0 ? ',' : ''} ${
-                                  duration.days
-                                } days`
-                              : ''}{' '}
-                            registration.
-                          </div>
-                        )}
-
-                        {loading ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">{price.bnb} BNB</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                          Estimated Gas Fee
-                        </div>
-
-                        {estimateLoading || estimateBnb == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">{estimateBnb} BNB</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-white grow-1">
-                          Estimated Total
-                        </div>
-
-                        {loading || estimateLoading || estimateBnb == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-white">
-                            {(Number(estimateBnb) + Number(price.bnb)).toFixed(
-                              4,
-                            )}{' '}
-                            BNB
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <div className="flex">
-                        {date ? (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {years} year{years > 1 ? 's' : ''} registration
-                          </div>
-                        ) : (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {duration.years > 0
-                              ? ` ${duration.years} year${
-                                  duration.years > 1 ? 's' : ''
-                                }`
-                              : ''}
-                            {duration.months > 0
-                              ? `${duration.years > 0 ? ',' : ''} ${
-                                  duration.months
-                                } months`
-                              : ''}
-                            {duration.days > 0
-                              ? `${duration.months > 0 ? ',' : ''} ${
-                                  duration.days
-                                } days`
-                              : ''}{' '}
-                            registration.
-                          </div>
-                        )}
-
-                        {loading ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">${price.usd}</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                          Estimated Gas Fee
-                        </div>
-
-                        {estimateLoading || estimateUsd == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">${estimateUsd}</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-white grow-1">
-                          Estimated Total
-                        </div>
-
-                        {loading || estimateLoading || estimateUsd == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-white">
-                            $
-                            {(Number(estimateUsd) + Number(price.usd)).toFixed(
-                              2,
-                            )}{' '}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <PriceDisplay
+                  currency={currency}
+                  price={price}
+                  estimateBnb={estimateBnb}
+                  estimateUsd={estimateUsd}
+                  loading={loading}
+                  estimateLoading={estimateLoading}
+                  duration={duration}
+                  date={date}
+                  years={years}
+                  lifetime={lifetime}
+                />
                 <div className="flex mt-5">
                   <div>
                     <h1 className="text-xl font-semibold">
@@ -1325,19 +516,6 @@ const Register = () => {
                 </div>
                 <div className="mt-5">
                   <h1 className="text-lg font-semibold">Referrer</h1>
-                  {/* <Input
-                    value={referrer}
-                    placeholder="The primary name of the referrer (Optional)"
-                    className="mt-2 py-2 placeholder:text-gray-400 max-w-2/3 w-3/4"
-                    type="text"
-                    onChange={(e) => {
-                      if (e.target.value.endsWith('.safu')) {
-                        setReferrer(e.target.value.slice(0, -4).toLowerCase())
-                      } else {
-                        setReferrer(e.target.value.toLowerCase())
-                      }
-                    }}
-                  /> */}
                 </div>
                 <div className="flex mt-5 items-center">
                   <div>
@@ -1401,13 +579,6 @@ const Register = () => {
                 </div>
               </div>
               <div className="flex items-center justify-center gap-2">
-                {/* <TransakWidget
-                  label={label as string}
-                  owner={owner}
-                  duration={seconds}
-                  reverse={isPrimary}
-                  price={Number(estimateUsd) + Number(price.usd)}
-                /> */}
                 {!isDisconnected ? (
                   <div className="flex gap-4">
                     <button
@@ -1444,38 +615,7 @@ const Register = () => {
             />
           ) : next == 2 ? (
             <div className="rounded-xl bg-neutral-800 px-5 md:px-10 py-5 mt-5 border-[0.5px] border-gray-400">
-              <h1 className="text-center text-2xl font-semibold">
-                Before we Start
-              </h1>
-              <p className="text-center font-semibold mt-7 text-sm">
-                Registering your name takes three steps
-              </p>
-              <div className="w-full flex space-x-5 justify-center mt-5">
-                <div className="rounded-lg p-3 border-1 border-gray-300 w-25 md:w-48 h-38 flex-col flex items-center text-sm lg:text-md">
-                  <div className="p-2 flex items-center w-10 h-10 bg-[#FFF700] rounded-full justify-center text-neutral-900 font-bold">
-                    1
-                  </div>
-                  <p className="text-center text-[10px] lg:text-sm font-semibold mt-5">
-                    Complete a transaction to begin the timer
-                  </p>
-                </div>
-                <div className="rounded-lg p-3 border-1 border-gray-300 w-25 md:w-48 h-38 flex-col flex items-center text-sm lg:text-md">
-                  <div className="p-2 flex items-center w-10 h-10 bg-[#FFF700] rounded-full justify-center text-neutral-900 font-bold">
-                    2
-                  </div>
-                  <p className="text-center text-[10px] lg:text-sm font-semibold mt-5">
-                    Wait 60 seconds for the timer to complete
-                  </p>
-                </div>
-                <div className="rounded-lg p-3 border-1 border-gray-300 w-25 md:w-48 h-38 flex-col flex items-center text-sm lg:text-md">
-                  <div className="p-2 flex items-center w-10 h-10 bg-[#FFF700] rounded-full justify-center text-neutral-900 font-bold">
-                    3
-                  </div>
-                  <p className="text-center text-[10px] lg:text-sm font-semibold mt-5">
-                    Complete a second transaction to secure your name
-                  </p>
-                </div>
-              </div>
+              <RegistrationSteps step={0} />
               <div className="mt-10">
                 <div className="inline-flex bg-neutral-900 rounded-full p-1">
                   {(['BNB', 'USD'] as const).map((curr) => {
@@ -1488,12 +628,12 @@ const Register = () => {
                           setBnb(!bnb)
                         }}
                         className={`
-                            px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer 
+                            px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer
                             ${
                               isActive
-                                ? 'bg-[#FFF700] text-neutral-800' // active
+                                ? 'bg-[#FFF700] text-neutral-800'
                                 : 'text-gray-400 hover:text-white'
-                            } // inactive
+                            }
                             `}
                       >
                         {curr}
@@ -1501,145 +641,17 @@ const Register = () => {
                     )
                   })}
                 </div>
-                <div className="rounded-xl bg-neutral-900 px-5 py-5 mt-5">
-                  {bnb ? (
-                    <div className="space-y-1">
-                      <div className="flex">
-                        {date ? (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {years} year{years > 1 ? 's' : ''} registration
-                          </div>
-                        ) : (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {duration.years > 0
-                              ? ` ${duration.years} year${
-                                  duration.years > 1 ? 's' : ''
-                                }`
-                              : ''}
-                            {duration.months > 0
-                              ? `${duration.years > 0 ? ',' : ''} ${
-                                  duration.months
-                                } months`
-                              : ''}
-                            {duration.days > 0
-                              ? `${duration.months > 0 ? ',' : ''} ${
-                                  duration.days
-                                } days`
-                              : ''}{' '}
-                            registration.
-                          </div>
-                        )}
-
-                        {loading ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">{price.bnb} BNB</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                          Estimated Gas Fee
-                        </div>
-
-                        {estimateLoading || estimateBnb == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">{estimateBnb} BNB</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-white grow-1">
-                          Estimated Total
-                        </div>
-
-                        {loading || estimateLoading || estimateBnb == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-white">
-                            {(Number(estimateBnb) + Number(price.bnb)).toFixed(
-                              4,
-                            )}{' '}
-                            BNB
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <div className="flex">
-                        {date ? (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {years} year{years > 1 ? 's' : ''} registration
-                          </div>
-                        ) : (
-                          <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                            {duration.years > 0
-                              ? ` ${duration.years} year${
-                                  duration.years > 1 ? 's' : ''
-                                }`
-                              : ''}
-                            {duration.months > 0
-                              ? `${duration.years > 0 ? ',' : ''} ${
-                                  duration.months
-                                } months`
-                              : ''}
-                            {duration.days > 0
-                              ? `${duration.months > 0 ? ',' : ''} ${
-                                  duration.days
-                                } days`
-                              : ''}{' '}
-                            registration.
-                          </div>
-                        )}
-
-                        {loading ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">${price.usd}</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-gray-400 grow-1">
-                          Estimated Gas Fee
-                        </div>
-
-                        {estimateLoading || estimateUsd == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-gray-400">${estimateUsd}</div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        <div className="text-sm flex font-semibold text-white grow-1">
-                          Estimated Total
-                        </div>
-
-                        {loading || estimateLoading || estimateUsd == 'NaN' ? (
-                          <div className="animate-pulse">
-                            <div className="animate-pulse w-20 h-6 rounded-full bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
-                          </div>
-                        ) : (
-                          <div className="text-white">
-                            $
-                            {(Number(estimateUsd) + Number(price.usd)).toFixed(
-                              2,
-                            )}{' '}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <PriceDisplay
+                  currency={currency}
+                  price={price}
+                  estimateBnb={estimateBnb}
+                  estimateUsd={estimateUsd}
+                  loading={loading}
+                  estimateLoading={estimateLoading}
+                  duration={duration}
+                  date={date}
+                  years={years}
+                />
               </div>
 
               <div className="flex space-x-5 mt-10 justify-center">
@@ -1694,7 +706,7 @@ const Register = () => {
                 </a>{' '}
                 your transaction.
                 <br />
-                You’ll complete the second transaction when the timer ends.
+                You'll complete the second transaction when the timer ends.
               </p>
 
               <div className="flex gap-4 w-full mt-4">
@@ -1777,7 +789,6 @@ const Register = () => {
                     </p>
 
                     <div className="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-2xl p-10 mb-6 flex flex-col items-center">
-                      {/* Replace with your actual logo */}
                       <div className="bg-neutral-900 rounded-full p-3 mb-4">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -1850,353 +861,6 @@ const Register = () => {
         </div>
       </div>
     </div>
-  )
-}
-type SetupProps = {
-  owner: `0x${string}`
-  setOwner: React.Dispatch<React.SetStateAction<`0x${string}`>>
-  setDescription: React.Dispatch<React.SetStateAction<string>>
-  setEmail: React.Dispatch<React.SetStateAction<string>>
-  setTwitter: React.Dispatch<React.SetStateAction<string>>
-  setWebsite: React.Dispatch<React.SetStateAction<string>>
-  setGithub: React.Dispatch<React.SetStateAction<string>>
-  setDiscord: React.Dispatch<React.SetStateAction<string>>
-  setPhone: React.Dispatch<React.SetStateAction<string>>
-  setAvatar: React.Dispatch<React.SetStateAction<string>>
-  setNext: React.Dispatch<React.SetStateAction<number>>
-  textRecords: { key: string; value: string }[]
-  setTextRecords: React.Dispatch<
-    React.SetStateAction<{ key: string; value: string }[]>
-  >
-  buildCommitData: () => void
-}
-const SetupModal = ({
-  owner,
-  setOwner,
-  setDescription,
-  setDiscord,
-  setEmail,
-  setTwitter,
-  setWebsite,
-  setGithub,
-  setPhone,
-  setAvatar,
-  setNext,
-  textRecords,
-  setTextRecords,
-  buildCommitData,
-}: SetupProps) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    setOwner(e.target.value as `0x${string}`)
-  }
-  const [more, setMore] = useState(false)
-
-  return (
-    <div className="rounded-xl bg-neutral-800 px-10 py-5 mt-5 border-[0.5px] border-gray-400">
-      <h1 className="text-3xl font-semibold text-[#FFF700] text-center">
-        Setup your Profile
-      </h1>
-      <div className="flex justify-center mt-5 relative">
-        <button className="rounded-full w-30 h-30 bg-gray-600 cursor-pointer flex items-center justify-center">
-          <FaPlus className="text-4xl text-gray-300" />
-        </button>
-      </div>
-      <div className="mt-5 space-y-3 text-sm">
-        <p className="font-semibold">bnb address</p>
-        <input
-          value={owner ? owner : zeroAddress}
-          onChange={handleChange}
-          placeholder="0x"
-          className="w-full mb-5 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-        />
-      </div>
-      <div className="flex justify-center flex-col items-center">
-        <button
-          className="flex p-3 bg-[#FFF700] rounded-lg text-neutral-900 text-sm font-semibold cursor-pointer hover:bg-[#B3AE00] transition-all duration-300"
-          onClick={() => {
-            setMore(true)
-          }}
-        >
-          {' '}
-          + Add more to profile
-        </button>
-        {more && (
-          <div className="mt-10">
-            <input
-              onChange={(e) => {
-                e.preventDefault()
-                setAvatar(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="A link to your avatar image"
-            />
-            <textarea
-              onChange={(e) => {
-                e.preventDefault()
-                setDescription(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="Describe yourself in a few words"
-            />
-            <input
-              onChange={(e) => {
-                e.preventDefault()
-                setEmail(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="Type your email address"
-            />
-            <input
-              type="tel"
-              onChange={(e) => {
-                e.preventDefault()
-                setPhone(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="Type your telephone number"
-            />
-            <input
-              onChange={(e) => {
-                e.preventDefault()
-                setTwitter(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="What is your Twitter handle?"
-            />
-            <input
-              onChange={(e) => {
-                e.preventDefault()
-                setGithub(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="Your Github username goes here"
-            />
-            <input
-              onChange={(e) => {
-                e.preventDefault()
-                setDiscord(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="Your Discord username goes here too"
-            />
-            <input
-              onChange={(e) => {
-                e.preventDefault()
-                setWebsite(e.target.value as string)
-              }}
-              className="w-full mb-10 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-              placeholder="Your website URL"
-            />
-            {textRecords.map((record, index) => (
-              <div key={index} className="flex space-x-2 mb-3">
-                <input
-                  type="text"
-                  placeholder="Key (Format: com.youtube and not youtube.com)"
-                  className="w-1/2 p-3 bg-neutral-700 rounded-lg text-sm focus:outline-none"
-                  value={record.key}
-                  onChange={(e) => {
-                    const updated = [...textRecords]
-                    updated[index].key = e.target.value
-                    setTextRecords(updated)
-                  }}
-                />
-                <input
-                  type="text"
-                  placeholder="Value"
-                  className="w-1/2 p-3 bg-neutral-700 rounded-lg focus:outline-none"
-                  value={record.value}
-                  onChange={(e) => {
-                    const updated = [...textRecords]
-                    updated[index].value = e.target.value
-                    setTextRecords(updated)
-                  }}
-                />
-                <button
-                  className="text-red-500 hover:text-red-700 text-sm font-semibold"
-                  onClick={() => {
-                    const updated = [...textRecords]
-                    updated.splice(index, 1)
-                    setTextRecords(updated)
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-
-            <button
-              className="px-4 py-2 bg-[#FFF700] text-black rounded-lg font-semibold hover:bg-[#B3AE00] mt-4"
-              onClick={() =>
-                setTextRecords([...textRecords, { key: '', value: '' }])
-              }
-            >
-              + Add Record
-            </button>
-          </div>
-        )}
-
-        <div className="flex space-x-5 w-full mt-10">
-          <button
-            className="p-3 bg-gray-300 text-black w-full rounded-lg font-semibold cursor-pointer"
-            onClick={() => {
-              setNext((prev) => prev - 1)
-            }}
-          >
-            Back
-          </button>
-
-          <button
-            className="p-3 bg-[#FFF700] w-full rounded-lg text-black font-semibold cursor-pointer"
-            onClick={() => {
-              setNext((prev) => prev + 1)
-              buildCommitData()
-            }}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface ConfirmDetailsModalProps {
-  isOpen: boolean
-  onRequestClose: () => void
-  name: string
-  action: string
-  info: string
-}
-
-Modal.setAppElement('#root') // IMPORTANT for accessibility
-
-function ConfirmDetailsModal({
-  isOpen,
-  onRequestClose,
-  name,
-  action,
-  info,
-}: ConfirmDetailsModalProps) {
-  return (
-    <Modal
-      isOpen={isOpen}
-      onRequestClose={onRequestClose}
-      closeTimeoutMS={300} // animation duration (matches CSS)
-      className="modal-content"
-      overlayClassName="modal-overlay"
-    >
-      {/* Modal content */}
-      <div className="p-8 rounded-2xl bg-white dark:bg-neutral-900 shadow-xl relative w-[300px] md:w-[400px] mx-auto flex flex-col gap-6">
-        <button
-          onClick={onRequestClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
-        >
-          ×
-        </button>
-
-        <h2 className="text-2xl font-bold text-center text-neutral-800 dark:text-white">
-          Confirm Details
-        </h2>
-
-        <p className="text-center text-gray-500">
-          Double check these details before confirming in your wallet.
-        </p>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-            <div className="text-gray-500 text-sm">Name</div>
-            <div className="flex items-center gap-2 font-bold text-black dark:text-white text-sm md:text-md">
-              {name}
-              <div className="w-4 h-4 rounded-full bg-gradient-to-r from-pink-400 to-pink-600" />
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-            <div className="text-gray-500 text-sm">Action</div>
-            <div className="font-bold text-black dark:text-white text-sm md:text-md">
-              {action}
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-            <div className="text-gray-500 text-sm">Info</div>
-            <div className="font-bold text-black dark:text-white text-sm md:text-md text-right">
-              {info}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  )
-}
-interface RegisterDetailsModalProps {
-  isOpen: boolean
-  onRequestClose: () => void
-  name: string
-  action: string
-  duration: string
-}
-
-Modal.setAppElement('#root') // IMPORTANT for accessibility
-
-function RegisterDetailsModal({
-  isOpen,
-  onRequestClose,
-  name,
-  action,
-  duration,
-}: RegisterDetailsModalProps) {
-  return (
-    <Modal
-      isOpen={isOpen}
-      onRequestClose={onRequestClose}
-      closeTimeoutMS={300} // animation duration (matches CSS)
-      className="modal-content"
-      overlayClassName="modal-overlay"
-    >
-      {/* Modal content */}
-      <div className="p-8 rounded-2xl bg-white dark:bg-neutral-900 shadow-xl relative w-[300px] md:w-[400px] mx-auto flex flex-col gap-6">
-        <button
-          onClick={onRequestClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
-        >
-          ×
-        </button>
-
-        <h2 className="text-2xl font-bold text-center text-neutral-800 dark:text-white">
-          Confirm Details
-        </h2>
-
-        <p className="text-center text-gray-500">
-          Double check these details before confirming in your wallet.
-        </p>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-            <div className="text-gray-500 text-sm">Name</div>
-            <div className="flex items-center gap-2 font-bold text-black dark:text-white text-sm md:text-md">
-              {name}
-              <div className="w-4 h-4 rounded-full bg-gradient-to-r from-pink-400 to-pink-600" />
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-            <div className="text-gray-500 text-sm">Action</div>
-            <div className="font-bold text-black dark:text-white text-sm md:text-md">
-              {action}
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-            <div className="text-gray-500 text-sm">Duration</div>
-            <div className="font-bold text-black dark:text-white text-sm md:text-md text-right">
-              {duration}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Modal>
   )
 }
 
