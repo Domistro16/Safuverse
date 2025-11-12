@@ -1,0 +1,161 @@
+name: Smart Contracts CI
+
+on:
+  push:
+    branches: [ main, develop, claude/** ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-safupad-contracts:
+    name: Test SafuPad Contracts
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: safupad-contracts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./safupad-contracts
+        run: npm ci
+
+      - name: Compile contracts
+        working-directory: ./safupad-contracts
+        run: npx hardhat compile
+
+      - name: Run tests
+        working-directory: ./safupad-contracts
+        run: npx hardhat test
+        env:
+          REPORT_GAS: true
+
+      - name: Check contract size
+        working-directory: ./safupad-contracts
+        run: npx hardhat size-contracts
+        continue-on-error: true
+
+  test-safudomains:
+    name: Test SafuDomains Contracts
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: safudomains/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./safudomains
+        run: npm ci
+
+      - name: Compile contracts
+        working-directory: ./safudomains
+        run: npx hardhat compile
+
+      - name: Run tests
+        working-directory: ./safudomains
+        run: npx hardhat test
+        continue-on-error: true
+        env:
+          REPORT_GAS: true
+
+  test-safucourse:
+    name: Test SafuCourse Contracts
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: SafuCourse/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./SafuCourse
+        run: npm ci
+
+      - name: Compile contracts
+        working-directory: ./SafuCourse
+        run: npx hardhat compile
+
+      - name: Run tests
+        working-directory: ./SafuCourse
+        run: npx hardhat test
+        continue-on-error: true
+
+  test-safucard-nft:
+    name: Test Safucard NFT Contracts
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: Safucard/SafucardNFT/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./Safucard/SafucardNFT
+        run: npm ci
+
+      - name: Compile contracts
+        working-directory: ./Safucard/SafucardNFT
+        run: npx hardhat compile
+
+      - name: Run tests
+        working-directory: ./Safucard/SafucardNFT
+        run: npx hardhat test
+        continue-on-error: true
+
+  security-check:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Slither Analysis (SafuPad)
+        uses: crytic/slither-action@v0.3.0
+        continue-on-error: true
+        with:
+          target: safupad-contracts/
+          slither-args: --filter-paths "node_modules" --exclude naming-convention,solc-version
+          fail-on: none

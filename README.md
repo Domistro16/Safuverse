@@ -1,5 +1,10 @@
 # Safuverse Ecosystem
 
+[![Smart Contracts CI](https://github.com/Level3AI-hub/Safuverse/actions/workflows/smart-contracts.yml/badge.svg)](https://github.com/Level3AI-hub/Safuverse/actions/workflows/smart-contracts.yml)
+[![Frontend Builds CI](https://github.com/Level3AI-hub/Safuverse/actions/workflows/frontend-builds.yml/badge.svg)](https://github.com/Level3AI-hub/Safuverse/actions/workflows/frontend-builds.yml)
+[![Code Quality](https://github.com/Level3AI-hub/Safuverse/actions/workflows/code-quality.yml/badge.svg)](https://github.com/Level3AI-hub/Safuverse/actions/workflows/code-quality.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A comprehensive Web3 ecosystem **deployed on BNB Chain** (BNB Smart Chain - BSC), offering decentralized education, naming services, token launchpad, NFT scorecards, and AI-powered agents.
 
 ## Deployment Information
@@ -275,11 +280,30 @@ This ecosystem leverages BNB Chain's unique advantages:
 
 ## Contributing
 
-Each sub-project may have its own contribution guidelines. Please check individual project READMEs.
+We welcome contributions from the community! Whether you're fixing bugs, adding features, improving documentation, or writing tests, your help is appreciated.
+
+**Quick Start:**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes and test thoroughly
+4. Commit using conventional commits (`git commit -m 'feat: add amazing feature'`)
+5. Push to your branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+For detailed guidelines, please read our [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-See individual project directories for specific license information.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Individual projects also contain their own LICENSE files:
+- [safupad-contracts/LICENSE](safupad-contracts/LICENSE)
+- [SafuCourse/LICENSE](SafuCourse/LICENSE)
+- [safudomains/LICENSE.txt](safudomains/LICENSE.txt)
+- [Safucard/SafucardNFT/LICENSE](Safucard/SafucardNFT/LICENSE)
+- [SafuAgents/LICENSE](SafuAgents/LICENSE)
+- [SafuLanding/LICENSE](SafuLanding/LICENSE)
+- [safupadsdk/LICENSE](safupadsdk/LICENSE)
 
 ## Security
 

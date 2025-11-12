@@ -1,0 +1,163 @@
+name: Code Quality & Linting
+
+on:
+  push:
+    branches: [ main, develop, claude/** ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  typescript-check:
+    name: TypeScript Type Checking
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project:
+          - { name: 'SafuCourse Frontend', path: 'SafuCourse/frontend' }
+          - { name: 'SafuDomains Frontend', path: 'safudomains/frontend' }
+          - { name: 'Safucard Frontend', path: 'Safucard/frontend' }
+          - { name: 'SafuAgents Frontend', path: 'SafuAgents/frontend' }
+          - { name: 'SafuAgents Server', path: 'SafuAgents/server' }
+          - { name: 'SafuLanding', path: 'SafuLanding' }
+          - { name: 'SafuPad SDK', path: 'safupadsdk' }
+          - { name: 'Safucard Server', path: 'Safucard/Safucardserver' }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.project.path }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project.path }}
+        run: npm ci
+
+      - name: Run TypeScript type check
+        working-directory: ./${{ matrix.project.path }}
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+  solidity-lint:
+    name: Solidity Linting
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project:
+          - { name: 'SafuPad Contracts', path: 'safupad-contracts' }
+          - { name: 'SafuDomains', path: 'safudomains' }
+          - { name: 'SafuCourse', path: 'SafuCourse' }
+          - { name: 'Safucard NFT', path: 'Safucard/SafucardNFT' }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.project.path }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project.path }}
+        run: npm ci
+
+      - name: Run Solhint
+        working-directory: ./${{ matrix.project.path }}
+        run: npx solhint 'contracts/**/*.sol'
+        continue-on-error: true
+
+  eslint-check:
+    name: ESLint Check
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project:
+          - { name: 'SafuCourse Frontend', path: 'SafuCourse/frontend' }
+          - { name: 'SafuDomains Frontend', path: 'safudomains/frontend' }
+          - { name: 'Safucard Frontend', path: 'Safucard/frontend' }
+          - { name: 'SafuAgents Frontend', path: 'SafuAgents/frontend' }
+          - { name: 'SafuLanding', path: 'SafuLanding' }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.project.path }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project.path }}
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./${{ matrix.project.path }}
+        run: npm run lint
+        continue-on-error: true
+
+  dependency-security:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project:
+          - 'safupad-contracts'
+          - 'safudomains'
+          - 'SafuCourse'
+          - 'Safucard/SafucardNFT'
+          - 'SafuCourse/frontend'
+          - 'safudomains/frontend'
+          - 'Safucard/frontend'
+          - 'SafuAgents/frontend'
+          - 'SafuAgents/server'
+          - 'SafuLanding'
+          - 'safupadsdk'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project }}
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: ./${{ matrix.project }}
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  markdown-lint:
+    name: Markdown Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run markdownlint
+        uses: nosborn/github-action-markdown-cli@v3.3.0
+        with:
+          files: .
+          config_file: .markdownlint.json
+          ignore_files: node_modules
+        continue-on-error: true

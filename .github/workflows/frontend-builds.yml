@@ -1,0 +1,230 @@
+name: Frontend Builds CI
+
+on:
+  push:
+    branches: [ main, develop, claude/** ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-safucourse-frontend:
+    name: Build SafuCourse Frontend
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: SafuCourse/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./SafuCourse/frontend
+        run: npm ci
+
+      - name: Build project
+        working-directory: ./SafuCourse/frontend
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: safucourse-frontend-build
+          path: SafuCourse/frontend/dist
+
+  build-safudomains-frontend:
+    name: Build SafuDomains Frontend
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: safudomains/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./safudomains/frontend
+        run: npm ci
+
+      - name: Build project
+        working-directory: ./safudomains/frontend
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: safudomains-frontend-build
+          path: safudomains/frontend/dist
+
+  build-safucard-frontend:
+    name: Build Safucard Frontend
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: Safucard/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./Safucard/frontend
+        run: npm ci
+
+      - name: Build project
+        working-directory: ./Safucard/frontend
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: safucard-frontend-build
+          path: Safucard/frontend/dist
+
+  build-safuagents-frontend:
+    name: Build SafuAgents Frontend
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: SafuAgents/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./SafuAgents/frontend
+        run: npm ci
+
+      - name: Build project
+        working-directory: ./SafuAgents/frontend
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: safuagents-frontend-build
+          path: SafuAgents/frontend/dist
+
+  build-safulanding:
+    name: Build SafuLanding
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: SafuLanding/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./SafuLanding
+        run: npm ci
+
+      - name: Build project
+        working-directory: ./SafuLanding
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: safulanding-build
+          path: SafuLanding/dist
+
+  build-safupadsdk:
+    name: Build SafuPad SDK
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: safupadsdk/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./safupadsdk
+        run: npm ci
+
+      - name: Build SDK
+        working-directory: ./safupadsdk
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Run SDK tests
+        working-directory: ./safupadsdk
+        run: npm test
+        continue-on-error: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: safupadsdk-build
+          path: safupadsdk/dist
