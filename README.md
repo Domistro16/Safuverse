@@ -187,12 +187,39 @@ RPC endpoints are configured in each project's `hardhat.config.ts` or frontend c
 
 ## Smart Contract Deployments
 
-All smart contracts are deployed and verified on BSCScan:
+All smart contracts are deployed and verified on BSCScan. Below are the deployed contract addresses for each component:
 
-- **SafuCourse**: Course creation and management
-- **safudomains**: ENS registry, controllers, resolvers, price oracles
-- **safupad-contracts**: Launchpad manager, bonding curve DEX, token factory
-- **Safucard**: Scorecard NFT with Chainlink integration
+### SafuCourse - Education Platform
+
+**BSC Mainnet (Chain ID: 56)**:
+- **Course Factory**: `0xE796bc81c3F372237641998c24C755e710832bA9`
+- **Level3Course**: `0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13`
+
+### safudomains - Naming Service
+
+**BSC Mainnet (Chain ID: 56)**:
+- **Controller**: `0x48511b6c15fe1F89bAf6b30dBFA35bF0eAaEB751`
+- **Registry**: `0x6aEFc7ac590096c08187a9052030dA59dEd7E996`
+- **ReverseRegistrar**: `0xc070aAcE207ad5eb2A460D059785ffC9D4D2C536`
+- **BaseRegistrar**: `0xc85f95FCe09b582D546606f591CEEC88D88714f5`
+- **NameWrapper**: `0x86a930d1931C11e3Ec46b3A050E27F29bF94B612`
+- **PublicResolver**: `0xcAa73Cd19614523F9F3cfCa4A447120ceA8fd357`
+- **Referral**: `0x182690bD985ef02Ae44A6F8a2e71666bDe1196E2`
+
+### safupad-contracts - Token Launchpad
+
+**BSC Testnet (Chain ID: 97) - Unverified**:
+- **LaunchpadManager**: `0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c`
+- **BondingCurveDEX**: `0x14eB3B6C297ff6fefc25c0E0d289Bf8348e864f6`
+- **TokenFactory**: `0xcb7526b9598240A737237C52f852705e6A449cD0`
+- **PriceOracle**: `0x56f0b1f80F8cc37f875Be42e2f4D09810514F346`
+- **LPFeeHarvester**: `0xa886B8897814193f99A88701d70b31b4a8E27a1E`
+
+### Safucard - NFT Scorecard
+
+**BSC Mainnet (Chain ID: 56)**:
+- **ScorecardNFT**: Deployed with Chainlink oracle integration
+- Dynamic USD-pegged pricing ($5 USD per mint)
 
 ## Development
 
