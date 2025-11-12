@@ -5,8 +5,8 @@ const main = async () => {
   const { deployments, network, viem } = hre
 
   const { deployer, owner } = await viem.getNamedClients()
-  /* 
-  const registry = await viem.getContract('ENSRegistry', owner)
+
+ /*  const registry = await viem.getContract('ENSRegistry', owner)
   const tokenAddresses: any[] = [
     {
       token: 'cake',
@@ -22,10 +22,10 @@ const main = async () => {
   const reverseRegistrar = await viem.getContract('ReverseRegistrar', owner)
   const nameWrapper = await viem.getContract('NameWrapper', owner)
 
-  const refferal = await viem.getContract('ReferralController', owner)
+  const refferal = await viem.getContract('ReferralController', owner) */
   await viem.deploy('Airdrop', [])
 
-  const controllerDeployment = await viem.deploy('ETHRegistrarController', [
+ /*  const controllerDeployment = await viem.deploy('ETHRegistrarController', [
     registrar.address,
     priceOracle.address,
     60n,
@@ -36,36 +36,33 @@ const main = async () => {
     refferal.address,
   ])
   if (!controllerDeployment.newlyDeployed) return
- */
+  */
   const controller = await viem.getContract('ETHRegistrarController', owner)
 
-  const airdropHash = await controller.write.controlAirdrop([true])
+  const airdropHash = await controller.write.controlAirdrop([false])
 
   await viem.waitForTransactionSuccess(airdropHash)
-  /* 
-  if (owner.address !== deployer.address) {
+  
+ /*  if (owner.address !== deployer.address) {
     const hash = await controller.write.transferOwnership([owner.address])
     console.log(
       `Transferring ownership of ETHRegistrarController to ${owner.address} (tx: ${hash})...`,
     )
     await viem.waitForTransactionSuccess(hash)
-  }
+  } */
   const airdrop = await viem.getContract('Airdrop')
-  const airdropHash = await controller.write.setAirdrop([airdrop.address])
-
-  await viem.waitForTransactionSuccess(airdropHash)
 
   const anohash = await airdrop.write.setController([controller.address])
   await viem.waitForTransactionSuccess(anohash)
-  for (const tokenAddress of tokenAddresses) {
+/*   for (const tokenAddress of tokenAddresses) {
     const hash = await controller.write.setToken([
       tokenAddress,
       tokenAddress.tokenAddress,
     ])
     console.log(`Adding ${tokenAddress} to ETHRegistrarController`)
     await viem.waitForTransactionSuccess(hash)
-  }
-
+  } */
+/* 
   // Only attempt to make controller etc changes directly on testnets
   if (network.name === 'mainnet') return
 
@@ -115,7 +112,7 @@ const main = async () => {
   console.log(
     `Setting ETHRegistrarController interface ID ${interfaceId} on .safu resolver (tx: ${setInterfaceHash})...`,
   )
-  await viem.waitForTransactionSuccess(setInterfaceHash) */
+  await viem.waitForTransactionSuccess(setInterfaceHash)  */
 }
 
 main().catch((err) => {

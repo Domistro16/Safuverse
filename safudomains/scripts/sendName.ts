@@ -1,18 +1,37 @@
 import hre from 'hardhat'
 import { namehash } from 'viem/ens'
+import { normalize } from 'viem/ens'
 async function main() {
   const { viem } = hre
-
+  const { deployer } = await hre.viem.getNamedClients()
   const wrapper = await viem.getContract('NameWrapper')
   const base = await viem.getContract('BaseRegistrarImplementation')
   const registry = await viem.getContract('ENSRegistry')
 
-  const label = 'admiano'
-  const node = namehash(label)
-  const wrapped = await wrapper.read.isWrapped([node])
+  const DOMAIN_NAMES = [
+    'Oscar',
+    'domistro',
+    'destro',
+  ]
 
-  if(wrapped) {
-    const sendHash = await wrapper.write.()
+  for (const name of DOMAIN_NAMES) {
+    const label = normalize(name)
+    const node = namehash(`${label}.safu`)
+    const wrapped = await wrapper.read.isWrapped([node])
+    console.log(wrapped)
+    console.log('Resolver set for', label)
+    if (wrapped) {
+      const sendHash = await wrapper.write.safeTransferFrom([
+        '0x54b268AAB70C3Eda916C166D912ff8AB107c84fd',
+        '0xd83defba240568040b39bb2c8b4db7db02d40593',
+        BigInt(node),
+        1n,
+        '0x',
+      ])
+
+      await viem.waitForTransactionSuccess(sendHash)
+      console.log('Wrapped name sent:', label)
+    }
   }
 }
 

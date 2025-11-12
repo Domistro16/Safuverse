@@ -25,7 +25,7 @@ async function main() {
   const controller = await viem.getContract('ETHRegistrarController', deployer)
   const nameWrapper = await viem.getContract('NameWrapper', deployer)
   const resolver = await viem.getContract('PublicResolver', deployer)
-  const names = ['Eljaboom', 'Zero']
+  const names = ['Richardteng', 'eljaboom', 'zero']
 
   for (const name of names) {
     const TLD = 'safu'
