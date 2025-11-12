@@ -139,19 +139,23 @@ export default function App() {
         {
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": import.meta.env.VITE_KEY, // Vite env var - ok for dev, don't leak in prod
           },
         }
       );
-      console.log(response.data);
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.log('[Verification]', response.data);
+      }
       if (response.data.access) {
         setOpen(true);
       } else {
         alert("Access denied. You do not have permission to use this GPT.");
       }
     } catch (err) {
-      console.error("Error verifying user");
-      console.error(err);
+      // Only log errors in development
+      if (import.meta.env.DEV) {
+        console.error('[Verification Error]', err);
+      }
     } finally {
       setLoading(false);
     }

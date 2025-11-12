@@ -20,6 +20,7 @@ import RegisterDetailsModal from './register/RegisterDetailsModal'
 import RegistrationSteps from './register/RegistrationSteps'
 import PriceDisplay from './register/PriceDisplay'
 import { Input } from './ui/input'
+import { validateYears, VALIDATION_CONSTANTS } from '../utils/validation'
 
 type RegisterParams = {
   domain: string
@@ -91,6 +92,7 @@ const Register = () => {
   const [newRecords, setNewRecords] = useState<
     { key: string; value: string }[]
   >([])
+  const [validationError, setValidationError] = useState<string>('')
 
   // Use custom hooks
   const {
@@ -195,7 +197,16 @@ const Register = () => {
   }, [lifetime, years])
 
   const increment = () => {
-    setYears((prev) => prev + 1)
+    setYears((prev) => {
+      const newValue = prev + 1
+      // Validate before setting
+      if (newValue > VALIDATION_CONSTANTS.MAX_YEARS) {
+        setValidationError(`Maximum ${VALIDATION_CONSTANTS.MAX_YEARS} years allowed`)
+        return prev
+      }
+      setValidationError('')
+      return newValue
+    })
   }
 
   const [disable, setDisable] = useState(true)
@@ -230,15 +241,38 @@ const Register = () => {
   }, [years])
 
   const decrease = () => {
-    setYears((prev) => prev - 1)
+    setYears((prev) => {
+      const newValue = prev - 1
+      // Validate before setting
+      if (newValue < VALIDATION_CONSTANTS.MIN_YEARS) {
+        setValidationError(`Minimum ${VALIDATION_CONSTANTS.MIN_YEARS} year required`)
+        return prev
+      }
+      setValidationError('')
+      return newValue
+    })
   }
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (Number(event.target.value) < 1) {
-      setYears(1)
-    } else if (Number(event.target.value) >= 1) {
-      setYears(Number(event.target.value))
+    const value = event.target.value
+
+    // Clear error when user starts typing
+    setValidationError('')
+
+    // Validate the input
+    const validation = validateYears(value)
+
+    if (!validation.isValid) {
+      setValidationError(validation.error || 'Invalid input')
+      // Set to sanitized value if available, otherwise keep current
+      if (validation.sanitizedValue !== undefined) {
+        setYears(validation.sanitizedValue)
+      }
+      return
     }
+
+    // Valid input - set the sanitized value
+    setYears(validation.sanitizedValue!)
   }
 
   let durationString = formatDuration(duration)
@@ -409,6 +443,12 @@ const Register = () => {
                   <button className="flex items-center justify-center text-3xl w-10 h-10 p-2  rounded-full bg-[#FFF700] border-[0.5px] border-gray-400 cursor-pointer text-neutral-900">
                     +
                   </button>
+                </div>
+              )}
+              {/* Validation Error Message */}
+              {validationError && (
+                <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/50">
+                  <p className="text-sm text-red-400 text-center">{validationError}</p>
                 </div>
               )}
               {date && !lifetime ? (

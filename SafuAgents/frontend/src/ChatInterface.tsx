@@ -242,7 +242,6 @@ export default function ChatInterface({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": import.meta.env.VITE_KEY,
         },
         body: JSON.stringify(payload),
       });
@@ -256,7 +255,10 @@ export default function ChatInterface({
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
-      console.error(err);
+      // Only log errors in development
+      if (import.meta.env.DEV) {
+        console.error('[ChatInterface Error]', err);
+      }
       setMessages((prev) => [
         ...prev,
         {
