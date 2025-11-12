@@ -24,8 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: safupad-contracts/package-lock.json
 
       - name: Install dependencies
         working-directory: ./safupad-contracts
@@ -44,7 +42,6 @@ jobs:
       - name: Check contract size
         working-directory: ./safupad-contracts
         run: npx hardhat size-contracts
-        continue-on-error: true
 
   test-safudomains:
     name: Test SafuDomains Contracts
@@ -62,8 +59,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: safudomains/package-lock.json
 
       - name: Install dependencies
         working-directory: ./safudomains
@@ -76,7 +71,6 @@ jobs:
       - name: Run tests
         working-directory: ./safudomains
         run: npx hardhat test
-        continue-on-error: true
         env:
           REPORT_GAS: true
 
@@ -96,8 +90,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: SafuCourse/package-lock.json
 
       - name: Install dependencies
         working-directory: ./SafuCourse
@@ -110,7 +102,6 @@ jobs:
       - name: Run tests
         working-directory: ./SafuCourse
         run: npx hardhat test
-        continue-on-error: true
 
   test-safucard-nft:
     name: Test Safucard NFT Contracts
@@ -128,8 +119,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: Safucard/SafucardNFT/package-lock.json
 
       - name: Install dependencies
         working-directory: ./Safucard/SafucardNFT
@@ -142,7 +131,6 @@ jobs:
       - name: Run tests
         working-directory: ./Safucard/SafucardNFT
         run: npx hardhat test
-        continue-on-error: true
 
   security-check:
     name: Security Analysis

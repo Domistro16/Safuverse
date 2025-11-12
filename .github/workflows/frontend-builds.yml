@@ -24,8 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: SafuCourse/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./SafuCourse/frontend
@@ -60,8 +58,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: safudomains/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./safudomains/frontend
@@ -96,8 +92,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: Safucard/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./Safucard/frontend
@@ -132,8 +126,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: SafuAgents/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./SafuAgents/frontend
@@ -168,8 +160,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: SafuLanding/package-lock.json
 
       - name: Install dependencies
         working-directory: ./SafuLanding
@@ -204,8 +194,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: safupadsdk/package-lock.json
 
       - name: Install dependencies
         working-directory: ./safupadsdk
@@ -220,7 +208,6 @@ jobs:
       - name: Run SDK tests
         working-directory: ./safupadsdk
         run: npm test
-        continue-on-error: true
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
