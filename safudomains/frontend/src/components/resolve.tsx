@@ -312,7 +312,7 @@ const Resolve = () => {
                       <div>Owner: </div>
                       <div className="text-sm font-semibold ml-5 flex items-center max-w-50 flex-wrap">
                         {woname as string}
-                        {woname?.startsWith('0x') ? (
+                        {(woname as string)?.startsWith('0x') ? (
                           ''
                         ) : (
                           <div className="text-[10px] truncate max-w-30 ml-3 text-gray-400 mt-[1.5px]">
@@ -334,7 +334,7 @@ const Resolve = () => {
                       <div>Owner: </div>
                       <div className="text-sm font-semibold ml-2 flex items-center max-w-50 flex-wrap">
                         {oname as string}
-                        {oname?.startsWith('0x') ? (
+                        {(oname as string)?.startsWith('0x') ? (
                           ''
                         ) : (
                           <div className="text-[10px] truncate max-w-30 ml-3 text-gray-400 mt-[1.5px]">
@@ -347,7 +347,7 @@ const Resolve = () => {
                       <div>Manager: </div>
                       <div className="text-sm font-semibold ml-2 flex items-center max-w-50 flex-wrap">
                         {manname as string}
-                        {manname?.startsWith('0x') ? (
+                        {(manname as string)?.startsWith('0x') ? (
                           ''
                         ) : (
                           <div className="text-[10px] truncate max-w-30 ml-3 text-gray-400 mt-[1.5px]">
