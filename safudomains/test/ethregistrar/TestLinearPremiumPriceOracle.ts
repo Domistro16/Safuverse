@@ -55,16 +55,16 @@ describe('LinearPremiumPriceOracle', () => {
   it('should return correct base prices', async () => {
     const { priceOracle } = await loadFixture(fixture)
     await expect(
-      priceOracle.read.price(['foo', 0n, 3600n]),
+      priceOracle.read.price(['foo', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 7200n)
     await expect(
-      priceOracle.read.price(['quux', 0n, 3600n]),
+      priceOracle.read.price(['quux', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 3600n)
     await expect(
-      priceOracle.read.price(['fubar', 0n, 3600n]),
+      priceOracle.read.price(['fubar', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 1800n)
     await expect(
-      priceOracle.read.price(['foobie', 0n, 3600n]),
+      priceOracle.read.price(['foobie', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 1800n)
   })
 
@@ -74,7 +74,7 @@ describe('LinearPremiumPriceOracle', () => {
       0n,
     )
     await expect(
-      priceOracle.read.price(['foobar', 0n, 0n]),
+      priceOracle.read.price(['foobar', 0n, 0n, false]),
     ).resolves.toHaveProperty('base', 0n)
   })
 
@@ -85,7 +85,7 @@ describe('LinearPremiumPriceOracle', () => {
       priceOracle.read.premium(['foobar', timestamp, 0n]),
     ).resolves.toEqual(0n)
     await expect(
-      priceOracle.read.price(['foobar', timestamp, 0n]),
+      priceOracle.read.price(['foobar', timestamp, 0n, false]),
     ).resolves.toHaveProperty('base', 0n)
   })
 
@@ -98,7 +98,7 @@ describe('LinearPremiumPriceOracle', () => {
       priceOracle.read.premium(['foobar', timestamp, 0n]),
     ).resolves.toEqual(50000000000000000000n)
     await expect(
-      priceOracle.read.price(['foobar', timestamp, 0n]),
+      priceOracle.read.price(['foobar', timestamp, 0n, false]),
     ).resolves.toHaveProperty('premium', 50000000000000000000n)
   })
 
@@ -111,7 +111,7 @@ describe('LinearPremiumPriceOracle', () => {
       priceOracle.read.premium(['foobar', timestamp, 0n]),
     ).resolves.toEqual(25000000000000000000n)
     await expect(
-      priceOracle.read.price(['foobar', timestamp, 0n]),
+      priceOracle.read.price(['foobar', timestamp, 0n, false]),
     ).resolves.toHaveProperty('premium', 25000000000000000000n)
   })
 

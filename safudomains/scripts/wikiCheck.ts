@@ -119,15 +119,22 @@ const checkChain = async ({ chainIndex, lines }: CheckChainParameters) => {
   }
 }
 
-const data = await fetch(WIKI_DEPLOYMENTS_URL, {
-  headers: {
-    Connection: 'close',
-  },
-}).then((res) => res.text())
-const lines = data.split('\n')
+const main = async () => {
+  const data = await fetch(WIKI_DEPLOYMENTS_URL, {
+    headers: {
+      Connection: 'close',
+    },
+  }).then((res) => res.text())
+  const lines = data.split('\n')
 
-for (let i = 0; i < SUPPORTED_CHAINS.length; i++) {
-  await checkChain({ chainIndex: i, lines })
+  for (let i = 0; i < SUPPORTED_CHAINS.length; i++) {
+    await checkChain({ chainIndex: i, lines })
+  }
+
+  console.log('All deployments match')
 }
 
-console.log('All deployments match')
+main().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})

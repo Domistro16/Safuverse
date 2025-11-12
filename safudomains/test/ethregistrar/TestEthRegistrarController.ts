@@ -584,9 +584,10 @@ describe('ETHRegistrarController', () => {
     const { base: price } = await ethRegistrarController.read.rentPrice([
       'newname',
       duration,
+      false,
     ])
 
-    await ethRegistrarController.write.renew(['newname', duration], {
+    await ethRegistrarController.write.renew(['newname', duration, false], {
       value: price,
     })
 
@@ -635,9 +636,10 @@ describe('ETHRegistrarController', () => {
     const { base: price } = await ethRegistrarController.read.rentPrice([
       'newname',
       duration,
+      false,
     ])
 
-    await ethRegistrarController.write.renew(['newname', duration], {
+    await ethRegistrarController.write.renew(['newname', duration, false], {
       value: price,
     })
 
@@ -683,8 +685,9 @@ describe('ETHRegistrarController', () => {
     const { base: price } = await ethRegistrarController.read.rentPrice([
       label,
       duration,
+      false,
     ])
-    await ethRegistrarController.write.renew([label, duration], {
+    await ethRegistrarController.write.renew([label, duration, false], {
       value: price,
     })
 
@@ -703,7 +706,7 @@ describe('ETHRegistrarController', () => {
     const { ethRegistrarController } = await loadFixture(fixture)
 
     await expect(ethRegistrarController)
-      .write('renew', ['newname', 86400n])
+      .write('renew', ['newname', 86400n, false])
       .toBeRevertedWithCustomError('InsufficientValue')
   })
 

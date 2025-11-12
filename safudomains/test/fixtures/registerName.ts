@@ -15,6 +15,8 @@ type RegisterNameOptions = {
   data?: Hex[]
   shouldSetReverseRecord?: boolean
   ownerControlledFuses?: number
+  lifetime?: boolean
+  referree?: string
 }
 
 export const getDefaultRegistrationOptions = async ({
@@ -26,6 +28,8 @@ export const getDefaultRegistrationOptions = async ({
   data,
   shouldSetReverseRecord,
   ownerControlledFuses,
+  lifetime,
+  referree,
 }: RegisterNameOptions) => ({
   label,
   ownerAddress: await (async () => {
@@ -41,6 +45,8 @@ export const getDefaultRegistrationOptions = async ({
   data: data ?? [],
   shouldSetReverseRecord: shouldSetReverseRecord ?? false,
   ownerControlledFuses: ownerControlledFuses ?? 0,
+  lifetime: lifetime ?? false,
+  referree: referree ?? '',
 })
 
 export const getRegisterNameParameterArray = ({
@@ -52,6 +58,8 @@ export const getRegisterNameParameterArray = ({
   data,
   shouldSetReverseRecord,
   ownerControlledFuses,
+  lifetime,
+  referree,
 }: Required<RegisterNameOptions>) => {
   const immutable = [
     label,
@@ -62,6 +70,8 @@ export const getRegisterNameParameterArray = ({
     data,
     shouldSetReverseRecord,
     ownerControlledFuses,
+    lifetime,
+    referree,
   ] as const
   return immutable as Mutable<typeof immutable>
 }
@@ -76,7 +86,9 @@ export const commitName = async (
   const testClient = await hre.viem.getTestClient()
   const [deployer] = await hre.viem.getWalletClients()
 
-  const commitmentHash = await ethRegistrarController.read.makeCommitment(args)
+  // makeCommitment takes 9 params (without referree), while register takes 10 params
+  const commitmentArgs = args.slice(0, 9) as Mutable<typeof args>
+  const commitmentHash = await ethRegistrarController.read.makeCommitment(commitmentArgs)
   await ethRegistrarController.write.commit([commitmentHash], {
     account: deployer.account,
   })
@@ -97,11 +109,14 @@ export const registerName = async (
 ) => {
   const params = await getDefaultRegistrationOptions(params_)
   const args = getRegisterNameParameterArray(params)
-  const { label, duration } = params
+  const { label, duration, lifetime } = params
 
   const testClient = await hre.viem.getTestClient()
   const [deployer] = await hre.viem.getWalletClients()
-  const commitmentHash = await ethRegistrarController.read.makeCommitment(args)
+
+  // makeCommitment takes 9 params (without referree), while register takes 10 params
+  const commitmentArgs = args.slice(0, 9) as Mutable<typeof args>
+  const commitmentHash = await ethRegistrarController.read.makeCommitment(commitmentArgs)
   await ethRegistrarController.write.commit([commitmentHash], {
     account: deployer.account,
   })
@@ -110,7 +125,7 @@ export const registerName = async (
   await testClient.mine({ blocks: 1 })
 
   const value = await ethRegistrarController.read
-    .rentPrice([label, duration])
+    .rentPrice([label, duration, lifetime])
     .then(({ base, premium }) => base + premium)
 
   await ethRegistrarController.write.register(args, {

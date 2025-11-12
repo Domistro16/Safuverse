@@ -23,16 +23,16 @@ describe('StablePriceOracle', () => {
     ])
 
     await expect(
-      priceOracle.read.price(['foo', 0n, 3600n]),
+      priceOracle.read.price(['foo', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 1440n)
     await expect(
-      priceOracle.read.price(['quux', 0n, 3600n]),
+      priceOracle.read.price(['quux', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 720n)
     await expect(
-      priceOracle.read.price(['fubar', 0n, 3600n]),
+      priceOracle.read.price(['fubar', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 360n)
     await expect(
-      priceOracle.read.price(['foobie', 0n, 3600n]),
+      priceOracle.read.price(['foobie', 0n, 3600n, false]),
     ).resolves.toHaveProperty('base', 360n)
   })
 
@@ -54,7 +54,7 @@ describe('StablePriceOracle', () => {
     ])
 
     await expect(
-      priceOracle.read.price(['foo', 0n, 86400n]),
+      priceOracle.read.price(['foo', 0n, 86400n, false]),
     ).resolves.toHaveProperty('base', 8640000000000000000000n)
   })
 })

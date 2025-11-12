@@ -1,5 +1,5 @@
 import hre from 'hardhat'
-import { keccak256, namehash } from 'viem'
+import { keccak256, namehash, toHex } from 'viem'
 const main = async () => {
   const { viem } = hre
   const { owner } = await viem.getNamedClients()
@@ -7,7 +7,7 @@ const main = async () => {
   const base = await viem.getContract('BaseRegistrarImplementation')
 
   const labelhash = namehash('domistro')
-  const expires = await base.read.nameExpires([keccak256('domistro')])
+  const expires = await base.read.nameExpires([keccak256(toHex('domistro'))])
   if (!expires) return
   console.log(expires)
 
