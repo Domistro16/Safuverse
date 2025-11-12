@@ -324,17 +324,28 @@ describe('ETHRegistrarController', () => {
     const { ethRegistrarController, registrantAccount, callData } =
       await loadFixture(fixture)
 
+    const args = getRegisterNameParameterArray(
+      await getDefaultRegistrationOptions({
+        label: 'newconfigname',
+        ownerAddress: registrantAccount.address,
+        data: callData,
+      }),
+    )
+    // makeCommitment takes 9 params (without referree), while register takes 10 params
+    const commitmentArgs = args.slice(0, 9) as [
+      string,
+      `0x${string}`,
+      bigint,
+      `0x${string}`,
+      `0x${string}`,
+      readonly `0x${string}`[],
+      boolean,
+      number,
+      boolean
+    ]
+
     await expect(ethRegistrarController)
-      .read(
-        'makeCommitment',
-        getRegisterNameParameterArray(
-          await getDefaultRegistrationOptions({
-            label: 'newconfigname',
-            ownerAddress: registrantAccount.address,
-            data: callData,
-          }),
-        ),
-      )
+      .read('makeCommitment', commitmentArgs)
       .toBeRevertedWithCustomError('ResolverRequiredWhenDataSupplied')
   })
 
