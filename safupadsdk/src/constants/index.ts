@@ -8,6 +8,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     name: 'BSC Mainnet',
     chainId: 56,
     rpcUrl: 'https://bsc-dataseed.binance.org/',
+    alchemyRpcUrlTemplate: 'https://bnb-mainnet.g.alchemy.com/v2/{apiKey}',
     explorerUrl: 'https://bscscan.com',
     nativeCurrency: {
       name: 'BNB',
@@ -15,11 +16,11 @@ export const NETWORKS: Record<string, NetworkConfig> = {
       decimals: 18,
     },
     contracts: {
-      launchpadManager: '0x0000000000000000000000000000000000000000', // UPDATE AFTER DEPLOYMENT
-      bondingCurveDEX: '0x0000000000000000000000000000000000000000',
-      tokenFactory: '0x0000000000000000000000000000000000000000',
-      priceOracle: '0x0000000000000000000000000000000000000000',
-      lpFeeHarvester: '0x0000000000000000000000000000000000000000',
+      launchpadManager: '0x0000000000000000000000000000000000000000', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
+      bondingCurveDEX: '0x0000000000000000000000000000000000000000', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
+      tokenFactory: '0x0000000000000000000000000000000000000000', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
+      priceOracle: '0x0000000000000000000000000000000000000000', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
+      lpFeeHarvester: '0x0000000000000000000000000000000000000000', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
       pancakeRouter: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
       pancakeFactory: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
     },
@@ -29,6 +30,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     name: 'BSC Testnet',
     chainId: 97,
     rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
+    alchemyRpcUrlTemplate: 'https://bnb-testnet.g.alchemy.com/v2/{apiKey}',
     explorerUrl: 'https://testnet.bscscan.com',
     nativeCurrency: {
       name: 'BNB',
@@ -36,7 +38,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
       decimals: 18,
     },
     contracts: {
-      launchpadManager: '0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c', // UPDATE AFTER DEPLOYMENT
+      launchpadManager: '0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c',
       bondingCurveDEX: '0x14eB3B6C297ff6fefc25c0E0d289Bf8348e864f6',
       tokenFactory: '0xcb7526b9598240A737237C52f852705e6A449cD0',
       priceOracle: '0x56f0b1f80F8cc37f875Be42e2f4D09810514F346',

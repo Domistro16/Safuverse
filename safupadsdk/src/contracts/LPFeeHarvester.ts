@@ -13,8 +13,13 @@ import { GAS_LIMITS } from '../constants';
 import { LPFeeHarvesterABI } from '../abis';
 
 export class LPFeeHarvester extends BaseContract {
-  constructor(address: string, provider: ethers.Provider, signer?: ethers.Signer) {
-    super(address, LPFeeHarvesterABI, provider, signer);
+  constructor(
+    address: string,
+    provider: ethers.Provider,
+    signer?: ethers.Signer,
+    eventQueryProvider?: ethers.Provider
+  ) {
+    super(address, LPFeeHarvesterABI, provider, signer, eventQueryProvider);
   }
 
   /**

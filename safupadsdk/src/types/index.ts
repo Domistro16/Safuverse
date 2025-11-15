@@ -21,6 +21,7 @@ export interface NetworkConfig {
   name: string;
   chainId: number;
   rpcUrl: string;
+  alchemyRpcUrlTemplate?: string; // Template for Alchemy RPC URL (use {apiKey} placeholder)
   explorerUrl: string;
   nativeCurrency: {
     name: string;
@@ -47,6 +48,7 @@ export interface SDKConfig {
   privateKey?: string;
   gasLimit?: bigint;
   gasPrice?: bigint;
+  alchemyApiKey?: string; // Optional Alchemy API key for event log queries
 }
 
 /**

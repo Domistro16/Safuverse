@@ -44,8 +44,13 @@ export interface LaunchVesting {
  * ✅ UPDATED: Removed projectInfoFiWallet - uses global InfoFi address
  */
 export class LaunchpadManager extends BaseContract {
-  constructor(address: string, provider: ethers.Provider, signer?: ethers.Signer) {
-    super(address, LaunchpadManagerABI, provider, signer);
+  constructor(
+    address: string,
+    provider: ethers.Provider,
+    signer?: ethers.Signer,
+    eventQueryProvider?: ethers.Provider
+  ) {
+    super(address, LaunchpadManagerABI, provider, signer, eventQueryProvider);
   }
 
   /**

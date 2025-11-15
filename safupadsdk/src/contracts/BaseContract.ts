@@ -9,6 +9,7 @@ import { ERROR_MESSAGES } from '../constants';
 export abstract class BaseContract {
   protected contract: ethers.Contract;
   protected provider: ethers.Provider;
+  protected eventQueryProvider: ethers.Provider; // Separate provider for event queries (uses Alchemy if configured)
   protected signer?: ethers.Signer;
   protected address: string;
 
@@ -16,12 +17,15 @@ export abstract class BaseContract {
     address: string,
     abi: any[],
     provider: ethers.Provider,
-    signer?: ethers.Signer
+    signer?: ethers.Signer,
+    eventQueryProvider?: ethers.Provider
   ) {
     this.address = address;
     this.provider = provider;
     this.signer = signer;
-    
+    // Use eventQueryProvider if provided, otherwise use the regular provider
+    this.eventQueryProvider = eventQueryProvider || provider;
+
     if (signer) {
       this.contract = new ethers.Contract(address, abi, signer);
     } else {
@@ -170,7 +174,7 @@ export abstract class BaseContract {
     filter?: EventFilterOptions
   ): () => void {
     const eventFilter = this.contract.filters[eventName]?.();
-    
+
     if (!eventFilter) {
       throw new Error(`Event ${eventName} not found`);
     }
@@ -181,8 +185,13 @@ export abstract class BaseContract {
     };
 
     if (filter?.fromBlock || filter?.toBlock) {
-      // Query past events
-      this.contract.queryFilter(
+      // Query past events using eventQueryProvider
+      const eventContract = new ethers.Contract(
+        this.address,
+        this.contract.interface,
+        this.eventQueryProvider
+      );
+      eventContract.queryFilter(
         eventFilter,
         filter.fromBlock,
         filter.toBlock
@@ -213,18 +222,26 @@ export abstract class BaseContract {
 
   /**
    * Get past events
+   * Uses eventQueryProvider (Alchemy if configured) for better performance
    */
   async getPastEvents(
     eventName: string,
     filter?: EventFilterOptions
   ): Promise<ethers.EventLog[]> {
     const eventFilter = this.contract.filters[eventName]?.();
-    
+
     if (!eventFilter) {
       throw new Error(`Event ${eventName} not found`);
     }
 
-    const events = await this.contract.queryFilter(
+    // Create a contract instance using eventQueryProvider for querying events
+    const eventContract = new ethers.Contract(
+      this.address,
+      this.contract.interface,
+      this.eventQueryProvider
+    );
+
+    const events = await eventContract.queryFilter(
       eventFilter,
       filter?.fromBlock,
       filter?.toBlock

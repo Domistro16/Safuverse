@@ -7,8 +7,13 @@ import { TokenMetadata, TokenInfo } from '../types';
 import { TokenFactoryABI } from '../abis';
 
 export class TokenFactory extends BaseContract {
-  constructor(address: string, provider: ethers.Provider, signer?: ethers.Signer) {
-    super(address, TokenFactoryABI, provider, signer);
+  constructor(
+    address: string,
+    provider: ethers.Provider,
+    signer?: ethers.Signer,
+    eventQueryProvider?: ethers.Provider
+  ) {
+    super(address, TokenFactoryABI, provider, signer, eventQueryProvider);
   }
   /**
    * Get total number of tokens created

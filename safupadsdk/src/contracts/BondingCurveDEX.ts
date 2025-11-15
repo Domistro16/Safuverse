@@ -50,8 +50,13 @@ export interface TradeData {
  * BondingCurveDEX contract wrapper
  */
 export class BondingCurveDEX extends BaseContract {
-  constructor(address: string, provider: ethers.Provider, signer?: ethers.Signer) {
-    super(address, BondingCurveDEXABI, provider, signer);
+  constructor(
+    address: string,
+    provider: ethers.Provider,
+    signer?: ethers.Signer,
+    eventQueryProvider?: ethers.Provider
+  ) {
+    super(address, BondingCurveDEXABI, provider, signer, eventQueryProvider);
   }
 
   /**
@@ -521,14 +526,21 @@ export class BondingCurveDEX extends BaseContract {
   /**
    * Get TokensBought events with detailed trade data
    * ✅ FIXED: Use event.args instead of event.topics
+   * Uses eventQueryProvider (Alchemy if configured) for better performance
    */
   private async getTokensBoughtEvents(
     tokenAddress: string,
     fromBlock: number,
     toBlock: number
   ): Promise<TradeData[]> {
-    const filter = this.contract.filters.TokensBought(null, tokenAddress);
-    const events = await this.contract.queryFilter(filter, fromBlock, toBlock);
+    // Create contract instance using eventQueryProvider for event queries
+    const eventContract = new ethers.Contract(
+      this.address,
+      this.contract.interface,
+      this.eventQueryProvider
+    );
+    const filter = eventContract.filters.TokensBought(null, tokenAddress);
+    const events = await eventContract.queryFilter(filter, fromBlock, toBlock);
 
     const trades: TradeData[] = [];
     const abiCoder = new ethers.AbiCoder();
@@ -559,14 +571,21 @@ export class BondingCurveDEX extends BaseContract {
   /**
    * Get TokensSold events with detailed trade data
    * ✅ FIXED: Use event.args instead of event.topics
+   * Uses eventQueryProvider (Alchemy if configured) for better performance
    */
   private async getTokensSoldEvents(
     tokenAddress: string,
     fromBlock: number,
     toBlock: number
   ): Promise<TradeData[]> {
-    const filter = this.contract.filters.TokensSold(null, tokenAddress);
-    const events = await this.contract.queryFilter(filter, fromBlock, toBlock);
+    // Create contract instance using eventQueryProvider for event queries
+    const eventContract = new ethers.Contract(
+      this.address,
+      this.contract.interface,
+      this.eventQueryProvider
+    );
+    const filter = eventContract.filters.TokensSold(null, tokenAddress);
+    const events = await eventContract.queryFilter(filter, fromBlock, toBlock);
 
     const trades: TradeData[] = [];
     const abiCoder = new ethers.AbiCoder();

@@ -6,8 +6,13 @@ import { BaseContract } from './BaseContract';
 import { PriceOracleABI } from '../abis';
 
 export class PriceOracle extends BaseContract {
-  constructor(address: string, provider: ethers.Provider, signer?: ethers.Signer) {
-    super(address, PriceOracleABI, provider, signer);
+  constructor(
+    address: string,
+    provider: ethers.Provider,
+    signer?: ethers.Signer,
+    eventQueryProvider?: ethers.Provider
+  ) {
+    super(address, PriceOracleABI, provider, signer, eventQueryProvider);
   }
   /**
    * Get current BNB price in USD (8 decimals)

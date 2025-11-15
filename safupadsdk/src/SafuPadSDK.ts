@@ -38,6 +38,7 @@ import { NETWORKS, DEFAULT_CONFIG } from './constants';
  */
 export class SafuPadSDK {
   private provider: ethers.Provider;
+  private eventQueryProvider: ethers.Provider; // Separate provider for event queries (uses Alchemy if configured)
   private signer?: ethers.Signer;
   private config: SDKConfig;
   private networkConfig: NetworkConfig;
@@ -88,37 +89,52 @@ export class SafuPadSDK {
       this.signer = new ethers.Wallet(this.config.privateKey, this.provider);
     }
 
-    
+    // Setup event query provider (uses Alchemy if API key provided, otherwise uses regular provider)
+    if (this.config.alchemyApiKey && this.networkConfig.alchemyRpcUrlTemplate) {
+      const alchemyUrl = this.networkConfig.alchemyRpcUrlTemplate.replace(
+        '{apiKey}',
+        this.config.alchemyApiKey
+      );
+      this.eventQueryProvider = new ethers.JsonRpcProvider(alchemyUrl);
+    } else {
+      // Use the same provider for event queries if no Alchemy key provided
+      this.eventQueryProvider = this.provider;
+    }
 
     // Initialize contract instances
     this.launchpad = new LaunchpadManager(
       this.networkConfig.contracts.launchpadManager,
       this.provider,
-      this.signer
+      this.signer,
+      this.eventQueryProvider
     );
 
     this.bondingDex = new BondingCurveDEX(
       this.networkConfig.contracts.bondingCurveDEX,
       this.provider,
-      this.signer
+      this.signer,
+      this.eventQueryProvider
     );
 
     this.tokenFactory = new TokenFactory(
       this.networkConfig.contracts.tokenFactory,
       this.provider,
-      this.signer
+      this.signer,
+      this.eventQueryProvider
     );
 
     this.priceOracle = new PriceOracle(
       this.networkConfig.contracts.priceOracle,
       this.provider,
-      this.signer
+      this.signer,
+      this.eventQueryProvider
     );
 
     this.lpHarvester = new LPFeeHarvester(
       this.networkConfig.contracts.lpFeeHarvester,
       this.provider,
-      this.signer
+      this.signer,
+      this.eventQueryProvider
     );
   }
 
@@ -217,6 +233,13 @@ export class SafuPadSDK {
    */
   getProvider(): ethers.Provider {
     return this.provider;
+  }
+
+  /**
+   * Get event query provider (uses Alchemy if configured)
+   */
+  getEventQueryProvider(): ethers.Provider {
+    return this.eventQueryProvider;
   }
 
   /**
