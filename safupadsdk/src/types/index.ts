@@ -23,6 +23,7 @@ export interface NetworkConfig {
   rpcUrl: string;
   alchemyRpcUrlTemplate?: string; // Template for Alchemy RPC URL (use {apiKey} placeholder)
   explorerUrl: string;
+  subgraphUrl?: string; // The Graph subgraph URL
   nativeCurrency: {
     name: string;
     symbol: string;
@@ -49,6 +50,7 @@ export interface SDKConfig {
   gasLimit?: bigint;
   gasPrice?: bigint;
   alchemyApiKey?: string; // Optional Alchemy API key for event log queries
+  subgraphUrl?: string; // Optional custom subgraph URL (overrides network default)
 }
 
 /**

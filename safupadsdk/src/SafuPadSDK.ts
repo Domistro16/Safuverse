@@ -5,6 +5,7 @@ import { BondingCurveDEX } from './contracts/BondingCurveDEX';
 import { TokenFactory } from './contracts/TokenFactory';
 import { PriceOracle } from './contracts/PriceOracle';
 import { LPFeeHarvester } from './contracts/LPFeeHarvester';
+import { SafuPadGraph } from './graph';
 import { NetworkConfig, SDKConfig } from './types';
 import { NETWORKS, DEFAULT_CONFIG } from './constants';
 
@@ -49,6 +50,9 @@ export class SafuPadSDK {
   public tokenFactory: TokenFactory;
   public priceOracle: PriceOracle;
   public lpHarvester: LPFeeHarvester;
+
+  // The Graph client
+  public graph?: SafuPadGraph;
 
   private initialized: boolean = false;
 
@@ -136,6 +140,12 @@ export class SafuPadSDK {
       this.signer,
       this.eventQueryProvider
     );
+
+    // Initialize The Graph client if subgraph URL is available
+    const subgraphUrl = this.config.subgraphUrl || this.networkConfig.subgraphUrl;
+    if (subgraphUrl) {
+      this.graph = new SafuPadGraph(subgraphUrl);
+    }
   }
 
   /**
@@ -353,10 +363,41 @@ export class SafuPadSDK {
   }
 
   /**
+   * Check if The Graph client is available
+   */
+  hasGraphSupport(): boolean {
+    return this.graph !== undefined;
+  }
+
+  /**
+   * Get The Graph client
+   * Throws if not configured
+   */
+  getGraph(): SafuPadGraph {
+    if (!this.graph) {
+      throw new Error(
+        'The Graph client not configured. Provide a subgraphUrl in config or use a network with subgraph support.'
+      );
+    }
+    return this.graph;
+  }
+
+  /**
+   * Set custom subgraph URL
+   */
+  setSubgraphUrl(url: string): void {
+    if (this.graph) {
+      this.graph.setSubgraphUrl(url);
+    } else {
+      this.graph = new SafuPadGraph(url);
+    }
+  }
+
+  /**
    * Get SDK version
    */
   static getVersion(): string {
-    return '1.0.0';
+    return '2.0.0';
   }
 }
 

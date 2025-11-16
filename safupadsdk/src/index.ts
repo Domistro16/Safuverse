@@ -82,6 +82,24 @@ export * from './utils';
 // Export ABIs from index
 export * from './abis';
 
+// The Graph integration
+export { SafuPadGraph } from './graph/SafuPadGraph';
+export { GraphQLClient } from './graph/client';
+export type {
+  GraphToken,
+  GraphLaunch,
+  GraphPool,
+  GraphTrade,
+  GraphContribution,
+  GraphTokenHolder,
+  GraphCreatorFees,
+  GraphPlatformStats,
+  GraphDailyStats,
+  PaginationParams,
+  LaunchFilters,
+  TradeFilters,
+  PoolFilters,
+} from './graph/types';
 
 // Version
-export const VERSION = '1.0.0';
+export const VERSION = '2.0.0';

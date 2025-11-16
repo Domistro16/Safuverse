@@ -10,6 +10,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     rpcUrl: 'https://bsc-dataseed.binance.org/',
     alchemyRpcUrlTemplate: 'https://bnb-mainnet.g.alchemy.com/v2/{apiKey}',
     explorerUrl: 'https://bscscan.com',
+    subgraphUrl: 'https://api.studio.thegraph.com/query/<SUBGRAPH_ID>/safupad-subgraph/version/latest', // TODO: UPDATE AFTER DEPLOYMENT
     nativeCurrency: {
       name: 'BNB',
       symbol: 'BNB',
@@ -32,6 +33,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
     alchemyRpcUrlTemplate: 'https://bnb-testnet.g.alchemy.com/v2/{apiKey}',
     explorerUrl: 'https://testnet.bscscan.com',
+    subgraphUrl: 'https://api.studio.thegraph.com/query/<SUBGRAPH_ID>/safupad-testnet/version/latest', // TODO: UPDATE AFTER DEPLOYMENT
     nativeCurrency: {
       name: 'BNB',
       symbol: 'BNB',
@@ -53,6 +55,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     chainId: 31337,
     rpcUrl: 'http://localhost:8545',
     explorerUrl: 'http://localhost:8545',
+    subgraphUrl: 'http://localhost:8000/subgraphs/name/safupad-subgraph', // Local Graph Node
     nativeCurrency: {
       name: 'ETH',
       symbol: 'ETH',
