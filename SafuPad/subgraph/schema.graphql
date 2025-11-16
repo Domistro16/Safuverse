@@ -1,0 +1,218 @@
+type Token @entity {
+  id: ID! # Token address
+  name: String!
+  symbol: String!
+  decimals: Int!
+  totalSupply: BigInt!
+  creator: Bytes!
+  createdAt: BigInt!
+  createdAtBlock: BigInt!
+
+  # Metadata
+  logoURI: String
+  description: String
+  website: String
+  twitter: String
+  telegram: String
+  discord: String
+
+  # Launch Info
+  launch: Launch
+  pool: Pool
+
+  # Stats
+  holders: [TokenHolder!]! @derivedFrom(field: "token")
+  transactions: [Transaction!]! @derivedFrom(field: "token")
+  totalVolume: BigInt!
+  totalTrades: BigInt!
+}
+
+type Launch @entity {
+  id: ID! # Token address
+  token: Token!
+  founder: Bytes!
+  launchType: LaunchType!
+
+  # Raise Info
+  totalSupply: BigInt!
+  raiseTarget: BigInt
+  raiseMax: BigInt
+  raiseDeadline: BigInt
+  totalRaised: BigInt!
+
+  # Status
+  raiseCompleted: Boolean!
+  liquidityAdded: Boolean!
+  graduatedToPancakeSwap: Boolean!
+  burnLP: Boolean!
+
+  # Vesting
+  vestingDuration: BigInt
+  vestingStartTime: BigInt
+  founderTokens: BigInt
+  founderTokensClaimed: BigInt
+
+  # Liquidity
+  liquidityBNB: BigInt
+  liquidityTokens: BigInt
+  raisedFundsVesting: BigInt
+  raisedFundsClaimed: BigInt
+
+  # Timestamps
+  createdAt: BigInt!
+  createdAtBlock: BigInt!
+
+  # Relations
+  contributions: [Contribution!]! @derivedFrom(field: "launch")
+}
+
+enum LaunchType {
+  PROJECT_RAISE
+  INSTANT_LAUNCH
+}
+
+type Contribution @entity {
+  id: ID! # token-contributor
+  launch: Launch!
+  contributor: Bytes!
+  amount: BigInt!
+  claimed: Boolean!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Pool @entity {
+  id: ID! # Token address
+  token: Token!
+  creator: Bytes!
+
+  # Reserves
+  bnbReserve: BigInt!
+  tokenReserve: BigInt!
+  reservedTokens: BigInt!
+  virtualBnbReserve: BigInt!
+
+  # Market Info
+  marketCap: BigInt!
+  graduationMarketCap: BigInt!
+  currentPrice: BigInt!
+
+  # Status
+  active: Boolean!
+  graduated: Boolean!
+  burnLP: Boolean!
+
+  # LP Info
+  lpToken: Bytes
+  bnbForPancakeSwap: BigInt!
+
+  # Launch Info
+  launchBlock: BigInt!
+  graduationBnbThreshold: BigInt!
+
+  # Stats
+  totalVolume: BigInt!
+  totalBuys: BigInt!
+  totalSells: BigInt!
+
+  # Timestamps
+  createdAt: BigInt!
+  graduatedAt: BigInt
+
+  # Relations
+  trades: [Trade!]! @derivedFrom(field: "pool")
+}
+
+type Trade @entity {
+  id: ID! # tx-hash-log-index
+  pool: Pool!
+  token: Token!
+  trader: Bytes!
+
+  # Trade Info
+  isBuy: Boolean!
+  bnbAmount: BigInt!
+  tokenAmount: BigInt!
+  price: BigInt!
+  feeRate: BigInt!
+  totalFee: BigInt!
+
+  # Timestamp
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type TokenHolder @entity {
+  id: ID! # token-holder
+  token: Token!
+  holder: Bytes!
+  balance: BigInt!
+
+  # Stats
+  totalBought: BigInt!
+  totalSold: BigInt!
+  firstBuyTimestamp: BigInt
+  lastActivityTimestamp: BigInt
+}
+
+type Transaction @entity {
+  id: ID! # tx-hash
+  token: Token
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+  type: TransactionType!
+}
+
+enum TransactionType {
+  MINT
+  TRANSFER
+  BURN
+  BUY
+  SELL
+}
+
+type CreatorFees @entity {
+  id: ID! # token-creator
+  token: Token!
+  creator: Bytes!
+
+  accumulatedFees: BigInt!
+  totalClaimed: BigInt!
+  lastClaimTime: BigInt!
+  claimCount: BigInt!
+}
+
+type PlatformStats @entity {
+  id: ID! # "platform"
+
+  # Totals
+  totalLaunches: BigInt!
+  totalProjectRaises: BigInt!
+  totalInstantLaunches: BigInt!
+  totalGraduated: BigInt!
+
+  # Volume
+  totalVolume: BigInt!
+  totalFees: BigInt!
+  totalRaised: BigInt!
+
+  # Timestamp
+  lastUpdated: BigInt!
+}
+
+type DailyStats @entity {
+  id: ID! # day-timestamp
+  date: BigInt!
+
+  # Daily metrics
+  launches: BigInt!
+  volume: BigInt!
+  fees: BigInt!
+  trades: BigInt!
+  uniqueTraders: BigInt!
+}
