@@ -1,0 +1,28 @@
+{
+  "name": "safupad-subgraph",
+  "version": "1.0.0",
+  "description": "SafuPad Subgraph - Index LaunchpadManager, TokenFactory, and BondingDEX contracts",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --studio safupad-subgraph",
+    "deploy:testnet": "graph deploy --studio safupad-testnet",
+    "create-local": "graph create --node http://localhost:8020/ safupad-subgraph",
+    "remove-local": "graph remove --node http://localhost:8020/ safupad-subgraph",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 safupad-subgraph",
+    "test": "graph test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Level3AI-hub/Safuverse"
+  },
+  "author": "SafuPad Team",
+  "license": "MIT",
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.56.0",
+    "@graphprotocol/graph-ts": "^0.31.0"
+  },
+  "devDependencies": {
+    "matchstick-as": "^0.5.0"
+  }
+}
