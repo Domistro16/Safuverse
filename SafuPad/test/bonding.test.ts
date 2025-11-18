@@ -486,7 +486,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       );
     });
 
-    it("Should reject buying after graduation", async function () {
+    it("Should route buying through PancakeSwap after graduation", async function () {
       const OPERATOR_ROLE = ethers.keccak256(
         ethers.toUtf8Bytes("OPERATOR_ROLE")
       );
@@ -494,12 +494,27 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
 
       await bondingCurveDEX.graduatePool(await token.getAddress());
 
+      // After graduation, buying should still work but routes through PancakeSwap
       await expect(
         bondingCurveDEX
           .connect(trader1)
           .buyTokens(await token.getAddress(), 0, {
-            value: ethers.parseEther("1"),
+            value: ethers.parseEther("0.01"),
           })
+      ).to.not.be.reverted;
+    });
+
+    it("Should reject getBuyQuote after graduation", async function () {
+      const OPERATOR_ROLE = ethers.keccak256(
+        ethers.toUtf8Bytes("OPERATOR_ROLE")
+      );
+      await bondingCurveDEX.grantRole(OPERATOR_ROLE, owner.address);
+
+      await bondingCurveDEX.graduatePool(await token.getAddress());
+
+      // getBuyQuote should revert after graduation
+      await expect(
+        bondingCurveDEX.getBuyQuote(await token.getAddress(), ethers.parseEther("1"))
       ).to.be.revertedWith("Buying forbidden after graduation");
     });
   });

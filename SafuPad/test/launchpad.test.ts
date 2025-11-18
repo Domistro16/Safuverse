@@ -573,12 +573,26 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
 
       expect(actualFee).to.equal(expectedFee);
     });
-    it("Should sell tokens after lp", async function () {
-      expect(
-        await launchpadManager
+    it("Should allow selling tokens after graduation through PancakeSwap", async function () {
+      // Graduate to PancakeSwap first
+      await launchpadManager.graduateToPancakeSwap(tokenAddress);
+
+      // User1 needs to claim their contributor tokens first
+      await launchpadManager.connect(user1).claimContributorTokens(tokenAddress);
+
+      const token = await ethers.getContractAt("LaunchpadTokenV2", tokenAddress);
+      const user1Balance = await token.balanceOf(user1.address);
+
+      // Approve launchpadManager to spend tokens
+      const sellAmount = ethers.parseEther("1000");
+      await token.connect(user1).approve(await launchpadManager.getAddress(), sellAmount);
+
+      // Now user1 can sell through handlePostGraduationSell
+      await expect(
+        launchpadManager
           .connect(user1)
-          .handlePostGraduationSell(tokenAddress, ethers.parseEther("1000"), 0)
-      ).to.not.be.revert(ethers);
+          .handlePostGraduationSell(tokenAddress, sellAmount, 0)
+      ).to.not.be.reverted;
     });
     it("Should lock LP tokens in LPFeeHarvester", async function () {
       await launchpadManager.graduateToPancakeSwap(tokenAddress);
