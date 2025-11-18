@@ -364,15 +364,16 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       ).to.be.revertedWith("No contribution");
     });
 
-    it("Should give founder 50% of tokens immediately", async function () {
+    it("Should give founder 10% of allocation immediately", async function () {
       const token = await ethers.getContractAt(
         "LaunchpadTokenV2",
         tokenAddress
       );
       const founderBalance = await token.balanceOf(founder.address);
 
-      // Founder should have 10% of 200M = 100M (50% immediate release)
-      const expectedImmediate = ethers.parseEther("100000000");
+      // Founder allocation: 20% of 1B = 200M tokens
+      // Immediate release: 10% of 200M = 20M tokens
+      const expectedImmediate = ethers.parseEther("20000000");
 
       expect(founderBalance).to.equal(expectedImmediate);
     });
@@ -386,8 +387,8 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
         "Test Token",
         "TEST",
         1_000_000_000,
-        ethers.parseEther("0.1"), // Target: 0.1 BNB
-        ethers.parseEther("0.5"),
+        ethers.parseEther("50"), // Target: 50 BNB
+        ethers.parseEther("100"),
         90 * 24 * 60 * 60,
         defaultMetadata,
         false
