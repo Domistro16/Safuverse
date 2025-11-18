@@ -418,30 +418,36 @@ describe("TokenFactoryV2", function () {
       expect(address1).to.not.equal(address2);
     });
 
-    it("Should reject deploying with same salt twice", async function () {
+    it("Should reject deploying with same salt and parameters twice", async function () {
       const salt = ethers.randomBytes(32);
+      const params = {
+        name: "Token 1",
+        symbol: "TK1",
+        supply: 1_000_000_000,
+        decimals: 18
+      };
 
       await tokenFactory
         .connect(creator)
         .createTokenWithSalt(
-          "Token 1",
-          "TK1",
-          1_000_000_000,
-          18,
+          params.name,
+          params.symbol,
+          params.supply,
+          params.decimals,
           creator.address,
           defaultMetadata,
           salt
         );
 
-      // ✅ FIXED: Changed from .to.be.revert(ethers) to proper matcher
+      // Deploying with same parameters and salt should revert (CREATE2 collision)
       await expect(
         tokenFactory
           .connect(creator)
           .createTokenWithSalt(
-            "Token 2",
-            "TK2",
-            1_000_000_000,
-            18,
+            params.name,
+            params.symbol,
+            params.supply,
+            params.decimals,
             creator.address,
             defaultMetadata,
             salt
