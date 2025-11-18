@@ -46,7 +46,10 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
     discord: "https://discord.gg/testtoken",
   };
 
+  let investors: any[]; // Array to hold multiple investors
+
   beforeEach(async function () {
+    const signers = await ethers.getSigners();
     [
       owner,
       founder,
@@ -57,7 +60,8 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
       platformFee,
       academyFee,
       infoFiFee,
-    ] = await ethers.getSigners();
+      ...investors // Remaining signers for multiple investors
+    ] = signers;
 
     // Deploy MockPriceOracle
     const MockPriceOracle = await ethers.getContractFactory("MockPriceOracle");
@@ -193,27 +197,27 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
       // ============================================================
       console.log("\n💰 PHASE 2: Fundraising...");
 
-      // 100 BNB target
-      const invest1 = ethers.parseEther("60");
-      const invest2 = ethers.parseEther("40");
+      // 100 BNB target with 4.44 BNB max per wallet
+      const maxContribution = ethers.parseEther("4.44");
+      const numInvestors = 23; // Need 23 investors to reach ~100 BNB
 
-      await launchpadManager.connect(investor1).contribute(tokenAddress, {
-        value: invest1,
-      });
-      console.log(
-        "  Investor 1 contributed:",
-        ethers.formatEther(invest1),
-        "BNB"
-      );
+      // Have multiple investors contribute up to the per-wallet limit
+      for (let i = 0; i < numInvestors; i++) {
+        const investor = investors[i] || investor1; // Use extra signers or fallback
+        let contribution = maxContribution;
 
-      await launchpadManager.connect(investor2).contribute(tokenAddress, {
-        value: invest2,
-      });
-      console.log(
-        "  Investor 2 contributed:",
-        ethers.formatEther(invest2),
-        "BNB"
-      );
+        // Last investor contributes remainder to reach exactly 100 BNB
+        if (i === numInvestors - 1) {
+          const currentRaised = await launchpadManager.getLaunchInfo(tokenAddress).then(info => info.totalRaised);
+          contribution = RAISE_TARGET_BNB - currentRaised;
+        }
+
+        await launchpadManager.connect(investor).contribute(tokenAddress, {
+          value: contribution,
+        });
+      }
+
+      console.log(`  ${numInvestors} investors contributed to reach 100 BNB`);
 
       const launchInfo = await launchpadManager.getLaunchInfo(tokenAddress);
       expect(launchInfo.raiseCompleted).to.be.true;
@@ -739,14 +743,23 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
       );
       tokenAddress = (event as any).args[0];
 
-      // Complete raise
-      await launchpadManager.connect(investor1).contribute(tokenAddress, {
-        value: ethers.parseEther("60"),
-      });
+      // Complete raise with multiple investors (4.44 BNB max per wallet)
+      const maxContribution = ethers.parseEther("4.44");
+      const numInvestors = 23;
 
-      await launchpadManager.connect(investor2).contribute(tokenAddress, {
-        value: ethers.parseEther("40"),
-      });
+      for (let i = 0; i < numInvestors; i++) {
+        const investor = investors[i] || investor1;
+        let contribution = maxContribution;
+
+        if (i === numInvestors - 1) {
+          const currentRaised = await launchpadManager.getLaunchInfo(tokenAddress).then(info => info.totalRaised);
+          contribution = RAISE_TARGET_BNB - currentRaised;
+        }
+
+        await launchpadManager.connect(investor).contribute(tokenAddress, {
+          value: contribution,
+        });
+      }
 
       // Graduate pool
       for (let i = 0; i < 25; i++) {
@@ -963,10 +976,23 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
         );
         const tokenAddr = (event as any).args[0];
 
-        // Complete raise and graduate
-        await launchpadManager.connect(investor1).contribute(tokenAddr, {
-          value: ethers.parseEther("100"),
-        });
+        // Complete raise and graduate (4.44 BNB max per wallet)
+        const maxContribution = ethers.parseEther("4.44");
+        const numInvestors = 23;
+
+        for (let k = 0; k < numInvestors; k++) {
+          const investor = investors[k] || investor1;
+          let contribution = maxContribution;
+
+          if (k === numInvestors - 1) {
+            const currentRaised = await launchpadManager.getLaunchInfo(tokenAddr).then(info => info.totalRaised);
+            contribution = RAISE_TARGET_BNB - currentRaised;
+          }
+
+          await launchpadManager.connect(investor).contribute(tokenAddr, {
+            value: contribution,
+          });
+        }
 
         for (let j = 0; j < 25; j++) {
           try {
