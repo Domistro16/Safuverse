@@ -15,7 +15,7 @@ All smart contracts in this ecosystem are deployed and operational on BNB Chain,
 
 ## Ecosystem Components
 
-### 1. SafuAcademyy - Decentralized Education Platform
+### 1. SafuAcademy - Decentralized Education Platform
 
 On-chain educational platform with gasless transactions, allowing domain owners to create and participate in blockchain courses.
 
@@ -28,7 +28,7 @@ On-chain educational platform with gasless transactions, allowing domain owners 
 - Progress tracking stored on BSC
 - Integration with SafuDomains naming service
 
-**Directory**: `SafuAcademyy/`
+**Directory**: `SafuAcademy/`
 
 ### 2. SafuDomains - Decentralized Naming Service
 
@@ -108,6 +108,397 @@ Landing page and marketing website for the Safuverse ecosystem.
 
 **Directory**: `SafuLanding/`
 
+## User Journey Diagrams
+
+### SafuPad - Token Launch Journey
+
+```mermaid
+graph TD
+    A[User Connects Wallet] --> B{Choose Launch Type}
+    B -->|Project Raise| C[Configure Token Details]
+    B -->|Instant Launch| D[Configure Token & Initial Liquidity]
+
+    C --> E[Set Raise Parameters<br/>50-500 BNB]
+    E --> F[Deploy Token via Factory]
+    F --> G[24h Fundraising Period]
+
+    D --> H[Deploy with Bonding Curve]
+    H --> I[Immediate Trading Starts]
+
+    G --> J{Raise Target Met?}
+    J -->|Yes| K[Graduate to PancakeSwap]
+    J -->|No| L[Contributors Get Refunds]
+
+    I --> M[Trading on Bonding Curve]
+    M --> N{15 BNB Threshold Reached?}
+    N -->|Yes| K
+    N -->|No| M
+
+    K --> O[LP Tokens Locked/Burned]
+    O --> P[Trading on PancakeSwap]
+    P --> Q[Founder Vesting Begins]
+    Q --> R[LP Fees Harvested]
+
+    style A fill:#FF7000
+    style K fill:#90EE90
+    style P fill:#90EE90
+```
+
+### SafuAcademy - Learning Journey
+
+```mermaid
+graph TD
+    A[User Connects Wallet] --> B{Has .safu Domain?}
+    B -->|No| C[Redirect to SafuDomains]
+    B -->|Yes| D[Browse Course Catalog]
+
+    C --> E[Purchase .safu Domain]
+    E --> D
+
+    D --> F[Select Course]
+    F --> G[View Course Details]
+    G --> H[Enroll - Gasless Transaction]
+
+    H --> I[Relayer Submits Transaction]
+    I --> J[On-Chain Enrollment Confirmed]
+
+    J --> K[Access Course Content]
+    K --> L[Watch Video Lessons]
+    L --> M[Complete Quizzes]
+
+    M --> N[Progress Tracked On-Chain]
+    N --> O{Course Completed?}
+    O -->|No| L
+    O -->|Yes| P[Earn Points & Certificate]
+
+    P --> Q[NFT Certificate Issued]
+    Q --> R[Share Achievement]
+
+    style A fill:#FF7000
+    style H fill:#90EE90
+    style P fill:#FFD700
+    style Q fill:#FFD700
+```
+
+### SafuDomains - Domain Registration Journey
+
+```mermaid
+graph TD
+    A[User Connects Wallet] --> B[Search for .safu Domain]
+    B --> C{Domain Available?}
+    C -->|No| B
+    C -->|Yes| D[Select Registration Duration]
+
+    D --> E{Payment Method?}
+    E -->|BNB| F[Calculate BNB Price]
+    E -->|CAKE| G[Calculate CAKE Price]
+    E -->|USD1| H[Calculate USD1 Price]
+
+    F --> I[Approve Payment]
+    G --> I
+    H --> I
+
+    I --> J[Register Domain On-Chain]
+    J --> K{Use Referral Code?}
+    K -->|Yes| L[Referrer Gets Reward]
+    K -->|No| M[Set as Primary Name]
+
+    L --> M
+    M --> N[Configure Resolver]
+    N --> O[Domain Registered Successfully]
+
+    O --> P[Access SafuAcademyy]
+    O --> Q[Use for Identity]
+
+    style A fill:#FF7000
+    style O fill:#90EE90
+    style L fill:#FFD700
+```
+
+### Safucard - NFT Scorecard Journey
+
+```mermaid
+graph TD
+    A[User Connects Wallet] --> B[Request Wallet Analysis]
+    B --> C[Backend Analyzes Memecoin Holdings]
+
+    C --> D[Calculate Scorecard Metrics]
+    D --> E[Display Score Preview]
+
+    E --> F{User Wants to Mint?}
+    F -->|No| G[Exit]
+    F -->|Yes| H[Get USD Price from Chainlink]
+
+    H --> I[Convert $5 USD to BNB]
+    I --> J[User Pays in BNB]
+
+    J --> K[NFT Minted On-Chain]
+    K --> L[Metadata Uploaded to IPFS]
+    L --> M[URI Frozen - Permanent Record]
+
+    M --> N[NFT Appears in Wallet]
+    N --> O[Share on Social Media]
+
+    style A fill:#FF7000
+    style K fill:#90EE90
+    style M fill:#FFD700
+```
+
+## System Architecture
+
+### Overall Ecosystem Architecture
+
+```mermaid
+graph TB
+    subgraph "User Layer"
+        U1[Web Browser]
+        U2[MetaMask/Binance Wallet]
+    end
+
+    subgraph "Frontend Layer - Vercel"
+        F1[SafuAcademy Frontend<br/>academy.safuverse.com]
+        F2[SafuDomains Frontend<br/>names.safuverse.com]
+        F3[Safucard Frontend<br/>safucard.xyz]
+        F4[SafuAgents Frontend<br/>ai.safuverse.com]
+        F5[SafuLanding<br/>safuverse.com]
+    end
+
+    subgraph "Backend Layer"
+        B1[SafuAcademy Relayer<br/>Gasless Transactions]
+        B2[Safucard API<br/>Score Calculation]
+        B3[SafuAgents API<br/>OpenAI Integration]
+    end
+
+    subgraph "BNB Smart Chain - Chain ID 56"
+        subgraph "SafuPad Contracts"
+            SP1[LaunchpadManager]
+            SP2[BondingCurveDEX]
+            SP3[TokenFactory]
+            SP4[LPFeeHarvester]
+        end
+
+        subgraph "SafuAcademyy Contracts"
+            SA1[CourseFactory]
+            SA2[Level3Course]
+        end
+
+        subgraph "SafuDomains Contracts"
+            SD1[ENS Registry]
+            SD2[Controller]
+            SD3[BaseRegistrar]
+            SD4[NameWrapper]
+            SD5[PublicResolver]
+            SD6[ReverseRegistrar]
+            SD7[Referral System]
+        end
+
+        subgraph "Safucard Contracts"
+            SC1[ScorecardNFT]
+        end
+
+        subgraph "External BSC Integrations"
+            EX1[PancakeSwap V2<br/>Router & Factory]
+            EX2[Chainlink Oracles<br/>BNB/USD]
+            EX3[WBNB Contract]
+        end
+    end
+
+    subgraph "Storage Layer"
+        S1[IPFS/Pinata<br/>Course Content & NFT Metadata]
+    end
+
+    U1 --> F1
+    U1 --> F2
+    U1 --> F3
+    U1 --> F4
+    U1 --> F5
+
+    U2 --> SP1
+    U2 --> SA2
+    U2 --> SD2
+    U2 --> SC1
+
+    F1 --> B1
+    F3 --> B2
+    F4 --> B3
+
+    B1 --> SA2
+
+    F1 --> SA2
+    F1 --> SD6
+    F2 --> SD2
+
+    SP1 --> SP2
+    SP1 --> SP3
+    SP1 --> EX1
+    SP2 --> EX1
+    SP4 --> EX1
+
+    SA2 --> SD6
+
+    SD2 --> SD1
+    SD2 --> SD3
+    SD3 --> SD4
+    SD1 --> SD5
+    SD1 --> SD6
+    SD2 --> SD7
+
+    SC1 --> EX2
+    SD2 --> EX2
+
+    SP1 --> EX3
+    EX1 --> EX3
+
+    F1 --> S1
+    SC1 --> S1
+
+    style U1 fill:#FFE4B5
+    style U2 fill:#FFE4B5
+    style EX1 fill:#E6E6FA
+    style EX2 fill:#E6E6FA
+    style EX3 fill:#E6E6FA
+```
+
+### SafuPad Smart Contract Architecture
+
+```mermaid
+graph TB
+    subgraph "User Interactions"
+        U[Founder/Trader]
+    end
+
+    subgraph "LaunchpadManagerV3 - Main Controller"
+        LM[LaunchpadManager]
+        LM_CREATE[createLaunch/<br/>createInstantLaunch]
+        LM_CONTRIB[contribute]
+        LM_GRAD[graduateToPancakeSwap]
+        LM_VEST[Vesting Logic]
+    end
+
+    subgraph "BondingCurveDEX - Trading Engine"
+        BC[BondingCurveDEX]
+        BC_BUY[buyTokens]
+        BC_SELL[sellTokens]
+        BC_FEES[Dynamic Fee System<br/>10% → 1-2%]
+        BC_GRAD[graduatePool]
+    end
+
+    subgraph "TokenFactoryV2"
+        TF[Token Factory]
+        TF_DEPLOY[deployToken<br/>CREATE2]
+        TF_TOKEN[LaunchpadTokenV2<br/>ERC20]
+    end
+
+    subgraph "LPFeeHarvester"
+        LP[LP Harvester]
+        LP_LOCK[lockLP]
+        LP_HARVEST[harvestFees]
+        LP_DIST[Fee Distribution<br/>70% Creator<br/>30% Platform]
+    end
+
+    subgraph "PriceOracle"
+        PO[Chainlink Oracle]
+        PO_BNB[getBNBPrice]
+        PO_CONVERT[bnbToUSD/<br/>usdToBNB]
+    end
+
+    subgraph "External Contracts"
+        PS_ROUTER[PancakeSwap Router]
+        PS_FACTORY[PancakeSwap Factory]
+        PS_PAIR[PancakeSwap Pair<br/>Token/WBNB]
+        WBNB[Wrapped BNB]
+        CHAINLINK[Chainlink BNB/USD]
+    end
+
+    U -->|1. Create Launch| LM_CREATE
+    LM_CREATE --> TF_DEPLOY
+    TF_DEPLOY --> TF_TOKEN
+
+    LM_CREATE -->|Instant Launch| BC
+
+    U -->|2a. Contribute BNB| LM_CONTRIB
+    U -->|2b. Trade on Curve| BC_BUY
+    U -->|2b. Trade on Curve| BC_SELL
+
+    BC_BUY --> BC_FEES
+    BC_SELL --> BC_FEES
+
+    LM_CONTRIB -->|Target Met| LM_GRAD
+    BC -->|15 BNB Reached| BC_GRAD
+    BC_GRAD --> LM_GRAD
+
+    LM_GRAD --> PS_ROUTER
+    PS_ROUTER --> PS_FACTORY
+    PS_FACTORY --> PS_PAIR
+
+    PS_PAIR --> LP_LOCK
+    LP_LOCK -->|Periodic| LP_HARVEST
+    LP_HARVEST --> LP_DIST
+
+    PS_ROUTER --> WBNB
+
+    LM_CREATE --> PO_BNB
+    PO_BNB --> CHAINLINK
+
+    LM_GRAD -->|After Graduation| LM_VEST
+    LM_VEST -->|10% Immediate<br/>90% Vested| U
+
+    style U fill:#FFE4B5
+    style TF_TOKEN fill:#90EE90
+    style PS_PAIR fill:#90EE90
+    style BC_FEES fill:#FFD700
+    style LP_DIST fill:#FFD700
+```
+
+### Data Flow - SafuAcademy Gasless Enrollment
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Relayer
+    participant Domain as SafuDomains<br/>ReverseRegistrar
+    participant Course as Level3Course<br/>Contract
+    participant BSC as BNB Chain
+
+    User->>Frontend: Connect Wallet
+    Frontend->>Domain: getPrimaryName(address)
+    Domain-->>Frontend: Returns .safu domain
+
+    alt Has .safu Domain
+        User->>Frontend: Click "Enroll in Course"
+        Frontend->>Frontend: Create enrollment message
+        User->>Frontend: Sign message (gasless)
+
+        Frontend->>Relayer: Submit signed enrollment
+        Relayer->>Relayer: Verify signature
+        Relayer->>Course: enroll(user, courseId)
+        Note over Relayer,Course: Relayer pays gas
+
+        Course->>BSC: Transaction submitted
+        BSC-->>Course: Confirmation
+        Course-->>Relayer: Enrollment success
+        Relayer-->>Frontend: Success response
+        Frontend-->>User: "Enrolled! Access course now"
+
+        User->>Frontend: Start lesson
+        Frontend->>Course: getLessonContent(courseId, lessonId)
+        Course-->>Frontend: Lesson data
+        Frontend->>Frontend: Load video from IPFS
+
+        User->>Frontend: Complete lesson
+        Frontend->>Relayer: Submit completion signature
+        Relayer->>Course: markLessonComplete(user, lessonId)
+        Course->>BSC: Update progress on-chain
+        BSC-->>Course: Confirmed
+        Course-->>Frontend: Progress updated
+        Frontend-->>User: "Lesson complete! +10 points"
+    else No .safu Domain
+        Frontend-->>User: "Please register a .safu domain first"
+        User->>Frontend: Redirect to SafuDomains
+    end
+```
+
 ## Technology Stack
 
 ### Blockchain Infrastructure
@@ -143,7 +534,7 @@ Landing page and marketing website for the Safuverse ecosystem.
 ```
 Safuverse/
 ├── SafuAgents/          # AI agents interface
-├── SafuAcademyy/          # Educational platform contracts & frontend
+├── SafuAcademy/          # Educational platform contracts & frontend
 ├── SafuLanding/         # Marketing website
 ├── Safucard/            # NFT scorecard system
 │   ├── SafucardNFT/     # Smart contracts
@@ -191,7 +582,7 @@ RPC endpoints are configured in each project's `hardhat.config.ts` or frontend c
 
 All smart contracts are deployed and verified on BSCScan. Below are the deployed contract addresses for each component:
 
-### SafuAcademyy - Education Platform
+### SafuAcademy - Education Platform
 
 **BSC Mainnet (Chain ID: 56)**:
 
@@ -274,10 +665,197 @@ This ecosystem leverages BNB Chain's unique advantages:
 
 ## Live Deployments on BNB Chain
 
-- **SafuAcademyy**: https://academy.safuverse.com
+- **SafuAcademy**: https://academy.safuverse.com
 - **SafuDomains**: https://names.safuverse.com
 - **Safucard**: https://safucard.xyz
 - **SafuAgents**: https://ai.safuverse.com
+
+## Open-Source Dependencies
+
+This section provides a comprehensive overview of all major open-source dependencies used across the Safuverse ecosystem, organized by category.
+
+### Smart Contract Development
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **Solidity** | 0.8.17 - 0.8.28 | GPL-3.0 | Smart contract language | All contracts |
+| **Hardhat** | 2.x - 3.0.7 | MIT | Development framework | All contract projects |
+| **OpenZeppelin Contracts** | 5.3.0 - 5.4.0 | MIT | Secure contract libraries | All contracts |
+| **@nomicfoundation/hardhat-toolbox** | 5.x | MIT | Hardhat plugin suite | SafuPad, SafuAcademyy |
+| **@nomicfoundation/hardhat-chai-matchers** | 2.x | MIT | Testing matchers | All contract projects |
+| **Chai** | 4.x | MIT | Assertion library | All contract tests |
+| **Mocha** | 10.x | MIT | Test framework | All contract tests |
+| **ethers** | 6.x | MIT | Ethereum library | All contract projects |
+| **Typechain** | 8.x | MIT | TypeScript bindings | SafuPad |
+| **hardhat-gas-reporter** | 1.x | MIT | Gas usage reporting | SafuPad |
+| **solidity-coverage** | 0.8.x | MIT | Code coverage | SafuPad |
+
+### Frontend Framework & Build Tools
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **React** | 18.2.0 - 19.x | MIT | UI framework | All frontends |
+| **TypeScript** | 5.2.2 - 5.x | Apache-2.0 | Type safety | All frontends |
+| **Vite** | 5.2.11 - 5.x | MIT | Build tool | SafuAcademyy, SafuAgents |
+| **React Router DOM** | 6.16.0 | MIT | Client-side routing | SafuAcademyy |
+| **Next.js** | 14.x | MIT | React framework | SafuDomains (possible) |
+
+### Web3 & Blockchain Integration
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **Wagmi** | 2.15.6 | MIT | React hooks for Ethereum | All frontends |
+| **Viem** | 2.29.0 | MIT | TypeScript Ethereum library | All frontends |
+| **RainbowKit** | 2.2.8 | MIT | Wallet connection UI | SafuAcademyy, SafuAgents |
+| **ethers (v5)** | 5.8.0 | MIT | Ethereum utilities | Frontends (legacy) |
+| **@binance/w3w-wagmi-connector** | Latest | MIT | Binance Wallet connector | SafuAcademyy |
+| **@metamask/sdk-react** | Latest | MIT | MetaMask integration | Various |
+
+### UI Components & Styling
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **Tailwind CSS** | 3.3.3 - 3.x | MIT | Utility-first CSS | All frontends |
+| **Radix UI** | 1.x | MIT | Accessible UI primitives | SafuAcademyy |
+| **shadcn/ui** | Latest | MIT | Component collection | SafuAcademyy |
+| **Framer Motion** | 10.16.4 | MIT | Animation library | SafuAcademyy |
+| **Lucide React** | Latest | ISC | Icon library | SafuAcademyy |
+| **PostCSS** | 8.x | MIT | CSS transformation | All frontends |
+| **Autoprefixer** | 10.x | MIT | CSS vendor prefixes | All frontends |
+
+### State Management & Data Fetching
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **TanStack Query (React Query)** | 5.82.0 | MIT | Server state management | SafuAcademyy |
+| **Zustand** | 4.x | MIT | Client state management | Various |
+| **SWR** | 2.x | MIT | Data fetching | SafuDomains (possible) |
+
+### Media & Content
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **Video.js** | 7.21 | Apache-2.0 | Video player | SafuAcademyy |
+| **Pinata SDK** | 2.4.9 | MIT | IPFS integration | SafuAcademyy, Safucard |
+
+### Backend & API
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **Node.js** | 18+ | MIT | Runtime environment | All backends |
+| **Express** | 4.x | MIT | Web framework | Safucard API |
+| **OpenZeppelin Defender** | Latest | MIT | Transaction relayer | SafuAcademyy |
+
+### BNB Chain Specific Integrations
+
+| Dependency | Type | Purpose | Used In |
+|------------|------|---------|---------|
+| **PancakeSwap V2 Router** | Contract | DEX integration | SafuPad |
+| **PancakeSwap V2 Factory** | Contract | Pair creation | SafuPad |
+| **Chainlink BNB/USD Oracle** | Contract | Price feeds | SafuPad, SafuDomains, Safucard |
+| **WBNB** | Contract | Wrapped BNB | SafuPad |
+
+### Development & Testing
+
+| Dependency | Version | License | Purpose | Used In |
+|------------|---------|---------|---------|---------|
+| **ESLint** | 8.x | MIT | Code linting | All projects |
+| **Prettier** | 3.x | MIT | Code formatting | All projects |
+| **ts-node** | 10.x | MIT | TypeScript execution | Contract projects |
+| **chai-as-promised** | 7.x | WTFPL | Async test assertions | SafuPad |
+
+### SafuPad SDK Specific
+
+| Dependency | Version | License | Purpose |
+|------------|---------|---------|---------|
+| **ethers** | 6.x | MIT | Core Ethereum library |
+| **@ethersproject/*** | 5.x | MIT | Ethereum utilities |
+| **TypeScript** | 5.x | Apache-2.0 | Type definitions |
+
+### License Summary
+
+The Safuverse ecosystem primarily uses **MIT-licensed** dependencies, ensuring maximum compatibility and freedom for both development and deployment. Key licenses include:
+
+- **MIT License**: ~90% of dependencies (permissive, allows commercial use)
+- **Apache-2.0**: TypeScript, Video.js (permissive with patent grant)
+- **GPL-3.0**: Solidity compiler (copyleft, contracts are MIT)
+- **ISC**: Lucide icons (permissive, similar to MIT)
+
+All dependencies are compatible with the MIT license used by Safuverse projects.
+
+### Dependency Management
+
+**Package Managers:**
+- **npm** - Primary package manager for most projects
+- **yarn** - Alternative package manager (supported)
+- **bun** - Fast alternative (some projects)
+
+**Version Control:**
+- Lock files (`package-lock.json`, `yarn.lock`) committed to repository
+- Semantic versioning followed for dependencies
+- Regular updates via Dependabot (recommended)
+
+**Security:**
+- Dependencies audited regularly with `npm audit`
+- OpenZeppelin contracts used for security-critical code
+- Chainlink oracles for reliable price data
+- No known critical vulnerabilities in production
+
+### External Services & APIs
+
+| Service | Purpose | Used In | Website |
+|---------|---------|---------|---------|
+| **BSCScan API** | Contract verification | All contracts | https://bscscan.com |
+| **Chainlink** | Price oracles | SafuPad, Safucard, SafuDomains | https://chain.link |
+| **PancakeSwap** | DEX integration | SafuPad | https://pancakeswap.finance |
+| **Pinata** | IPFS hosting | SafuAcademyy, Safucard | https://pinata.cloud |
+| **OpenAI API** | AI agents | SafuAgents | https://openai.com |
+| **Vercel** | Frontend hosting | All frontends | https://vercel.com |
+| **BNB Chain RPC** | Blockchain access | All projects | https://bscscan.com |
+
+### Installation Instructions
+
+To install all dependencies for a specific project:
+
+```bash
+# Navigate to project directory
+cd <project-directory>
+
+# Install dependencies
+npm install
+
+# Or with yarn
+yarn install
+
+# Or with bun
+bun install
+```
+
+For the entire monorepo (all projects):
+
+```bash
+# Install all dependencies (from root)
+for dir in SafuPad SafuAcademy SafuDomains Safucard SafuAgents SafuLanding safupadsdk; do
+  (cd "$dir" && npm install)
+done
+```
+
+### Updating Dependencies
+
+```bash
+# Check for outdated packages
+npm outdated
+
+# Update to latest within semver range
+npm update
+
+# Update to latest (potentially breaking)
+npm install <package>@latest
+
+# Security audit
+npm audit
+npm audit fix
+```
 
 ## Contributing
 
@@ -301,7 +879,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Individual projects also contain their own LICENSE files:
 
 - [SafuPad/LICENSE](SafuPad/LICENSE)
-- [SafuAcademyy/LICENSE]SafuAcademymy/LICENSE)
+- [SafuAcademy/LICENSE](SafuAcademy/LICENSE)
 - [SafuDomains/LICENSE.txt](SafuDomains/LICENSE.txt)
 - [Safucard/SafucardNFT/LICENSE](Safucard/SafucardNFT/LICENSE)
 - [SafuAgents/LICENSE](SafuAgents/LICENSE)

@@ -56,6 +56,368 @@ Automatic graduation to PancakeSwap V2 when conditions met:
 - On-chain vesting schedule
 - Transparent unlock periods
 
+## User Journey
+
+### Project Raise Flow
+
+```mermaid
+graph TD
+    A[Founder Connects Wallet] --> B[Click 'Create Project Raise']
+    B --> C[Configure Token Parameters]
+
+    C --> D[Set Token Details<br/>Name, Symbol, Supply]
+    D --> E[Set Raise Targets<br/>50-500 BNB Range]
+    E --> F[Set Vesting Duration<br/>90-180 Days]
+    F --> G[Upload Metadata<br/>Logo, Description, Socials]
+
+    G --> H[Choose LP Strategy]
+    H -->|burnLP = true| I[LP Tokens Burned]
+    H -->|burnLP = false| J[LP Tokens Locked in Harvester]
+
+    I --> K[Deploy Token - Pay Gas]
+    J --> K
+
+    K --> L[Token Deployed via CREATE2]
+    L --> M[24-Hour Fundraising Begins]
+
+    M --> N[Contributors Join]
+    N --> O[Max 4.44 BNB per Wallet]
+    O --> P{Target Reached?}
+
+    P -->|No - After 24h| Q[Refunds Issued]
+    P -->|Yes| R[Graduate to PancakeSwap]
+
+    R --> S[LP Pool Created on PancakeSwap]
+    S --> T[Trading Begins on PancakeSwap]
+    T --> U[Founder Receives 10% Tokens]
+    U --> V[90% Tokens Vest Over Time]
+    V --> W[Founder Claims Vested BNB]
+
+    style A fill:#FF7000
+    style R fill:#90EE90
+    style T fill:#90EE90
+```
+
+### Instant Launch Flow
+
+```mermaid
+graph TD
+    A[Founder Connects Wallet] --> B[Click 'Create Instant Launch']
+    B --> C[Configure Token]
+
+    C --> D[Set Token Details<br/>Name, Symbol, 1B Supply]
+    D --> E[Set Initial Buy Amount<br/>Recommended: 0 BNB]
+    E --> F[Set Initial Liquidity<br/>Minimum: 0.1 BNB]
+    F --> G[Upload Metadata]
+
+    G --> H[Choose LP Strategy]
+    H -->|Burn LP| I[LP Burned at Graduation]
+    H -->|Lock LP| J[LP Locked in Harvester]
+
+    I --> K[Deploy & Fund Pool]
+    J --> K
+
+    K --> L[Token Deployed<br/>Bonding Curve Active]
+
+    L --> M[Traders Buy/Sell Immediately]
+    M --> N[Dynamic Fees Apply<br/>10% → 1-2%]
+
+    N --> O{BNB Reserve >= 15?}
+    O -->|No| M
+    O -->|Yes| P[Auto-Graduate to PancakeSwap]
+
+    P --> Q[LP Created on PancakeSwap]
+    Q --> R[Trading Moves to PancakeSwap]
+    R --> S[Bonding Curve Disabled]
+    S --> T[LP Fees Harvested Periodically]
+
+    style A fill:#FF7000
+    style L fill:#90EE90
+    style P fill:#FFD700
+    style R fill:#90EE90
+```
+
+### Contributor/Trader Journey
+
+```mermaid
+graph TD
+    A[User Connects Wallet] --> B{Launch Type?}
+
+    B -->|Project Raise| C[Browse Active Raises]
+    B -->|Instant Launch| D[Browse Bonding Curve Tokens]
+
+    C --> E[View Token Details]
+    E --> F[Check Raise Progress]
+    F --> G{Want to Contribute?}
+
+    G -->|Yes| H[Contribute BNB<br/>Max 4.44 BNB]
+    G -->|No| C
+
+    H --> I[Wait for 24h Period]
+    I --> J{Raise Successful?}
+
+    J -->|Yes| K[Claim Tokens After Graduation]
+    J -->|No| L[Claim Refund]
+
+    D --> M[View Token & Pool Info]
+    M --> N[Check Current Price & Fees]
+    N --> O{Buy or Sell?}
+
+    O -->|Buy| P[Enter BNB Amount]
+    O -->|Sell| Q[Enter Token Amount]
+
+    P --> R[Get Quote with Fee]
+    Q --> R
+
+    R --> S[Approve Transaction]
+    S --> T[Trade Executed]
+    T --> U{Graduated?}
+
+    U -->|No| D
+    U -->|Yes| V[Continue on PancakeSwap]
+
+    style A fill:#FF7000
+    style K fill:#90EE90
+    style T fill:#90EE90
+    style V fill:#90EE90
+```
+
+## Smart Contract Architecture
+
+### System Overview
+
+```mermaid
+graph TB
+    subgraph "User Interactions"
+        FOUNDER[Token Founder]
+        TRADER[Contributor/Trader]
+    end
+
+    subgraph "LaunchpadManagerV3 - Core Orchestrator"
+        LM[LaunchpadManager Contract]
+
+        LM_STORAGE[Storage<br/>LaunchBasics<br/>LaunchStatus<br/>LaunchParams]
+
+        LM_PROJECT[createLaunch<br/>PROJECT_RAISE]
+        LM_INSTANT[createInstantLaunch<br/>INSTANT_LAUNCH]
+
+        LM_CONTRIB[contribute<br/>24h Window]
+        LM_CLAIM[claimTokens<br/>claimRefund]
+
+        LM_GRAD[graduateToPancakeSwap<br/>LP Creation]
+
+        LM_VEST[Vesting System<br/>claimFounderTokens<br/>claimRaisedFunds]
+
+        LM_POST[handlePostGraduationBuy<br/>handlePostGraduationSell]
+    end
+
+    subgraph "BondingCurveDEX - Trading Engine"
+        BC[BondingCurveDEX Contract]
+
+        BC_POOL[Pool Management<br/>initializePool<br/>PoolInfo Storage]
+
+        BC_BUY[buyTokens<br/>Linear Pricing]
+        BC_SELL[sellTokens<br/>Liquidity Backed]
+
+        BC_FEES[Dynamic Fee System<br/>Block-Based Tiers<br/>10% → 6% → 4% → 1-2%]
+
+        BC_CREATOR[Creator Fee Tracking<br/>claimCreatorFees]
+
+        BC_GRAD[graduatePool<br/>15 BNB Threshold]
+    end
+
+    subgraph "TokenFactoryV2 - Token Deployment"
+        TF[TokenFactory Contract]
+
+        TF_CREATE[deployToken<br/>CREATE2 Deterministic]
+
+        TF_TOKEN[LaunchpadTokenV2<br/>ERC20 + Transfer Lock]
+
+        TF_VANITY[Vanity Address<br/>Salt-Based Deployment]
+    end
+
+    subgraph "LPFeeHarvester - LP Management"
+        LP[LPFeeHarvester Contract]
+
+        LP_LOCK[lockLP<br/>PancakeSwap LP Tokens]
+
+        LP_HARVEST[harvestFees<br/>Periodic Collection<br/>MIN: 0.01 BNB]
+
+        LP_DIST[Fee Distribution<br/>70% Creator<br/>0% Project<br/>30% Platform]
+
+        LP_UNLOCK[LP Lock Duration<br/>Security Period]
+    end
+
+    subgraph "PriceOracle - Chainlink Integration"
+        PO[PriceOracle Contract]
+
+        PO_FEED[Chainlink BNB/USD<br/>Aggregator]
+
+        PO_CONVERT[Price Conversions<br/>bnbToUSD<br/>usdToBNB]
+    end
+
+    subgraph "PancakeSwap V2 - External DEX"
+        PS_ROUTER[PancakeSwap Router<br/>0x10ED...024E]
+        PS_FACTORY[PancakeSwap Factory<br/>0xcA14...50c73]
+        PS_PAIR[LP Pair<br/>Token/WBNB]
+        WBNB[WBNB Contract]
+    end
+
+    subgraph "Chainlink - Price Feeds"
+        CL[Chainlink Oracle<br/>BNB/USD Feed]
+    end
+
+    FOUNDER -->|1. Create Launch| LM_PROJECT
+    FOUNDER -->|1. Create Launch| LM_INSTANT
+
+    LM_PROJECT --> TF_CREATE
+    LM_INSTANT --> TF_CREATE
+    TF_CREATE --> TF_TOKEN
+
+    LM_INSTANT --> BC_POOL
+    BC_POOL --> TF_TOKEN
+
+    TRADER -->|2a. Contribute| LM_CONTRIB
+    TRADER -->|2b. Trade| BC_BUY
+    TRADER -->|2b. Trade| BC_SELL
+
+    BC_BUY --> BC_FEES
+    BC_SELL --> BC_FEES
+    BC_FEES --> BC_CREATOR
+
+    LM_CONTRIB -->|Target Met| LM_GRAD
+    BC_POOL -->|15 BNB| BC_GRAD
+    BC_GRAD --> LM_GRAD
+
+    LM_GRAD --> PS_ROUTER
+    PS_ROUTER --> PS_FACTORY
+    PS_FACTORY --> PS_PAIR
+    PS_ROUTER --> WBNB
+
+    PS_PAIR --> LP_LOCK
+
+    LP_LOCK -->|Time-Based| LP_HARVEST
+    LP_HARVEST --> LP_DIST
+
+    LM_PROJECT --> PO_CONVERT
+    PO_CONVERT --> PO_FEED
+    PO_FEED --> CL
+
+    LM_GRAD --> LM_VEST
+    LM_VEST -->|Vested Tokens| FOUNDER
+    LM_VEST -->|Vested BNB| FOUNDER
+
+    TRADER -->|Post-Grad Buy| LM_POST
+    LM_POST --> PS_ROUTER
+
+    style FOUNDER fill:#FFE4B5
+    style TRADER fill:#FFE4B5
+    style TF_TOKEN fill:#90EE90
+    style PS_PAIR fill:#90EE90
+    style BC_FEES fill:#FFD700
+    style LP_DIST fill:#FFD700
+```
+
+### State Transitions
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created: createLaunch / createInstantLaunch
+
+    Created --> Fundraising: PROJECT_RAISE<br/>24h Window Starts
+    Created --> Trading: INSTANT_LAUNCH<br/>Bonding Curve Active
+
+    Fundraising --> RaiseFailed: Target Not Met<br/>After 24h
+    Fundraising --> RaiseSuccessful: Target Met<br/>Within 24h
+
+    RaiseFailed --> RefundsIssued: Contributors Claim Refunds
+    RefundsIssued --> [*]
+
+    Trading --> GraduationPending: 15 BNB Reached
+
+    RaiseSuccessful --> GraduationPending: graduateToPancakeSwap Called
+
+    GraduationPending --> Graduated: LP Created on PancakeSwap
+
+    Graduated --> VestingActive: Founder Vesting Begins
+    VestingActive --> VestingComplete: All Tokens/BNB Claimed
+
+    Graduated --> LPLocked: burnLP = false
+    Graduated --> LPBurned: burnLP = true
+
+    LPLocked --> FeesHarvested: Periodic Harvesting
+    FeesHarvested --> LPLocked: Continue Harvesting
+
+    LPBurned --> [*]
+    VestingComplete --> [*]
+```
+
+### Fee Flow Diagram
+
+```mermaid
+graph TD
+    subgraph "Trading Fees - Bonding Curve"
+        T1[User Trades on Bonding Curve]
+        T1 --> F1{Fee Tier?}
+
+        F1 -->|Blocks 0-20| FEE1[10% Fee<br/>Anti-Bot Protection]
+        F1 -->|Blocks 21-50| FEE2[6% Fee]
+        F1 -->|Blocks 51-100| FEE3[4% Fee]
+        F1 -->|Block 100+| FEE4[1-2% Fee<br/>1% PROJECT_RAISE<br/>2% INSTANT_LAUNCH]
+
+        FEE1 --> SPLIT
+        FEE2 --> SPLIT
+        FEE3 --> SPLIT
+        FEE4 --> SPLIT
+
+        SPLIT[Fee Split] --> CREATOR[Creator Wallet<br/>Claimable]
+    end
+
+    subgraph "Graduation Fees - 1%"
+        G1[graduateToPancakeSwap Called]
+        G1 --> G2[Total BNB in Pool]
+        G2 --> G3[1% Platform Fee Deducted]
+        G3 --> G4[99% Goes to LP]
+
+        G3 --> PLATFORM1[Platform Fee Address]
+        G4 --> PANCAKE[PancakeSwap LP]
+    end
+
+    subgraph "LP Fee Harvesting"
+        H1[LP Locked in Harvester]
+        H1 --> H2[PancakeSwap Collects Trading Fees]
+        H2 --> H3[Harvester Calls removeLiquidity]
+        H3 --> H4{Fee >= 0.01 BNB?}
+
+        H4 -->|Yes| H5[Harvest Successful]
+        H4 -->|No| H6[Wait for More Fees]
+
+        H5 --> H7[Split Harvested Fees]
+        H7 --> CREATOR2[70% to Creator]
+        H7 --> PLATFORM2[30% to Platform]
+        H7 --> PROJECT[0% to Project]
+    end
+
+    subgraph "Post-Graduation Trading"
+        P1[User Buys Post-Graduation]
+        P1 --> P2[1% Platform Fee on BNB]
+        P2 --> P3[Swap via PancakeSwap]
+
+        P4[User Sells Post-Graduation]
+        P4 --> P5[2% Platform Fee on Tokens]
+        P5 --> P6[Swap via PancakeSwap]
+
+        P2 --> PLATFORM3[Platform Fee Address]
+        P5 --> PLATFORM3
+    end
+
+    style CREATOR fill:#90EE90
+    style CREATOR2 fill:#90EE90
+    style PLATFORM1 fill:#FFD700
+    style PLATFORM2 fill:#FFD700
+    style PLATFORM3 fill:#FFD700
+```
+
 ## Smart Contracts
 
 ### Core Contracts
