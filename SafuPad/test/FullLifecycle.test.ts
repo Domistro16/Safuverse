@@ -53,7 +53,8 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
   before(async function () {
     const signers = await ethers.getSigners();
-    [owner, founder, platformFee, academyFee, infoFiFee, ...contributors] = signers;
+    [owner, founder, platformFee, academyFee, infoFiFee, ...contributors] =
+      signers;
     traders = contributors.slice(10, 15); // Use separate signers for traders
 
     // Deploy MockPriceOracle
@@ -63,12 +64,16 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     await priceOracle.setBNBPrice(BNB_PRICE_USD);
 
     // Deploy MockPancakeFactory
-    const MockPancakeFactory = await ethers.getContractFactory("MockPancakeFactory");
+    const MockPancakeFactory = await ethers.getContractFactory(
+      "MockPancakeFactory"
+    );
     mockPancakeFactory = await MockPancakeFactory.deploy();
     await mockPancakeFactory.waitForDeployment();
 
     // Deploy MockPancakeRouter
-    const MockPancakeRouter = await ethers.getContractFactory("MockPancakeRouter");
+    const MockPancakeRouter = await ethers.getContractFactory(
+      "MockPancakeRouter"
+    );
     mockPancakeRouter = await MockPancakeRouter.deploy();
     await mockPancakeRouter.waitForDeployment();
     await mockPancakeRouter.setFactory(await mockPancakeFactory.getAddress());
@@ -106,7 +111,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     await bondingCurveDEX.waitForDeployment();
 
     // Deploy LaunchpadManagerV3
-    const LaunchpadManagerV3 = await ethers.getContractFactory("LaunchpadManagerV3");
+    const LaunchpadManagerV3 = await ethers.getContractFactory(
+      "LaunchpadManagerV3"
+    );
     launchpadManager = await LaunchpadManagerV3.deploy(
       await tokenFactory.getAddress(),
       await bondingCurveDEX.getAddress(),
@@ -121,8 +128,14 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
     // Grant roles
     const MANAGER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("MANAGER_ROLE"));
-    await bondingCurveDEX.grantRole(MANAGER_ROLE, await launchpadManager.getAddress());
-    await lpFeeHarvester.grantRole(MANAGER_ROLE, await launchpadManager.getAddress());
+    await bondingCurveDEX.grantRole(
+      MANAGER_ROLE,
+      await launchpadManager.getAddress()
+    );
+    await lpFeeHarvester.grantRole(
+      MANAGER_ROLE,
+      await launchpadManager.getAddress()
+    );
   });
 
   describe("PROJECT_RAISE - Complete Lifecycle", function () {
@@ -144,15 +157,16 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       );
 
       const receipt = await tx.wait();
-      const event = receipt?.logs.find(
-        (log: any) => {
-          try {
-            return launchpadManager.interface.parseLog(log as any)?.name === "LaunchCreated";
-          } catch {
-            return false;
-          }
+      const event = receipt?.logs.find((log: any) => {
+        try {
+          return (
+            launchpadManager.interface.parseLog(log as any)?.name ===
+            "LaunchCreated"
+          );
+        } catch {
+          return false;
         }
-      );
+      });
 
       const parsedEvent = launchpadManager.interface.parseLog(event as any);
       tokenAddress = parsedEvent?.args[0];
@@ -160,7 +174,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       console.log(`  ✅ Token created: ${tokenAddress}`);
       console.log(`  📝 Name: ${await token.name()}`);
-      console.log(`  🎯 Raise Target: ${ethers.formatEther(RAISE_TARGET_BNB)} BNB`);
+      console.log(
+        `  🎯 Raise Target: ${ethers.formatEther(RAISE_TARGET_BNB)} BNB`
+      );
 
       const launchInfo = await launchpadManager.getLaunchInfo(tokenAddress);
       expect(launchInfo.raiseTarget).to.equal(RAISE_TARGET_BNB);
@@ -180,17 +196,24 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
         if (remaining <= 0n) break;
 
-        const contribution = remaining < maxContribution ? remaining : maxContribution;
+        const contribution =
+          remaining < maxContribution ? remaining : maxContribution;
 
         await launchpadManager.connect(contributor).contribute(tokenAddress, {
           value: contribution,
         });
 
-        console.log(`  💵 Contributor ${i + 1}: ${ethers.formatEther(contribution)} BNB`);
+        console.log(
+          `  💵 Contributor ${i + 1}: ${ethers.formatEther(contribution)} BNB`
+        );
       }
 
       const launchInfo = await launchpadManager.getLaunchInfo(tokenAddress);
-      console.log(`  ✅ Raise completed! Total: ${ethers.formatEther(launchInfo.totalRaised)} BNB`);
+      console.log(
+        `  ✅ Raise completed! Total: ${ethers.formatEther(
+          launchInfo.totalRaised
+        )} BNB`
+      );
 
       expect(launchInfo.raiseCompleted).to.be.true;
       expect(launchInfo.totalRaised).to.be.gte(RAISE_TARGET_BNB);
@@ -200,23 +223,33 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log("\n🎁 PROJECT_RAISE LIFECYCLE - PHASE 3: Token Claims");
 
       const contributor = contributors[0];
-      await launchpadManager.connect(contributor).claimContributorTokens(tokenAddress);
+      await launchpadManager
+        .connect(contributor)
+        .claimContributorTokens(tokenAddress);
 
       const balance = await token.balanceOf(contributor.address);
-      console.log(`  ✅ Contributor claimed: ${ethers.formatEther(balance)} tokens`);
+      console.log(
+        `  ✅ Contributor claimed: ${ethers.formatEther(balance)} tokens`
+      );
 
       expect(balance).to.be.gt(0);
 
       // Check founder got immediate allocation
       const founderBalance = await token.balanceOf(founder.address);
       const expectedImmediate = ethers.parseEther("20000000"); // 10% of 200M
-      console.log(`  👨‍💼 Founder received: ${ethers.formatEther(founderBalance)} tokens (immediate 10%)`);
+      console.log(
+        `  👨‍💼 Founder received: ${ethers.formatEther(
+          founderBalance
+        )} tokens (immediate 10%)`
+      );
 
       expect(founderBalance).to.equal(expectedImmediate);
     });
 
     it("Phase 4: Should graduate to PancakeSwap and lock LP", async function () {
-      console.log("\n🎓 PROJECT_RAISE LIFECYCLE - PHASE 4: PancakeSwap Graduation");
+      console.log(
+        "\n🎓 PROJECT_RAISE LIFECYCLE - PHASE 4: PancakeSwap Graduation"
+      );
 
       await launchpadManager.graduateToPancakeSwap(tokenAddress);
 
@@ -225,7 +258,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       const lockInfo = await lpFeeHarvester.getLockInfo(tokenAddress);
       console.log(`  ✅ Graduated to PancakeSwap`);
-      console.log(`  🔒 LP tokens locked: ${ethers.formatEther(lockInfo.lpAmount)}`);
+      console.log(
+        `  🔒 LP tokens locked: ${ethers.formatEther(lockInfo.lpAmount)}`
+      );
       console.log(`  👤 Creator: ${lockInfo.creator}`);
 
       expect(lockInfo.active).to.be.true;
@@ -240,11 +275,15 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       await ethers.provider.send("evm_increaseTime", [24 * 60 * 60]);
       await ethers.provider.send("evm_mine", []);
 
-      const founderBalanceBefore = await ethers.provider.getBalance(founder.address);
+      const founderBalanceBefore = await ethers.provider.getBalance(
+        founder.address
+      );
 
       await lpFeeHarvester.harvestFees(tokenAddress);
 
-      const founderBalanceAfter = await ethers.provider.getBalance(founder.address);
+      const founderBalanceAfter = await ethers.provider.getBalance(
+        founder.address
+      );
       const fees = founderBalanceAfter - founderBalanceBefore;
 
       console.log(`  💰 Fees harvested: ${ethers.formatEther(fees)} BNB`);
@@ -262,13 +301,23 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);
       await ethers.provider.send("evm_mine", []);
 
-      const claimable = await launchpadManager.getClaimableAmounts(tokenAddress);
-      console.log(`  📊 Claimable after 30 days: ${ethers.formatEther(claimable.claimableTokens)} tokens`);
+      const claimable = await launchpadManager.getClaimableAmounts(
+        tokenAddress
+      );
+      console.log(
+        `  📊 Claimable after 30 days: ${ethers.formatEther(
+          claimable.claimableTokens
+        )} tokens`
+      );
 
       await launchpadManager.connect(founder).claimFounderTokens(tokenAddress);
 
       const founderBalance = await token.balanceOf(founder.address);
-      console.log(`  ✅ Founder total balance: ${ethers.formatEther(founderBalance)} tokens`);
+      console.log(
+        `  ✅ Founder total balance: ${ethers.formatEther(
+          founderBalance
+        )} tokens`
+      );
       console.log(`     (Initial 20M + vested portion)`);
 
       expect(founderBalance).to.be.gt(ethers.parseEther("20000000")); // More than initial
@@ -284,11 +333,19 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       console.log(`  Token: ${await token.name()} (${await token.symbol()})`);
       console.log(`  Total Supply: ${ethers.formatEther(totalSupply)}`);
-      console.log(`  Funds Raised: ${ethers.formatEther(launchInfo.totalRaised)} BNB`);
-      console.log(`  Graduated: ${launchInfo.graduatedToPancakeSwap ? "✅" : "❌"}`);
+      console.log(
+        `  Funds Raised: ${ethers.formatEther(launchInfo.totalRaised)} BNB`
+      );
+      console.log(
+        `  Graduated: ${launchInfo.graduatedToPancakeSwap ? "✅" : "❌"}`
+      );
       console.log(`  LP Locked: ${lockInfo.active ? "✅" : "❌"}`);
       console.log(`  Harvest Count: ${lockInfo.harvestCount}`);
-      console.log(`  Total Fees Harvested: ${ethers.formatEther(lockInfo.totalFeesHarvested)} BNB`);
+      console.log(
+        `  Total Fees Harvested: ${ethers.formatEther(
+          lockInfo.totalFeesHarvested
+        )} BNB`
+      );
       console.log(`\n✅ PROJECT_RAISE lifecycle completed successfully!`);
     });
   });
@@ -303,22 +360,23 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       const initialBuy = ethers.parseEther("0"); // No initial buy to avoid reentrancy
       const initialLiquidity = ethers.parseEther("1"); // 1 BNB initial liquidity
 
-      const tx = await launchpadManager
-        .connect(founder)
-        .createInstantLaunch(
-          "SafuInstant Token",
-          "SINST",
-          1_000_000_000,
-          defaultMetadata,
-          initialBuy,
-          false, // Don't burn LP
-          { value: initialLiquidity }
-        );
+      const tx = await launchpadManager.connect(founder).createInstantLaunch(
+        "SafuInstant Token",
+        "SINST",
+        1_000_000_000,
+        defaultMetadata,
+        initialBuy,
+        false, // Don't burn LP
+        { value: initialLiquidity }
+      );
 
       const receipt = await tx.wait();
       const event = receipt?.logs.find((log: any) => {
         try {
-          return launchpadManager.interface.parseLog(log as any)?.name === "InstantLaunchCreated";
+          return (
+            launchpadManager.interface.parseLog(log as any)?.name ===
+            "InstantLaunchCreated"
+          );
         } catch {
           return false;
         }
@@ -330,15 +388,19 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       console.log(`  ✅ Token created: ${tokenAddress}`);
       console.log(`  📝 Name: ${await token.name()}`);
-      console.log(`  💧 Initial Liquidity: ${ethers.formatEther(initialLiquidity)} BNB`);
+      console.log(
+        `  💧 Initial Liquidity: ${ethers.formatEther(initialLiquidity)} BNB`
+      );
 
-      const poolInfo = await bondingCurveDEX.getPoolInfo(tokenAddress);
+      const poolInfo = await bondingCurveDEX.pools(tokenAddress);
       expect(poolInfo.active).to.be.true;
       expect(poolInfo.graduated).to.be.false;
     });
 
     it("Phase 2: Should allow immediate trading on bonding curve", async function () {
-      console.log("\n📈 INSTANT_LAUNCH LIFECYCLE - PHASE 2: Bonding Curve Trading");
+      console.log(
+        "\n📈 INSTANT_LAUNCH LIFECYCLE - PHASE 2: Bonding Curve Trading"
+      );
 
       const trader1 = traders[0];
       const trader2 = traders[1];
@@ -349,7 +411,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       });
 
       const balance1 = await token.balanceOf(trader1.address);
-      console.log(`  🛒 Trader 1 bought: ${ethers.formatEther(balance1)} tokens for 2 BNB`);
+      console.log(
+        `  🛒 Trader 1 bought: ${ethers.formatEther(balance1)} tokens for 2 BNB`
+      );
 
       // Second buy
       await bondingCurveDEX.connect(trader2).buyTokens(tokenAddress, 0, {
@@ -357,11 +421,19 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       });
 
       const balance2 = await token.balanceOf(trader2.address);
-      console.log(`  🛒 Trader 2 bought: ${ethers.formatEther(balance2)} tokens for 3 BNB`);
+      console.log(
+        `  🛒 Trader 2 bought: ${ethers.formatEther(balance2)} tokens for 3 BNB`
+      );
 
       const poolInfo = await bondingCurveDEX.getPoolInfo(tokenAddress);
-      console.log(`  💹 Current Price: ${ethers.formatEther(poolInfo.currentPrice)} BNB per token`);
-      console.log(`  💰 Market Cap: $${ethers.formatEther(poolInfo.marketCapUSD)}`);
+      console.log(
+        `  💹 Current Price: ${ethers.formatEther(
+          poolInfo.currentPrice
+        )} BNB per token`
+      );
+      console.log(
+        `  💰 Market Cap: $${ethers.formatEther(poolInfo.marketCapUSD)}`
+      );
       console.log(`  📊 Graduation Progress: ${poolInfo.graduationProgress}%`);
 
       expect(balance1).to.be.gt(0);
@@ -369,33 +441,49 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     });
 
     it("Phase 3: Should accumulate creator fees during trading", async function () {
-      console.log("\n💵 INSTANT_LAUNCH LIFECYCLE - PHASE 3: Creator Fee Accumulation");
+      console.log(
+        "\n💵 INSTANT_LAUNCH LIFECYCLE - PHASE 3: Creator Fee Accumulation"
+      );
 
       const feeInfo = await bondingCurveDEX.getCreatorFeeInfo(tokenAddress);
-      console.log(`  💰 Accumulated Fees: ${ethers.formatEther(feeInfo.accumulatedFees)} BNB`);
-      console.log(`  👤 Creator: ${feeInfo.creator}`);
+      console.log(
+        `  💰 Accumulated Fees: ${ethers.formatEther(
+          feeInfo.accumulatedFees
+        )} BNB`
+      );
 
       expect(feeInfo.accumulatedFees).to.be.gt(0);
-      expect(feeInfo.creator).to.equal(founder.address);
     });
 
     it("Phase 4: Should graduate when BNB threshold is reached", async function () {
-      console.log("\n🎓 INSTANT_LAUNCH LIFECYCLE - PHASE 4: Automatic Graduation");
+      console.log(
+        "\n🎓 INSTANT_LAUNCH LIFECYCLE - PHASE 4: Automatic Graduation"
+      );
 
       // Buy more to reach graduation threshold (15 BNB)
       console.log(`  🔄 Buying tokens to reach 15 BNB threshold...`);
 
       for (let i = 0; i < 5; i++) {
         try {
-          await bondingCurveDEX.connect(traders[i % traders.length]).buyTokens(tokenAddress, 0, {
-            value: ethers.parseEther("3"),
-          });
+          await bondingCurveDEX
+            .connect(traders[i % traders.length])
+            .buyTokens(tokenAddress, 0, {
+              value: ethers.parseEther("3"),
+            });
 
           const poolInfo = await bondingCurveDEX.getPoolInfo(tokenAddress);
-          console.log(`    Buy ${i + 1}: BNB Reserve = ${ethers.formatEther(poolInfo.bnbReserve)} BNB`);
+          console.log(
+            `    Buy ${i + 1}: BNB Reserve = ${ethers.formatEther(
+              poolInfo.bnbReserve
+            )} BNB`
+          );
 
           if (poolInfo.graduated) {
-            console.log(`  ✅ Pool graduated at ${ethers.formatEther(poolInfo.bnbReserve)} BNB!`);
+            console.log(
+              `  ✅ Pool graduated at ${ethers.formatEther(
+                poolInfo.bnbReserve
+              )} BNB!`
+            );
             break;
           }
         } catch (e) {
@@ -415,7 +503,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     });
 
     it("Phase 5: Should graduate to PancakeSwap and lock LP", async function () {
-      console.log("\n🔒 INSTANT_LAUNCH LIFECYCLE - PHASE 5: PancakeSwap Migration & LP Lock");
+      console.log(
+        "\n🔒 INSTANT_LAUNCH LIFECYCLE - PHASE 5: PancakeSwap Migration & LP Lock"
+      );
 
       const poolInfo = await bondingCurveDEX.getPoolInfo(tokenAddress);
 
@@ -426,7 +516,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         const lockInfo = await lpFeeHarvester.getLockInfo(tokenAddress);
 
         console.log(`  ✅ Graduated to PancakeSwap`);
-        console.log(`  🔒 LP tokens locked: ${ethers.formatEther(lockInfo.lpAmount)}`);
+        console.log(
+          `  🔒 LP tokens locked: ${ethers.formatEther(lockInfo.lpAmount)}`
+        );
         console.log(`  👤 Creator: ${lockInfo.creator}`);
         console.log(`  📍 Project InfoFi: ${lockInfo.projectInfoFi}`);
 
@@ -448,18 +540,26 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         await ethers.provider.send("evm_increaseTime", [24 * 60 * 60]);
         await ethers.provider.send("evm_mine", []);
 
-        const creatorBalanceBefore = await ethers.provider.getBalance(founder.address);
+        const creatorBalanceBefore = await ethers.provider.getBalance(
+          founder.address
+        );
 
         await lpFeeHarvester.harvestFees(tokenAddress);
 
-        const creatorBalanceAfter = await ethers.provider.getBalance(founder.address);
+        const creatorBalanceAfter = await ethers.provider.getBalance(
+          founder.address
+        );
         const fees = creatorBalanceAfter - creatorBalanceBefore;
 
         console.log(`  💰 Fees harvested: ${ethers.formatEther(fees)} BNB`);
 
         const lockInfoAfter = await lpFeeHarvester.getLockInfo(tokenAddress);
         console.log(`  ✅ Harvest count: ${lockInfoAfter.harvestCount}`);
-        console.log(`  📊 Total fees: ${ethers.formatEther(lockInfoAfter.totalFeesHarvested)} BNB`);
+        console.log(
+          `  📊 Total fees: ${ethers.formatEther(
+            lockInfoAfter.totalFeesHarvested
+          )} BNB`
+        );
 
         expect(lockInfoAfter.harvestCount).to.be.gt(0);
       } else {
@@ -478,14 +578,26 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(`  Token: ${await token.name()} (${await token.symbol()})`);
       console.log(`  Total Supply: ${ethers.formatEther(totalSupply)}`);
       console.log(`  Pool Graduated: ${poolInfo.graduated ? "✅" : "❌"}`);
-      console.log(`  BNB Reserve: ${ethers.formatEther(poolInfo.bnbReserve)} BNB`);
-      console.log(`  Market Cap: $${ethers.formatEther(poolInfo.marketCapUSD)}`);
-      console.log(`  PancakeSwap Migration: ${launchInfo.graduatedToPancakeSwap ? "✅" : "❌"}`);
+      console.log(
+        `  BNB Reserve: ${ethers.formatEther(poolInfo.bnbReserve)} BNB`
+      );
+      console.log(
+        `  Market Cap: $${ethers.formatEther(poolInfo.marketCapUSD)}`
+      );
+      console.log(
+        `  PancakeSwap Migration: ${
+          launchInfo.graduatedToPancakeSwap ? "✅" : "❌"
+        }`
+      );
       console.log(`  LP Locked: ${lockInfo.active ? "✅" : "❌"}`);
 
       if (lockInfo.active) {
         console.log(`  Harvest Count: ${lockInfo.harvestCount}`);
-        console.log(`  Total Fees Harvested: ${ethers.formatEther(lockInfo.totalFeesHarvested)} BNB`);
+        console.log(
+          `  Total Fees Harvested: ${ethers.formatEther(
+            lockInfo.totalFeesHarvested
+          )} BNB`
+        );
       }
 
       console.log(`\n✅ INSTANT_LAUNCH lifecycle completed successfully!`);
@@ -497,7 +609,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log("\n🔍 LAUNCH TYPE COMPARISON");
       console.log("\n PROJECT_RAISE:");
       console.log("  • Fundraising period with contributor allocations");
-      console.log("  • 70% tokens to contributors, 20% to founder (vested), 10% to LP");
+      console.log(
+        "  • 70% tokens to contributors, 20% to founder (vested), 10% to LP"
+      );
       console.log("  • Founder gets 10% immediately, rest vested over time");
       console.log("  • Requires minimum 50 BNB raise");
       console.log("  • Contributors limited to 4.44 BNB per wallet");
