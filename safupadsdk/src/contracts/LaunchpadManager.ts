@@ -329,6 +329,49 @@ export class LaunchpadManager extends BaseContract {
   }
 
   /**
+   * Handle post-graduation buying for PROJECT_RAISE tokens
+   *
+   * Allows users to buy tokens after a PROJECT_RAISE has graduated to PancakeSwap.
+   * The function:
+   * - Takes 1% platform fee on BNB
+   * - Swaps remaining BNB for tokens via PancakeSwap
+   * - Sends tokens directly to buyer
+   *
+   * Note: Only works for PROJECT_RAISE tokens that have graduated
+   *
+   * @param tokenAddress Address of the PROJECT_RAISE token
+   * @param bnbAmount Amount of BNB to spend (in ether string)
+   * @param minTokensOut Minimum tokens to receive (slippage protection, in ether string)
+   * @param options Transaction options
+   */
+  async handlePostGraduationBuy(
+    tokenAddress: string,
+    bnbAmount: string,
+    minTokensOut: string,
+    options?: TxOptions
+  ): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+
+    const amount = ethers.parseEther(bnbAmount);
+    const minOut = ethers.parseEther(minTokensOut);
+
+    const txOptions = this.buildTxOptions(options, GAS_LIMITS.CONTRIBUTE); // Similar gas to contribute
+    txOptions.value = amount; // Must send BNB with transaction
+
+    const tx = await this.contract.handlePostGraduationBuy(
+      tokenAddress,
+      minOut,
+      txOptions
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
    * Get launch information
    * ✅ UPDATED: No longer returns projectInfoFiWallet
    */
