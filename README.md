@@ -15,7 +15,7 @@ All smart contracts in this ecosystem are deployed and operational on BNB Chain,
 
 ## Ecosystem Components
 
-### 1. SafuAcademyy - Decentralized Education Platform
+### 1. SafuAcademy - Decentralized Education Platform
 
 On-chain educational platform with gasless transactions, allowing domain owners to create and participate in blockchain courses.
 
@@ -28,7 +28,7 @@ On-chain educational platform with gasless transactions, allowing domain owners 
 - Progress tracking stored on BSC
 - Integration with SafuDomains naming service
 
-**Directory**: `SafuAcademyy/`
+**Directory**: `SafuAcademy/`
 
 ### 2. SafuDomains - Decentralized Naming Service
 
@@ -144,7 +144,7 @@ graph TD
     style P fill:#90EE90
 ```
 
-### SafuAcademyy - Learning Journey
+### SafuAcademy - Learning Journey
 
 ```mermaid
 graph TD
@@ -256,7 +256,7 @@ graph TB
     end
 
     subgraph "Frontend Layer - Vercel"
-        F1[SafuAcademyy Frontend<br/>academy.safuverse.com]
+        F1[SafuAcademy Frontend<br/>academy.safuverse.com]
         F2[SafuDomains Frontend<br/>names.safuverse.com]
         F3[Safucard Frontend<br/>safucard.xyz]
         F4[SafuAgents Frontend<br/>ai.safuverse.com]
@@ -264,7 +264,7 @@ graph TB
     end
 
     subgraph "Backend Layer"
-        B1[SafuAcademyy Relayer<br/>Gasless Transactions]
+        B1[SafuAcademy Relayer<br/>Gasless Transactions]
         B2[Safucard API<br/>Score Calculation]
         B3[SafuAgents API<br/>OpenAI Integration]
     end
@@ -450,7 +450,7 @@ graph TB
     style LP_DIST fill:#FFD700
 ```
 
-### Data Flow - SafuAcademyy Gasless Enrollment
+### Data Flow - SafuAcademy Gasless Enrollment
 
 ```mermaid
 sequenceDiagram
@@ -534,7 +534,7 @@ sequenceDiagram
 ```
 Safuverse/
 ├── SafuAgents/          # AI agents interface
-├── SafuAcademyy/          # Educational platform contracts & frontend
+├── SafuAcademy/          # Educational platform contracts & frontend
 ├── SafuLanding/         # Marketing website
 ├── Safucard/            # NFT scorecard system
 │   ├── SafucardNFT/     # Smart contracts
@@ -582,7 +582,7 @@ RPC endpoints are configured in each project's `hardhat.config.ts` or frontend c
 
 All smart contracts are deployed and verified on BSCScan. Below are the deployed contract addresses for each component:
 
-### SafuAcademyy - Education Platform
+### SafuAcademy - Education Platform
 
 **BSC Mainnet (Chain ID: 56)**:
 
@@ -665,7 +665,7 @@ This ecosystem leverages BNB Chain's unique advantages:
 
 ## Live Deployments on BNB Chain
 
-- **SafuAcademyy**: https://academy.safuverse.com
+- **SafuAcademy**: https://academy.safuverse.com
 - **SafuDomains**: https://names.safuverse.com
 - **Safucard**: https://safucard.xyz
 - **SafuAgents**: https://ai.safuverse.com
@@ -835,7 +835,7 @@ For the entire monorepo (all projects):
 
 ```bash
 # Install all dependencies (from root)
-for dir in SafuPad SafuAcademyy SafuDomains Safucard SafuAgents SafuLanding safupadsdk; do
+for dir in SafuPad SafuAcademy SafuDomains Safucard SafuAgents SafuLanding safupadsdk; do
   (cd "$dir" && npm install)
 done
 ```
@@ -879,7 +879,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Individual projects also contain their own LICENSE files:
 
 - [SafuPad/LICENSE](SafuPad/LICENSE)
-- [SafuAcademyy/LICENSE]SafuAcademymy/LICENSE)
+- [SafuAcademy/LICENSE](SafuAcademy/LICENSE)
 - [SafuDomains/LICENSE.txt](SafuDomains/LICENSE.txt)
 - [Safucard/SafucardNFT/LICENSE](Safucard/SafucardNFT/LICENSE)
 - [SafuAgents/LICENSE](SafuAgents/LICENSE)
