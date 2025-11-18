@@ -1,12 +1,11 @@
 import { expect } from "chai";
-import {
+import type {
   TokenFactoryV2,
-  LaunchpadTokenV2,
+
 } from "../types/ethers-contracts/index.js";
 import { network } from "hardhat";
 
 const { ethers } = await network.connect();
-
 describe("TokenFactoryV2", function () {
   let tokenFactory: TokenFactoryV2;
   let owner: any;
@@ -452,7 +451,7 @@ describe("TokenFactoryV2", function () {
   });
 
   describe("Token Functionality", function () {
-    let token: LaunchpadTokenV2;
+    let token: any;
 
     beforeEach(async function () {
       const tx = await tokenFactory

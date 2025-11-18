@@ -3,23 +3,21 @@ import { network } from "hardhat";
 
 const { ethers } = await network.connect();
 
-import {
+import type {
   LPFeeHarvester,
   TokenFactoryV2,
-  LaunchpadTokenV2,
   MockPancakeRouter,
   MockPancakePair,
   MockPancakeFactory,
 } from "../types/ethers-contracts/index.js";
 import { parseEther } from "ethers";
-
 describe("LPFeeHarvester", function () {
   let lpFeeHarvester: LPFeeHarvester;
   let tokenFactory: TokenFactoryV2;
   let mockPancakeRouter: MockPancakeRouter;
   let mockPancakeFactory: MockPancakeFactory;
   let mockPancakePair: MockPancakePair;
-  let projectToken: LaunchpadTokenV2;
+  let projectToken: any;
   let owner: any;
   let creator: any;
   let projectInfoFi: any;

@@ -16,23 +16,21 @@
 
 import { expect } from "chai";
 import hre from "hardhat";
-import {
+import type {
   BondingCurveDEX,
   TokenFactoryV2,
-  LaunchpadTokenV2,
   MockPriceOracle,
   MockPancakeFactory,
   MockPancakeRouter,
 } from "../types/ethers-contracts/index.js";
 import { network } from "hardhat";
-
 const { ethers } = await network.connect();
 
 describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
   let bondingCurveDEX: BondingCurveDEX;
   let tokenFactory: TokenFactoryV2;
   let priceOracle: MockPriceOracle;
-  let token: LaunchpadTokenV2;
+  let token: any;
   let owner: any;
   let trader1: any;
   let trader2: any;
@@ -162,51 +160,53 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
   });
   describe("Pool Creation - INSTANT_LAUNCH with Initial BNB Seed", function () {
     it("Should create a pool with correct reserves", async function () {
+      const tx1 = await tokenFactory.createToken(
+        "Tester Token",
+        "TEST",
+        1_000_000_000,
+        18,
+        owner.address,
+        defaultMetadata
+      );
 
-       const tx1 = await tokenFactory.createToken(
-         "Tester Token",
-         "TEST",
-         1_000_000_000,
-         18,
-         owner.address,
-         defaultMetadata
-       );
+      const receipt2 = await tx1.wait();
+      const event2 = receipt2?.logs?.find((log: any) => {
+        try {
+          return (
+            tokenFactory.interface.parseLog(
+              log as unknown as Parameters<
+                typeof tokenFactory.interface.parseLog
+              >[0]
+            )?.name === "TokenCreated"
+          );
+        } catch {
+          return false;
+        }
+      });
 
-       const receipt2 = await tx1.wait();
-       const event2 = receipt2?.logs?.find((log: any) => {
-         try {
-           return (
-             tokenFactory.interface.parseLog(
-               log as unknown as Parameters<
-                 typeof tokenFactory.interface.parseLog
-               >[0]
-             )?.name === "TokenCreated"
-           );
-         } catch {
-           return false;
-         }
-       });
+      const parsedEvent2 = tokenFactory.interface.parseLog(event2 as any);
+      const tokenAddress2 = parsedEvent2?.args.tokenAddress;
+      const token2 = await ethers.getContractAt(
+        "LaunchpadTokenV2",
+        tokenAddress2
+      );
 
-       const parsedEvent2 = tokenFactory.interface.parseLog(event2 as any);
-       const tokenAddress2 = parsedEvent2?.args.tokenAddress;
-       const token2 = await ethers.getContractAt("LaunchpadTokenV2", tokenAddress2);
+      // ✅ Set exemptions BEFORE creating pool
+      await token2.setExemption(await bondingCurveDEX.getAddress(), true);
 
-       // ✅ Set exemptions BEFORE creating pool
-       await token2.setExemption(await bondingCurveDEX.getAddress(), true);
+      await token2.approve(
+        await bondingCurveDEX.getAddress(),
+        INITIAL_LIQUIDITY_TOKENS
+      );
 
-       await token2.approve(
-         await bondingCurveDEX.getAddress(),
-         INITIAL_LIQUIDITY_TOKENS
-       );
-
-       // ✅ FIXED: Use createInstantLaunchPool for INSTANT_LAUNCH (not createPool which is for PROJECT_RAISE)
-       // BondingCurveDEX is ONLY for INSTANT_LAUNCH. PROJECT_RAISE uses LaunchpadManager directly.
-       await bondingCurveDEX.createInstantLaunchPool(
-         await token2.getAddress(),
-         INITIAL_LIQUIDITY_TOKENS,
-         owner.address, // creator
-         false
-       );
+      // ✅ FIXED: Use createInstantLaunchPool for INSTANT_LAUNCH (not createPool which is for PROJECT_RAISE)
+      // BondingCurveDEX is ONLY for INSTANT_LAUNCH. PROJECT_RAISE uses LaunchpadManager directly.
+      await bondingCurveDEX.createInstantLaunchPool(
+        await token2.getAddress(),
+        INITIAL_LIQUIDITY_TOKENS,
+        owner.address, // creator
+        false
+      );
 
       const poolInfo = await bondingCurveDEX.getPoolInfo(
         await token2.getAddress()
@@ -215,12 +215,10 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       // ✅ FIXED: Expected reserve is 800M tokens on curve
       // Input: 900M (90% of 1B), Reserved: 100M (10% of 1B), On curve: 800M (80% of 1B)
       const expectedReserve = ethers.parseEther("800000000");
-      expect(poolInfo.bnbReserve).to.equal(
-       0
-      );
+      expect(poolInfo.bnbReserve).to.equal(0);
       expect(poolInfo.graduated).to.be.false;
     });
-    
+
     it("Should set graduation market cap in BNB based on USD threshold", async function () {
       const poolInfo = await bondingCurveDEX.getPoolInfo(
         await token.getAddress()
@@ -265,7 +263,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
   });
 
   describe("Pool Creation - INSTANT_LAUNCH without Initial BNB", function () {
-    let instantToken: LaunchpadTokenV2;
+    let instantToken: any;
 
     beforeEach(async function () {
       const tx = await tokenFactory.createToken(
@@ -514,7 +512,10 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
 
       // getBuyQuote should revert after graduation
       await expect(
-        bondingCurveDEX.getBuyQuote(await token.getAddress(), ethers.parseEther("1"))
+        bondingCurveDEX.getBuyQuote(
+          await token.getAddress(),
+          ethers.parseEther("1")
+        )
       ).to.be.revertedWith("Buying forbidden after graduation");
     });
   });

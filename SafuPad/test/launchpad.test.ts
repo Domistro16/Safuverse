@@ -3,11 +3,10 @@ import { network } from "hardhat";
 
 const { ethers } = await network.connect();
 
-import {
+import type {
   LaunchpadManagerV3,
   TokenFactoryV2,
   BondingCurveDEX,
-  LaunchpadTokenV2,
   MockPriceOracle,
   MockPancakeRouter,
   LPFeeHarvester,

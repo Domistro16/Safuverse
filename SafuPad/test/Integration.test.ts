@@ -3,16 +3,16 @@ import { network } from "hardhat";
 
 const { ethers } = await network.connect();
 import { ethers as ethersLib } from "ethers";
-import {
+import type {
   TokenFactoryV2,
   LaunchpadManagerV3,
   BondingCurveDEX,
-  LaunchpadTokenV2,
   MockPriceOracle,
   LPFeeHarvester,
   MockPancakeRouter,
   MockPancakeFactory,
 } from "../types/ethers-contracts/index.js";
+
 
 describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", function () {
   let tokenFactory: TokenFactoryV2;
@@ -141,7 +141,7 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
 
   describe("Full Launch Lifecycle - Option 1 (Project Raise) with LP Harvester", function () {
     let tokenAddress: string;
-    let token: LaunchpadTokenV2;
+    let token: any;
 
     it("Should complete entire lifecycle from creation to LP locking", async function () {
       // ============================================================
