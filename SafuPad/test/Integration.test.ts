@@ -376,7 +376,7 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
           platformFee.address
         );
 
-        // Verify fee distribution (70% creator, 20% project, 10% platform)
+        // Verify fee distribution (70% creator, 0% project, 30% platform)
         const creatorFees = creatorBalanceAfter - creatorBalanceBefore;
         const projectFees =
           projectInfoFiBalanceAfter - projectInfoFiBalanceBefore;
@@ -391,7 +391,7 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
         );
 
         expect(creatorFees).to.be.gt(0);
-        expect(projectFees).to.be.gt(0);
+        expect(projectFees).to.equal(0); // Project InfoFi gets 0%
         expect(platformFees).to.be.gt(0);
 
         // Verify 5% LP safety cap (FIX #3)
@@ -808,7 +808,7 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
       expect(lpRemoved).to.be.lte(maxAllowedRemoval);
     });
 
-    it("Should distribute fees in 70/20/10 ratio", async function () {
+    it("Should distribute fees in 70/0/30 ratio", async function () {
       await ethers.provider.send("evm_increaseTime", [24 * 60 * 60]);
       await ethers.provider.send("evm_mine", []);
 
@@ -830,13 +830,10 @@ describe("Integration Tests - Complete Launch Lifecycle with LP Harvester", func
       const projectFees = projectAfter - projectBefore;
       const platformFees = platformAfter - platformBefore;
 
-      // Verify ratio approximately 70:20:10
-      expect(projectFees * 7n).to.be.closeTo(
-        creatorFees * 2n,
-        ethers.parseEther("0.01")
-      );
+      // Verify ratio: 70% creator, 0% project, 30% platform
+      expect(projectFees).to.equal(0); // Project InfoFi gets 0%
       expect(platformFees * 7n).to.be.closeTo(
-        creatorFees,
+        creatorFees * 3n,
         ethers.parseEther("0.01")
       );
     });
