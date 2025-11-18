@@ -562,9 +562,9 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
         platformFee.address
       );
 
-      // 50% of 0.1 BNB = 0.05 BNB for liquidity
-      // 1% of 0.05 BNB = 0.0005 BNB platform fee
-      const expectedFee = ethers.parseEther("0.0005");
+      // 50% of 50 BNB = 25 BNB for liquidity
+      // 1% of 25 BNB = 0.25 BNB platform fee
+      const expectedFee = ethers.parseEther("0.25");
       const actualFee = platformBalanceAfter - platformBalanceBefore;
 
       expect(actualFee).to.equal(expectedFee);
@@ -588,7 +588,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
         launchpadManager
           .connect(user1)
           .handlePostGraduationSell(tokenAddress, sellAmount, 0)
-      ).to.not.be.reverted;
+      ).to.not.be.revert(ethers);
     });
     it("Should lock LP tokens in LPFeeHarvester", async function () {
       await launchpadManager.graduateToPancakeSwap(tokenAddress);
@@ -605,8 +605,8 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
         "Burn Token",
         "BURN",
         1_000_000_000,
-        ethers.parseEther("0.1"),
-        ethers.parseEther("0.5"),
+        ethers.parseEther("50"),
+        ethers.parseEther("100"),
         90 * 24 * 60 * 60,
         defaultMetadata,
         true // Burn LP
@@ -717,8 +717,11 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       );
       const founderBalance = await token.balanceOf(founder.address);
 
-      // Should have initial 50% + some vested amount
-      expect(founderBalance).to.be.gt(ethers.parseEther("100000000")); // More than initial 100M
+      // Founder allocation: 20% of 1B = 200M total
+      // Initial release: 10% of 200M = 20M
+      // After 30 days (1/3 of 90-day vesting): 20M + ~60M (1/3 of 180M) = ~80M
+      expect(founderBalance).to.be.gt(ethers.parseEther("20000000")); // More than initial 20M
+      expect(founderBalance).to.be.lte(ethers.parseEther("200000000")); // Less than total 200M
     });
 
     it("Should allow founder to claim all tokens after full vesting", async function () {
