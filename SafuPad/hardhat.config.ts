@@ -3,15 +3,15 @@ import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mo
 import { configVariable } from "hardhat/config";
 import hardhatNetworkHelpers from "@nomicfoundation/hardhat-network-helpers";
 import hardhatNetworkHelpersPlugin from "@nomicfoundation/hardhat-network-helpers";
-import hardhatTypechain from "@nomicfoundation/hardhat-typechain";
+import hardhatTypechain from "@nomicfoundation/hardhat-typechain";         
 const config: HardhatUserConfig = {
   plugins: [
     hardhatToolboxMochaEthersPlugin,
     hardhatNetworkHelpersPlugin,
     hardhatNetworkHelpers,
-    hardhatTypechain,
+    hardhatTypechain
   ],
- 
+
   solidity: {
     profiles: {
       default: {

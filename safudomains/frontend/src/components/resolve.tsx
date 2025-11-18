@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { keccak256, toBytes } from 'viem'
+import { keccak256, toBytes, zeroAddress } from 'viem'
 import { useAccount } from 'wagmi'
 import Update from './updateTextRecords'
 import Unwrap from './unwrap'
@@ -260,7 +260,7 @@ const Resolve = () => {
                 </div>
               )}
 
-              {address != '' ? (
+              {address != zeroAddress ? (
                 <div className="mt-5">
                   <div className="font-semibold text-gray-300 ml-2 text-md">
                     Address{' '}

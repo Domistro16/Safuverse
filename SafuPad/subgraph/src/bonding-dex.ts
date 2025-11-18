@@ -20,7 +20,6 @@ export function handlePoolCreated(event: PoolCreated): void {
   pool.reservedTokens = event.params.reservedTokens;
   pool.virtualBnbReserve = event.params.virtualBnbReserve;
   pool.burnLP = false;
-
   pool.marketCap = BigInt.fromI32(0);
   pool.graduationMarketCap = BigInt.fromI32(0);
   pool.currentPrice = BigInt.fromI32(0);

@@ -40,7 +40,7 @@ export const useRegistrationPrice = ({
 
   // Fetch BNB/USD price from Chainlink oracle
   const { data: priceData } = useReadContract({
-    address: '0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526',
+    address: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE',
     abi: PriceAbi as any,
     functionName: 'latestRoundData',
   })
@@ -80,7 +80,14 @@ export const useRegistrationPrice = ({
       usd1: usd1cost.toFixed(2),
       cake: cakecost.toFixed(2),
     }
-  }, [latest, priceData, usd1TokenData, cakeTokenData, tokenLoading, caketokenLoading])
+  }, [
+    latest,
+    priceData,
+    usd1TokenData,
+    cakeTokenData,
+    tokenLoading,
+    caketokenLoading,
+  ])
 
   return {
     price,

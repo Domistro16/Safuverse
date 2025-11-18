@@ -58,6 +58,13 @@ interface IPancakeRouter02 {
         uint amountIn,
         address[] calldata path
     ) external view returns (uint[] memory amounts);
+
+    function swapExactETHForTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory amounts);
 }
 
 interface ILPFeeHarvester {
@@ -135,7 +142,7 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
     uint256 public constant CLAIM_COOLDOWN = 24 hours;
     uint256 public constant REDISTRIBUTION_PERIOD = 7 days;
     uint256 public constant INSTANT_LAUNCH_PANCAKESWAP_PERCENT = 20; // 20% reserved for PancakeSwap
-    uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 2% post-graduation fee
+    uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 1% post-graduation fee
     address public constant LP_BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
     // Anti-bot dynamic fee structure for INSTANT_LAUNCH
@@ -403,7 +410,10 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
         uint256 minTokensOut
     ) external payable nonReentrant whenNotPaused {
         Pool storage pool = pools[token];
-        require(!pool.graduated, "Buying forbidden after graduation");
+        if (pool.graduated) {
+            _buyTokensPostGraduation(token, minTokensOut);
+            return;
+        }
         require(pool.active, "Pool not active");
 
         require(msg.value > 0, "Must send BNB");
@@ -516,11 +526,9 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
     }
 
     /**
-* @notice Handle selling tokens after graduation
-
-* @dev Swaps half the tokens for BNB, adds liquidity with the rest
-*/
-
+     * @notice Handle selling tokens after graduation via PancakeSwap
+     * @dev Routes trade through PancakeSwap router
+     */
     function _handlePostGraduationSell(
         address token,
         uint256 tokenAmount,
@@ -528,46 +536,41 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
     ) private {
         Pool storage pool = pools[token];
         require(pool.graduated, "Pool not graduated");
-        require(pool.lpToken != address(0), "LP token not set");
 
         // Transfer tokens from seller
         IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
-        // Calculate and take 2% platform fee
+        // Take 2% platform fee
         uint256 platformFee = (tokenAmount * POST_GRADUATION_FEE_BPS) /
             BASIS_POINTS;
         uint256 tokensToSell = tokenAmount - platformFee;
 
-        // Swap ALL tokens for BNB (not half!)
+        // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
         IERC20(token).approve(address(pancakeRouter), tokensToSell);
+
         address[] memory path = new address[](2);
         path[0] = token;
         path[1] = wbnbAddress;
 
         uint256[] memory amounts = pancakeRouter.swapExactTokensForETH(
             tokensToSell,
-            minBNBOut, // User-specified minimum
+            minBNBOut,
             path,
-            address(this),
+            msg.sender, // ✅ Send BNB directly to seller
             block.timestamp + 300
         );
 
         uint256 bnbReceived = amounts[amounts.length - 1];
-
-        // ✅ FIXED: Check slippage on total BNB received
         require(bnbReceived >= minBNBOut, "Slippage too high");
 
-        // Update stats
-        PostGraduationStats storage stats = postGradStats[token];
-        stats.totalTokensSold += tokenAmount;
-
-        // Send platform fee to fee address
+        // Send platform fee tokens to fee address
         if (platformFee > 0) {
             IERC20(token).safeTransfer(platformFeeAddress, platformFee);
         }
 
-        // Send ALL BNB to seller (not 70%!)
-        payable(msg.sender).transfer(bnbReceived);
+        // Update stats
+        PostGraduationStats storage stats = postGradStats[token];
+        stats.totalTokensSold += tokenAmount;
 
         emit PostGraduationSell(
             msg.sender,
@@ -575,7 +578,56 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
             tokenAmount,
             bnbReceived,
             platformFee,
-            0 // No LP tokens generated
+            0
+        );
+    }
+
+    /**
+     * @notice Buy tokens after graduation via PancakeSwap
+     * @dev Routes trade through PancakeSwap router
+     */
+    function _buyTokensPostGraduation(
+        address token,
+        uint256 minTokensOut
+    ) private nonReentrant whenNotPaused {
+        Pool storage pool = pools[token];
+        require(pool.graduated, "Pool not graduated");
+        require(msg.value > 0, "Must send BNB");
+
+        // Take 1% platform fee
+        uint256 platformFee = (msg.value * POST_GRADUATION_FEE_BPS) /
+            BASIS_POINTS;
+        uint256 bnbToSpend = msg.value - platformFee;
+
+        // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
+        address[] memory path = new address[](2);
+        path[0] = wbnbAddress;
+        path[1] = token;
+
+        uint256[] memory amounts = pancakeRouter.swapExactETHForTokens{
+            value: bnbToSpend
+        }(
+            minTokensOut,
+            path,
+            msg.sender, // ✅ Send tokens directly to buyer
+            block.timestamp + 300
+        );
+
+        uint256 tokensReceived = amounts[amounts.length - 1];
+        require(tokensReceived >= minTokensOut, "Slippage too high");
+
+        // Send platform fee to fee address
+        if (platformFee > 0) {
+            payable(platformFeeAddress).transfer(platformFee);
+        }
+
+        emit TokensBought(
+            msg.sender,
+            token,
+            msg.value,
+            tokensReceived,
+            (bnbToSpend * 10 ** 18) / tokensReceived, // price
+            POST_GRADUATION_FEE_BPS
         );
     }
 

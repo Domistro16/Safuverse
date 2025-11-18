@@ -11,6 +11,7 @@ import { SiBnbchain } from 'react-icons/si'
 import { shortenAddress, getCID } from '../../utils/domainUtils'
 import Renew from '../renew'
 import React from 'react'
+import { zeroAddress } from 'viem'
 
 interface ProfileTabProps {
   label: string
@@ -190,15 +191,19 @@ const ProfileTab = ({
         )}
 
         <div>
-          <div className="font-semibold text-gray-300 ml-1">Addresses:</div>
-          <div className="text-sm bg-gray-900 inline-block px-3 py-1 mt-2 rounded-full hover:bg-gray-950 delay-200 duration-200 transition-all hover:scale-105 cursor-pointer flex">
-            <div className="flex items-center">
-              <span className="text-gray-400 mr-2 font-bold text-xl">
-                <SiBnbchain />
-              </span>{' '}
-              {!isPending ? shortenAddress(address as string) : ''}
+          {address != zeroAddress && (
+            <div>
+              <div className="font-semibold text-gray-300 ml-1">Addresses:</div>
+              <div className="text-sm bg-gray-900 inline-block px-3 py-1 mt-2 rounded-full hover:bg-gray-950 delay-200 duration-200 transition-all hover:scale-105 cursor-pointer flex">
+                <div className="flex items-center">
+                  <span className="text-gray-400 mr-2 font-bold text-xl">
+                    <SiBnbchain />
+                  </span>{' '}
+                  {!isPending ? shortenAddress(address as string) : ''}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <div className="text-sm text-blue-500 cursor-pointer font-bold ml-1">
           Ownership → View

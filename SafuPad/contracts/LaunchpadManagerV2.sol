@@ -198,6 +198,13 @@ interface IPancakeRouter02 {
         uint amountIn,
         address[] calldata path
     ) external view returns (uint[] memory amounts);
+
+    function swapExactETHForTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory amounts);
 }
 
 interface ILPFeeHarvester {
@@ -277,7 +284,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     uint256 public constant MIN_VESTING_DURATION = 90 days;
     uint256 public constant MAX_VESTING_DURATION = 180 days;
     uint256 public constant VESTING_RELEASE_INTERVAL = 30 days;
-    uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 2% post-graduation fee
+    uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 1% post-graduation fee
 
     address public constant LP_BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
@@ -1134,64 +1141,115 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         launchLiquidity[token].raisedFundsClaimed += claimable;
     }
 
-    /**
-* @notice Handle selling tokens after graduation
-
-* @dev Swaps half the tokens for BNB, adds liquidity with the rest
+   /**
+* @notice Handle selling tokens after graduation via PancakeSwap
+* @dev Routes trade through PancakeSwap router
 */
-    function handlePostGraduationSell(
-        address token,
-        uint256 tokenAmount,
-        uint256 minBNBOut
-    ) external nonReentrant {
-        LaunchBasics storage launch = launchBasics[token];
-        LaunchStatus storage status = launchStatus[token];
+function handlePostGraduationSell(
+    address token,
+    uint256 tokenAmount,
+    uint256 minBNBOut
+) external nonReentrant {
+    LaunchBasics storage launch = launchBasics[token];
+    LaunchStatus storage status = launchStatus[token];
 
-        require(status.graduatedToPancakeSwap, "Not graduated");
-        require(
-            launch.launchType == LaunchType.PROJECT_RAISE,
-            "Not a project raise"
-        );
+    require(status.graduatedToPancakeSwap, "Not graduated");
+    require(
+        launch.launchType == LaunchType.PROJECT_RAISE,
+        "Not a project raise"
+    );
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
+    // Transfer tokens from seller
+    IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
-        // Take 2% platform fee
-        uint256 platformFee = (tokenAmount * POST_GRADUATION_FEE_BPS) /
-            BASIS_POINTS;
-        uint256 tokensToSell = tokenAmount - platformFee;
+    // Take 2% platform fee
+    uint256 platformFee = (tokenAmount * POST_GRADUATION_FEE_BPS) / BASIS_POINTS;
+    uint256 tokensToSell = tokenAmount - platformFee;
 
-        IERC20(token).approve(address(pancakeRouter), tokensToSell);
-        address[] memory path = new address[](2);
-        path[0] = token;
-        path[1] = wbnbAddress;
+    // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
+    IERC20(token).approve(address(pancakeRouter), tokensToSell);
+    
+    address[] memory path = new address[](2);
+    path[0] = token;
+    path[1] = wbnbAddress;
 
-        uint256[] memory amounts = pancakeRouter.swapExactTokensForETH(
-            tokensToSell,
-            minBNBOut,
-            path,
-            address(this),
-            block.timestamp + 300
-        );
+    uint256[] memory amounts = pancakeRouter.swapExactTokensForETH(
+        tokensToSell,
+        minBNBOut,
+        path,
+        msg.sender, // ✅ Send BNB directly to seller
+        block.timestamp + 300
+    );
 
-        uint256 bnbReceived = amounts[amounts.length - 1];
-        require(bnbReceived >= minBNBOut, "Slippage too high");
+    uint256 bnbReceived = amounts[amounts.length - 1];
+    require(bnbReceived >= minBNBOut, "Slippage too high");
 
-        // Send platform fee
-        if (platformFee > 0) {
-            IERC20(token).safeTransfer(platformFeeAddress, platformFee);
-        }
-
-        payable(msg.sender).transfer(bnbReceived);
-
-        emit PostGraduationSell(
-            msg.sender,
-            token,
-            tokenAmount,
-            bnbReceived,
-            platformFee,
-            0
-        );
+    // Send platform fee tokens to fee address
+    if (platformFee > 0) {
+        IERC20(token).safeTransfer(platformFeeAddress, platformFee);
     }
+
+    emit PostGraduationSell(
+        msg.sender,
+        token,
+        tokenAmount,
+        bnbReceived,
+        platformFee,
+        0
+    );
+}
+
+/**
+* @notice Handle buying tokens after graduation via PancakeSwap
+* @dev Routes trade through PancakeSwap router
+*/
+function handlePostGraduationBuy(
+    address token,
+    uint256 minTokensOut
+) external payable nonReentrant {
+    LaunchBasics storage launch = launchBasics[token];
+    LaunchStatus storage status = launchStatus[token];
+
+    require(status.graduatedToPancakeSwap, "Not graduated");
+    require(
+        launch.launchType == LaunchType.PROJECT_RAISE,
+        "Not a project raise"
+    );
+    require(msg.value > 0, "Must send BNB");
+
+    // Take 1% platform fee
+    uint256 platformFee = (msg.value * POST_GRADUATION_FEE_BPS) / BASIS_POINTS;
+    uint256 bnbToSpend = msg.value - platformFee;
+
+    // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
+    address[] memory path = new address[](2);
+    path[0] = wbnbAddress;
+    path[1] = token;
+
+    uint256[] memory amounts = pancakeRouter.swapExactETHForTokens{value: bnbToSpend}(
+        minTokensOut,
+        path,
+        msg.sender, // ✅ Send tokens directly to buyer
+        block.timestamp + 300
+    );
+
+    uint256 tokensReceived = amounts[amounts.length - 1];
+    require(tokensReceived >= minTokensOut, "Slippage too high");
+
+    // Send platform fee to fee address
+    if (platformFee > 0) {
+        payable(platformFeeAddress).transfer(platformFee);
+    }
+
+    emit PostGraduationSell( // You might want to add a PostGraduationBuy event
+        msg.sender,
+        token,
+        tokensReceived,
+        msg.value,
+        platformFee,
+        0
+    );
+}
 
     function _shouldBurnTokens(address token) private view returns (bool) {
         LaunchBasics storage basics = launchBasics[token];
