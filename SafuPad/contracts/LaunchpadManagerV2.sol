@@ -2,50 +2,42 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title LaunchpadManagerV3 - FIXED for Project Raise Flow
+ * @title LaunchpadManagerV3 - Monad Migration with New Tokenomics
  * @author SafuPad Team
  * @notice Manages two types of token launches: Project Raise and Instant Launch
  *
- * VERSION: 2.0.0 (Major Fixes Applied)
+ * VERSION: 3.0.0 (Monad Migration + New Tokenomics)
  *
  * ═══════════════════════════════════════════════════════════════════
- * CRITICAL FIXES APPLIED:
+ * MONAD MIGRATION & NEW TOKENOMICS:
  * ═══════════════════════════════════════════════════════════════════
  *
- * ✅ FIX #1: Added per-wallet contribution cap (4.44 BNB)
- *    - Prevents whales from monopolizing Project Raise
- *    - Added MAX_CONTRIBUTION_PER_WALLET constant
- *    - Enforced in contribute() function
+ * ✅ MONAD MIGRATION: Migrated from BNB to Monad native token (MON)
+ *    - Raise range: 5M MON - 20M MON
+ *    - All references updated from BNB to MON
  *
- * ✅ FIX #2: Added claimContributorTokens() function
- *    - Contributors can now claim their tokens after successful raise
- *    - Proportional distribution from 70% contributor allocation
- *    - Critical fix - tokens were previously stuck!
+ * ✅ NEW TOKEN DISTRIBUTION:
+ *    - 60% to founder (released immediately at raise end)
+ *    - 20% to contributors (claim via claimContributorTokens)
+ *    - 10% for liquidity (paired with 20% of raised MON)
+ *    - 10% vested over 6 months (conditional on market cap)
  *
- * ✅ FIX #3: Added claimRefund() function
- *    - Contributors get refunds if raise fails
- *    - Available after 24h deadline if target not met
- *    - Critical fix - BNB was previously stuck!
+ * ✅ MARKET CAP PROTECTION:
+ *    - Monthly market cap tracking
+ *    - If 3 consecutive months below starting market cap:
+ *      → Community control triggered
+ *      → Vested tokens frozen
+ *      → Community decides on remaining funds
  *
- * ✅ FIX #4: Fixed token distribution for Project Raise
- *    - Tokens now stay in LaunchpadManager (not sent to BondingCurveDEX)
- *    - 70% for contributors (claim via claimContributorTokens)
- *    - 20% for founder (vested)
- *    - 10% for PancakeSwap (added in graduateToPancakeSwap)
+ * ✅ EMERGENCY WITHDRAWAL:
+ *    - 48-hour timelock for emergency withdrawals
+ *    - Founder can request emergency withdrawal
+ *    - Must wait 48 hours before execution
  *
- * ✅ FIX #5: Added 1% platform fee on PancakeSwap liquidity
- *    - Deducted from BNB before adding liquidity
- *    - Applies to both Project Raise and Instant Launch
- *    - Sent to platformFeeAddress
- *
- * ✅ FIX #6: Added burnFailedRaiseTokens() function
- *    - Burns tokens if raise fails
- *    - Callable by anyone after deadline
- *
- * ✅ FIX #7: Separated Project Raise from BondingCurveDEX
- *    - Project Raise = Fixed-price contribution period
- *    - Instant Launch = Uses bonding curve
- *    - Clear separation of logic
+ * ✅ LP FEE DISTRIBUTION:
+ *    - Founder: 70%
+ *    - InfoFi: 20%
+ *    - Platform: 10%
  *
  * ═══════════════════════════════════════════════════════════════════
  * PROJECT RAISE FLOW:
@@ -53,23 +45,31 @@ pragma solidity ^0.8.20;
  *
  * 1. LAUNCH (Founder)
  *    - Creates token (1B supply)
- *    - Sets raise target & max
- *    - 24-hour timer starts
+ *    - Sets raise target (5M-20M MON)
+ *    - 72-hour timer starts
  *
- * 2. CONTRIBUTION PERIOD (24 hours)
- *    - Users contribute BNB (max 4.44 per wallet)
- *    - Fixed price: raiseTarget / 700M tokens
- *    - Get proportional allocation from 70% pool
+ * 2. CONTRIBUTION PERIOD (72 hours)
+ *    - Users contribute MON (max 50K per wallet)
+ *    - Fixed price based on raise target
+ *    - Get proportional allocation from 20% pool
  *
  * 3A. IF SUCCESS (target met):
- *     - Contributors claim tokens (70% = 700M)
- *     - Founder gets 20% (200M, vested)
- *     - 10% (100M) + 50% BNB → PancakeSwap (-1% fee)
- *     - Remaining BNB → Founder (vested)
+ *     - Contributors claim tokens (20%)
+ *     - Founder gets 60% immediately
+ *     - 10% tokens + 20% MON → PancakeSwap liquidity
+ *     - 10% vested over 6 months (if market cap maintained)
+ *     - Remaining 80% MON → Founder (vested over 6 months)
  *
  * 3B. IF FAILED (target not met):
  *     - All contributors get refunded
  *     - Tokens burned
+ *
+ * 4. VESTING CONDITIONS:
+ *    - 10% tokens vest monthly over 6 months
+ *    - Vesting ONLY if token maintains starting market cap
+ *    - If 3 consecutive months below start market cap:
+ *      → Community control triggered
+ *      → No more vested token releases
  *
  * ═══════════════════════════════════════════════════════════════════
  * INSTANT LAUNCH FLOW:
@@ -171,6 +171,13 @@ interface IBondingCurveDEXV3 {
     function buyTokens(address token, uint256 minTokensOut) external payable;
 }
 
+interface IPancakePair {
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function totalSupply() external view returns (uint256);
+}
+
 interface IPancakeRouter02 {
     function addLiquidityETH(
         address token,
@@ -248,13 +255,20 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         uint256 vestingStartTime;
         uint256 founderTokens;
         uint256 founderTokensClaimed;
+        uint256 vestedTokens; // 10% vested over 6 months
+        uint256 vestedTokensClaimed;
+        uint256[] monthlyMarketCaps; // Track market cap each month
+        uint256 consecutiveMonthsBelowStart; // Count consecutive months below starting market cap
+        bool communityControlTriggered; // True if 3+ months below start market cap
     }
 
     struct LaunchLiquidity {
-        uint256 liquidityBNB;
+        uint256 liquidityMON;
         uint256 liquidityTokens;
         uint256 raisedFundsVesting;
         uint256 raisedFundsClaimed;
+        uint256 emergencyWithdrawalRequest; // Timestamp of emergency withdrawal request (0 if none)
+        address emergencyWithdrawalRequester; // Address that requested emergency withdrawal
     }
 
     struct LaunchStatus {
@@ -268,23 +282,26 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         bool claimed;
     }
 
-    uint256 public constant MIN_RAISE_BNB = 5000000 ether;
-    uint256 public constant MAX_RAISE_BNB = 20000000 ether;
-    uint256 public constant MAX_LIQUIDITY_BNB = 100 ether;
-    uint256 public constant MAX_CONTRIBUTION_PER_WALLET = 50000 ether; // ✅ NEW: Per-wallet contribution cap
+    uint256 public constant MIN_RAISE_MON = 5000000 ether; // 5M MON
+    uint256 public constant MAX_RAISE_MON = 20000000 ether; // 20M MON
+    uint256 public constant MAX_LIQUIDITY_MON = 100 ether;
+    uint256 public constant MAX_CONTRIBUTION_PER_WALLET = 50000 ether; // Per-wallet contribution cap
     uint256 public constant RAISE_DURATION = 72 hours;
-    uint256 public constant FOUNDER_ALLOCATION = 20;
-    uint256 public constant CONTRIBUTOR_ALLOCATION = 20; // ✅ NEW: 70% for contributors
-    uint256 public constant PANCAKESWAP_ALLOCATION = 10; // ✅ NEW: 10% for PancakeSwap
-    uint256 public constant IMMEDIATE_FOUNDER_RELEASE = 10;
-    uint256 public constant LIQUIDITY_PERCENT = 20;
-    uint256 public constant LIQUIDITY_BNB_PERCENT = 20;
-    uint256 public constant PLATFORM_FEE_BPS = 100; // ✅ NEW: 1% platform fee (100 basis points)
+    uint256 public constant FOUNDER_ALLOCATION = 60; // 60% to founder
+    uint256 public constant CONTRIBUTOR_ALLOCATION = 20; // 20% for contributors
+    uint256 public constant PANCAKESWAP_ALLOCATION = 10; // 10% for liquidity
+    uint256 public constant VESTED_ALLOCATION = 10; // 10% vested over 6 months
+    uint256 public constant IMMEDIATE_FOUNDER_RELEASE = 100; // 100% of founder allocation (60%) released immediately
+    uint256 public constant LIQUIDITY_TOKEN_PERCENT = 10; // 10% of token supply for liquidity
+    uint256 public constant LIQUIDITY_MON_PERCENT = 20; // 20% of raised MON for liquidity
+    uint256 public constant PLATFORM_FEE_BPS = 100; // 1% platform fee (100 basis points)
     uint256 public constant BASIS_POINTS = 10000;
     uint256 public constant MIN_VESTING_DURATION = 90 days;
     uint256 public constant MAX_VESTING_DURATION = 180 days;
     uint256 public constant VESTING_RELEASE_INTERVAL = 30 days;
     uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 1% post-graduation fee
+    uint256 public constant EMERGENCY_WITHDRAWAL_TIMELOCK = 48 hours; // 48-hour emergency withdrawal timelock
+    uint256 public constant MARKET_CAP_CHECK_MONTHS = 3; // 3 consecutive months below starting market cap
 
     address public constant LP_BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
@@ -306,7 +323,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     mapping(address => mapping(address => Contribution)) public contributions;
     address[] public allLaunches;
 
-    uint256 public fallbackBNBPrice;
+    uint256 public fallbackMONPrice;
     bool public useOraclePrice;
 
     event LaunchCreated(
@@ -314,8 +331,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         address indexed founder,
         uint256 totalSupply,
         LaunchType launchType,
-        uint256 raiseTargetBNB,
-        uint256 raiseMaxBNB,
+        uint256 raiseTargetMON,
+        uint256 raiseMaxMON,
         uint256 deadline,
         bool hasVanitySalt,
         bool burnLP
@@ -418,6 +435,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         ); // ✅ NEW
         require(_lpFeeHarvester != address(0), "Invalid LP harvester");
         pancakeFactory = _pancakeFactory;
+        // Monad Wrapped Native Token address - update with actual Monad WMON address when available
         wbnbAddress = address(0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd);
 
         tokenFactory = ITokenFactoryV2(_tokenFactory);
@@ -428,17 +446,17 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         priceOracle = PriceOracle(_priceOracle);
         lpFeeHarvester = ILPFeeHarvester(_lpFeeHarvester);
 
-        fallbackBNBPrice = 1200 * 10 ** 8;
+        fallbackMONPrice = 1200 * 10 ** 8;
         useOraclePrice = true;
     }
 
-    // ✅ UPDATED: Removed projectInfoFiWallet parameter
+    // UPDATED: Removed projectInfoFiWallet parameter
     function createLaunch(
         string memory name,
         string memory symbol,
         uint256 totalSupply,
-        uint256 raiseTargetBNB,
-        uint256 raiseMaxBNB,
+        uint256 raiseTargetMON,
+        uint256 raiseMaxMON,
         uint256 vestingDuration,
         ITokenFactoryV2.TokenMetadata memory metadata,
         bool burnLP
@@ -449,8 +467,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
                 name,
                 symbol,
                 totalSupply,
-                raiseTargetBNB,
-                raiseMaxBNB,
+                raiseTargetMON,
+                raiseMaxMON,
                 vestingDuration,
                 metadata,
                 false,
@@ -459,13 +477,13 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             );
     }
 
-    // ✅ UPDATED: Removed projectInfoFiWallet parameter
+    // UPDATED: Removed projectInfoFiWallet parameter
     function createLaunchWithVanity(
         string memory name,
         string memory symbol,
         uint256 totalSupply,
-        uint256 raiseTargetBNB,
-        uint256 raiseMaxBNB,
+        uint256 raiseTargetMON,
+        uint256 raiseMaxMON,
         uint256 vestingDuration,
         ITokenFactoryV2.TokenMetadata memory metadata,
         bytes32 vanitySalt,
@@ -477,8 +495,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
                 name,
                 symbol,
                 totalSupply,
-                raiseTargetBNB,
-                raiseMaxBNB,
+                raiseTargetMON,
+                raiseMaxMON,
                 vestingDuration,
                 metadata,
                 true,
@@ -491,15 +509,15 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         string memory name,
         string memory symbol,
         uint256 totalSupply,
-        uint256 raiseTargetBNB,
-        uint256 raiseMaxBNB,
+        uint256 raiseTargetMON,
+        uint256 raiseMaxMON,
         uint256 vestingDuration,
         ITokenFactoryV2.TokenMetadata memory metadata,
         bool useVanity,
         bytes32 vanitySalt,
         bool burnLP
     ) private returns (address) {
-        _validateLaunchParams(raiseTargetBNB, raiseMaxBNB, vestingDuration);
+        _validateLaunchParams(raiseTargetMON, raiseMaxMON, vestingDuration);
 
         address token = _deployToken(
             name,
@@ -517,8 +535,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         _initializeLaunch(
             token,
             totalSupply,
-            raiseTargetBNB,
-            raiseMaxBNB,
+            raiseTargetMON,
+            raiseMaxMON,
             vestingDuration,
             LaunchType.PROJECT_RAISE,
             burnLP
@@ -529,8 +547,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             msg.sender,
             totalSupply * 10 ** 18,
             LaunchType.PROJECT_RAISE,
-            raiseTargetBNB,
-            raiseMaxBNB,
+            raiseTargetMON,
+            raiseMaxMON,
             block.timestamp + RAISE_DURATION,
             useVanity,
             burnLP
@@ -682,31 +700,28 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             "Already graduated to PancakeSwap"
         );
 
-        uint256 bnbForLiquidity;
+        uint256 monForLiquidity;
         uint256 tokensForLiquidity;
 
         if (basics.launchType == LaunchType.PROJECT_RAISE) {
-            // ✅ PROJECT RAISE: Add 10% of tokens with liquidity BNB
+            // PROJECT RAISE: Add 10% of tokens with 20% of raised MON
             require(status.raiseCompleted, "Raise not completed");
             require(!status.liquidityAdded, "Liquidity already added");
 
             LaunchLiquidity storage liquidity = launchLiquidity[token];
 
             // 10% of total supply for PancakeSwap
-            tokensForLiquidity =
-                (basics.totalSupply * PANCAKESWAP_ALLOCATION) /
-                100;
-            bnbForLiquidity = liquidity.liquidityBNB;
+            tokensForLiquidity = (basics.totalSupply * LIQUIDITY_TOKEN_PERCENT) / 100;
+            monForLiquidity = liquidity.liquidityMON;
 
             IERC20(token).approve(address(this), basics.totalSupply);
 
-            require(bnbForLiquidity > 0, "No BNB for liquidity");
+            require(monForLiquidity > 0, "No MON for liquidity");
             require(tokensForLiquidity > 0, "No tokens for liquidity");
 
-            // ✅ DEDUCT 1% PLATFORM FEE from BNB
-            uint256 platformFee = (bnbForLiquidity * PLATFORM_FEE_BPS) /
-                BASIS_POINTS;
-            bnbForLiquidity = bnbForLiquidity - platformFee;
+            // DEDUCT 1% PLATFORM FEE from MON
+            uint256 platformFee = (monForLiquidity * PLATFORM_FEE_BPS) / BASIS_POINTS;
+            monForLiquidity = monForLiquidity - platformFee;
 
             // Send platform fee
             payable(platformFeeAddress).transfer(platformFee);
@@ -714,7 +729,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
 
             status.liquidityAdded = true;
         } else {
-            // ✅ INSTANT LAUNCH: Get from BondingCurveDEX
+            // INSTANT LAUNCH: Get from BondingCurveDEX
             (, , , , , , , , bool graduated) = bondingCurveDEX.getPoolInfo(
                 token
             );
@@ -723,7 +738,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             address creator;
             uint256 remainingTokens;
             (
-                bnbForLiquidity,
+                monForLiquidity,
                 tokensForLiquidity,
                 remainingTokens,
                 creator
@@ -731,10 +746,9 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
 
             require(creator == basics.founder, "Creator mismatch");
 
-            // ✅ DEDUCT 1% PLATFORM FEE from BNB for Instant Launch too
-            uint256 platformFee = (bnbForLiquidity * PLATFORM_FEE_BPS) /
-                BASIS_POINTS;
-            bnbForLiquidity = bnbForLiquidity - platformFee;
+            // DEDUCT 1% PLATFORM FEE from MON for Instant Launch too
+            uint256 platformFee = (monForLiquidity * PLATFORM_FEE_BPS) / BASIS_POINTS;
+            monForLiquidity = monForLiquidity - platformFee;
 
             // Send platform fee
             payable(platformFeeAddress).transfer(platformFee);
@@ -749,7 +763,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         IERC20(token).approve(address(pancakeRouter), tokensForLiquidity);
 
         (, , uint256 liquidity) = pancakeRouter.addLiquidityETH{
-            value: bnbForLiquidity
+            value: monForLiquidity
         }(
             token,
             tokensForLiquidity,
@@ -792,7 +806,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
 
         status.graduatedToPancakeSwap = true;
 
-        emit GraduatedToPancakeSwap(token, bnbForLiquidity, tokensForLiquidity);
+        emit GraduatedToPancakeSwap(token, monForLiquidity, tokensForLiquidity);
         emit TransfersEnabled(token, block.timestamp);
     }
 
@@ -829,16 +843,16 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     }
 
     function _validateLaunchParams(
-        uint256 raiseTargetBNB,
-        uint256 raiseMaxBNB,
+        uint256 raiseTargetMON,
+        uint256 raiseMaxMON,
         uint256 vestingDuration
     ) private pure {
         require(
-            raiseTargetBNB >= MIN_RAISE_BNB && raiseTargetBNB <= MAX_RAISE_BNB,
+            raiseTargetMON >= MIN_RAISE_MON && raiseTargetMON <= MAX_RAISE_MON,
             "Invalid raise target"
         );
         require(
-            raiseMaxBNB >= raiseTargetBNB && raiseMaxBNB <= MAX_RAISE_BNB,
+            raiseMaxMON >= raiseTargetMON && raiseMaxMON <= MAX_RAISE_MON,
             "Invalid raise max"
         );
         require(
@@ -890,7 +904,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         bool burnLP
     ) private {
         uint256 totalSupplyWei = totalSupply * 10 ** 18;
-        uint256 founderTokens = (totalSupplyWei * FOUNDER_ALLOCATION) / 100;
+        uint256 founderTokens = (totalSupplyWei * FOUNDER_ALLOCATION) / 100; // 60%
+        uint256 vestedTokens = (totalSupplyWei * VESTED_ALLOCATION) / 100; // 10%
 
         launchBasics[token] = LaunchBasics({
             token: token,
@@ -904,19 +919,27 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             burnLP: burnLP
         });
 
+        uint256[] memory emptyMarketCaps = new uint256[](0);
         launchVesting[token] = LaunchVesting({
             startMarketCap: 0,
             vestingDuration: vestingDuration,
             vestingStartTime: 0,
             founderTokens: founderTokens,
-            founderTokensClaimed: 0
+            founderTokensClaimed: 0,
+            vestedTokens: vestedTokens,
+            vestedTokensClaimed: 0,
+            monthlyMarketCaps: emptyMarketCaps,
+            consecutiveMonthsBelowStart: 0,
+            communityControlTriggered: false
         });
 
         launchLiquidity[token] = LaunchLiquidity({
-            liquidityBNB: 0,
+            liquidityMON: 0,
             liquidityTokens: 0,
             raisedFundsVesting: 0,
-            raisedFundsClaimed: 0
+            raisedFundsClaimed: 0,
+            emergencyWithdrawalRequest: 0,
+            emergencyWithdrawalRequester: address(0)
         });
 
         launchStatus[token] = LaunchStatus({
@@ -973,36 +996,35 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         status.raiseCompleted = true;
         vesting.vestingStartTime = block.timestamp;
 
-        // Calculate liquidity BNB (50% of raised, max 0.2 BNB)
-        uint256 liquidityBNB = (basics.totalRaised * LIQUIDITY_BNB_PERCENT) /
-            100;
-        if (liquidityBNB > MAX_LIQUIDITY_BNB) {
-            liquidityBNB = MAX_LIQUIDITY_BNB;
+        // Calculate liquidity MON (20% of raised, max 100 MON)
+        uint256 liquidityMON = (basics.totalRaised * LIQUIDITY_MON_PERCENT) / 100;
+        if (liquidityMON > MAX_LIQUIDITY_MON) {
+            liquidityMON = MAX_LIQUIDITY_MON;
         }
 
-        liquidity.liquidityBNB = liquidityBNB;
-        liquidity.raisedFundsVesting = basics.totalRaised - liquidityBNB;
+        liquidity.liquidityMON = liquidityMON;
+        liquidity.raisedFundsVesting = basics.totalRaised - liquidityMON;
 
-        // ✅ FIX: Project Raise tokens stay here for distribution
-        // 70% for contributors (claimed via claimContributorTokens)
-        // 20% for founder (vested)
-        // 10% for PancakeSwap (added in graduateToPancakeSwap)
+        // Token distribution:
+        // - 60% to founder (released immediately)
+        // - 20% for contributors (claimed via claimContributorTokens)
+        // - 10% for PancakeSwap liquidity (added in graduateToPancakeSwap)
+        // - 10% vested over 6 months (conditional on market cap)
 
-        // Calculate market cap based on contributor allocation
-        uint256 contributorTokens = (basics.totalSupply *
-            CONTRIBUTOR_ALLOCATION) / 100;
-        vesting.startMarketCap =
-            (liquidityBNB * ((basics.totalSupply * 10) / 100)) /
-            contributorTokens;
+        // Calculate starting market cap based on liquidity
+        // Market cap = (liquidityMON * totalSupply) / liquidityTokens
+        uint256 liquidityTokens = (basics.totalSupply * LIQUIDITY_TOKEN_PERCENT) / 100;
+        vesting.startMarketCap = (liquidityMON * basics.totalSupply) / liquidityTokens;
 
-        // Give founder immediate 50% of their allocation
-        uint256 immediateRelease = (vesting.founderTokens *
-            IMMEDIATE_FOUNDER_RELEASE) / 100;
+        // Give founder immediate 100% of their 60% allocation
+        uint256 immediateRelease = (vesting.founderTokens * IMMEDIATE_FOUNDER_RELEASE) / 100;
         IERC20(token).safeTransfer(basics.founder, immediateRelease);
         vesting.founderTokensClaimed = immediateRelease;
 
-        // ✅ FIX: DO NOT send tokens to BondingCurveDEX for Project Raise!
-        // Tokens remain in LaunchpadManager for contributors to claim
+        // Tokens remain in LaunchpadManager for distribution:
+        // - 20% for contributors to claim
+        // - 10% for liquidity
+        // - 10% vested (released monthly if market cap maintained)
 
         status.liquidityAdded = false; // Will be set true when graduated to PancakeSwap
         emit RaiseCompleted(token, basics.totalRaised);
@@ -1143,6 +1165,146 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         launchLiquidity[token].raisedFundsClaimed += claimable;
     }
 
+    /**
+     * @notice Claim vested tokens (10% allocation vested over 6 months)
+     * @dev Vesting is conditional on token maintaining starting market cap
+     */
+    function claimVestedTokens(address token) external nonReentrant {
+        LaunchBasics storage basics = launchBasics[token];
+        LaunchVesting storage vesting = launchVesting[token];
+        require(
+            basics.launchType == LaunchType.PROJECT_RAISE,
+            "Not a project raise"
+        );
+        require(msg.sender == basics.founder, "Not founder");
+        require(launchStatus[token].raiseCompleted, "Raise not completed");
+        require(!vesting.communityControlTriggered, "Community control active");
+
+        uint256 claimable = _calculateClaimableVestedTokens(token);
+        require(claimable > 0, "No vested tokens to claim");
+
+        vesting.vestedTokensClaimed += claimable;
+        IERC20(token).safeTransfer(basics.founder, claimable);
+
+        emit FounderTokensClaimed(basics.founder, token, claimable);
+    }
+
+    /**
+     * @notice Update market cap tracking (called monthly)
+     * @dev Tracks consecutive months below starting market cap
+     */
+    function updateMarketCap(address token) external {
+        LaunchBasics storage basics = launchBasics[token];
+        LaunchVesting storage vesting = launchVesting[token];
+        LaunchStatus storage status = launchStatus[token];
+
+        require(
+            basics.launchType == LaunchType.PROJECT_RAISE,
+            "Not a project raise"
+        );
+        require(status.raiseCompleted, "Raise not completed");
+        require(status.graduatedToPancakeSwap, "Not graduated yet");
+
+        // Check if at least 1 month has passed since last update
+        uint256 monthsPassed = (block.timestamp - vesting.vestingStartTime) / 30 days;
+        require(
+            monthsPassed > vesting.monthlyMarketCaps.length,
+            "Too early to update"
+        );
+
+        // Get current market cap from PancakeSwap LP
+        uint256 currentMarketCap = _getCurrentMarketCap(token);
+        vesting.monthlyMarketCaps.push(currentMarketCap);
+
+        // Check if below starting market cap
+        if (currentMarketCap < vesting.startMarketCap) {
+            vesting.consecutiveMonthsBelowStart++;
+
+            // Trigger community control after 3 consecutive months
+            if (vesting.consecutiveMonthsBelowStart >= MARKET_CAP_CHECK_MONTHS) {
+                vesting.communityControlTriggered = true;
+            }
+        } else {
+            // Reset counter if above starting market cap
+            vesting.consecutiveMonthsBelowStart = 0;
+        }
+    }
+
+    /**
+     * @notice Request emergency withdrawal (initiates 48-hour timelock)
+     * @dev Only founder can request emergency withdrawal
+     */
+    function requestEmergencyWithdrawal(address token) external {
+        LaunchBasics storage basics = launchBasics[token];
+        LaunchLiquidity storage liquidity = launchLiquidity[token];
+
+        require(
+            basics.launchType == LaunchType.PROJECT_RAISE,
+            "Not a project raise"
+        );
+        require(msg.sender == basics.founder, "Not founder");
+        require(launchStatus[token].raiseCompleted, "Raise not completed");
+        require(
+            liquidity.emergencyWithdrawalRequest == 0,
+            "Withdrawal already requested"
+        );
+
+        liquidity.emergencyWithdrawalRequest = block.timestamp;
+        liquidity.emergencyWithdrawalRequester = msg.sender;
+    }
+
+    /**
+     * @notice Execute emergency withdrawal after 48-hour timelock
+     * @dev Transfers remaining raised funds to founder
+     */
+    function executeEmergencyWithdrawal(address token) external nonReentrant {
+        LaunchBasics storage basics = launchBasics[token];
+        LaunchLiquidity storage liquidity = launchLiquidity[token];
+
+        require(
+            basics.launchType == LaunchType.PROJECT_RAISE,
+            "Not a project raise"
+        );
+        require(
+            liquidity.emergencyWithdrawalRequest > 0,
+            "No withdrawal requested"
+        );
+        require(
+            block.timestamp >= liquidity.emergencyWithdrawalRequest + EMERGENCY_WITHDRAWAL_TIMELOCK,
+            "Timelock not expired"
+        );
+
+        uint256 remainingFunds = liquidity.raisedFundsVesting - liquidity.raisedFundsClaimed;
+        require(remainingFunds > 0, "No funds to withdraw");
+
+        liquidity.raisedFundsClaimed = liquidity.raisedFundsVesting;
+        liquidity.emergencyWithdrawalRequest = 0;
+        liquidity.emergencyWithdrawalRequester = address(0);
+
+        payable(basics.founder).transfer(remainingFunds);
+        emit RaisedFundsClaimed(basics.founder, token, remainingFunds);
+    }
+
+    /**
+     * @notice Cancel emergency withdrawal request
+     * @dev Only requester can cancel
+     */
+    function cancelEmergencyWithdrawal(address token) external {
+        LaunchLiquidity storage liquidity = launchLiquidity[token];
+
+        require(
+            liquidity.emergencyWithdrawalRequest > 0,
+            "No withdrawal requested"
+        );
+        require(
+            msg.sender == liquidity.emergencyWithdrawalRequester,
+            "Not requester"
+        );
+
+        liquidity.emergencyWithdrawalRequest = 0;
+        liquidity.emergencyWithdrawalRequester = address(0);
+    }
+
    /**
 * @notice Handle selling tokens after graduation via PancakeSwap
 * @dev Routes trade through PancakeSwap router
@@ -1150,7 +1312,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
 function handlePostGraduationSell(
     address token,
     uint256 tokenAmount,
-    uint256 minBNBOut
+    uint256 minMONOut
 ) external nonReentrant {
     LaunchBasics storage launch = launchBasics[token];
     LaunchStatus storage status = launchStatus[token];
@@ -1164,27 +1326,27 @@ function handlePostGraduationSell(
     // Transfer tokens from seller
     IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
-    // Take 2% platform fee
+    // Take 1% platform fee
     uint256 platformFee = (tokenAmount * POST_GRADUATION_FEE_BPS) / BASIS_POINTS;
     uint256 tokensToSell = tokenAmount - platformFee;
 
-    // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
+    // ROUTE THROUGH PANCAKESWAP ROUTER
     IERC20(token).approve(address(pancakeRouter), tokensToSell);
-    
+
     address[] memory path = new address[](2);
     path[0] = token;
     path[1] = wbnbAddress;
 
     uint256[] memory amounts = pancakeRouter.swapExactTokensForETH(
         tokensToSell,
-        minBNBOut,
+        minMONOut,
         path,
-        msg.sender, // ✅ Send BNB directly to seller
+        msg.sender, // Send MON directly to seller
         block.timestamp + 300
     );
 
-    uint256 bnbReceived = amounts[amounts.length - 1];
-    require(bnbReceived >= minBNBOut, "Slippage too high");
+    uint256 monReceived = amounts[amounts.length - 1];
+    require(monReceived >= minMONOut, "Slippage too high");
 
     // Send platform fee tokens to fee address
     if (platformFee > 0) {
@@ -1195,7 +1357,7 @@ function handlePostGraduationSell(
         msg.sender,
         token,
         tokenAmount,
-        bnbReceived,
+        monReceived,
         platformFee,
         0
     );
@@ -1217,21 +1379,21 @@ function handlePostGraduationBuy(
         launch.launchType == LaunchType.PROJECT_RAISE,
         "Not a project raise"
     );
-    require(msg.value > 0, "Must send BNB");
+    require(msg.value > 0, "Must send MON");
 
     // Take 1% platform fee
     uint256 platformFee = (msg.value * POST_GRADUATION_FEE_BPS) / BASIS_POINTS;
-    uint256 bnbToSpend = msg.value - platformFee;
+    uint256 monToSpend = msg.value - platformFee;
 
-    // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
+    // ROUTE THROUGH PANCAKESWAP ROUTER
     address[] memory path = new address[](2);
     path[0] = wbnbAddress;
     path[1] = token;
 
-    uint256[] memory amounts = pancakeRouter.swapExactETHForTokens{value: bnbToSpend}(
+    uint256[] memory amounts = pancakeRouter.swapExactETHForTokens{value: monToSpend}(
         minTokensOut,
         path,
-        msg.sender, // ✅ Send tokens directly to buyer
+        msg.sender, // Send tokens directly to buyer
         block.timestamp + 300
     );
 
@@ -1243,7 +1405,7 @@ function handlePostGraduationBuy(
         payable(platformFeeAddress).transfer(platformFee);
     }
 
-    emit PostGraduationSell( // You might want to add a PostGraduationBuy event
+    emit PostGraduationSell( // TODO: Add PostGraduationBuy event
         msg.sender,
         token,
         tokensReceived,
@@ -1317,7 +1479,7 @@ function handlePostGraduationBuy(
             return liquidity.raisedFundsVesting - liquidity.raisedFundsClaimed;
         }
 
-        // ✅ MONTHLY VESTING (same as founder tokens)
+        // MONTHLY VESTING (same as founder tokens)
         uint256 monthsPassed = timePassed / VESTING_RELEASE_INTERVAL;
         uint256 totalMonths = vesting.vestingDuration /
             VESTING_RELEASE_INTERVAL;
@@ -1331,9 +1493,74 @@ function handlePostGraduationBuy(
         return totalVested - liquidity.raisedFundsClaimed;
     }
 
+    /**
+     * @notice Calculate claimable vested tokens (10% allocation)
+     * @dev Vesting only releases if token maintains starting market cap
+     */
+    function _calculateClaimableVestedTokens(
+        address token
+    ) private view returns (uint256) {
+        LaunchVesting storage vesting = launchVesting[token];
+
+        if (!launchStatus[token].raiseCompleted) return 0;
+        if (vesting.communityControlTriggered) return 0;
+
+        uint256 timePassed = block.timestamp - vesting.vestingStartTime;
+
+        if (timePassed >= vesting.vestingDuration) {
+            return vesting.vestedTokens - vesting.vestedTokensClaimed;
+        }
+
+        // MONTHLY VESTING over 6 months
+        uint256 monthsPassed = timePassed / VESTING_RELEASE_INTERVAL;
+        uint256 totalMonths = vesting.vestingDuration / VESTING_RELEASE_INTERVAL;
+
+        uint256 totalVested = (vesting.vestedTokens * monthsPassed) / totalMonths;
+
+        if (totalVested <= vesting.vestedTokensClaimed) {
+            return 0;
+        }
+        return totalVested - vesting.vestedTokensClaimed;
+    }
+
+    /**
+     * @notice Get current market cap from PancakeSwap LP
+     * @dev Market cap = (total supply * token price in MON)
+     */
+    function _getCurrentMarketCap(address token) private view returns (uint256) {
+        address lpToken = _getPancakePairAddress(token);
+        require(lpToken != address(0), "LP token not found");
+
+        IPancakePair pair = IPancakePair(lpToken);
+        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
+
+        address token0 = pair.token0();
+        address token1 = pair.token1();
+
+        uint256 tokenReserve;
+        uint256 monReserve;
+
+        if (token0 == token) {
+            tokenReserve = uint256(reserve0);
+            monReserve = uint256(reserve1);
+        } else {
+            tokenReserve = uint256(reserve1);
+            monReserve = uint256(reserve0);
+        }
+
+        require(tokenReserve > 0, "No token reserve");
+
+        // Market cap = total supply * price per token
+        // Price per token = monReserve / tokenReserve
+        LaunchBasics storage basics = launchBasics[token];
+        uint256 marketCap = (basics.totalSupply * monReserve) / tokenReserve;
+
+        return marketCap;
+    }
+
     function updateFallbackPrice(uint256 _price) external onlyOwner {
         require(_price > 0, "Invalid price");
-        fallbackBNBPrice = _price;
+        fallbackMONPrice = _price;
         emit FallbackPriceUpdated(_price);
     }
 
@@ -1395,11 +1622,11 @@ function handlePostGraduationBuy(
         view
         returns (
             address founder,
-            uint256 raiseTargetBNB,
+            uint256 raiseTargetMON,
             uint256 raiseTargetUSD,
-            uint256 raiseMaxBNB,
+            uint256 raiseMaxMON,
             uint256 raiseMaxUSD,
-            uint256 totalRaisedBNB,
+            uint256 totalRaisedMON,
             uint256 totalRaisedUSD,
             uint256 raiseDeadline,
             bool raiseCompleted,
