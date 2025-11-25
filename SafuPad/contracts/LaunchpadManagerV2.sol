@@ -31,10 +31,6 @@ pragma solidity ^0.8.20;
  *      → Platform team reviews community input
  *      → After 48 hours: funds released to platform or custom address
  *
- * ✅ EMERGENCY WITHDRAWAL:
- *    - 48-hour timelock for emergency withdrawals
- *    - Founder can request emergency withdrawal
- *    - Must wait 48 hours before execution
  *
  * ✅ LP FEE DISTRIBUTION:
  *    - Founder: 70%
@@ -285,8 +281,6 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         uint256 liquidityTokens;
         uint256 raisedFundsVesting;
         uint256 raisedFundsClaimed;
-        uint256 emergencyWithdrawalRequest; // Timestamp of emergency withdrawal request (0 if none)
-        address emergencyWithdrawalRequester; // Address that requested emergency withdrawal
     }
 
     struct LaunchStatus {
@@ -318,7 +312,6 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     uint256 public constant MAX_VESTING_DURATION = 180 days;
     uint256 public constant VESTING_RELEASE_INTERVAL = 30 days;
     uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 1% post-graduation fee
-    uint256 public constant EMERGENCY_WITHDRAWAL_TIMELOCK = 48 hours; // 48-hour emergency withdrawal timelock
     uint256 public constant MARKET_CAP_CHECK_MONTHS = 3; // 3 consecutive months below starting market cap
 
     address public constant LP_BURN_ADDRESS =
@@ -959,9 +952,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             liquidityMON: 0,
             liquidityTokens: 0,
             raisedFundsVesting: 0,
-            raisedFundsClaimed: 0,
-            emergencyWithdrawalRequest: 0,
-            emergencyWithdrawalRequester: address(0)
+            raisedFundsClaimed: 0
         });
 
         launchStatus[token] = LaunchStatus({
@@ -1279,89 +1270,6 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             // Reset counter if above starting market cap
             vesting.consecutiveMonthsBelowStart = 0;
         }
-    }
-
-    /**
-     * @notice Request emergency withdrawal (initiates 48-hour timelock)
-     * @dev Only founder can request emergency withdrawal
-     */
-    function requestEmergencyWithdrawal(address token) external {
-        LaunchBasics storage basics = launchBasics[token];
-        LaunchLiquidity storage liquidity = launchLiquidity[token];
-
-        require(
-            basics.launchType == LaunchType.PROJECT_RAISE,
-            "Not a project raise"
-        );
-        require(msg.sender == basics.founder, "Not founder");
-        require(launchStatus[token].raiseCompleted, "Raise not completed");
-        require(
-            liquidity.emergencyWithdrawalRequest == 0,
-            "Withdrawal already requested"
-        );
-
-        liquidity.emergencyWithdrawalRequest = block.timestamp;
-        liquidity.emergencyWithdrawalRequester = msg.sender;
-    }
-
-    /**
-     * @notice Execute emergency withdrawal after 48-hour timelock
-     * @dev Transfers remaining raised funds to founder
-     * @dev BLOCKED if community control is active (3 months below market cap)
-     */
-    function executeEmergencyWithdrawal(address token) external nonReentrant {
-        LaunchBasics storage basics = launchBasics[token];
-        LaunchLiquidity storage liquidity = launchLiquidity[token];
-        LaunchVesting storage vesting = launchVesting[token];
-
-        require(
-            basics.launchType == LaunchType.PROJECT_RAISE,
-            "Not a project raise"
-        );
-        require(
-            liquidity.emergencyWithdrawalRequest > 0,
-            "No withdrawal requested"
-        );
-        require(
-            block.timestamp >= liquidity.emergencyWithdrawalRequest + EMERGENCY_WITHDRAWAL_TIMELOCK,
-            "Timelock not expired"
-        );
-
-        // CRITICAL: Block emergency withdrawal if community control is triggered
-        require(
-            !vesting.communityControlTriggered,
-            "Community control active - emergency withdrawal blocked"
-        );
-
-        uint256 remainingFunds = liquidity.raisedFundsVesting - liquidity.raisedFundsClaimed;
-        require(remainingFunds > 0, "No funds to withdraw");
-
-        liquidity.raisedFundsClaimed = liquidity.raisedFundsVesting;
-        liquidity.emergencyWithdrawalRequest = 0;
-        liquidity.emergencyWithdrawalRequester = address(0);
-
-        payable(basics.founder).transfer(remainingFunds);
-        emit RaisedFundsClaimed(basics.founder, token, remainingFunds);
-    }
-
-    /**
-     * @notice Cancel emergency withdrawal request
-     * @dev Only requester can cancel
-     */
-    function cancelEmergencyWithdrawal(address token) external {
-        LaunchLiquidity storage liquidity = launchLiquidity[token];
-
-        require(
-            liquidity.emergencyWithdrawalRequest > 0,
-            "No withdrawal requested"
-        );
-        require(
-            msg.sender == liquidity.emergencyWithdrawalRequester,
-            "Not requester"
-        );
-
-        liquidity.emergencyWithdrawalRequest = 0;
-        liquidity.emergencyWithdrawalRequester = address(0);
     }
 
     /**
