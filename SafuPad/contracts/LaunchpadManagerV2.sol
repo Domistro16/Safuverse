@@ -6,7 +6,7 @@ pragma solidity ^0.8.20;
  * @author SafuPad Team
  * @notice Manages two types of token launches: Project Raise and Instant Launch
  *
- * VERSION: 3.0.0 (Monad Migration + New Tokenomics)
+ * VERSION: 3.0.1 (Fixed - Liquidity Cap Removed + Platform-Initiated Burns)
  *
  * ═══════════════════════════════════════════════════════════════════
  * MONAD MIGRATION & NEW TOKENOMICS:
@@ -26,13 +26,12 @@ pragma solidity ^0.8.20;
  *    - Monthly market cap tracking
  *    - If 3 consecutive months below starting market cap:
  *      → Community control triggered
- *      → Vested tokens BURNED (not claimable)
+ *      → Platform initiates vested token BURN
  *      → Raised funds sent to 48-hour Timelock
  *      → Platform team reviews community input
- *      → After 48 hours: funds released to platform or custom address
+ *      → After 48 hours: funds released based on community decision
  *
- *
- * ✅ LP FEE DISTRIBUTION:
+ * ✅ LP FEE DISTRIBUTION (in LPFeeHarvester):
  *    - Founder: 70%
  *    - InfoFi: 20%
  *    - Platform: 10%
@@ -67,7 +66,7 @@ pragma solidity ^0.8.20;
  *    - Vesting ONLY if token maintains starting market cap
  *    - If 3 consecutive months below start market cap:
  *      → Community control triggered
- *      → Remaining vested tokens BURNED
+ *      → Platform burns remaining vested tokens
  *      → Raised funds transferred to Timelock (48 hours)
  *      → Platform team reviews community input and decides
  *
@@ -296,7 +295,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
 
     uint256 public constant MIN_RAISE_MON = 5000000 ether; // 5M MON
     uint256 public constant MAX_RAISE_MON = 20000000 ether; // 20M MON
-    uint256 public constant MAX_LIQUIDITY_MON = 100 ether;
+    // REMOVED: MAX_LIQUIDITY_MON - No longer capping liquidity
     uint256 public constant MAX_CONTRIBUTION_PER_WALLET = 50000 ether; // Per-wallet contribution cap
     uint256 public constant RAISE_DURATION = 72 hours;
     uint256 public constant FOUNDER_ALLOCATION = 60; // 60% to founder
@@ -311,7 +310,6 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     uint256 public constant MIN_VESTING_DURATION = 90 days;
     uint256 public constant MAX_VESTING_DURATION = 180 days;
     uint256 public constant VESTING_RELEASE_INTERVAL = 30 days;
-    uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 1% post-graduation fee
     uint256 public constant MARKET_CAP_CHECK_MONTHS = 3; // 3 consecutive months below starting market cap
 
     address public constant LP_BURN_ADDRESS =
@@ -367,18 +365,18 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         address indexed contributor,
         address indexed token,
         uint256 amount
-    ); // ✅ NEW
+    );
     event RefundClaimed(
         address indexed contributor,
         address indexed token,
         uint256 amount
-    ); // ✅ NEW
-    event RaiseFailed(address indexed token, uint256 totalRaised); // ✅ NEW
+    );
+    event RaiseFailed(address indexed token, uint256 totalRaised);
     event PlatformFeePaid(
         address indexed token,
         uint256 amount,
         string feeType
-    ); // ✅ NEW
+    );
     event FounderTokensClaimed(
         address indexed founder,
         address indexed token,
@@ -391,6 +389,10 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     );
     event RaisedFundsSentToInfoFi(address indexed token, uint256 amount);
     event TokensBurned(address indexed token, uint256 amount);
+    event VestedTokensBurnedByCommunityControl(
+        address indexed token,
+        uint256 amount
+    );
     event GraduatedToPancakeSwap(
         address indexed token,
         uint256 bnbForLiquidity,
@@ -414,6 +416,13 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         uint256 liquidityAdded,
         uint256 lpGenerated
     );
+    event PostGraduationBuy(
+        address indexed buyer,
+        address indexed token,
+        uint256 monIn,
+        uint256 tokensOut,
+        uint256 platformFee
+    );
     event LPTokensHandled(
         address indexed token,
         address indexed lpToken,
@@ -425,6 +434,12 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     event FallbackPriceUpdated(uint256 newPrice);
     event OracleModeChanged(bool useOracle);
     event InfoFiAddressUpdated(address indexed newInfoFiAddress);
+    event CommunityControlTriggered(
+        address indexed token,
+        uint256 consecutiveMonths,
+        uint256 currentMarketCap,
+        uint256 startMarketCap
+    );
 
     constructor(
         address _tokenFactory,
@@ -465,7 +480,6 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         useOraclePrice = true;
     }
 
-    // UPDATED: Removed projectInfoFiWallet parameter
     function createLaunch(
         string memory name,
         string memory symbol,
@@ -492,7 +506,6 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             );
     }
 
-    // UPDATED: Removed projectInfoFiWallet parameter
     function createLaunchWithVanity(
         string memory name,
         string memory symbol,
@@ -977,11 +990,11 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         require(!status.raiseCompleted, "Raise already completed");
         require(msg.value > 0, "Must contribute BNB");
 
-        // ✅ FIX: Per-wallet contribution cap
+        // Per-wallet contribution cap
         require(
             contributions[token][msg.sender].amount + msg.value <=
                 MAX_CONTRIBUTION_PER_WALLET,
-            "Exceeds per-wallet contribution limit (4.44 BNB)"
+            "Exceeds per-wallet contribution limit (50K MON)"
         );
 
         require(
@@ -998,6 +1011,10 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         }
     }
 
+    /**
+     * @notice Complete the raise when target is met
+     * @dev FIXED: Removed liquidity cap - now true 20% of raised MON
+     */
     function _completeRaise(address token) private {
         LaunchStatus storage status = launchStatus[token];
         require(!status.raiseCompleted, "Already completed");
@@ -1009,11 +1026,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         status.raiseCompleted = true;
         vesting.vestingStartTime = block.timestamp;
 
-        // Calculate liquidity MON (20% of raised, max 100 MON)
+        // FIXED: Calculate liquidity MON (20% of raised) - NO CAP
         uint256 liquidityMON = (basics.totalRaised * LIQUIDITY_MON_PERCENT) / 100;
-        if (liquidityMON > MAX_LIQUIDITY_MON) {
-            liquidityMON = MAX_LIQUIDITY_MON;
-        }
 
         liquidity.liquidityMON = liquidityMON;
         liquidity.raisedFundsVesting = basics.totalRaised - liquidityMON;
@@ -1043,9 +1057,6 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         emit RaiseCompleted(token, basics.totalRaised);
     }
 
-    // ❌ REMOVED: _setupBondingCurve - Project Raise doesn't use BondingCurveDEX
-    // function _setupBondingCurve(...) private { ... }
-
     /**
      * @notice Contributors claim their tokens after successful raise
      * @dev Tokens are distributed proportionally based on contribution amount
@@ -1065,9 +1076,9 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         require(contrib.amount > 0, "No contribution");
         require(!contrib.claimed, "Already claimed");
 
-        // Calculate proportional share from 70% contributor allocation
+        // Calculate proportional share from 20% contributor allocation
         uint256 contributorPool = (basics.totalSupply *
-            CONTRIBUTOR_ALLOCATION) / 100; // 700M
+            CONTRIBUTOR_ALLOCATION) / 100;
         uint256 tokensOwed = (contrib.amount * contributorPool) /
             basics.totalRaised;
 
@@ -1189,7 +1200,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
      * @notice Claim vested tokens (10% allocation vested over 6 months)
      * @dev Vesting is conditional on token maintaining starting market cap
      * @dev Tokens ONLY release if current market cap is above starting market cap
-     * @dev If community control triggered, vested tokens are BURNED
+     * @dev FIXED: If community control triggered, just revert - platform handles burn
      */
     function claimVestedTokens(address token) external nonReentrant {
         LaunchBasics storage basics = launchBasics[token];
@@ -1204,16 +1215,11 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         require(status.raiseCompleted, "Raise not completed");
         require(status.graduatedToPancakeSwap, "Not graduated yet");
 
-        // CRITICAL: If community control triggered, burn remaining vested tokens
-        if (vesting.communityControlTriggered) {
-            uint256 remainingVestedTokens = vesting.vestedTokens - vesting.vestedTokensClaimed;
-            if (remainingVestedTokens > 0) {
-                vesting.vestedTokensClaimed = vesting.vestedTokens;
-                IERC20(token).safeTransfer(address(0xdead), remainingVestedTokens);
-                emit TokensBurned(token, remainingVestedTokens);
-            }
-            revert("Community control active - vested tokens burned");
-        }
+        // FIXED: If community control triggered, block claims (platform will handle burn)
+        require(
+            !vesting.communityControlTriggered,
+            "Community control active - vesting frozen"
+        );
 
         // CRITICAL: Check current market cap is above starting market cap
         uint256 currentMarketCap = _getCurrentMarketCap(token);
@@ -1265,6 +1271,12 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             // Trigger community control after 3 consecutive months
             if (vesting.consecutiveMonthsBelowStart >= MARKET_CAP_CHECK_MONTHS) {
                 vesting.communityControlTriggered = true;
+                emit CommunityControlTriggered(
+                    token,
+                    vesting.consecutiveMonthsBelowStart,
+                    currentMarketCap,
+                    vesting.startMarketCap
+                );
             }
         } else {
             // Reset counter if above starting market cap
@@ -1298,6 +1310,37 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
 
         // Transfer to timelock with platform address as default beneficiary
         raisedFundsTimelock.lockFunds{value: remainingFunds}(token, platformFeeAddress);
+    }
+
+    /**
+     * @notice Burn remaining vested tokens when community control is triggered
+     * @dev Only owner (platform) can call - per governance model
+     * @dev Called after community consultation and decision
+     */
+    function burnVestedTokensOnCommunityControl(address token) external onlyOwner nonReentrant {
+        LaunchBasics storage basics = launchBasics[token];
+        LaunchVesting storage vesting = launchVesting[token];
+
+        require(
+            basics.launchType == LaunchType.PROJECT_RAISE,
+            "Not a project raise"
+        );
+        require(
+            vesting.communityControlTriggered,
+            "Community control not active"
+        );
+
+        uint256 remainingVestedTokens = vesting.vestedTokens - vesting.vestedTokensClaimed;
+        require(remainingVestedTokens > 0, "No vested tokens to burn");
+
+        // Mark all vested tokens as claimed (burned)
+        vesting.vestedTokensClaimed = vesting.vestedTokens;
+
+        // Burn the tokens
+        IERC20(token).safeTransfer(address(0xdead), remainingVestedTokens);
+
+        emit VestedTokensBurnedByCommunityControl(token, remainingVestedTokens);
+        emit TokensBurned(token, remainingVestedTokens);
     }
 
     /**
@@ -1345,115 +1388,96 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         );
     }
 
-   /**
-* @notice Handle selling tokens after graduation via PancakeSwap
-* @dev Routes trade through PancakeSwap router
-*/
-function handlePostGraduationSell(
-    address token,
-    uint256 tokenAmount,
-    uint256 minMONOut
-) external nonReentrant {
-    LaunchBasics storage launch = launchBasics[token];
-    LaunchStatus storage status = launchStatus[token];
+    /**
+     * @notice Handle selling tokens after graduation via PancakeSwap
+     * @dev Routes trade through PancakeSwap router (no platform fee)
+     */
+    function handlePostGraduationSell(
+        address token,
+        uint256 tokenAmount,
+        uint256 minMONOut
+    ) external nonReentrant {
+        LaunchBasics storage launch = launchBasics[token];
+        LaunchStatus storage status = launchStatus[token];
 
-    require(status.graduatedToPancakeSwap, "Not graduated");
-    require(
-        launch.launchType == LaunchType.PROJECT_RAISE,
-        "Not a project raise"
-    );
+        require(status.graduatedToPancakeSwap, "Not graduated");
+        require(
+            launch.launchType == LaunchType.PROJECT_RAISE,
+            "Not a project raise"
+        );
 
-    // Transfer tokens from seller
-    IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
+        // Transfer tokens from seller
+        IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
-    // Take 1% platform fee
-    uint256 platformFee = (tokenAmount * POST_GRADUATION_FEE_BPS) / BASIS_POINTS;
-    uint256 tokensToSell = tokenAmount - platformFee;
+        // ROUTE THROUGH PANCAKESWAP ROUTER
+        IERC20(token).approve(address(pancakeRouter), tokenAmount);
 
-    // ROUTE THROUGH PANCAKESWAP ROUTER
-    IERC20(token).approve(address(pancakeRouter), tokensToSell);
+        address[] memory path = new address[](2);
+        path[0] = token;
+        path[1] = wbnbAddress;
 
-    address[] memory path = new address[](2);
-    path[0] = token;
-    path[1] = wbnbAddress;
+        uint256[] memory amounts = pancakeRouter.swapExactTokensForETH(
+            tokenAmount,
+            minMONOut,
+            path,
+            msg.sender, // Send MON directly to seller
+            block.timestamp + 300
+        );
 
-    uint256[] memory amounts = pancakeRouter.swapExactTokensForETH(
-        tokensToSell,
-        minMONOut,
-        path,
-        msg.sender, // Send MON directly to seller
-        block.timestamp + 300
-    );
+        uint256 monReceived = amounts[amounts.length - 1];
+        require(monReceived >= minMONOut, "Slippage too high");
 
-    uint256 monReceived = amounts[amounts.length - 1];
-    require(monReceived >= minMONOut, "Slippage too high");
-
-    // Send platform fee tokens to fee address
-    if (platformFee > 0) {
-        IERC20(token).safeTransfer(platformFeeAddress, platformFee);
+        emit PostGraduationSell(
+            msg.sender,
+            token,
+            tokenAmount,
+            monReceived,
+            0,
+            0
+        );
     }
 
-    emit PostGraduationSell(
-        msg.sender,
-        token,
-        tokenAmount,
-        monReceived,
-        platformFee,
-        0
-    );
-}
+    /**
+     * @notice Handle buying tokens after graduation via PancakeSwap
+     * @dev Routes trade through PancakeSwap router (no platform fee)
+     */
+    function handlePostGraduationBuy(
+        address token,
+        uint256 minTokensOut
+    ) external payable nonReentrant {
+        LaunchBasics storage launch = launchBasics[token];
+        LaunchStatus storage status = launchStatus[token];
 
-/**
-* @notice Handle buying tokens after graduation via PancakeSwap
-* @dev Routes trade through PancakeSwap router
-*/
-function handlePostGraduationBuy(
-    address token,
-    uint256 minTokensOut
-) external payable nonReentrant {
-    LaunchBasics storage launch = launchBasics[token];
-    LaunchStatus storage status = launchStatus[token];
+        require(status.graduatedToPancakeSwap, "Not graduated");
+        require(
+            launch.launchType == LaunchType.PROJECT_RAISE,
+            "Not a project raise"
+        );
+        require(msg.value > 0, "Must send MON");
 
-    require(status.graduatedToPancakeSwap, "Not graduated");
-    require(
-        launch.launchType == LaunchType.PROJECT_RAISE,
-        "Not a project raise"
-    );
-    require(msg.value > 0, "Must send MON");
+        // ROUTE THROUGH PANCAKESWAP ROUTER
+        address[] memory path = new address[](2);
+        path[0] = wbnbAddress;
+        path[1] = token;
 
-    // Take 1% platform fee
-    uint256 platformFee = (msg.value * POST_GRADUATION_FEE_BPS) / BASIS_POINTS;
-    uint256 monToSpend = msg.value - platformFee;
+        uint256[] memory amounts = pancakeRouter.swapExactETHForTokens{value: msg.value}(
+            minTokensOut,
+            path,
+            msg.sender, // Send tokens directly to buyer
+            block.timestamp + 300
+        );
 
-    // ROUTE THROUGH PANCAKESWAP ROUTER
-    address[] memory path = new address[](2);
-    path[0] = wbnbAddress;
-    path[1] = token;
+        uint256 tokensReceived = amounts[amounts.length - 1];
+        require(tokensReceived >= minTokensOut, "Slippage too high");
 
-    uint256[] memory amounts = pancakeRouter.swapExactETHForTokens{value: monToSpend}(
-        minTokensOut,
-        path,
-        msg.sender, // Send tokens directly to buyer
-        block.timestamp + 300
-    );
-
-    uint256 tokensReceived = amounts[amounts.length - 1];
-    require(tokensReceived >= minTokensOut, "Slippage too high");
-
-    // Send platform fee to fee address
-    if (platformFee > 0) {
-        payable(platformFeeAddress).transfer(platformFee);
+        emit PostGraduationBuy(
+            msg.sender,
+            token,
+            msg.value,
+            tokensReceived,
+            0
+        );
     }
-
-    emit PostGraduationSell( // TODO: Add PostGraduationBuy event
-        msg.sender,
-        token,
-        tokensReceived,
-        msg.value,
-        platformFee,
-        0
-    );
-}
 
     function _shouldBurnTokens(address token) private view returns (bool) {
         LaunchBasics storage basics = launchBasics[token];
@@ -1575,7 +1599,6 @@ function handlePostGraduationBuy(
         (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
 
         address token0 = pair.token0();
-        address token1 = pair.token1();
 
         uint256 tokenReserve;
         uint256 monReserve;
@@ -1609,14 +1632,12 @@ function handlePostGraduationBuy(
         lpFeeHarvester = ILPFeeHarvester(_lpFeeHarvester);
     }
 
-    // ✅ NEW: Function to update global InfoFi address
     function updateInfoFiAddress(address _infoFiAddress) external onlyOwner {
         require(_infoFiAddress != address(0), "Invalid address");
         infoFiAddress = _infoFiAddress;
         emit InfoFiAddressUpdated(_infoFiAddress);
     }
 
-    // ✅ UPDATED: Removed projectInfoFiWallet from return values
     function getLaunchInfo(
         address token
     )
@@ -1707,6 +1728,14 @@ function handlePostGraduationBuy(
         }
     }
 
+    /**
+     * @notice Get claimable vested tokens amount
+     * @dev Returns 0 if community control is active
+     */
+    function getClaimableVestedTokens(address token) external view returns (uint256) {
+        return _calculateClaimableVestedTokens(token);
+    }
+
     function getContribution(
         address token,
         address contributor
@@ -1717,6 +1746,14 @@ function handlePostGraduationBuy(
 
     function getAllLaunches() external view returns (address[] memory) {
         return allLaunches;
+    }
+
+    /**
+     * @notice Get monthly market cap history
+     * @dev Useful for frontend to display market cap trends
+     */
+    function getMarketCapHistory(address token) external view returns (uint256[] memory) {
+        return launchVesting[token].monthlyMarketCaps;
     }
 
     function emergencyWithdraw(address token) external onlyOwner {
