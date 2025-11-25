@@ -315,11 +315,12 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
 
 * @notice Get current fee rate based on blocks since launch
 * @dev Fee decays from 10% to 2% over 100 blocks for INSTANT_LAUNCH
+* @dev Returns 0 for graduated pools (no post-graduation fees)
 */
     function getCurrentFeeRate(address token) public view returns (uint256) {
         Pool memory pool = pools[token];
         if (pool.graduated || !pool.active) {
-            return POST_GRADUATION_FEE_BPS;
+            return 0; // No fees post-graduation
         }
         uint256 blocksSinceLaunch = block.number - pool.launchBlock;
         if (blocksSinceLaunch < FEE_DECAY_BLOCK_1) {
@@ -553,7 +554,7 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
 
     /**
      * @notice Handle selling tokens after graduation via PancakeSwap
-     * @dev Routes trade through PancakeSwap router
+     * @dev Routes trade through PancakeSwap router (no fees post-graduation)
      */
     function _handlePostGraduationSell(
         address token,
@@ -566,20 +567,15 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
         // Transfer tokens from seller
         IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
-        // Take 2% platform fee
-        uint256 platformFee = (tokenAmount * POST_GRADUATION_FEE_BPS) /
-            BASIS_POINTS;
-        uint256 tokensToSell = tokenAmount - platformFee;
-
-        // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
-        IERC20(token).approve(address(pancakeRouter), tokensToSell);
+        // ✅ ROUTE THROUGH PANCAKESWAP ROUTER (no platform fee)
+        IERC20(token).approve(address(pancakeRouter), tokenAmount);
 
         address[] memory path = new address[](2);
         path[0] = token;
         path[1] = wmonAddress;
 
         uint256[] memory amounts = pancakeRouter.swapExactTokensForETH(
-            tokensToSell,
+            tokenAmount,
             minMONOut,
             path,
             msg.sender, // ✅ Send MON directly to seller
@@ -588,11 +584,6 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
 
         uint256 monReceived = amounts[amounts.length - 1];
         require(monReceived >= minMONOut, "Slippage too high");
-
-        // Send platform fee tokens to fee address
-        if (platformFee > 0) {
-            IERC20(token).safeTransfer(platformFeeAddress, platformFee);
-        }
 
         // Update stats
         PostGraduationStats storage stats = postGradStats[token];
@@ -603,14 +594,14 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
             token,
             tokenAmount,
             monReceived,
-            platformFee,
+            0, // No platform fee
             0
         );
     }
 
     /**
      * @notice Buy tokens after graduation via PancakeSwap
-     * @dev Routes trade through PancakeSwap router
+     * @dev Routes trade through PancakeSwap router (no fees post-graduation)
      */
     function _buyTokensPostGraduation(
         address token,
@@ -620,18 +611,13 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
         require(pool.graduated, "Pool not graduated");
         require(msg.value > 0, "Must send MON");
 
-        // Take 1% platform fee
-        uint256 platformFee = (msg.value * POST_GRADUATION_FEE_BPS) /
-            BASIS_POINTS;
-        uint256 monToSpend = msg.value - platformFee;
-
-        // ✅ ROUTE THROUGH PANCAKESWAP ROUTER
+        // ✅ ROUTE THROUGH PANCAKESWAP ROUTER (no platform fee)
         address[] memory path = new address[](2);
         path[0] = wmonAddress;
         path[1] = token;
 
         uint256[] memory amounts = pancakeRouter.swapExactETHForTokens{
-            value: monToSpend
+            value: msg.value
         }(
             minTokensOut,
             path,
@@ -642,18 +628,13 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
         uint256 tokensReceived = amounts[amounts.length - 1];
         require(tokensReceived >= minTokensOut, "Slippage too high");
 
-        // Send platform fee to fee address
-        if (platformFee > 0) {
-            payable(platformFeeAddress).transfer(platformFee);
-        }
-
         emit TokensBought(
             msg.sender,
             token,
             msg.value,
             tokensReceived,
-            (monToSpend * 10 ** 18) / tokensReceived, // price
-            POST_GRADUATION_FEE_BPS
+            (msg.value * 10 ** 18) / tokensReceived, // price
+            0 // No fee post-graduation
         );
     }
 
@@ -835,12 +816,20 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
     ) external view returns (uint256 monOut, uint256 pricePerToken) {
         Pool memory pool = pools[token];
         if (pool.graduated) {
-            uint256 fee = (tokenAmount * POST_GRADUATION_FEE_BPS) /
-                BASIS_POINTS;
-            uint256 tokensAfterFee = tokenAmount - fee;
-            uint256 tokensToSwap = tokensAfterFee / 2;
-            monOut = (tokensToSwap * 70) / 100;
-            pricePerToken = monOut > 0 ? (monOut * 10 ** 18) / tokenAmount : 0;
+            // Post-graduation: Use PancakeSwap pricing (no platform fee)
+            // This is an estimate - actual amount depends on PancakeSwap liquidity
+            address[] memory path = new address[](2);
+            path[0] = token;
+            path[1] = wmonAddress;
+
+            try pancakeRouter.getAmountsOut(tokenAmount, path) returns (uint[] memory amounts) {
+                monOut = amounts[1];
+                pricePerToken = monOut > 0 ? (monOut * 10 ** 18) / tokenAmount : 0;
+            } catch {
+                // If router call fails, return 0
+                monOut = 0;
+                pricePerToken = 0;
+            }
 
             return (monOut, pricePerToken);
         }
@@ -969,11 +958,11 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
         Pool memory pool = pools[token];
         if (pool.graduated || !pool.active) {
             return (
-                POST_GRADUATION_FEE_BPS,
-                POST_GRADUATION_FEE_BPS,
+                0, // No fees post-graduation
                 0,
                 0,
-                "Post-Graduation"
+                0,
+                "Post-Graduation (No Fees)"
             );
         }
         blocksSinceLaunch = block.number - pool.launchBlock;
