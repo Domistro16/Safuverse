@@ -14,16 +14,17 @@ pragma solidity ^0.8.20;
  * - Updated all BNB/WBNB references to MON/WMON
  * - Added graduation fee distribution (70% creator, 20% InfoFi, 10% platform)
  *
- * TRADING FEE STRUCTURE (2% total):
+ * TRADING FEE STRUCTURE (2% total before graduation):
  * - 1% to creator (50% of fees)
  * - 0.6% to InfoFi (30% of fees)
  * - 0.1% to platform (5% of fees)
  * - 0.3% to EduFi incentives (15% of fees)
  *
- * GRADUATION BONDING DISTRIBUTION:
+ * LP FEE DISTRIBUTION (after graduation to PancakeSwap):
  * - 70% to creator
  * - 20% to InfoFi
  * - 10% to platform
+ * Note: LP fee distribution is handled by LaunchpadManager/LPFeeHarvester
  *
  * CHANGES FROM v1.1.0:
  * - Removed all PROJECT_RAISE functionality
@@ -162,11 +163,6 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
     uint256 public constant REDISTRIBUTION_PERIOD = 7 days;
     uint256 public constant INSTANT_LAUNCH_PANCAKESWAP_PERCENT = 20; // 20% reserved for PancakeSwap
     uint256 public constant POST_GRADUATION_FEE_BPS = 100; // 1% post-graduation fee
-
-    // Graduation bonding distribution (when pool graduates to PancakeSwap)
-    uint256 public constant GRADUATION_CREATOR_PERCENT = 70; // 70% to creator
-    uint256 public constant GRADUATION_INFOFI_PERCENT = 20; // 20% to InfoFi
-    uint256 public constant GRADUATION_PLATFORM_PERCENT = 10; // 10% to platform
 
     address public constant LP_BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
@@ -700,7 +696,7 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
 
     /**
 * @notice Withdraw graduated pool funds (for LaunchpadManager to add to PancakeSwap)
-* @dev Distributes graduation bonding: 70% creator, 20% InfoFi, 10% platform
+* @dev Sends all MON and reserved tokens to LaunchpadManager for liquidity
 * @return monAmount Amount of MON withdrawn
 * @return tokenAmount Amount of reserved tokens withdrawn
 * @return remainingTokens Amount of remaining tradable tokens
@@ -726,36 +722,23 @@ contract BondingCurveDEX is ReentrancyGuard, AccessControl {
 
         remainingTokens = pool.tokenReserve;
         creator = pool.creator;
-
-        // Distribute graduation bonding MON: 70% creator, 20% InfoFi, 10% platform
         if (monAmount > 0) {
             require(
                 pool.monReserve >= monAmount,
                 "Insufficient MON for withdrawal"
             );
             pool.monReserve -= monAmount;
-
-            uint256 creatorMon = (monAmount * GRADUATION_CREATOR_PERCENT) / 100;
-            uint256 infoFiMon = (monAmount * GRADUATION_INFOFI_PERCENT) / 100;
-            uint256 platformMon = (monAmount * GRADUATION_PLATFORM_PERCENT) / 100;
-
-            // Send graduation bonding distributions
-            (bool successCreator, ) = payable(creator).call{value: creatorMon}("");
-            require(successCreator, "Creator MON transfer failed");
-
-            (bool successInfoFi, ) = payable(infoFiFeeAddress).call{value: infoFiMon}("");
-            require(successInfoFi, "InfoFi MON transfer failed");
-
-            (bool successPlatform, ) = payable(platformFeeAddress).call{value: platformMon}("");
-            require(successPlatform, "Platform MON transfer failed");
         }
-
         pool.reservedTokens = 0;
         // Send remaining tradable tokens to creator
 
-        // Send reserved tokens to LaunchpadManager
+        // Send reserved tokens and MON to LaunchpadManager
         IERC20(pool.token).safeTransfer(msg.sender, tokenAmount);
 
+        if (monAmount > 0) {
+            (bool success, ) = payable(msg.sender).call{value: monAmount}("");
+            require(success, "MON transfer failed");
+        }
         return (monAmount, tokenAmount, remainingTokens, creator);
     }
 

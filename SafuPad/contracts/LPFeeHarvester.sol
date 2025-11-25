@@ -86,9 +86,10 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE");
 
     /// @notice Fee distribution percentages (basis points out of 10000)
+    /// LP fee distribution after graduation: 70% creator, 20% InfoFi, 10% platform
     uint256 public constant CREATOR_FEE_BPS = 7000; // 70%
-    uint256 public constant PROJECT_INFOFI_BPS = 2000; // 0%
-    uint256 public constant PLATFORM_FEE_BPS = 1000; // 30%
+    uint256 public constant PROJECT_INFOFI_BPS = 2000; // 20%
+    uint256 public constant PLATFORM_FEE_BPS = 1000; // 10%
     uint256 public constant BASIS_POINTS = 10000;
 
     /// @notice Lock duration constraints
