@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Nav } from "./nav";
 import axios from "axios";
-import { useAccount } from "wagmi";
+import { useWallet } from "@solana/wallet-adapter-react";
 import ChatInterface from "./ChatInterface";
 
 interface Card {
@@ -108,7 +108,7 @@ export default function App() {
   const cardsRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const { address } = useAccount();
+  const { publicKey } = useWallet();
   const [gpt, setGpt] = useState("Be the Replyooor");
   const handleScroll = () => {
     if (cardsRef.current) {
@@ -125,7 +125,7 @@ export default function App() {
       const response = await axios.post(
         `${import.meta.env.VITE_API}/api/verify`,
         {
-          publicKey: address,
+          publicKey: publicKey?.toBase58(),
           gpt: gptAccess,
         },
         {

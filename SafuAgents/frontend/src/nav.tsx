@@ -1,12 +1,10 @@
-import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useState } from "react";
 import { HiOutlineX } from "react-icons/hi";
 import wide from "./assets/wide.png";
 import small from "./assets/small.png";
+
 export const Nav = () => {
-  const { openConnectModal } = useConnectModal();
-  const { isConnected } = useAccount();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -27,20 +25,10 @@ export const Nav = () => {
         </a>
         <button className="cursor-pointer "> Manifesto </button>
         <button className="cursor-pointer "> FAQ </button>
-        {openConnectModal && (
-          <button
-            onClick={openConnectModal}
-            className="lg:flex items-center font-semibold text-black py-2 px-8 hidden bg-[#FFB000] rounded-full cursor-pointer transition-all hover:scale-105 hover:bg-[#FFB000]/90 duration-300"
-          >
-            <div className="flex font-bold text-lg">Login</div>{" "}
-          </button>
-        )}
-      </div>
-      {isConnected && (
-        <div className="hidden lg:flex ml-6">
-          <ConnectButton showBalance={true} />
+        <div className="ml-6">
+          <WalletMultiButton className="!bg-[#FFB000] !text-black !rounded-full !font-semibold !py-2 !px-8" />
         </div>
-      )}
+      </div>
 
       {/* mobile hamburger */}
       {mobileMenuOpen ? (
@@ -65,25 +53,15 @@ export const Nav = () => {
         <div className="md:hidden absolute left-0 right-0 top-full mt-3 z-50 px-4">
           <div className="w-full bg-black py-4 shadow-lg rounded-lg px-4">
             <div className="flex flex-col items-center text-white space-y-4 px-10 font-semibold">
+              <a href="https://names.safuverse.com">
+                <button className="cursor-pointer "> Mint .safu </button>
+              </a>
               <button className="cursor-pointer "> Manifesto </button>
               <button className="cursor-pointer "> FAQ </button>
-              {openConnectModal && (
-                <button
-                  onClick={openConnectModal}
-                  className="flex items-center font-semibold text-black py-2 px-8 lg:hidden bg-[#FFB000] rounded-full cursor-pointer transition-all hover:scale-105 hover:bg-[#FFB000]/90 duration-300"
-                >
-                  <div className="flex font-bold text-lg">Login</div>{" "}
-                </button>
-              )}
 
-              {isConnected ? (
-                <div className="w-full px-4">
-                  {/* ConnectButton renders its own UI — wrap it so it fills the width nicely */}
-                  <div className="w-full rounded-full overflow-hidden">
-                    <ConnectButton showBalance={true} />
-                  </div>
-                </div>
-              ) : null}
+              <div className="w-full px-4">
+                <WalletMultiButton className="!bg-[#FFB000] !text-black !rounded-full !font-semibold !py-2 !px-8 !w-full" />
+              </div>
 
               {/* optional: add a close button for clarity */}
               <button

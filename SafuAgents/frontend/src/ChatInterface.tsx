@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Send, Loader2, ArrowLeftIcon, Sparkles } from "lucide-react";
-import { useAccount } from "wagmi";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -194,11 +194,11 @@ export default function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const { address } = useAccount();
+  const { publicKey } = useWallet();
 
   // Example user info (you can replace this with wallet/auth data)
   const profile = {
-    id: address,
+    id: publicKey?.toBase58(),
     name: "Desmond",
     prefs: { tone: "gen-z" },
   };
@@ -227,7 +227,7 @@ export default function ChatInterface({
         profile,
         messages: conversationHistory,
         gpt,
-        publicKey: address,
+        publicKey: publicKey?.toBase58(),
       };
 
       const res = await fetch(`${import.meta.env.VITE_API}/api/assistant`, {
