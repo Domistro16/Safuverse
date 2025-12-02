@@ -46,11 +46,21 @@ type Launch @entity(immutable: false) {
   graduatedToPancakeSwap: Boolean!
   burnLP: Boolean!
 
-  # Vesting
+  # Vesting - Founder Tokens (60% allocation)
   vestingDuration: BigInt
   vestingStartTime: BigInt
   founderTokens: BigInt!
   founderTokensClaimed: BigInt!
+
+  # Vesting - 10% Conditional Tokens
+  vestedTokens: BigInt!
+  vestedTokensClaimed: BigInt!
+  startMarketCap: BigInt!
+
+  # Community Control
+  monthlyMarketCaps: [BigInt!]!
+  consecutiveMonthsBelowStart: BigInt!
+  communityControlTriggered: Boolean!
 
   # Liquidity
   liquidityMON: BigInt

@@ -40,11 +40,22 @@ export const LaunchpadManagerABI = [
   // Admin functions
   'function updateInfoFiAddress(address)',
   'function handlePostGraduationSell(address token, uint256 tokenAmount,uint256 minBNBOut)',
+  'function handlePostGraduationBuy(address token, uint256 minTokensOut) payable',
 
   // ✅ NEW: Additional admin functions
   'function updateFallbackPrice(uint256)',
   'function updateLPFeeHarvester(address)',
   'function emergencyWithdraw(address)',
+
+  // ✅ NEW: Vesting and Community Control Functions
+  'function claimVestedTokens(address)',
+  'function updateMarketCap(address)',
+  'function transferFundsToTimelock(address)',
+  'function burnVestedTokensOnCommunityControl(address)',
+  'function updateTimelockBeneficiary(address, address)',
+  'function getCommunityControlInfo(address) view returns (bool, uint256, uint256, uint256, uint256, uint256)',
+  'function getClaimableVestedTokens(address) view returns (uint256)',
+  'function getMarketCapHistory(address) view returns (uint256[])',
 
   // Events - ✅ UPDATED: Removed projectInfoFiWallet parameter
   'event LaunchCreated(address indexed,address indexed,uint256,uint8,uint256,uint256,uint256,bool,bool)',
@@ -69,10 +80,15 @@ export const LaunchpadManagerABI = [
 
   // ✅ NEW: Additional events
   'event PostGraduationSell(address indexed,address indexed,uint256,uint256,uint256,uint256)',
+  'event PostGraduationBuy(address indexed,address indexed,uint256,uint256,uint256)',
   'event LPTokensHandled(address indexed,address indexed,uint256,bool)',
   'event PriceFeedUpdated(address indexed)',
   'event FallbackPriceUpdated(uint256)',
   'event OracleModeChanged(bool)',
+
+  // ✅ NEW: Community Control Events
+  'event VestedTokensBurnedByCommunityControl(address indexed, uint256)',
+  'event CommunityControlTriggered(address indexed, uint256, uint256, uint256)',
 ];
 
 /**
