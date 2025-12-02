@@ -18,14 +18,14 @@ export class PriceOracle extends BaseContract {
   /**
    * Get current BNB price in USD (8 decimals)
    */
-  async getBNBPrice(): Promise<bigint> {
+  async getMONPrice(): Promise<bigint> {
     return await this.contract.getBNBPrice();
   }
 
   /**
    * Get BNB price formatted as string
    */
-  async getBNBPriceFormatted(): Promise<string> {
+  async getMONPriceFormatted(): Promise<string> {
     const price = await this.getBNBPrice();
     return ethers.formatUnits(price, 8);
   }
@@ -33,32 +33,32 @@ export class PriceOracle extends BaseContract {
   /**
    * Convert USD to BNB
    */
-  async usdToBNB(usdAmount: bigint): Promise<bigint> {
+  async usdToMON(usdAmount: bigint): Promise<bigint> {
     return await this.contract.usdToBNB(usdAmount);
   }
 
   /**
    * Convert BNB to USD
    */
-  async bnbToUSD(bnbAmount: bigint): Promise<bigint> {
+  async monToUSD(bnbAmount: bigint): Promise<bigint> {
     return await this.contract.bnbToUSD(bnbAmount);
   }
 
   /**
    * Convert USD string to BNB
    */
-  async convertUSDToBNB(usdAmountStr: string): Promise<string> {
+  async convertUSDToMON(usdAmountStr: string): Promise<string> {
     const usdAmount = ethers.parseUnits(usdAmountStr, 18);
-    const bnbAmount = await this.usdToBNB(usdAmount);
+    const bnbAmount = await this.usdToMON(usdAmount);
     return ethers.formatEther(bnbAmount);
   }
 
   /**
    * Convert BNB string to USD
    */
-  async convertBNBToUSD(bnbAmountStr: string): Promise<string> {
+  async convertMONToUSD(bnbAmountStr: string): Promise<string> {
     const bnbAmount = ethers.parseEther(bnbAmountStr);
-    const usdAmount = await this.bnbToUSD(bnbAmount);
+    const usdAmount = await this.monToUSD(bnbAmount);
     return ethers.formatUnits(usdAmount, 18);
   }
 
