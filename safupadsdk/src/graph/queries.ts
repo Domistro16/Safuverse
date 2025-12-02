@@ -43,6 +43,12 @@ export const GET_TOKEN = `
         vestingStartTime
         founderTokens
         founderTokensClaimed
+        vestedTokens
+        vestedTokensClaimed
+        startMarketCap
+        monthlyMarketCaps
+        consecutiveMonthsBelowStart
+        communityControlTriggered
         liquidityMON
         liquidityTokens
         raisedFundsVesting
@@ -143,6 +149,12 @@ export const GET_LAUNCH = `
       vestingStartTime
       founderTokens
       founderTokensClaimed
+      vestedTokens
+      vestedTokensClaimed
+      startMarketCap
+      monthlyMarketCaps
+      consecutiveMonthsBelowStart
+      communityControlTriggered
       liquidityMON
       liquidityTokens
       raisedFundsVesting

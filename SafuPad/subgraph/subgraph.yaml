@@ -24,10 +24,12 @@ dataSources:
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
+        # Launch Creation Events
         - event: LaunchCreated(indexed address,indexed address,uint256,uint8,uint256,uint256,uint256,bool,bool)
           handler: handleLaunchCreated
         - event: InstantLaunchCreated(indexed address,indexed address,uint256,uint256,uint256,bool)
           handler: handleInstantLaunchCreated
+        # Contribution Events
         - event: ContributionMade(indexed address,indexed address,uint256)
           handler: handleContributionMade
         - event: RaiseCompleted(indexed address,uint256)
@@ -38,14 +40,31 @@ dataSources:
           handler: handleRefundClaimed
         - event: RaiseFailed(indexed address,uint256)
           handler: handleRaiseFailed
+        # Vesting Events
         - event: FounderTokensClaimed(indexed address,indexed address,uint256)
           handler: handleFounderTokensClaimed
         - event: RaisedFundsClaimed(indexed address,indexed address,uint256)
           handler: handleRaisedFundsClaimed
+        # Community Control Events
+        - event: VestedTokensBurnedByCommunityControl(indexed address,uint256)
+          handler: handleVestedTokensBurned
+        - event: CommunityControlTriggered(indexed address,uint256,uint256,uint256)
+          handler: handleCommunityControlTriggered
+        # Graduation Events
         - event: GraduatedToPancakeSwap(indexed address,uint256,uint256)
           handler: handleGraduatedToPancakeSwap
         - event: TransfersEnabled(indexed address,uint256)
           handler: handleTransfersEnabled
+        # Trading Events
+        - event: PostGraduationSell(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handlePostGraduationSell
+        - event: PostGraduationBuy(indexed address,indexed address,uint256,uint256,uint256)
+          handler: handlePostGraduationBuy
+        # Platform Events
+        - event: PlatformFeePaid(indexed address,uint256,string)
+          handler: handlePlatformFeePaid
+        - event: LPTokensHandled(indexed address,indexed address,uint256,bool)
+          handler: handleLPTokensHandled
       file: ./src/launchpad-manager.ts
 
   # TokenFactoryV2

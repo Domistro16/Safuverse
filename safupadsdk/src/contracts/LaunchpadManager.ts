@@ -881,6 +881,246 @@ export class LaunchpadManager extends BaseContract {
   }
 
   /**
+   * ✅ NEW: Listen to PostGraduationBuy events
+   */
+  onPostGraduationBuy(callback: (event: any) => void, filter?: EventFilterOptions): () => void {
+    return this.addEventListener('PostGraduationBuy', callback, filter);
+  }
+
+  /**
+   * ✅ NEW: Listen to VestedTokensBurnedByCommunityControl events
+   */
+  onVestedTokensBurned(callback: (event: any) => void, filter?: EventFilterOptions): () => void {
+    return this.addEventListener('VestedTokensBurnedByCommunityControl', callback, filter);
+  }
+
+  /**
+   * ✅ NEW: Listen to CommunityControlTriggered events
+   */
+  onCommunityControlTriggered(callback: (event: any) => void, filter?: EventFilterOptions): () => void {
+    return this.addEventListener('CommunityControlTriggered', callback, filter);
+  }
+
+  // ==================== VESTING & COMMUNITY CONTROL METHODS ====================
+
+  /**
+   * ✅ NEW: Claim vested tokens (10% allocation vested over 6 months)
+   *
+   * Vesting is conditional on token maintaining starting market cap.
+   * Tokens ONLY release if current market cap is above starting market cap.
+   * If community control triggered, claims are blocked.
+   *
+   * Note: Only for PROJECT_RAISE tokens after graduation
+   *
+   * @param tokenAddress - Address of the launched token
+   * @param options - Transaction options
+   */
+  async claimVestedTokens(tokenAddress: string, options?: TxOptions): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+
+    const tx = await this.contract.claimVestedTokens(
+      tokenAddress,
+      this.buildTxOptions(options, GAS_LIMITS.CLAIM_FOUNDER_TOKENS)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
+   * ✅ NEW: Update market cap tracking (called monthly)
+   *
+   * Tracks consecutive months below starting market cap.
+   * Triggers community control after 3 consecutive months below start.
+   *
+   * Note: Only for PROJECT_RAISE tokens after graduation
+   *
+   * @param tokenAddress - Address of the launched token
+   * @param options - Transaction options
+   */
+  async updateMarketCap(tokenAddress: string, options?: TxOptions): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+
+    const tx = await this.contract.updateMarketCap(
+      tokenAddress,
+      this.buildTxOptions(options)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
+   * ✅ NEW: Transfer raised funds to timelock when community control is triggered
+   *
+   * Only callable when 3 consecutive months below starting market cap.
+   * Funds locked for 48 hours for platform team to review community input.
+   * Requires owner role.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @param options - Transaction options
+   */
+  async transferFundsToTimelock(tokenAddress: string, options?: TxOptions): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+
+    const tx = await this.contract.transferFundsToTimelock(
+      tokenAddress,
+      this.buildTxOptions(options)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
+   * ✅ NEW: Burn remaining vested tokens when community control is triggered
+   *
+   * Only owner (platform) can call - per governance model.
+   * Called after community consultation and decision.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @param options - Transaction options
+   */
+  async burnVestedTokensOnCommunityControl(
+    tokenAddress: string,
+    options?: TxOptions
+  ): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+
+    const tx = await this.contract.burnVestedTokensOnCommunityControl(
+      tokenAddress,
+      this.buildTxOptions(options)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
+   * ✅ NEW: Update timelock beneficiary based on community decision
+   *
+   * Only owner can call (platform team).
+   * Updates beneficiary address based on community input.
+   *
+   * @param tokenAddress - Token address
+   * @param newBeneficiary - New beneficiary address based on community input
+   * @param options - Transaction options
+   */
+  async updateTimelockBeneficiary(
+    tokenAddress: string,
+    newBeneficiary: string,
+    options?: TxOptions
+  ): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+    this.validateAddress(newBeneficiary);
+
+    const tx = await this.contract.updateTimelockBeneficiary(
+      tokenAddress,
+      newBeneficiary,
+      this.buildTxOptions(options)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
+   * ✅ NEW: Get information about community control status
+   *
+   * Useful for frontend to display community governance state.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @returns Community control information
+   */
+  async getCommunityControlInfo(tokenAddress: string): Promise<{
+    communityControlActive: boolean;
+    consecutiveMonthsBelowStart: bigint;
+    currentMarketCap: bigint;
+    startMarketCap: bigint;
+    remainingFunds: bigint;
+    remainingVestedTokens: bigint;
+  }> {
+    this.validateAddress(tokenAddress);
+
+    const info = await this.contract.getCommunityControlInfo(tokenAddress);
+
+    return {
+      communityControlActive: info[0],
+      consecutiveMonthsBelowStart: info[1],
+      currentMarketCap: info[2],
+      startMarketCap: info[3],
+      remainingFunds: info[4],
+      remainingVestedTokens: info[5],
+    };
+  }
+
+  /**
+   * ✅ NEW: Get claimable vested tokens amount
+   *
+   * Returns 0 if community control is active.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @returns Amount of vested tokens that can be claimed
+   */
+  async getClaimableVestedTokens(tokenAddress: string): Promise<bigint> {
+    this.validateAddress(tokenAddress);
+    return await this.contract.getClaimableVestedTokens(tokenAddress);
+  }
+
+  /**
+   * ✅ NEW: Get monthly market cap history
+   *
+   * Useful for frontend to display market cap trends.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @returns Array of monthly market cap values
+   */
+  async getMarketCapHistory(tokenAddress: string): Promise<bigint[]> {
+    this.validateAddress(tokenAddress);
+    const history = await this.contract.getMarketCapHistory(tokenAddress);
+    return history.map((cap: any) => BigInt(cap.toString()));
+  }
+
+  /**
+   * ✅ NEW: Update InfoFi address (admin only)
+   *
+   * Updates the global InfoFi fee address.
+   * Only callable by contract owner.
+   *
+   * @param infoFiAddress - New InfoFi address
+   * @param options - Transaction options
+   */
+  async updateInfoFiAddress(infoFiAddress: string, options?: TxOptions): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(infoFiAddress);
+
+    const tx = await this.contract.updateInfoFiAddress(
+      infoFiAddress,
+      this.buildTxOptions(options)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
    * Validate launch parameters
    * ✅ UPDATED: Now validates BNB amounts instead of USD, removed projectInfoFiWallet validation
    */

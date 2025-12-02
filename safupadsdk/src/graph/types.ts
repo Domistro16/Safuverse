@@ -39,10 +39,20 @@ export interface GraphLaunch {
   liquidityAdded: boolean;
   graduatedToPancakeSwap: boolean;
   burnLP: boolean;
+  // Vesting - Founder Tokens (60% allocation)
   vestingDuration?: string;
   vestingStartTime?: string;
   founderTokens?: string;
   founderTokensClaimed?: string;
+  // Vesting - 10% Conditional Tokens
+  vestedTokens: string;
+  vestedTokensClaimed: string;
+  startMarketCap: string;
+  // Community Control
+  monthlyMarketCaps: string[];
+  consecutiveMonthsBelowStart: string;
+  communityControlTriggered: boolean;
+  // Liquidity
   liquidityMON?: string;
   liquidityTokens?: string;
   raisedFundsVesting?: string;
