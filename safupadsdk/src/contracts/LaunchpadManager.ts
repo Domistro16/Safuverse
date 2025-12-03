@@ -27,21 +27,23 @@ export interface LaunchVesting {
 }
 
 /**
- * LaunchpadManager contract wrapper
+ * LaunchpadManager contract wrapper (LaunchpadManagerV3 - Monad)
  *
  * Supports two launch types:
- * 1. PROJECT_RAISE: Contribution-based fundraising (24-hour raise period)
- *    - Users contribute BNB during raise period
+ * 1. PROJECT_RAISE: Contribution-based fundraising (72-hour / 3-day raise period)
+ *    - Users contribute MON (Monad native token) during raise period
  *    - Tokens distributed proportionally after raise completes
  *    - Does NOT use BondingCurveDEX
  *    - Graduates directly to PancakeSwap after successful raise
+ *    - Token allocation: 60% founder (immediate), 20% contributors, 10% liquidity, 10% vested (community control)
  *
  * 2. INSTANT_LAUNCH: Bonding curve trading (via BondingCurveDEX)
  *    - Creates pool in BondingCurveDEX for immediate trading
  *    - Uses bonding curve AMM formula
- *    - Graduates to PancakeSwap at 0.6 BNB threshold
+ *    - Graduates to PancakeSwap at market cap threshold
  *
- * ✅ UPDATED: Removed projectInfoFiWallet - uses global InfoFi address
+ * ✅ Monad Migration: All amounts use MON (Monad) instead of BNB
+ * ✅ Community Control: 10% tokens vest over time, with community control trigger if market cap stays low
  */
 export class LaunchpadManager extends BaseContract {
   constructor(
@@ -58,12 +60,15 @@ export class LaunchpadManager extends BaseContract {
    * Create a new PROJECT_RAISE launch
    *
    * PROJECT_RAISE launches:
-   * - 24-hour contribution period
+   * - 72-hour (3-day) contribution period
    * - Tokens distributed after raise completes
    * - Does NOT use BondingCurveDEX
-   * - 10% reserved for PancakeSwap
+   * - Token allocation: 60% founder (immediate), 20% contributors, 10% PancakeSwap liquidity, 10% vested (community control)
+   * - 20% of raised MON goes to liquidity
+   * - Vesting duration is fixed at 180 days (contract overrides parameter)
    *
-   * ✅ UPDATED: No longer requires projectInfoFiWallet parameter
+   * ✅ Uses MON (Monad) for all amounts
+   * ⚠️  NOTE: vanitySalt parameter is ignored - vanity addresses not supported in current contract version
    */
   async createLaunch(params: CreateLaunchParams, options?: TxOptions): Promise<TxResult> {
     this.requireSigner();
@@ -71,9 +76,9 @@ export class LaunchpadManager extends BaseContract {
     // Validate params
     this.validateLaunchParams(params);
 
-    // ✅ UPDATED: Now uses BNB values instead of USD
-    const raiseTargetBNB = ethers.parseEther(params.raiseTargetMON);
-    const raiseMaxBNB = ethers.parseEther(params.raiseMaxMON);
+    // ✅ Parse MON amounts (Monad native token)
+    const raiseTargetMON = ethers.parseEther(params.raiseTargetMON);
+    const raiseMaxMON = ethers.parseEther(params.raiseMaxMON);
     const vestingDuration = params.vestingDuration * 24 * 60 * 60; // days to seconds
 
     // Prepare metadata
@@ -86,35 +91,19 @@ export class LaunchpadManager extends BaseContract {
       params.metadata.discord,
     ];
 
-    // Call appropriate function based on whether vanity salt is provided
-    let tx: ethers.ContractTransactionResponse;
-
-    if (params.vanitySalt) {
-      tx = await this.contract.createLaunchWithVanity(
-        params.name,
-        params.symbol,
-        params.totalSupply,
-        raiseTargetBNB,
-        raiseMaxBNB,
-        vestingDuration,
-        metadata,
-        params.vanitySalt,
-        params.burnLP,
-        this.buildTxOptions(options, GAS_LIMITS.CREATE_LAUNCH)
-      );
-    } else {
-      tx = await this.contract.createLaunch(
-        params.name,
-        params.symbol,
-        params.totalSupply,
-        raiseTargetBNB,
-        raiseMaxBNB,
-        vestingDuration,
-        metadata,
-        params.burnLP,
-        this.buildTxOptions(options, GAS_LIMITS.CREATE_LAUNCH)
-      );
-    }
+    // ⚠️  Vanity salt is ignored - contract doesn't support createLaunchWithVanity
+    // Only createLaunch() function exists in current contract version
+    const tx: ethers.ContractTransactionResponse = await this.contract.createLaunch(
+      params.name,
+      params.symbol,
+      params.totalSupply,
+      raiseTargetMON,
+      raiseMaxMON,
+      vestingDuration,
+      metadata,
+      params.burnLP,
+      this.buildTxOptions(options, GAS_LIMITS.CREATE_LAUNCH)
+    );
 
     return {
       hash: tx.hash,
@@ -127,10 +116,12 @@ export class LaunchpadManager extends BaseContract {
    *
    * INSTANT_LAUNCH:
    * - Creates pool in BondingCurveDEX immediately
-   * - Bonding curve trading with dynamic fees (10% → 2%)
-   * - 80% on curve, 20% reserved for PancakeSwap
-   * - Graduates at 0.6 BNB threshold
-   * - Virtual reserves for 6x price multiplier
+   * - Bonding curve trading with dynamic fees
+   * - Graduates to PancakeSwap at market cap threshold
+   * - Must send MON with transaction for initial buy
+   *
+   * ✅ Uses MON (Monad) for all amounts
+   * ⚠️  NOTE: vanitySalt parameter is ignored - vanity addresses not supported in current contract version
    */
   async createInstantLaunch(
     params: CreateInstantLaunchParams,
@@ -143,8 +134,8 @@ export class LaunchpadManager extends BaseContract {
       throw new Error('Total supply must be 1 billion for instant launch');
     }
 
-    // Convert initial buy amount
-    const initialBuyBNB = ethers.parseEther(params.initialBuyMON);
+    // Convert initial buy amount (MON)
+    const initialBuyMON = ethers.parseEther(params.initialBuyMON);
 
     // Prepare metadata
     const metadata = [
@@ -156,35 +147,21 @@ export class LaunchpadManager extends BaseContract {
       params.metadata.discord,
     ];
 
-    // Must send BNB with transaction
+    // Must send MON with transaction
     const txOptions = this.buildTxOptions(options, GAS_LIMITS.CREATE_INSTANT_LAUNCH);
-    txOptions.value = initialBuyBNB;
+    txOptions.value = initialBuyMON;
 
-    // Call appropriate function
-    let tx: ethers.ContractTransactionResponse;
-
-    if (params.vanitySalt) {
-      tx = await this.contract.createInstantLaunchWithVanity(
-        params.name,
-        params.symbol,
-        params.totalSupply,
-        metadata,
-        initialBuyBNB,
-        params.vanitySalt,
-        params.burnLP,
-        txOptions
-      );
-    } else {
-      tx = await this.contract.createInstantLaunch(
-        params.name,
-        params.symbol,
-        params.totalSupply,
-        metadata,
-        initialBuyBNB,
-        params.burnLP,
-        txOptions
-      );
-    }
+    // ⚠️  Vanity salt is ignored - contract doesn't support createInstantLaunchWithVanity
+    // Only createInstantLaunch() function exists in current contract version
+    const tx: ethers.ContractTransactionResponse = await this.contract.createInstantLaunch(
+      params.name,
+      params.symbol,
+      params.totalSupply,
+      metadata,
+      initialBuyMON,
+      params.burnLP,
+      txOptions
+    );
 
     return {
       hash: tx.hash,
@@ -193,20 +170,22 @@ export class LaunchpadManager extends BaseContract {
   }
 
   /**
-   * Contribute to a PROJECT_RAISE launch
+   * Contribute MON to a PROJECT_RAISE launch
    *
    * Note: Only works for PROJECT_RAISE tokens (not INSTANT_LAUNCH)
-   * INSTANT_LAUNCH tokens trade on bonding curve instead
+   * INSTANT_LAUNCH tokens trade on bonding curve instead via BondingCurveDEX
+   *
+   * ✅ Uses MON (Monad) for contribution
    */
   async contribute(
     tokenAddress: string,
-    bnbAmount: string,
+    monAmount: string,
     options?: TxOptions
   ): Promise<TxResult> {
     this.requireSigner();
     this.validateAddress(tokenAddress);
 
-    const amount = ethers.parseEther(bnbAmount);
+    const amount = ethers.parseEther(monAmount);
     const txOptions = this.buildTxOptions(options, GAS_LIMITS.CONTRIBUTE);
     txOptions.value = amount;
 
@@ -219,8 +198,9 @@ export class LaunchpadManager extends BaseContract {
   }
 
   /**
-   * Claim founder tokens (vested tokens)
+   * Claim founder tokens
    *
+   * For PROJECT_RAISE: Founder gets 60% of tokens immediately (no vesting)
    * Works for both PROJECT_RAISE and INSTANT_LAUNCH
    */
   async claimFounderTokens(tokenAddress: string, options?: TxOptions): Promise<TxResult> {
@@ -239,7 +219,7 @@ export class LaunchpadManager extends BaseContract {
   }
 
   /**
-   * Claim raised funds (vested BNB from raise)
+   * Claim raised funds (MON from raise, 80% available immediately)
    *
    * Note: Only for PROJECT_RAISE tokens
    * INSTANT_LAUNCH tokens don't have raised funds to claim
@@ -263,12 +243,12 @@ export class LaunchpadManager extends BaseContract {
    * Graduate pool to PancakeSwap
    *
    * For PROJECT_RAISE:
-   * - Adds liquidity to PancakeSwap with raised BNB
-   * - Uses 10% of tokens reserved for PancakeSwap
+   * - Adds liquidity to PancakeSwap with 20% of raised MON
+   * - Uses 10% of tokens reserved for PancakeSwap liquidity
    *
    * For INSTANT_LAUNCH:
    * - Withdraws graduated pool from BondingCurveDEX
-   * - Adds liquidity with 0.6 BNB + 20% of tokens
+   * - Adds liquidity with MON + 20% of tokens
    */
   async graduateToPancakeSwap(tokenAddress: string, options?: TxOptions): Promise<TxResult> {
     this.requireSigner();
@@ -290,30 +270,30 @@ export class LaunchpadManager extends BaseContract {
    *
    * Allows users to sell their tokens after a PROJECT_RAISE has graduated to PancakeSwap.
    * The function:
-   * - Takes 2% fee on tokens
-   * - Swaps half the tokens for BNB
-   * - Adds the other half + BNB back to liquidity pool
+   * - Takes 1% platform fee on tokens
+   * - Swaps half the tokens for MON
+   * - Adds the other half + MON back to liquidity pool
    * - Burns the LP tokens
-   * - Pays seller 70% of the BNB from swap
+   * - Pays seller 70% of the MON from swap
    * - Remaining 30% goes back to liquidity
    *
    * Note: Only works for PROJECT_RAISE tokens that have graduated
    *
    * @param tokenAddress Address of the PROJECT_RAISE token
    * @param tokenAmount Amount of tokens to sell (in wei)
-   * @param minBNBOut Minimum BNB to receive (slippage protection)
+   * @param minMONOut Minimum MON to receive (slippage protection)
    */
   async handlePostGraduationSell(
     tokenAddress: string,
     tokenAmount: string,
-    minBNBOut: string,
+    minMONOut: string,
     options?: TxOptions
   ): Promise<TxResult> {
     this.requireSigner();
     this.validateAddress(tokenAddress);
 
     const amount = ethers.parseEther(tokenAmount);
-    const minOut = ethers.parseEther(minBNBOut);
+    const minOut = ethers.parseEther(minMONOut);
 
     const tx = await this.contract.handlePostGraduationSell(
       tokenAddress,
@@ -333,31 +313,31 @@ export class LaunchpadManager extends BaseContract {
    *
    * Allows users to buy tokens after a PROJECT_RAISE has graduated to PancakeSwap.
    * The function:
-   * - Takes 1% platform fee on BNB
-   * - Swaps remaining BNB for tokens via PancakeSwap
+   * - Takes 1% platform fee on MON
+   * - Swaps remaining MON for tokens via PancakeSwap
    * - Sends tokens directly to buyer
    *
    * Note: Only works for PROJECT_RAISE tokens that have graduated
    *
    * @param tokenAddress Address of the PROJECT_RAISE token
-   * @param bnbAmount Amount of BNB to spend (in ether string)
+   * @param monAmount Amount of MON to spend (in ether string)
    * @param minTokensOut Minimum tokens to receive (slippage protection, in ether string)
    * @param options Transaction options
    */
   async handlePostGraduationBuy(
     tokenAddress: string,
-    bnbAmount: string,
+    monAmount: string,
     minTokensOut: string,
     options?: TxOptions
   ): Promise<TxResult> {
     this.requireSigner();
     this.validateAddress(tokenAddress);
 
-    const amount = ethers.parseEther(bnbAmount);
+    const amount = ethers.parseEther(monAmount);
     const minOut = ethers.parseEther(minTokensOut);
 
     const txOptions = this.buildTxOptions(options, GAS_LIMITS.CONTRIBUTE); // Similar gas to contribute
-    txOptions.value = amount; // Must send BNB with transaction
+    txOptions.value = amount; // Must send MON with transaction
 
     const tx = await this.contract.handlePostGraduationBuy(
       tokenAddress,
@@ -397,7 +377,7 @@ export class LaunchpadManager extends BaseContract {
 
   /**
    * Get launch information with USD values
-   * ✅ UPDATED: No longer returns projectInfoFiWallet
+   * ✅ UPDATED: Returns MON amounts (Monad native token) + USD equivalents
    */
   async getLaunchInfoWithUSD(tokenAddress: string): Promise<LaunchInfoWithUSD> {
     this.validateAddress(tokenAddress);
@@ -565,7 +545,7 @@ export class LaunchpadManager extends BaseContract {
   /**
    * Check if launch deadline has passed
    *
-   * Note: Only relevant for PROJECT_RAISE tokens (24-hour deadline)
+   * Note: Only relevant for PROJECT_RAISE tokens (72-hour / 3-day deadline)
    * INSTANT_LAUNCH tokens have no deadline
    */
   async hasLaunchDeadlinePassed(tokenAddress: string): Promise<boolean> {
@@ -654,8 +634,8 @@ export class LaunchpadManager extends BaseContract {
   /**
    * ✅ NEW: Claim refund after failed PROJECT_RAISE
    *
-   * If a PROJECT_RAISE fails to meet its target after the 24-hour deadline,
-   * contributors can claim their BNB refunds.
+   * If a PROJECT_RAISE fails to meet its target after the 72-hour (3-day) deadline,
+   * contributors can claim their MON refunds.
    *
    * Note: Only works for PROJECT_RAISE tokens that failed to meet target
    *
@@ -704,7 +684,7 @@ export class LaunchpadManager extends BaseContract {
   }
 
   /**
-   * ✅ NEW: Update fallback BNB price (admin only)
+   * ✅ NEW: Update fallback MON price (admin only, Monad native token)
    *
    * Updates the fallback price used when the oracle fails.
    * Only callable by contract owner.
@@ -1122,27 +1102,28 @@ export class LaunchpadManager extends BaseContract {
 
   /**
    * Validate launch parameters
-   * ✅ UPDATED: Now validates BNB amounts instead of USD, removed projectInfoFiWallet validation
+   * ✅ UPDATED: Validates MON amounts (Monad native token)
+   * Note: Contract enforces actual validation, this is for client-side UX
    */
   private validateLaunchParams(params: CreateLaunchParams): void {
-    const minRaiseBNB = 0.1; // Minimum raise target
-    const maxRaiseBNB = 0.5; // Maximum raise target
-    const minVesting = CONSTANTS.MIN_VESTING_DURATION / (24 * 60 * 60);
-    const maxVesting = CONSTANTS.MAX_VESTING_DURATION / (24 * 60 * 60);
+    const minRaiseMON = parseFloat(CONSTANTS.MIN_RAISE_MON); // 5M MON
+    const maxRaiseMON = parseFloat(CONSTANTS.MAX_RAISE_MON); // 20M MON
+    const minVesting = CONSTANTS.MIN_VESTING_DURATION / (24 * 60 * 60); // 90 days
+    const maxVesting = CONSTANTS.MAX_VESTING_DURATION / (24 * 60 * 60); // 180 days
 
     const raiseTarget = parseFloat(params.raiseTargetMON);
     const raiseMax = parseFloat(params.raiseMaxMON);
 
-    if (raiseTarget < minRaiseBNB || raiseTarget > maxRaiseBNB) {
-      throw new Error(`Raise target must be between ${minRaiseBNB} and ${maxRaiseBNB} BNB`);
+    if (raiseTarget < minRaiseMON || raiseTarget > maxRaiseMON) {
+      throw new Error(`Raise target must be between ${minRaiseMON.toLocaleString()} and ${maxRaiseMON.toLocaleString()} MON`);
     }
 
-    if (raiseMax < raiseTarget || raiseMax > maxRaiseBNB) {
-      throw new Error(`Raise max must be between raise target and ${maxRaiseBNB} BNB`);
+    if (raiseMax < raiseTarget || raiseMax > maxRaiseMON) {
+      throw new Error(`Raise max must be between raise target and ${maxRaiseMON.toLocaleString()} MON`);
     }
 
     if (params.vestingDuration < minVesting || params.vestingDuration > maxVesting) {
-      throw new Error(`Vesting duration must be between ${minVesting} and ${maxVesting} days`);
+      throw new Error(`Vesting duration must be between ${minVesting} and ${maxVesting} days (Note: Contract overrides to 180 days)`);
     }
   }
 }

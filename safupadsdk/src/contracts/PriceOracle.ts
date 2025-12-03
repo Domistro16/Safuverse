@@ -16,14 +16,14 @@ export class PriceOracle extends BaseContract {
     super(address, PriceOracleABI, provider, signer, eventQueryProvider, graph);
   }
   /**
-   * Get current BNB price in USD (8 decimals)
+   * Get current MON price in USD (8 decimals) - Monad native token
    */
   async getMONPrice(): Promise<bigint> {
     return await this.contract.getBNBPrice();
   }
 
   /**
-   * Get BNB price formatted as string
+   * Get MON price formatted as string (Monad native token)
    */
   async getMONPriceFormatted(): Promise<string> {
     const price = await this.getMONPrice();
@@ -31,34 +31,34 @@ export class PriceOracle extends BaseContract {
   }
 
   /**
-   * Convert USD to BNB
+   * Convert USD to MON (Monad native token)
    */
   async usdToMON(usdAmount: bigint): Promise<bigint> {
     return await this.contract.usdToMON(usdAmount);
   }
 
   /**
-   * Convert BNB to USD
+   * Convert MON to USD (Monad native token)
    */
-  async monToUSD(bnbAmount: bigint): Promise<bigint> {
-    return await this.contract.bnbToUSD(bnbAmount);
+  async monToUSD(monAmount: bigint): Promise<bigint> {
+    return await this.contract.bnbToUSD(monAmount);
   }
 
   /**
-   * Convert USD string to BNB
+   * Convert USD string to MON (Monad native token)
    */
   async convertUSDToMON(usdAmountStr: string): Promise<string> {
     const usdAmount = ethers.parseUnits(usdAmountStr, 18);
-    const bnbAmount = await this.usdToMON(usdAmount);
-    return ethers.formatEther(bnbAmount);
+    const monAmount = await this.usdToMON(usdAmount);
+    return ethers.formatEther(monAmount);
   }
 
   /**
-   * Convert BNB string to USD
+   * Convert MON string to USD (Monad native token)
    */
-  async convertMONToUSD(bnbAmountStr: string): Promise<string> {
-    const bnbAmount = ethers.parseEther(bnbAmountStr);
-    const usdAmount = await this.monToUSD(bnbAmount);
+  async convertMONToUSD(monAmountStr: string): Promise<string> {
+    const monAmount = ethers.parseEther(monAmountStr);
+    const usdAmount = await this.monToUSD(monAmount);
     return ethers.formatUnits(usdAmount, 18);
   }
 
