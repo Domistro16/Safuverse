@@ -5,7 +5,7 @@ import { NetworkConfig, SDKConfig } from '../types';
  */
 export const NETWORKS: Record<string, NetworkConfig> = {
   bsc: {
-    name: 'BSC Mainnet',
+    name: 'Monad',
     chainId: 56,
     rpcUrl: 'https://bsc-dataseed.binance.org/',
     alchemyRpcUrlTemplate: 'https://bnb-mainnet.g.alchemy.com/v2/{apiKey}',

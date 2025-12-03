@@ -72,8 +72,8 @@ export class LaunchpadManager extends BaseContract {
     this.validateLaunchParams(params);
 
     // ✅ UPDATED: Now uses BNB values instead of USD
-    const raiseTargetBNB = ethers.parseEther(params.raiseTargetBNB);
-    const raiseMaxBNB = ethers.parseEther(params.raiseMaxBNB);
+    const raiseTargetBNB = ethers.parseEther(params.raiseTargetMON);
+    const raiseMaxBNB = ethers.parseEther(params.raiseMaxMON);
     const vestingDuration = params.vestingDuration * 24 * 60 * 60; // days to seconds
 
     // Prepare metadata
@@ -144,7 +144,7 @@ export class LaunchpadManager extends BaseContract {
     }
 
     // Convert initial buy amount
-    const initialBuyBNB = ethers.parseEther(params.initialBuyBNB);
+    const initialBuyBNB = ethers.parseEther(params.initialBuyMON);
 
     // Prepare metadata
     const metadata = [
@@ -406,11 +406,11 @@ export class LaunchpadManager extends BaseContract {
 
     return {
       founder: info[0],
-      raiseTargetBNB: info[1],
+      raiseTargetMON: info[1],
       raiseTargetUSD: info[2],
-      raiseMaxBNB: info[3],
+      raiseMaxMON: info[3],
       raiseMaxUSD: info[4],
-      totalRaisedBNB: info[5],
+      totalRaisedMON: info[5],
       totalRaisedUSD: info[6],
       raiseDeadline: info[7],
       raiseCompleted: info[8],
@@ -1130,8 +1130,8 @@ export class LaunchpadManager extends BaseContract {
     const minVesting = CONSTANTS.MIN_VESTING_DURATION / (24 * 60 * 60);
     const maxVesting = CONSTANTS.MAX_VESTING_DURATION / (24 * 60 * 60);
 
-    const raiseTarget = parseFloat(params.raiseTargetBNB);
-    const raiseMax = parseFloat(params.raiseMaxBNB);
+    const raiseTarget = parseFloat(params.raiseTargetMON);
+    const raiseMax = parseFloat(params.raiseMaxMON);
 
     if (raiseTarget < minRaiseBNB || raiseTarget > maxRaiseBNB) {
       throw new Error(`Raise target must be between ${minRaiseBNB} and ${maxRaiseBNB} BNB`);

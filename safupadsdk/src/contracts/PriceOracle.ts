@@ -26,7 +26,7 @@ export class PriceOracle extends BaseContract {
    * Get BNB price formatted as string
    */
   async getMONPriceFormatted(): Promise<string> {
-    const price = await this.getBNBPrice();
+    const price = await this.getMONPrice();
     return ethers.formatUnits(price, 8);
   }
 
@@ -34,7 +34,7 @@ export class PriceOracle extends BaseContract {
    * Convert USD to BNB
    */
   async usdToMON(usdAmount: bigint): Promise<bigint> {
-    return await this.contract.usdToBNB(usdAmount);
+    return await this.contract.usdToMON(usdAmount);
   }
 
   /**
