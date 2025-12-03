@@ -84,63 +84,51 @@ export const DEFAULT_CONFIG: Partial<SDKConfig> = {
 };
 
 /**
- * Contract constants
+ * Contract constants (LaunchpadManagerV3 - Monad)
  */
 export const CONSTANTS = {
-  // Launch parameters
-  MIN_RAISE_USD: '50000',
-  MAX_RAISE_USD: '500000',
-  MAX_LIQUIDITY_USD: '100000',
-  RAISE_DURATION: 24 * 60 * 60, // 24 hours in seconds
+  // Launch parameters - MON amounts (Monad native currency)
+  MIN_RAISE_MON: '5000000', // 5M MON
+  MAX_RAISE_MON: '20000000', // 20M MON
+  MAX_CONTRIBUTION_PER_WALLET: '50000', // 50K MON per wallet
+  RAISE_DURATION: 72 * 60 * 60, // 72 hours (3 days) in seconds
 
-  // Token allocation
-  FOUNDER_ALLOCATION: 20, // 20%
-  IMMEDIATE_FOUNDER_RELEASE: 50, // 50%
-  LIQUIDITY_PERCENT: 10, // 10%
-  LIQUIDITY_BNB_PERCENT: 50, // 50%
+  // Token allocation percentages
+  FOUNDER_ALLOCATION: 60, // 60% to founder
+  CONTRIBUTOR_ALLOCATION: 20, // 20% for contributors
+  PANCAKESWAP_ALLOCATION: 10, // 10% for PancakeSwap liquidity
+  VESTED_ALLOCATION: 10, // 10% vested (conditional - community control)
 
-  // Vesting
+  // Founder token release
+  IMMEDIATE_FOUNDER_RELEASE: 100, // 100% of founder allocation released immediately (no vesting on founder tokens)
+
+  // Liquidity percentages
+  LIQUIDITY_TOKEN_PERCENT: 10, // 10% of token supply for liquidity
+  LIQUIDITY_MON_PERCENT: 20, // 20% of raised MON for liquidity
+
+  // Vesting (for conditional 10% allocation)
   MIN_VESTING_DURATION: 90 * 24 * 60 * 60, // 90 days
   MAX_VESTING_DURATION: 180 * 24 * 60 * 60, // 180 days
   VESTING_RELEASE_INTERVAL: 30 * 24 * 60 * 60, // 30 days
+  MARKET_CAP_CHECK_MONTHS: 3, // 3 consecutive months below starting market cap triggers community control
 
-  // Fees
-  INITIAL_FEE_BPS: 1000, // 10%
-  OPTION1_FINAL_FEE_BPS: 100, // 1%
-  OPTION2_FINAL_FEE_BPS: 200, // 2%
-  POST_GRADUATION_FEE_BPS: 200, // 2%
+  // Platform fees
+  PLATFORM_FEE_BPS: 100, // 1% platform fee (100 basis points)
   BASIS_POINTS: 10000,
-
-  // Fee decay thresholds (blocks)
-  FEE_DECAY_BLOCK_1: 20,
-  FEE_DECAY_BLOCK_2: 50,
-  FEE_DECAY_BLOCK_3: 100,
-
-  // Fee tiers
-  FEE_TIER_1: 1000, // 10%
-  FEE_TIER_2: 600, // 6%
-  FEE_TIER_3: 400, // 4%
-
-  // Graduation thresholds
-  GRADUATION_MARKET_CAP_USD: '500000',
-  TARGET_GRADUATION_MARKET_CAP_USD: '90000',
-  TARGET_PRICE_MULTIPLIER: 6,
 
   // LP Harvester
   CLAIM_COOLDOWN: 24 * 60 * 60, // 24 hours
   HARVEST_COOLDOWN: 24 * 60 * 60, // 24 hours
-  MIN_HARVEST_AMOUNT: '0.001', // 0.001 BNB
+  MIN_HARVEST_AMOUNT: '0.001', // 0.001 MON
   DEFAULT_LOCK_DURATION: 365 * 24 * 60 * 60, // 365 days
   MIN_LOCK_DURATION: 90 * 24 * 60 * 60, // 90 days
   MAX_LOCK_DURATION: 1460 * 24 * 60 * 60, // 4 years
 
-  // Fee distribution (percentage)
-  CREATOR_FEE_BPS: 7000, // 70%
-  PROJECT_INFOFI_BPS: 2000, // 20%
-  PLATFORM_FEE_BPS: 1000, // 10%
-
   // Token supply
   TOTAL_TOKEN_SUPPLY: '1000000000', // 1 billion
+
+  // Burn address
+  LP_BURN_ADDRESS: '0x000000000000000000000000000000000000dEaD',
 };
 
 /**

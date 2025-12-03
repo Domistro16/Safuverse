@@ -146,7 +146,7 @@ export class BondingCurveDEX extends BaseContract {
     // Get quote
     const quote = await this.getSellQuote(tokenAddress, tokenAmount);
 
-    // Calculate min BNB with slippage
+    // Calculate min MON with slippage
     const minMONOut = (quote.tokensOut * BigInt(100 - slippageTolerance)) / 100n;
 
     const tx = await this.contract.sellTokens(
@@ -163,7 +163,7 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Get buy quote (how many tokens for X BNB)
+   * Get buy quote (how many tokens for X MON)
    */
   async getBuyQuote(tokenAddress: string, monAmount: string): Promise<Quote> {
     this.validateAddress(tokenAddress);
@@ -178,7 +178,7 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Get sell quote (how much BNB for X tokens)
+   * Get sell quote (how much MON for X tokens)
    */
   async getSellQuote(tokenAddress: string, tokenAmount: string): Promise<Quote> {
     this.validateAddress(tokenAddress);
@@ -187,7 +187,7 @@ export class BondingCurveDEX extends BaseContract {
     const quote = await this.contract.getSellQuote(tokenAddress, amount);
 
     return {
-      tokensOut: quote[0], // bnbOut
+      tokensOut: quote[0], // monOut
       pricePerToken: quote[1], // pricePerToken
     };
   }
@@ -713,7 +713,7 @@ export class BondingCurveDEX extends BaseContract {
         type: 'buy',
         trader: args[1], // buyer
         tokenAddress: args[2], // token
-        monAmount: topics[0], // bnbReceived
+        monAmount: topics[0], // monReceived
         tokenAmount: topics[1], // tokensAmount
         price: topics[2], // currentPrice
         feeRate: topics[3], // feeRate
@@ -759,7 +759,7 @@ export class BondingCurveDEX extends BaseContract {
         type: 'sell',
         trader: args[0], // seller
         tokenAddress: args[1], // token
-        monAmount: topics[0], // bnbReceived
+        monAmount: topics[0], // monReceived
         tokenAmount: topics[1], // tokensAmount
         price: topics[2], // currentPrice
         feeRate: topics[3], // feeRate
@@ -969,12 +969,12 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Get 24h trading volume in BNB
+   * Get 24h trading volume in MON
    * Returns both the bigint value and formatted string
    * Uses The Graph if available, falls back to events
    */
   async get24hVolume(tokenAddress: string): Promise<{
-    volumeBNB: bigint;
+    volumeMON: bigint;
     volumeFormatted: string;
     buyVolumeMON: bigint;
     sellVolumeMON: bigint;
@@ -1003,7 +1003,7 @@ export class BondingCurveDEX extends BaseContract {
       const totalVolume = buyVolume + sellVolume;
 
       return {
-        volumeBNB: totalVolume,
+        volumeMON: totalVolume,
         volumeFormatted: this.safeFormatEther(totalVolume),
         buyVolumeMON: buyVolume,
         sellVolumeMON: sellVolume,
@@ -1027,7 +1027,7 @@ export class BondingCurveDEX extends BaseContract {
     const totalVolume = buyVolume + sellVolume;
 
     return {
-      volumeBNB: totalVolume,
+      volumeMON: totalVolume,
       volumeFormatted: this.safeFormatEther(totalVolume),
       buyVolumeMON: buyVolume,
       sellVolumeMON: sellVolume,
@@ -1133,7 +1133,7 @@ export class BondingCurveDEX extends BaseContract {
   // ==================== UTILITY METHODS ====================
 
   /**
-   * Format BNB amount (bigint) to readable string
+   * Format MON amount (bigint) to readable string
    * Handles very small amounts without scientific notation
    */
   formatMONAmount(amount: bigint): string {
@@ -1157,7 +1157,7 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Parse BNB amount string to bigint
+   * Parse MON amount string to bigint
    * Handles scientific notation and very small values
    */
   parseMONAmount(amount: string): bigint {

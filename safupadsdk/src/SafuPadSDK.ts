@@ -221,7 +221,7 @@ export class SafuPadSDK {
   }
 
   /**
-   * Get the current BNB balance
+   * Get the current MON balance (Monad native token)
    */
   async getBalance(address?: string): Promise<string> {
     const addr = address || (await this.getAddress());
@@ -318,16 +318,16 @@ export class SafuPadSDK {
   }
 
   /**
-   * Format BNB amount
+   * Format MON amount (Monad native token)
    */
-  formatBNB(amount: bigint | string): string {
+  formatMON(amount: bigint | string): string {
     return ethers.formatEther(amount);
   }
 
   /**
-   * Parse BNB amount
+   * Parse MON amount (Monad native token)
    */
-  parseBNB(amount: string): bigint {
+  parseMON(amount: string): bigint {
     return ethers.parseEther(amount);
   }
 

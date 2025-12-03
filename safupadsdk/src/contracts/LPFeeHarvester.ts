@@ -59,7 +59,7 @@ export class LPFeeHarvester extends BaseContract {
 
     // ✅ FIX: Map array of tuples correctly
     return history.map((h: any) => ({
-      bnbAmount: h[0],
+      monAmount: h[0],
       token0Amount: h[1],
       token1Amount: h[2],
       timestamp: h[3],
