@@ -161,7 +161,7 @@ const CourseListPage = () => {
         </div>
       ) : isPending ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-16 h-16 border-2 border-yellow-300 border-t-yellow-500 rounded-full animate-spin" />
+          <div className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
       ) : (
         <p className="text-center text-muted-foreground">
@@ -195,42 +195,43 @@ const CourseListPage = () => {
   );
 
   return (
-    <div className="min-h-screen crypto-pattern px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 sm:px-6 lg:px-8">
       {/* Hero Section for Course Catalog */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="py-20 md:py-28 text-center relative overflow-hidden"
+        className="pt-20 pb-12 text-center relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/70 to-background/95 z-0"></div>
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <div className="inline-flex items-center px-5 py-2.5 rounded-full glass-effect mb-6 border border-primary/30 shadow-lg">
-            <Sparkles className="w-5 h-5 text-primary mr-2.5" />
-            <span className="text-sm font-semibold text-gray-200">
-              Your Gateway to Web3 Mastery
-            </span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
-            The SafuAcademy{" "}
-            <span className="primary-gradient-text">Course Catalog</span>
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">Your Gateway to Web3 Mastery</span>
+          </motion.div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 leading-tight">
+            Explore All{" "}
+            <span className="primary-gradient-text">Courses</span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Discover a universe of AI-curated courses. From beginner basics to
-            advanced strategies, find your path to becoming a Web3 pro.
+          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+            Discover courses from beginner basics to advanced strategies. Find your path to becoming a Web3 professional.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button
+              variant="primary"
               size="lg"
               onClick={() =>
                 document
                   .getElementById("filter-bar")
                   ?.scrollIntoView({ behavior: "smooth" })
               }
-              className="bg-gradient-to-r from-primary to-orange-400 hover:from-orange-500 hover:to-primary text-background font-semibold text-md px-8 py-4 rounded-lg shadow-xl hover:shadow-primary/50 transition-all duration-300 transform hover:scale-105 neon-glow"
             >
-              <Search className="w-5 h-5 mr-2.5" />
-              Explore All Courses
+              <Search className="w-5 h-5 mr-2" />
+              Search Courses
             </Button>
           </div>
         </div>
@@ -269,7 +270,7 @@ const CourseListPage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-        className="py-16 md:py-20 my-12 md:my-16 glass-effect rounded-2xl"
+        className="py-16 md:py-20 my-12 md:my-16 bg-secondary/30 backdrop-blur-sm rounded-2xl border border-border/50"
       >
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-10 md:mb-12">
@@ -319,7 +320,7 @@ const CourseListPage = () => {
                 <div>
                   <label
                     htmlFor="categoryFilter"
-                    className="block text-sm font-semibold text-gray-300 mb-1.5"
+                    className="block text-sm font-semibold text-foreground mb-1.5"
                   >
                     Category
                   </label>
@@ -346,7 +347,7 @@ const CourseListPage = () => {
                 <div>
                   <label
                     htmlFor="levelFilter"
-                    className="block text-sm font-semibold text-gray-300 mb-1.5"
+                    className="block text-sm font-semibold text-foreground mb-1.5"
                   >
                     Level
                   </label>
@@ -370,7 +371,7 @@ const CourseListPage = () => {
                 <div>
                   <label
                     htmlFor="durationFilter"
-                    className="block text-sm font-semibold text-gray-300 mb-1.5"
+                    className="block text-sm font-semibold text-foreground mb-1.5"
                   >
                     Duration
                   </label>
@@ -419,7 +420,7 @@ const CourseListPage = () => {
             durationFilter !== "all" ||
             categoryFilter !== "all") && (
             <div className="mt-12">
-              <h3 className="text-2xl font-semibold mb-6 text-center text-gray-200">
+              <h3 className="text-2xl font-semibold mb-6 text-center text-foreground">
                 {searchTerm
                   ? `Search Results for "${searchTerm}"`
                   : "Filtered Courses"}
@@ -448,10 +449,10 @@ const CourseListPage = () => {
                   className="text-center py-12"
                 >
                   <Search className="w-16 h-16 text-primary mx-auto mb-6 opacity-50" />
-                  <h3 className="text-2xl font-semibold mb-3 text-gray-300">
+                  <h3 className="text-2xl font-semibold mb-3 text-foreground">
                     No Courses Match Your Criteria
                   </h3>
-                  <p className="text-gray-400 max-w-md mx-auto">
+                  <p className="text-muted-foreground max-w-md mx-auto">
                     Try adjusting your search or filters.
                   </p>
                 </motion.div>

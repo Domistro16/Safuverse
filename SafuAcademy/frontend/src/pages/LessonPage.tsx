@@ -218,28 +218,24 @@ const LessonPlayer = () => {
 
   if (isPending || !courses || !address || loading || error || userLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        {videos.length}
-        <div className="w-16 h-16 border-4 border-yellow-300 border-t-yellow-500 rounded-full animate-spin" />
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center crypto-pattern py-12 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center bg-background py-12 px-4">
         <AlertTriangle className="w-24 h-24 text-destructive mb-6" />
         <h1 className="text-4xl font-bold mb-4 primary-gradient-text">
           Course Not Found
         </h1>
-        <p className="text-xl text-gray-300 mb-8">
+        <p className="text-xl text-muted-foreground mb-8">
           Oops! We couldn't find the course you're looking for.
         </p>
         <Link to="/courses/all">
-          <Button
-            size="lg"
-            className="bg-gradient-to-r from-primary to-orange-400 hover:from-orange-500 hover:to-primary text-background font-semibold"
-          >
+          <Button variant="primary" size="lg">
             <ChevronLeft className="w-5 h-5 mr-2" />
             Back to All Courses
           </Button>
@@ -249,62 +245,61 @@ const LessonPlayer = () => {
   }
 
   return (
-    <div className="min-h-screen crypto-pattern py-5 md:py-5 px-4 sm:px-6 lg:px-8 w-full crypto-pattern -mb-10 md:mb-10 justify-center">
-      <div>
+    <div className="min-h-screen bg-background py-8 md:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
         <Link to={`/courses/${courseId}`}>
-          <Button
-            variant="ghost"
-            className="text-primary hover:bg-primary/10 md:ml-20"
-          >
+          <Button variant="ghost" className="text-primary hover:bg-primary/10 mb-6">
             <ChevronLeft className="w-5 h-5 mr-2" />
             Back to Course
           </Button>
         </Link>
-        <h1 className=" md:text-xl font-light text-sm primary-gradient-text text-left sm:mt-5 md:ml-20 mt-5">
-          <span className="">{course.title}:</span>
-          <br />
-          {course.lessons[Number(id)].lessontitle} (Lesson {Number(id) + 1})
-        </h1>
+        <div className="mb-8">
+          <p className="text-sm text-muted-foreground mb-2">{course.title}</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            {course.lessons[Number(id)].lessontitle}
+          </h1>
+          <p className="text-sm text-primary mt-1">Lesson {Number(id) + 1} of {course.lessons.length}</p>
+        </div>
       </div>
-      <div className="h-[50%] md:h-[400px] w-[100%] md:w-[70%] lg:w-[70%] mx-auto mt-10 mb-40">
+      <div className="max-w-6xl mx-auto">
         <div className="mb-6 flex justify-center">
-          <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20">
+          <div className="inline-flex items-center gap-3 bg-card/50 backdrop-blur-sm rounded-full px-6 py-3 border border-border">
             <div className="flex items-center gap-2">
               <div
                 className={`w-3 h-3 rounded-full ${
-                  bool ? "bg-green-500 animate-pulse" : "bg-yellow-500"
+                  bool ? "bg-success animate-pulse" : "bg-warning"
                 }`}
               />
-              <span className="text-white font-semibold">
+              <span className="text-foreground font-semibold text-sm">
                 {bool ? "✓ Watched" : "Watching"}
               </span>
             </div>
-            <div className="h-4 w-px bg-white/30" />
-            <span className="text-white/80 text-sm">
+            <div className="h-4 w-px bg-border" />
+            <span className="text-muted-foreground text-sm">
               {watchedPercentage.toFixed(1)}% completed
             </span>
           </div>
         </div>
 
-        <VideoPlayer videos={videos} onWatchedChange={handleWatchedChange} />
+        <div className="rounded-2xl overflow-hidden border border-border bg-card/30 mb-8">
+          <VideoPlayer videos={videos} onWatchedChange={handleWatchedChange} />
+        </div>
 
-        <div className="flex justify-between mt-5">
+        <div className="flex justify-between items-center">
           {Number(id) >= 1 ? (
-            <button
-              className="px-3 py-1 border-2 border-neutral-500 primary-gradient-text rounded-xl font-bold transition-all duration-300 delay-100 hover:border-[#FFB000]"
-              onClick={() => prev()}
-            >
-              Back
-            </button>
+            <Button variant="secondary" size="lg" onClick={() => prev()}>
+              <ChevronLeft className="w-5 h-5 mr-2" />
+              Previous Lesson
+            </Button>
           ) : (
-            <div /> // Empty div to maintain space if Back button is hidden
+            <div />
           )}
-          <button
-            className="px-3 py-1 border-2 border-neutral-500 primary-gradient-text rounded-xl font-bold transition-all duration-300 delay-100 hover:border-[#FFB000]"
-            onClick={() => next()}
-          >
-            {Number(id) === course.lessons.length + 1 ? "Finish" : "Next"}
-          </button>
+          <Button variant="primary" size="lg" onClick={() => next()}>
+            {Number(id) === course.lessons.length + 1 ? "Finish Course" : "Next Lesson"}
+            {Number(id) !== course.lessons.length + 1 && (
+              <ChevronLeft className="w-5 h-5 ml-2 rotate-180" />
+            )}
+          </Button>
         </div>
       </div>
     </div>
