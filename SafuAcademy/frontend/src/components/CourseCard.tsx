@@ -11,6 +11,9 @@ import {
   Users,
   Lock,
   LucideIcon,
+  Star,
+  Clock,
+  PlayCircle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { getParticipants } from "@/lib/utils";
@@ -73,60 +76,86 @@ const CourseCard = ({
     <motion.div
       initial={{ opacity: 0, y: 50, scale: 0.95 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      whileHover={{ y: -8 }}
       transition={{ duration: 0.6, delay: animationDelay, ease: "easeOut" }}
       viewport={{ once: true, amount: 0.3 }}
-      className="glass-effect rounded-xl overflow-hidden group card-hover-effect flex flex-col h-full cursor-pointer border-1 border-yellow-400 shadow-lg shadow-yellow-400/50 hover:shadow-yellow-300/50 transition-shadow duration-300"
+      className="rounded-2xl overflow-hidden bg-card border border-border hover:border-primary transition-all duration-300 group cursor-pointer flex flex-col h-full hover:shadow-[0_0_30px_rgba(0,212,170,0.3)]"
       onClick={() => navigate(`/courses/${course.id}`)}
     >
-      <div className="h-52 bg-gradient-to-br from-primary/10 to-orange-400/10 relative overflow-hidden">
+      {/* Thumbnail */}
+      <div className="relative aspect-video overflow-hidden">
         <img
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-400 ease-in-out"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           alt={`${course.title} course preview`}
           src={course.url}
         />
-        <div className="absolute top-4 left-4">
-          <Badge
-            variant="default"
-            className="bg-primary/90 text-primary-foreground shadow-md"
-          >
-            {course.level}
-          </Badge>
+
+        {/* Price/Free Badge */}
+        <div className="absolute top-3 left-3">
+          {course.isFree || Number(course.price) === 0 ? (
+            <Badge variant="free" className="font-semibold">
+              FREE
+            </Badge>
+          ) : (
+            <span className="px-3 py-1 rounded-full bg-background/80 backdrop-blur text-foreground text-sm font-semibold">
+              ${Number(course.price) / 1000000}
+            </span>
+          )}
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card via-card/70 to-transparent p-4 flex items-end justify-between">
-          <div className="flex items-center space-x-2">
-            <IconComponent className="w-5 h-5 text-primary" />
-            <span className="text-xs text-gray-200 font-semibold">
-              {course.duration} minutes
-            </span>
+
+        {/* Featured Badge (if applicable) */}
+        {course.isFeatured && (
+          <div className="absolute top-3 right-3">
+            <Badge variant="premium" className="font-semibold text-xs">
+              Featured
+            </Badge>
           </div>
-          <div className="flex items-center space-x-1 text-xs text-gray-300">
-            <Users size={14} className="ml-1.5 text-primary/80" />
-            <span>
-              {participants > 1000
-                ? (participants / 1000).toFixed(1) + "k"
-                : participants}
-            </span>
-          </div>
+        )}
+
+        {/* Rating */}
+        <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-background/80 backdrop-blur">
+          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+          <span className="text-xs font-medium">{course.rating || 4.8}</span>
         </div>
       </div>
 
-      <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors duration-200 min-h-[56px]">
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-grow">
+        <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors min-h-[56px]">
           {course.title}
         </h3>
-        <p className="text-sm text-gray-400 mb-5 line-clamp-3 flex-grow min-h-[60px]">
+
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-grow min-h-[40px]">
           {course.description.split(" Access with .safu domain.")[0]}
         </p>
+
+        {/* Meta */}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+          <Badge
+            variant={
+              course.level.toLowerCase() === 'beginner' ? 'beginner' :
+              course.level.toLowerCase() === 'intermediate' ? 'intermediate' :
+              course.level.toLowerCase() === 'advanced' ? 'advanced' : 'default'
+            }
+            className="font-medium"
+          >
+            {course.level}
+          </Badge>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {course.duration}m
+          </span>
+          <span className="flex items-center gap-1">
+            <PlayCircle className="w-3 h-3" />
+            {course.lessons || 12} lessons
+          </span>
+        </div>
+
+        {/* Footer */}
         <div className="mt-auto">
-          <Link to={`/courses/${course.id}`} className="block">
-            <Button className="w-full bg-gradient-to-r from-primary to-orange-400 hover:from-orange-500 hover:to-primary text-background font-semibold text-sm py-3 rounded-lg shadow-lg hover:shadow-primary/40 transition-all duration-300 transform hover:scale-105">
-              View Course Details
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
           {!isEnrolled && (
-            <p className="text-xs text-amber-400 mt-2 text-center flex items-center justify-center">
-              <Lock size={12} className="mr-1" /> Mint .safu domain to enroll
+            <p className="text-xs text-amber-400 mb-2 flex items-center justify-center">
+              <Lock size={12} className="mr-1" /> Requires .safu domain
             </p>
           )}
         </div>

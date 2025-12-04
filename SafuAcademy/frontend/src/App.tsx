@@ -7,6 +7,7 @@ import CourseListPage from "@/pages/CourseListPage";
 import CourseDetailPage from "@/pages/CourseDetailPage";
 import ScrollToTop from "@/components/ScrollToTop";
 import LessonPlayer from "@/pages/LessonPage";
+import QuizPage from "@/pages/QuizPage";
 function App() {
   return (
     <>
@@ -23,6 +24,10 @@ function App() {
             <Route
               path="/courses/lesson/:courseId/:id"
               element={<LessonPlayer />}
+            />
+            <Route
+              path="/courses/:courseId/lessons/:lessonId/quiz"
+              element={<QuizPage />}
             />
           </Routes>
         </main>
