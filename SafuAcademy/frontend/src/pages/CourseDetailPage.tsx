@@ -15,10 +15,15 @@ import {
   BookOpen,
   Lock,
   ChevronLeft,
+  ChevronDown,
   Info,
   AlertTriangle,
   Link as LinkIcon,
   LucideIcon,
+  Star,
+  PlayCircle,
+  Heart,
+  Share2,
 } from "lucide-react";
 import CourseCard from "@/components/CourseCard";
 import { Course } from "@/constants";
@@ -199,159 +204,220 @@ const CourseDetailPage = () => {
     }
   };
   return (
-    <div className="min-h-screen crypto-pattern py-12 md:py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <motion.div
+    <div className="min-h-screen py-8 md:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
+        <motion.nav
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="mb-6 md:mb-8"
+          transition={{ duration: 0.5 }}
+          className="flex items-center gap-2 text-sm text-muted-foreground mb-6"
         >
-          <Link to="/courses/all">
-            <Button
-              variant="ghost"
-              className="text-primary hover:bg-primary/10"
-            >
-              <ChevronLeft className="w-5 h-5 mr-2" />
-              Back to All Courses
-            </Button>
-          </Link>
-        </motion.div>
+          <Link to="/" className="hover:text-primary">Home</Link>
+          <ChevronLeft className="w-4 h-4 rotate-180" />
+          <Link to="/courses/all" className="hover:text-primary">Courses</Link>
+          <ChevronLeft className="w-4 h-4 rotate-180" />
+          <span className="text-foreground">{course.title}</span>
+        </motion.nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 md:gap-12">
+          {/* Left - Course Info (3 cols) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="lg:col-span-2 space-y-8"
+            transition={{ duration: 0.7 }}
+            className="lg:col-span-3 space-y-8"
           >
-            <div className="glass-effect p-6 md:p-8 rounded-xl">
-              <div className="flex items-center mb-4">
-                <IconComponent className="w-10 h-10 text-primary mr-4" />
-                <div>
-                  <Badge
-                    variant="outline"
-                    className="mb-2 border-primary text-primary"
-                  >
-                    {course.level}
-                  </Badge>
-                  <h1 className="text-3xl md:text-4xl font-bold primary-gradient-text">
-                    {course.title}
-                  </h1>
-                </div>
+            {/* Course Hero */}
+            <div>
+              {/* Topics/Tags */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge
+                  variant={
+                    course.level.toLowerCase() === 'beginner' ? 'beginner' :
+                    course.level.toLowerCase() === 'intermediate' ? 'intermediate' :
+                    course.level.toLowerCase() === 'advanced' ? 'advanced' : 'default'
+                  }
+                >
+                  {course.level}
+                </Badge>
               </div>
-              <p className="text-lg text-gray-300 leading-relaxed mb-1">
+
+              {/* Title */}
+              <h1 className="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
+                {course.title}
+              </h1>
+
+              {/* Description */}
+              <p className="text-lg text-muted-foreground mb-6">
                 {course.description.replace(" Access with .safu domain.", "")}
               </p>
-              {!isEnrolled && (
-                <p className="text-sm text-amber-400 flex items-center">
-                  <Info size={16} className="mr-1.5" /> Mint your{" "}
-                  <code className="text-primary font-semibold p-0.5 rounded bg-primary/10 mx-1">
-                    .safu
-                  </code>{" "}
-                  domain to enroll and access full content.
-                </p>
-              )}
 
-              <div className="flex flex-wrap gap-4 mt-6 text-sm">
-                <div className="flex items-center text-gray-300">
-                  <Users className="w-4 h-4 mr-1.5 text-primary/80" />{" "}
-                  {coursePartcipants as number} students
+              {/* Meta */}
+              <div className="flex flex-wrap items-center gap-4 mb-6 text-sm">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                  <span className="font-semibold">{course.rating || 4.8}</span>
+                  <span className="text-muted-foreground">(120 reviews)</span>
                 </div>
-                <div className="flex items-center text-gray-300">
-                  <Clock className="w-4 h-4 mr-1.5 text-primary/80" /> Approx.{" "}
-                  {course.duration} minutes
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Users className="w-4 h-4" />
+                  {coursePartcipants} students
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  {course.duration}m total
                 </div>
               </div>
+
+              {/* Instructor Snippet */}
+              <div className="flex items-center gap-3 mb-8">
+                <img
+                  className="w-12 h-12 rounded-full object-cover"
+                  alt={course.instructor}
+                  src="https://images.unsplash.com/photo-1578390432942-d323db577792"
+                />
+                <div>
+                  <p className="text-sm text-muted-foreground">Created by</p>
+                  <p className="font-medium">{course.instructor}</p>
+                </div>
+              </div>
+
+              {/* CTAs - Desktop */}
+              {!isEnrolled && (
+                <div className="hidden lg:flex gap-4 p-4 rounded-xl bg-amber-400/10 border border-amber-400/20">
+                  <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-400">
+                    Mint your{" "}
+                    <code className="text-primary font-semibold px-1.5 py-0.5 rounded bg-primary/10">
+                      .safu
+                    </code>{" "}
+                    domain to enroll and access full content.
+                  </p>
+                </div>
+              )}
             </div>
 
+            {/* Tabs */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 gap-2 bg-card/50 p-1.5 h-30 rounded-lg border border-border">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 gap-2 bg-secondary p-1.5 rounded-xl border border-border">
                 <TabsTrigger
                   value="overview"
-                  className="py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                  className="py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-md"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
-                  value="modules"
-                  className="py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                  value="curriculum"
+                  className="py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-md"
                 >
-                  Modules
+                  Curriculum
                 </TabsTrigger>
                 {isEnrolled && (
                   <TabsTrigger
                     value="content"
-                    className="py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-md"
                   >
-                    Course Content
+                    Start Learning
                   </TabsTrigger>
                 )}
               </TabsList>
 
-              <div className="mt-6 glass-effect p-6 md:p-8 rounded-xl min-h-[300px]">
-                <TabsContent value="overview">
-                  <h2 className="text-2xl font-semibold mb-4 text-gray-100">
-                    Course Overview
-                  </h2>
+              <div className="mt-6">
+                <TabsContent value="overview" className="space-y-8">
+                  <div>
+                    <h2 className="text-2xl font-semibold mb-4">
+                      About This Course
+                    </h2>
+                    {course.longDescription
+                      .split("\n")
+                      .map((paragraph, index) => (
+                        <p
+                          key={index}
+                          className="text-muted-foreground leading-relaxed mb-4"
+                        >
+                          {paragraph}
+                        </p>
+                      ))}
+                  </div>
 
-                  {course.longDescription
-                    .split("\n")
-                    .map((paragraph, index) => (
-                      <p
-                        key={index}
-                        className="text-gray-300 leading-relaxed mb-6"
-                      >
-                        {paragraph}
-                      </p>
-                    ))}
+                  <div>
+                    <h3 className="text-xl font-semibold mb-4">
+                      What You'll Learn
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      {course.objectives.map((item, idx) => (
+                        <div key={idx} className="flex items-start gap-3">
+                          <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                          <span className="text-muted-foreground">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                  <h3 className="text-xl font-semibold mb-3 text-gray-200">
-                    What You'll Learn
-                  </h3>
-                  <ul className="space-y-2 mb-6">
-                    {course.objectives.map((item, idx) => (
-                      <li key={idx} className="flex items-start text-gray-300">
-                        <CheckCircle className="w-5 h-5 text-green-400 mr-3 mt-1 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-200">
-                    Prerequisites
-                  </h3>
-                  <ul className="space-y-2">
-                    {course.prerequisites.map((item, idx) => (
-                      <li key={idx} className="flex items-start text-gray-300">
-                        <Info className="w-5 h-5 text-cyan-400 mr-3 mt-1 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div>
+                    <h3 className="text-xl font-semibold mb-4">
+                      Prerequisites
+                    </h3>
+                    <ul className="space-y-2">
+                      {course.prerequisites.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <Info className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
+                          <span className="text-muted-foreground">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="modules">
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-100">
-                    Course Modules
+                <TabsContent value="curriculum" className="space-y-4">
+                  <h2 className="text-2xl font-semibold mb-6">
+                    Course Curriculum
                   </h2>
-                  <div className="space-y-4">
+                  <p className="text-muted-foreground mb-6">
+                    {course.lessons.length} lessons • {course.duration} minutes total
+                  </p>
+
+                  <div className="space-y-3">
                     {course.lessons.map((module, idx) => (
                       <div
                         key={idx}
-                        className="p-4 border border-border rounded-lg bg-background/30"
+                        className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-colors"
                       >
-                        <h3 className="text-lg font-semibold text-primary mb-1">
-                          {module.lessontitle}
-                        </h3>
-                        <div className="flex items-center text-xs text-gray-400 space-x-3">
-                          <span>&bull;</span>
-                          <span>Approx. 3 minutes</span>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                                {idx + 1}
+                              </span>
+                              <h3 className="font-semibold">
+                                {module.lessontitle}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground ml-11">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                3 min
+                              </span>
+                              {module.hasQuiz && (
+                                <Badge variant="info" className="text-xs py-0">
+                                  Quiz
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          {!isEnrolled && idx >= 1 ? (
+                            <Lock className="w-5 h-5 text-muted-foreground" />
+                          ) : (
+                            isEnrolled && lessonIds.includes(idx) && (
+                              <CheckCircle className="w-5 h-5 text-success" />
+                            )
+                          )}
                         </div>
                         {!isEnrolled && idx >= 1 && (
-                          <div className="mt-2 flex items-center text-sm text-amber-400">
-                            <Lock size={14} className="mr-1.5" /> This module is
-                            locked. Mint .safu domain & enroll to access.
-                          </div>
+                          <p className="text-xs text-amber-400 mt-3 ml-11">
+                            Enroll to unlock this lesson
+                          </p>
                         )}
                       </div>
                     ))}
@@ -401,106 +467,123 @@ const CourseDetailPage = () => {
             </Tabs>
           </motion.div>
 
+          {/* Right - Video Preview/Enroll Card (2 cols) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="lg:col-span-1 space-y-8"
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="lg:col-span-2"
           >
-            <div className="glass-effect p-6 rounded-xl sticky top-24">
-              <img
-                className="w-full h-48 object-cover rounded-lg mb-6 shadow-lg"
-                alt={`${course.title} promotional image`}
-                src={course.url}
-              />
-
-              {isEnrolled ? (
-                <div className="text-center">
-                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2 primary-gradient-text">
-                    You're Enrolled!
-                  </h3>
-                  <p className="text-gray-300 mb-4">
-                    Start learning now or explore other courses.
-                  </p>
-                  <div className="my-3 text-left font-semibold text-gray-400">
-                    Course Progress
-                    <Progress value={progress} className="mt-1" />
-                  </div>
-                  <Link
-                    to={`${
-                      progress === 100
-                        ? ""
-                        : `/courses/lesson/${courseId}/${
-                            lastWatched == null ? 0 : lastWatched + 1
-                          }`
-                    }`}
-                  >
-                    <Button
-                      variant="outline"
-                      className="w-full border-primary text-primary hover:bg-primary/10"
-                    >
-                      {progress == 100
-                        ? "View Certificate"
-                        : progress == 0
-                        ? "Start Learning"
-                        : "Continue Learning"}
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  <h2 className="text-2xl font-bold mb-2 primary-gradient-text">
-                    Enrollment Required
-                  </h2>
-                  <p className="text-sm text-gray-400 mb-5">
-                    Full access to this course and its materials is unlocked by
-                    minting your{" "}
-                    <code className="text-primary font-semibold p-1 rounded bg-primary/10">
-                      .safu
-                    </code>{" "}
-                    domain.
-                  </p>
-                  <Button
-                    size="lg"
-                    onClick={handleEnrollOrMint}
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-primary to-orange-400 hover:from-orange-500 hover:to-primary text-background font-semibold text-md py-3.5 rounded-lg shadow-xl hover:shadow-primary/50 transition-all duration-300 transform hover:scale-105 neon-glow"
-                  >
-                    {loading ? (
-                      <span className="flex items-center justify-center space-x-1 text-xl font-bold">
-                        <span>●</span>
-                        <span>●</span>
-                        <span>●</span>
-                      </span>
-                    ) : (
-                      <>
-                        <LinkIcon className="w-5 h-5 mr-2.5" />
-                        {!name ? "Mint .safu Domain to Enroll" : "Enroll"}
-                      </>
-                    )}
-                  </Button>
-                  {/* Simulate enrollment after mint button for demo */}
-                </>
-              )}
-
-              <div className="mt-6 pt-6 border-t border-border">
-                <h3 className="text-lg font-semibold mb-3 text-gray-200">
-                  Instructor
-                </h3>
-                <div className="flex items-center space-x-3">
+            <div className="sticky top-24">
+              <div className="rounded-2xl overflow-hidden bg-card border border-border">
+                {/* Video/Thumbnail */}
+                <div className="relative aspect-video">
                   <img
-                    className="w-12 h-12 rounded-full object-cover"
-                    alt={course.instructor}
-                    src="https://images.unsplash.com/photo-1578390432942-d323db577792"
+                    className="w-full h-full object-cover"
+                    alt={`${course.title} promotional image`}
+                    src={course.url}
                   />
-                  <div>
-                    <p className="font-semibold text-gray-100">
-                      {course.instructor}
-                    </p>
-                    <p className="text-xs text-primary">
-                      Web3 Educator & Specialist
-                    </p>
+                  <button className="absolute inset-0 flex items-center justify-center bg-black/40 group">
+                    <div className="w-16 h-16 rounded-full accent-gradient flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Play className="w-6 h-6 text-black ml-1" />
+                    </div>
+                  </button>
+                </div>
+
+                {/* Enroll Card */}
+                <div className="p-6">
+                  {isEnrolled ? (
+                    <>
+                      <div className="flex items-center gap-3 mb-4">
+                        <CheckCircle className="w-8 h-8 text-success" />
+                        <div>
+                          <h3 className="text-xl font-bold">You're Enrolled!</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {Math.round(progress)}% complete
+                          </p>
+                        </div>
+                      </div>
+
+                      <Progress value={progress} className="mb-4" />
+
+                      <Link
+                        to={`${
+                          progress === 100
+                            ? ""
+                            : `/courses/lesson/${courseId}/${
+                                lastWatched == null ? 0 : lastWatched + 1
+                              }`
+                        }`}
+                      >
+                        <Button variant="primary" size="lg" className="w-full mb-3">
+                          {progress == 100
+                            ? "View Certificate"
+                            : progress == 0
+                            ? "Start Learning"
+                            : "Continue Learning"}
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2 mb-4">
+                        <span className="text-3xl font-bold">FREE</span>
+                      </div>
+
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full mb-3"
+                        onClick={handleEnrollOrMint}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <span className="flex items-center justify-center">
+                            <span className="animate-pulse">Enrolling...</span>
+                          </span>
+                        ) : (
+                          <>
+                            {!name ? "Mint .safu Domain to Enroll" : "Enroll Now"}
+                          </>
+                        )}
+                      </Button>
+
+                      <p className="text-center text-sm text-muted-foreground mb-4">
+                        Requires .safu domain
+                      </p>
+                    </>
+                  )}
+
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      <span>Lifetime access</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      <span>{course.lessons.length} lessons</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      <span>Certificate of completion</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      <span>Access to community</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <div className="flex items-center justify-between gap-2">
+                      <Button variant="ghost" size="sm" className="flex-1">
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share
+                      </Button>
+                      <Button variant="ghost" size="sm" className="flex-1">
+                        <Heart className="w-4 h-4 mr-2" />
+                        Save
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
