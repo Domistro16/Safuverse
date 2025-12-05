@@ -5,6 +5,7 @@ export interface Lesson {
   lessontitle: string;
   url: string[];
   quizzes: string;
+  hasQuiz?: boolean;
 }
 
 export interface Course {
@@ -20,6 +21,10 @@ export interface Course {
   prerequisites: string[];
   lessons: Lesson[];
   duration: string;
+  price?: number;
+  isFree?: boolean;
+  rating?: number;
+  isFeatured?: boolean;
 }
 
 export const abi = [

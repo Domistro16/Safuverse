@@ -1,12 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   BookOpen,
-  Filter,
-  ArrowRight,
-  Sparkles,
-  Info,
   Code,
   Layers,
   Shield,
@@ -22,7 +17,6 @@ import {
   RefreshCw,
   Star,
   TrendingUp,
-  Target,
   Activity,
 } from "lucide-react";
 import { Link } from "react-router-dom";

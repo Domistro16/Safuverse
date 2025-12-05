@@ -15,13 +15,10 @@ import {
   BookOpen,
   Lock,
   ChevronLeft,
-  ChevronDown,
   Info,
   AlertTriangle,
-  Link as LinkIcon,
   LucideIcon,
   Star,
-  PlayCircle,
   Heart,
   Share2,
 } from "lucide-react";
@@ -172,7 +169,6 @@ const CourseDetailPage = () => {
     );
   }
 
-  const IconComponent = getRandomIcon(course.title) || BookOpen;
   const relatedCourses = courses
     .filter(
       (c) => Number(c.id) !== Number(courseId) && c.level === course.level
@@ -262,7 +258,7 @@ const CourseDetailPage = () => {
                 </div>
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Users className="w-4 h-4" />
-                  {coursePartcipants} students
+                  {coursePartcipants || 0} students
                 </div>
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Clock className="w-4 h-4" />
@@ -499,12 +495,12 @@ const CourseDetailPage = () => {
                         <div>
                           <h3 className="text-xl font-bold">You're Enrolled!</h3>
                           <p className="text-sm text-muted-foreground">
-                            {Math.round(progress)}% complete
+                            {Math.round(progress || 0)}% complete
                           </p>
                         </div>
                       </div>
 
-                      <Progress value={progress} className="mb-4" />
+                      <Progress value={progress || 0} className="mb-4" />
 
                       <Link
                         to={`${

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight,
   ChevronLeft,
@@ -13,7 +12,7 @@ import {
   RefreshCw,
   Lightbulb,
 } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface Question {
   id: string;
@@ -86,7 +85,7 @@ const sampleQuiz: Quiz = {
 };
 
 const QuizPage = () => {
-  const { courseId, lessonId } = useParams();
+  const { courseId } = useParams();
   const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});

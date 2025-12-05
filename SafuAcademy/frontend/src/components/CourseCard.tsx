@@ -1,22 +1,18 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Target,
   Play,
   Rocket,
   Brain,
-  ArrowRight,
-  Users,
   Lock,
   LucideIcon,
   Star,
   Clock,
   PlayCircle,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { getParticipants } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 import { abi, Course, Deploy } from "@/constants";
 import { useAccount, useReadContract } from "wagmi";
 
@@ -48,7 +44,6 @@ const CourseCard = ({
   course: Course;
   animationDelay?: number;
 }) => {
-  const IconComponent = getRandomIcon(course.title) || Target;
   // Mock enrollment for card display: For demo, let's assume no course is pre-enrolled on general cards
   // Actual enrollment state would come from user context or props
   const { address } = useAccount();
@@ -64,7 +59,6 @@ const CourseCard = ({
   const navigate = useNavigate();
 
   const [isEnrolled, setIsEnrolled] = useState(false); // Mock state
-  const participants = getParticipants(Number(course.id));
   useEffect(() => {
     if (userCourse && Symbol.iterator in Object(userCourse)) {
       const [, isActive] = userCourse;
@@ -147,7 +141,7 @@ const CourseCard = ({
           </span>
           <span className="flex items-center gap-1">
             <PlayCircle className="w-3 h-3" />
-            {course.lessons || 12} lessons
+            {course.lessons.length || 12} lessons
           </span>
         </div>
 
