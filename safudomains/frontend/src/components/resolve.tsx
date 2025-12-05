@@ -14,6 +14,8 @@ import { useResolveData } from '../hooks/useResolveData'
 import ProfileTab from './resolve/ProfileTab'
 import { Switch } from '@headlessui/react'
 
+const THEME_KEY = 'safudomains-theme'
+
 const Resolve = () => {
   const { label } = useParams<string>()
   const [expiry, setExpiry] = useState('')
@@ -26,8 +28,18 @@ const Resolve = () => {
   const [next, setNext] = useState(1)
   const [resolverOpen, setResolverOpen] = useState(false)
   const [wrapOpen, setWrapOpen] = useState(false)
+  const [theme, setTheme] = useState('light')
 
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(THEME_KEY)
+    if (stored === 'light' || stored === 'dark') {
+      setTheme(stored)
+    }
+  }, [])
+
+  const isDark = theme === 'dark'
 
   // Use custom hook for all data fetching
   const {
@@ -137,62 +149,97 @@ const Resolve = () => {
     ? getCID(others.find((record) => record.key === 'avatar')!.value)
     : null
 
+  // Card styles
+  const cardStyle = {
+    background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.92)',
+    backdropFilter: 'saturate(180%) blur(28px)',
+    border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.06)',
+    borderRadius: '26px',
+    boxShadow: isDark ? '0 25px 50px rgba(0,0,0,0.55)' : '0 22px 55px rgba(0,0,0,0.08)',
+  }
+
+  const tabStyle = (isActive: boolean) => ({
+    padding: '10px 20px',
+    background: 'transparent',
+    border: 'none',
+    fontSize: '16px',
+    fontWeight: 600,
+    color: isActive ? (isDark ? '#fff' : '#111') : (isDark ? '#888' : '#666'),
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    borderBottom: isActive ? `2px solid ${isDark ? '#fff' : '#111'}` : '2px solid transparent',
+  })
+
+  const buttonPrimaryStyle = {
+    padding: '12px 24px',
+    background: isDark ? '#fff' : '#111',
+    color: isDark ? '#000' : '#fff',
+    border: 'none',
+    borderRadius: '40px',
+    fontSize: '14px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
+    transition: 'all 0.25s ease',
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-15 h-15 border-2 border-yellow-300 border-t-yellow-500 rounded-full animate-spin" />
+        <div
+          style={{
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            border: `3px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+            borderTop: `3px solid ${isDark ? '#fff' : '#111'}`,
+            animation: 'spin 1s linear infinite',
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
   return (
     <div>
-      <div className="flex flex-col mx-auto p-2 mb-20 md:mb-5 md:px-30 mt-15 lg:px-60 md:mt-15">
-        <div className="">
-          <h2 className="font-bold text-2xl text-white">
+      <div className="hero-spacer" />
+      <div className="flex flex-col mx-auto p-4 mb-20 md:mb-5 md:px-30 mt-10 lg:px-60">
+        <div>
+          <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
             {label as string}.safu
           </h2>
 
           {/* Tabs */}
-          <div className="flex space-x-6 text-gray-400 text-xl mt-4 pb-2 overflow-auto">
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '8px' }}>
             <button
-              className={`${
-                tab == 'profile' ? 'text-[#FFB000]' : ''
-              } font-semibold hover:text-[#FFB000] focus:text-[#FFB00] cursor-pointer`}
+              style={tabStyle(tab === 'profile')}
               onClick={() => setTab('profile')}
             >
               Profile
             </button>
             <button
-              className={`${
-                tab == 'records' ? 'text-[#FFB000]' : ''
-              } font-semibold hover:text-[#FFB000] focus:text-[#FFB00] cursor-pointer`}
+              style={tabStyle(tab === 'records')}
               onClick={() => setTab('records')}
             >
               Records
             </button>
             <button
-              className={`${
-                tab == 'ownership' ? 'text-[#FFB000]' : ''
-              } font-semibold hover:text-[#FFB000] focus:text-[#FFB00] cursor-pointer`}
+              style={tabStyle(tab === 'ownership')}
               onClick={() => setTab('ownership')}
             >
               Ownership
             </button>
             {wrapped == true && (
               <button
-                className={`${
-                  tab == 'permissions' ? 'text-[#FFB000]' : ''
-                } font-semibold hover:text-[#FFB000] focus:text-[#FFB00] cursor-pointer`}
+                style={tabStyle(tab === 'permissions')}
                 onClick={() => setTab('permissions')}
               >
                 Permissions
               </button>
             )}
             <button
-              className={`${
-                tab == 'more' ? 'text-[#FFB000]' : ''
-              } font-semibold hover:text-[#FFB000] focus:text-[#FFB00] cursor-pointer`}
+              style={tabStyle(tab === 'more')}
               onClick={() => setTab('more')}
             >
               More
@@ -226,56 +273,65 @@ const Resolve = () => {
               next={next}
             />
           ) : tab == 'records' ? (
-            <div className="rounded-xl bg-neutral-800 p-3 mt-5 border-[0.5px] border-gray-500 ">
+            <div style={{ ...cardStyle, padding: '24px' }}>
               {texts.length > 0 ? (
                 <div>
-                  <div className="font-semibold text-gray-300 ml-2 text-md">
-                    Text{' '}
-                    <span className="font-normal text-sm ml-3">
-                      {' '}
-                      {texts.length} Records{' '}
+                  <div style={{ fontWeight: 600, color: isDark ? '#ccc' : '#333', marginBottom: '12px' }}>
+                    Text
+                    <span style={{ fontWeight: 400, fontSize: '14px', marginLeft: '12px', color: isDark ? '#888' : '#666' }}>
+                      {texts.length} Records
                     </span>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {texts.map((item) => (
                       <div
                         key={item.key}
-                        className="bg-gray-900 px-3 py-1 mt-2 text-sm rounded-full flex"
+                        style={{
+                          background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                          padding: '12px 16px',
+                          borderRadius: '14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          fontSize: '14px',
+                        }}
                       >
-                        <span className="text-gray-400 mr-1 w-30 font-bold items-center flex">
+                        <span style={{ color: isDark ? '#888' : '#666', fontWeight: 600, minWidth: '100px' }}>
                           {item.key}
-                        </span>{' '}
-                        <span className="break-words overflow-hidden text-ellipsis">
-                          {item.key === 'avatar'
-                            ? getCID(item.value)
-                            : item.value}
+                        </span>
+                        <span style={{ color: isDark ? '#fff' : '#111', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all' }}>
+                          {item.key === 'avatar' ? getCID(item.value) : item.value}
                         </span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="font-semibold text-gray-300 ml-2 text-sm">
+                <div style={{ fontWeight: 600, color: isDark ? '#888' : '#666', fontSize: '14px' }}>
                   No Text Records
                 </div>
               )}
 
               {address != zeroAddress ? (
-                <div className="mt-5">
-                  <div className="font-semibold text-gray-300 ml-2 text-md">
-                    Address{' '}
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{ fontWeight: 600, color: isDark ? '#ccc' : '#333', marginBottom: '12px' }}>
+                    Address
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="bg-gray-900 px-3 py-1 mt-2 text-sm rounded-full flex items-center">
-                      <div className="text-gray-400 mr-1 w-30 font-bold">
-                        bsc
-                      </div>
-                      <div className="break-all">{address as string}</div>
-                    </div>
+                  <div
+                    style={{
+                      background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                      padding: '12px 16px',
+                      borderRadius: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '14px',
+                    }}
+                  >
+                    <span style={{ color: isDark ? '#888' : '#666', fontWeight: 600, minWidth: '100px' }}>bsc</span>
+                    <span style={{ color: isDark ? '#fff' : '#111', wordBreak: 'break-all' }}>{address as string}</span>
                   </div>
                 </div>
               ) : (
-                <div className="font-semibold text-gray-300 ml-2 text-sm">
+                <div style={{ marginTop: '20px', fontWeight: 600, color: isDark ? '#888' : '#666', fontSize: '14px' }}>
                   No Address
                 </div>
               )}
@@ -291,112 +347,105 @@ const Resolve = () => {
               />
               {wrappedOwner == walletAddress || owner == walletAddress ? (
                 <button
-                  className="px-3 py-2 mt-5 bg-[#FF7000] text-sm rounded-xl font-bold cursor-pointer"
+                  style={{ ...buttonPrimaryStyle, marginTop: '20px' }}
                   onClick={() => setIsOpen(true)}
                 >
                   Edit Records
                 </button>
-              ) : (
-                ''
-              )}
+              ) : null}
             </div>
           ) : tab == 'ownership' ? (
             <div>
-              <div className="rounded-xl bg-neutral-800 mt-5 border-[0.5px] border-neutral-500 p-4 pb-20">
-                <div className="px-2 py-4 text-3xl font-bold text-white border-b-1 border-neutral-500">
+              <div style={{ ...cardStyle, padding: '24px', marginBottom: '20px' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: isDark ? '#fff' : '#111', paddingBottom: '16px', borderBottom: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)' }}>
                   Roles
                 </div>
                 {wrapped == true ? (
                   <div>
-                    <div className="px-2 py-4 text-xl font-bold text-white border-b-1 border-neutral-500 flex items-center">
-                      <div>Owner: </div>
-                      <div className="text-sm font-semibold ml-5 flex items-center max-w-50 flex-wrap">
+                    <div style={{ padding: '16px 0', borderBottom: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, color: isDark ? '#fff' : '#111', marginRight: '8px' }}>Owner:</span>
+                      <span style={{ fontSize: '14px', color: isDark ? '#ccc' : '#333', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                         {woname as string}
-                        {(woname as string)?.startsWith('0x') ? (
-                          ''
-                        ) : (
-                          <div className="text-[10px] truncate max-w-30 ml-3 text-gray-400 mt-[1.5px]">
-                            {`   (${shortenAddress(wrappedOwner as string)})`}
-                          </div>
+                        {!(woname as string)?.startsWith('0x') && (
+                          <span style={{ fontSize: '12px', color: isDark ? '#888' : '#666', marginLeft: '8px' }}>
+                            ({shortenAddress(wrappedOwner as string)})
+                          </span>
                         )}
-                      </div>
+                      </span>
                     </div>
-                    <div className="px-2 py-4 text-xl font-bold text-white border-b-1 border-neutral-500 flex items-center">
-                      <div>BSC Record:</div>
-                      <div className="text-sm font-semibold ml-5">
+                    <div style={{ padding: '16px 0', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, color: isDark ? '#fff' : '#111', marginRight: '8px' }}>BSC Record:</span>
+                      <span style={{ fontSize: '14px', color: isDark ? '#ccc' : '#333' }}>
                         {shortenAddress(address as string)}
-                      </div>
+                      </span>
                     </div>
                   </div>
                 ) : wrapped == false ? (
                   <div>
-                    <div className="px-2 py-4 text-lg md:text-xl font-bold text-white border-b-1 border-neutral-500 flex items-center">
-                      <div>Owner: </div>
-                      <div className="text-sm font-semibold ml-2 flex items-center max-w-50 flex-wrap">
+                    <div style={{ padding: '16px 0', borderBottom: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, color: isDark ? '#fff' : '#111', marginRight: '8px' }}>Owner:</span>
+                      <span style={{ fontSize: '14px', color: isDark ? '#ccc' : '#333', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                         {oname as string}
-                        {(oname as string)?.startsWith('0x') ? (
-                          ''
-                        ) : (
-                          <div className="text-[10px] truncate max-w-30 ml-3 text-gray-400 mt-[1.5px]">
-                            {`   (${shortenAddress(owner as string)})`}
-                          </div>
+                        {!(oname as string)?.startsWith('0x') && (
+                          <span style={{ fontSize: '12px', color: isDark ? '#888' : '#666', marginLeft: '8px' }}>
+                            ({shortenAddress(owner as string)})
+                          </span>
                         )}
-                      </div>
+                      </span>
                     </div>
-                    <div className="px-2 py-4 text-lg md:text-xl font-bold text-white border-b-1 border-neutral-500 flex items-center">
-                      <div>Manager: </div>
-                      <div className="text-sm font-semibold ml-2 flex items-center max-w-50 flex-wrap">
+                    <div style={{ padding: '16px 0', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, color: isDark ? '#fff' : '#111', marginRight: '8px' }}>Manager:</span>
+                      <span style={{ fontSize: '14px', color: isDark ? '#ccc' : '#333', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                         {manname as string}
-                        {(manname as string)?.startsWith('0x') ? (
-                          ''
-                        ) : (
-                          <div className="text-[10px] truncate max-w-30 ml-3 text-gray-400 mt-[1.5px]">
-                            {`   (${shortenAddress(manager as string)})`}
-                          </div>
+                        {!(manname as string)?.startsWith('0x') && (
+                          <span style={{ fontSize: '12px', color: isDark ? '#888' : '#666', marginLeft: '8px' }}>
+                            ({shortenAddress(manager as string)})
+                          </span>
                         )}
-                      </div>
+                      </span>
                     </div>
                   </div>
-                ) : (
-                  ''
-                )}
+                ) : null}
               </div>
-              <div className="rounded-xl bg-neutral-800 mt-5 border-[0.5px] border-neutral-500 p-4 flex md:justify-center justify-left">
-                <div className=" grid md:grid-cols-2  w-full">
-                  <div className="text-left md:px-6 md:border-r-1 border-b-1 md:border-b-0 py-6 border-neutral-500 w-full">
-                    <div className="font-bold text-lg w-full">Name Expires</div>
-                    <div className="text-[13px] font-semibold">
+
+              <div style={{ ...cardStyle, padding: '0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+                  <div style={{ padding: '24px', borderRight: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.06)' }}>
+                    <div style={{ fontWeight: 700, fontSize: '16px', color: isDark ? '#fff' : '#111' }}>Name Expires</div>
+                    <div style={{ fontSize: '14px', marginTop: '4px', color: isDark ? '#ccc' : '#333' }}>
                       {expiry}
-                      <span className="text-gray-400 ml-2 font-normal">
-                        {expiryTime}
-                      </span>
+                      <span style={{ color: isDark ? '#888' : '#666', marginLeft: '8px' }}>{expiryTime}</span>
                     </div>
                   </div>
-                  <div className="md:px-6 text-left py-6">
-                    <div className="font-bold text-lg">
-                      Grace Period Expires
-                    </div>
-                    <div className="text-[13px] font-semibold">
+                  <div style={{ padding: '24px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '16px', color: isDark ? '#fff' : '#111' }}>Grace Period Expires</div>
+                    <div style={{ fontSize: '14px', marginTop: '4px', color: isDark ? '#ccc' : '#333' }}>
                       {graceExpiry}
-                      <span className="text-gray-400 ml-2 font-normal">
-                        {graceExpiryTime}
-                      </span>
+                      <span style={{ color: isDark ? '#888' : '#666', marginLeft: '8px' }}>{graceExpiryTime}</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           ) : tab == 'permissions' ? (
-            <section className="rounded-xl bg-neutral-800 p-8 mt-5 border-[0.5px] border-gray-400 w-full">
-              <h2 className="text-xl font-semibold text-white">Permissions</h2>
+            <section style={{ ...cardStyle, padding: '32px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 600, color: isDark ? '#fff' : '#111', marginBottom: '16px' }}>Permissions</h2>
               {permissionItems.map(({ key, label, description, allowed }) => (
                 <div
                   key={key}
-                  className="flex items-center justify-between p-4 mt-3 bg-neutral-700 rounded-lg"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px',
+                    marginTop: '12px',
+                    background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                    borderRadius: '14px',
+                  }}
                 >
-                  <div className="max-w-[80%] md:max-w-full">
-                    <div className="font-medium text-white">{label}</div>
-                    <div className="text-sm text-neutral-400">
+                  <div style={{ maxWidth: '80%' }}>
+                    <div style={{ fontWeight: 500, color: isDark ? '#fff' : '#111' }}>{label}</div>
+                    <div style={{ fontSize: '14px', color: isDark ? '#888' : '#666', marginTop: '4px' }}>
                       {description}
                     </div>
                   </div>
@@ -404,7 +453,7 @@ const Resolve = () => {
                     checked={allowed}
                     disabled
                     className={`
-                      ${allowed ? 'bg-blue-600' : 'bg-gray-200'}
+                      ${allowed ? 'bg-blue-600' : isDark ? 'bg-gray-700' : 'bg-gray-200'}
                       relative inline-flex h-6 w-11 items-center rounded-full transition-colors
                       disabled:opacity-50 disabled:cursor-not-allowed
                     `}
@@ -413,9 +462,9 @@ const Resolve = () => {
                     <span
                       aria-hidden="true"
                       className={`
-      ${allowed ? 'translate-x-6' : 'translate-x-1'}
-      inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-    `}
+                        ${allowed ? 'translate-x-6' : 'translate-x-1'}
+                        inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                      `}
                     />
                   </Switch>
                 </div>
@@ -423,98 +472,117 @@ const Resolve = () => {
             </section>
           ) : tab == 'more' ? (
             <div>
-              <section className="rounded-xl bg-neutral-800 p-4 md:p-8 mt-5 border-[0.5px] border-gray-500 w-full divide-y">
-                <div className="p-3 flex justify-between">
-                  <h1 className="text-2xl font-bold">Token</h1>
+              <section style={{ ...cardStyle, padding: '24px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px' }}>
+                  <h1 style={{ fontSize: '20px', fontWeight: 700, color: isDark ? '#fff' : '#111' }}>Token</h1>
                   <a
                     href={`https://bscscan.com/nft/${
                       wrapped == true
-                        ? constants.NameWrapper +
-                          '/' +
-                          BigInt(node).toString(10)
-                        : constants.BaseRegistrar +
-                          '/' +
-                          BigInt(keccak256(toBytes(label as string))).toString(
-                            10,
-                          )
+                        ? constants.NameWrapper + '/' + BigInt(node).toString(10)
+                        : constants.BaseRegistrar + '/' + BigInt(keccak256(toBytes(label as string))).toString(10)
                     }`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                    }}
-                    className="flex text-[#FFB000] font-semibold cursor-pointer"
+                    style={{ color: isDark ? '#fff' : '#111', fontWeight: 600, textDecoration: 'none' }}
                   >
                     BscScan
                   </a>
                 </div>
-                <div className=" flex flex-col md:flex-row gap-4">
-                  <div className="flex-col">
-                    <div className="mt-5">
-                      <div className="bg-gray-900 px-3 py-3 mt-2 text-sm md:text-sm rounded-full flex items-center justify-between">
-                        <div className="text-gray-400 mr-1 w-30 text-sm">
-                          hex
-                        </div>
-                        <div className="break-all max-w-43 md:max-w-130  md:text-sm">
-                          {node}
-                        </div>
-                      </div>
-                      <div className="bg-gray-900 px-3 py-3 mt-2 text-sm md:text-sm rounded-full flex items-center justify-between">
-                        <div className="text-gray-400 mr-1 w-30 text-sm">
-                          decimal
-                        </div>
-                        <div className="break-all max-w-43 md:max-w-130">
-                          {BigInt(node).toString(10)}
-                        </div>
-                      </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div
+                      style={{
+                        background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                        padding: '12px 16px',
+                        borderRadius: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '14px',
+                      }}
+                    >
+                      <span style={{ color: isDark ? '#888' : '#666', minWidth: '60px' }}>hex</span>
+                      <span style={{ color: isDark ? '#fff' : '#111', wordBreak: 'break-all' }}>{node}</span>
+                    </div>
+                    <div
+                      style={{
+                        background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                        padding: '12px 16px',
+                        borderRadius: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '14px',
+                      }}
+                    >
+                      <span style={{ color: isDark ? '#888' : '#666', minWidth: '60px' }}>decimal</span>
+                      <span style={{ color: isDark ? '#fff' : '#111', wordBreak: 'break-all' }}>{BigInt(node).toString(10)}</span>
                     </div>
                   </div>
-                  <div className="flex md:pt-5 justify-center">
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
                     <DomainImage
-                      className="h-60 md:h-50 md:w-70"
+                      className="h-48 md:h-40 md:w-60"
                       domain={`${label}.safu`}
                     />
                   </div>
                 </div>
               </section>
-              <section className="rounded-xl bg-neutral-800 p-4 md:p-8 mt-5 border-[0.5px] border-gray-500 w-full ">
-                <h1 className="text-2xl font-bold">Name Wrapper</h1>
-                <div className="flex flex-col md:flex-row gap-3 items-center mt-4">
-                  <div className="bg-green-950 px-3 py-2 text-md md:text-lg rounded-xl flex grow-1 items-center border-[0.5px] border-gray-500 font-semibold w-full">
+
+              <section style={{ ...cardStyle, padding: '24px', marginBottom: '20px' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: '16px' }}>Name Wrapper</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: '200px',
+                      background: isDark ? 'rgba(20, 212, 107, 0.1)' : 'rgba(20, 212, 107, 0.1)',
+                      padding: '12px 16px',
+                      borderRadius: '14px',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      color: '#14d46b',
+                    }}
+                  >
                     {wrapped == true ? 'Wrapped' : 'Unwrapped'}
                   </div>
                   {wrappedOwner == walletAddress || owner == walletAddress ? (
                     <button
-                      className="px-3 py-2 bg-[#FF7000] rounded-xl font-bold cursor-pointer"
+                      style={buttonPrimaryStyle}
                       onClick={handleWrapper}
                     >
                       {wrapped == true ? 'Unwrap' : 'Wrap'}
                     </button>
-                  ) : (
-                    ''
-                  )}
+                  ) : null}
                 </div>
               </section>
-              <section className="rounded-xl bg-neutral-800 p-4 md:p-8 mt-5 border-[0.5px] border-gray-500 w-full ">
-                <h1 className="text-2xl font-bold">Resolver</h1>
-                <div className="flex md:flex-row flex-col gap-3 items-center mt-4">
-                  <div className="bg-neutral-950 px-3 py-2 text-sm md:text-md rounded-xl flex grow-1 items-center border-[0.5px] border-gray-500 font-semibold break-all">
+
+              <section style={{ ...cardStyle, padding: '24px' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: '16px' }}>Resolver</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: '200px',
+                      background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                      padding: '12px 16px',
+                      borderRadius: '14px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: isDark ? '#fff' : '#111',
+                      wordBreak: 'break-all',
+                    }}
+                  >
                     {resolver}
                   </div>
                   {wrappedOwner == walletAddress || owner == walletAddress ? (
                     <button
-                      className="px-3 py-2 bg-[#FF7000] rounded-xl font-bold cursor-pointer"
-                      onClick={() => {
-                        setResolverOpen(true)
-                      }}
+                      style={buttonPrimaryStyle}
+                      onClick={() => setResolverOpen(true)}
                     >
                       Change Resolver
                     </button>
-                  ) : (
-                    ''
-                  )}
+                  ) : null}
                 </div>
               </section>
+
               <Unwrap
                 label={label as string}
                 setIsOpen={setIsOpen}
@@ -532,9 +600,7 @@ const Resolve = () => {
                 wrapped={wrapped as boolean}
               />
             </div>
-          ) : (
-            ''
-          )}
+          ) : null}
         </div>
       </div>
     </div>

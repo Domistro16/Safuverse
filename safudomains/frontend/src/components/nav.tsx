@@ -5,8 +5,9 @@ import { IdentificationIcon } from '@heroicons/react/outline'
 import { CustomConnect } from '@/components/connectButton'
 import { constants } from '../constant'
 import { motion } from 'framer-motion'
-import { BookOpen, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { BookOpen, X, Menu } from 'lucide-react'
+
+const THEME_KEY = 'safudomains-theme'
 
 const abi = [
   {
@@ -35,6 +36,7 @@ export default function Nav() {
   const [available, setAvailable] = useState('')
   const [search, setSearch] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
+  const [theme, setTheme] = useState('light')
 
   const { data, isPending } = useReadContract({
     address: constants.Controller,
@@ -50,22 +52,29 @@ export default function Nav() {
   const boxRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    const stored = window.localStorage.getItem(THEME_KEY)
+    if (stored === 'light' || stored === 'dark') {
+      setTheme(stored)
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark')
+    }
+  }, [])
+
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
   const navLinks = [
-    { to: '', label: '', isExternal: false },
     {
       href: 'https://safuverse.gitbook.io/safuverse-docs/',
       label: 'Docs',
       isExternal: true,
     },
   ]
-
-  const activeLinkClasses = 'text-yellow-400 font-semibold'
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -87,16 +96,17 @@ export default function Nav() {
     if (search.length < 2) {
       setAvailable('Too Short')
     } else if (isPending) {
-      setAvailable('Loading…')
+      setAvailable('Loading...')
     } else if (data === true) {
       setAvailable('Available')
     } else if (data === false) {
       setAvailable('Registered')
     } else {
-      setAvailable('') // or whatever default you like
+      setAvailable('')
     }
   }, [search, isPending, data])
-  const handleChange = (e: any) => {
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault()
     setSearch(e.target.value)
     if (e.target.value.length > 0) {
@@ -114,32 +124,57 @@ export default function Nav() {
     }
   }
 
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(nextTheme)
+    window.localStorage.setItem(THEME_KEY, nextTheme)
+    document.body.classList.toggle('dark-mode', nextTheme === 'dark')
+  }
+
+  const isDark = theme === 'dark'
+
   return (
     <motion.nav
-      initial={{ opacity: 0, y: -30 }} // Initial animation state
-      animate={{ opacity: 1, y: 0 }} // Animation to visible state
-      transition={{ duration: 0.7, ease: 'easeOut' }} // Animation transition properties
-      // Adjusted background color to the specific hex code #141b33
-      className={`fixed top-4 left-0 right-0 max-w-[90%] mx-auto z-50 transition-all duration-300 px-4 sm:pl-6 lg:pl-8
-                  ${
-                    isScrolled || mobileMenuOpen
-                      ? 'bg-neutral-950 py-2 shadow-xl'
-                      : 'bg-neutral-950 py-1 shadow-lg'
-                  }  ${mobileMenuOpen ? 'rounded-sm' : 'rounded-full'}
-        
-                 `}
+      initial={{ opacity: 0, y: -30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: 'easeOut' }}
+      className="top-nav"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        maxWidth: '100%',
+        margin: '0 auto',
+        zIndex: 999,
+        transition: 'all 0.3s ease',
+        background: isDark
+          ? 'radial-gradient(circle at 0% 0%, rgba(255,255,255,0.08), rgba(8,8,8,0.96))'
+          : isScrolled
+            ? 'rgba(255,255,255,0.85)'
+            : 'rgba(255,255,255,0.65)',
+        backdropFilter: 'blur(14px)',
+        borderBottom: isDark
+          ? '1px solid rgba(255,255,255,0.08)'
+          : '1px solid rgba(0,0,0,0.06)',
+        boxShadow: isScrolled ? '0 10px 40px rgba(0,0,0,0.1)' : 'none',
+      }}
     >
-      <div className="flex justify-between items-center h-13">
+      <div className="flex justify-between items-center h-[70px] w-full max-w-[1400px] mx-auto px-4 md:px-8">
         <a href="https://safuverse.com" className="flex items-center gap-1.5">
           <img
             src="/Safuverse.png"
-            className="text-xl font-bold text-[#FFB000] h-10 hidden lg:block"
+            className="h-10 hidden lg:block"
+            alt="Safuverse"
           />
           <img
             src="/small.png"
-            className="text-xl font-bold text-[#FFB000] h-14 lg:hidden block"
+            className="h-12 lg:hidden block"
+            alt="Safuverse"
           />
         </a>
+
+        {/* Search Bar - Hidden on Homepage */}
         <div
           className={`ml-5 relative ${
             location.pathname == '/' ? 'hidden' : 'block'
@@ -150,140 +185,206 @@ export default function Nav() {
             type="text"
             placeholder="Search for a name"
             onChange={handleChange}
-            className="w-60 md:w-70 lg:w-96 px-6 py-2 rounded-xl text-[17px] bg-transparent text-white border border-gray-700 placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500 hidden md:flex"
+            className="w-60 md:w-70 lg:w-96 px-6 py-2 rounded-full text-[15px] hidden md:flex transition-all"
+            style={{
+              background: isDark ? 'rgba(255,255,255,0.07)' : '#fff',
+              border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)',
+              color: isDark ? '#fff' : '#111',
+              outline: 'none',
+            }}
           />
 
           {/* Search Results Popup */}
           <div
             ref={boxRef}
-            className={`absolute left-1/2 transform -translate-x-1/2 mt-2 w-60 md:w-70 lg:w-96 bg-gray-800 border border-gray-700 rounded-xl shadow-lg text-left z-10 transform origin-top
+            className={`absolute left-1/2 transform -translate-x-1/2 mt-2 w-60 md:w-70 lg:w-96 rounded-2xl shadow-lg text-left z-10 transform origin-top
               transition-transform duration-300 ease-out
               overflow-hidden ${showBox ? 'scale-y-100' : 'scale-y-0'}`}
+            style={{
+              background: isDark ? 'rgba(30,30,30,0.95)' : '#fff',
+              border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)',
+            }}
           >
-            <ul className="divide-y divide-gray-700">
+            <ul className="divide-y" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}>
               <li
-                className="px-6 py-3  hover:bg-gray-700 rounded-xl cursor-pointer flex items-center justify-between"
+                className="px-6 py-3 cursor-pointer flex items-center justify-between transition-all hover:opacity-80"
                 onClick={route}
               >
-                <div className="text-[17px]">{`${
-                  search != '' ? search + '.safu' : ''
-                }`}</div>{' '}
-                {available != '' ? (
-                  <div className="text-[10px] bg-green-800 text-green-300 p-1 rounded-full">
+                <div className="text-[15px] font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
+                  {search != '' ? search + '.safu' : ''}
+                </div>
+                {available != '' && (
+                  <div
+                    className="text-[11px] px-3 py-1 rounded-full"
+                    style={{
+                      background: available === 'Available' ? '#14d46b' : available === 'Registered' ? '#f59e0b' : '#888',
+                      color: '#fff',
+                    }}
+                  >
                     {available}
                   </div>
-                ) : (
-                  ''
                 )}
               </li>
             </ul>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-4">
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-6">
           <div
-            className="text-gray-200 hover:text-yellow-400 font-semibold hidden md:flex items-center duration-200 cursor-pointer max-w-max gap-1 flex-nowrap"
+            className="flex items-center gap-1 cursor-pointer font-semibold transition-all hover:opacity-70"
+            style={{ color: isDark ? '#f5f5f5' : '#111' }}
             onClick={() => navigate(`/mynames`)}
           >
-            <IdentificationIcon className="w-7 h-7 flex-shrink-0" />
-            <span className="w-full inline-flex max-w-max"> My Names</span>
+            <IdentificationIcon className="w-5 h-5 flex-shrink-0" />
+            <span>My Names</span>
           </div>
-          {navLinks.map((link) =>
-            link.isExternal || link.href ? (
-              <a
-                key={link.label}
-                href={link.href || link.to}
-                className="text-gray-200 hover:text-yellow-400 transition-colors duration-200 font-semibold"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {link.label}
-              </a>
-            ) : (
-              <NavLink
-                key={link.label}
-                to={link.to as string}
-                className={({ isActive }) =>
-                  `text-gray-200 hover:text-yellow-400 transition-colors duration-200 font-semibold ${
-                    isActive ? activeLinkClasses : ''
-                  }`
-                }
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {link.label}
-              </NavLink>
-            ),
-          )}
+
+          {navLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="font-semibold transition-all hover:opacity-70"
+              style={{ color: isDark ? '#f5f5f5' : '#111' }}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {link.label}
+            </a>
+          ))}
+
           <a
             href="https://academy.safuverse.com/courses/all"
-            className={`text-gray-200 hover:text-yellow-400 transition-colors mr-4 duration-200 flex items-center font-semibold`}
+            className="flex items-center font-semibold transition-all hover:opacity-70"
+            style={{ color: isDark ? '#f5f5f5' : '#111' }}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <BookOpen className="w-4 h-4 mr-1" />
-            View Courses
+            Academy
           </a>
-          <div className="hidden md:flex -ml-4">
-            {' '}
-            <CustomConnect />
-          </div>
+
+          <button
+            className="dark-toggle-btn"
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#eee',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+            }}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+
+          <CustomConnect />
         </div>
-        <div className="md:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden flex items-center gap-3">
+          <button
+            className="dark-toggle-btn"
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#eee',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-gray-200 hover:text-yellow-400"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#f4f4f4',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             {mobileMenuOpen ? (
-              <X size={26} />
+              <X size={20} style={{ color: isDark ? '#fff' : '#111' }} />
             ) : (
-              <div className="items-center mr-3">
-                <div className="bg-neutral-800 rounded-full p-3 flex flex-col justify-center w-12 h-12 cursor-pointer">
-                  <div className="border-[#FFB000] border-b-[2px] w-6"></div>
-                  <div className="border-[#FFB000] border-b-[2px] w-4 mt-3"></div>
-                </div>
-              </div>
+              <Menu size={20} style={{ color: isDark ? '#fff' : '#111' }} />
             )}
-          </Button>
+          </button>
         </div>
       </div>
 
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="md:hidden bg-neutral-950 py-3 shadow-lg rounded-lg"
+          className="md:hidden py-4"
+          style={{
+            background: isDark ? 'rgba(10,10,10,0.98)' : 'rgba(255,255,255,0.98)',
+            borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+          }}
         >
-          <div className="flex flex-col items-center space-y-4">
+          <div className="flex flex-col items-center space-y-4 px-4">
             <div
-              className="font-semibold flex items-center text-gray-200 hover:text-yellow-400 duration-200 cursor-pointer max-w-max gap-3 flex-nowrap"
-              onClick={() => navigate(`/mynames`)}
+              className="flex items-center gap-2 cursor-pointer font-semibold"
+              style={{ color: isDark ? '#f5f5f5' : '#111' }}
+              onClick={() => {
+                navigate(`/mynames`)
+                setMobileMenuOpen(false)
+              }}
             >
-              <IdentificationIcon className="w-7 h-7 flex-shrink-0" />
-              <span className="w-full inline-flex max-w-max"> My Names</span>
+              <IdentificationIcon className="w-5 h-5 flex-shrink-0" />
+              <span>My Names</span>
             </div>
+
             {navLinks.map((link) => (
-              <NavLink
+              <a
                 key={link.label}
-                to={link.to as string}
-                className={({ isActive }) =>
-                  `text-gray-200 hover:text-yellow-400 transition-colors duration-200 font-semibold ${
-                    isActive ? activeLinkClasses : ''
-                  }`
-                }
+                href={link.href}
+                className="font-semibold"
+                style={{ color: isDark ? '#f5f5f5' : '#111' }}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}
-              </NavLink>
+              </a>
             ))}
-            {}
+
             <a
               href="https://academy.safuverse.com/courses/all"
-              className={`text-gray-200 hover:text-yellow-400 transition-colors duration-200 flex items-center font-semibold -mt-3
-            `}
+              className="flex items-center font-semibold"
+              style={{ color: isDark ? '#f5f5f5' : '#111' }}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
             >
-              {' '}
               <BookOpen className="w-4 h-4 mr-2" />
-              View Courses
+              Academy
             </a>
+
+            <div className="pt-2">
+              <CustomConnect />
+            </div>
           </div>
         </motion.div>
       )}

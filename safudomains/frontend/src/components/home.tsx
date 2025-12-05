@@ -4,11 +4,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { constants } from '../constant'
 import { FaSearch } from 'react-icons/fa'
 import { FaXmark } from 'react-icons/fa6'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from '@/components/ui/carousel'
+
+const THEME_KEY = 'safudomains-theme'
+
+function getPreferredTheme() {
+  if (typeof window === 'undefined') return 'light'
+  const stored = window.localStorage.getItem(THEME_KEY)
+  if (stored === 'light' || stored === 'dark') return stored
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark'
+  }
+  return 'light'
+}
 
 const abi = [
   {
@@ -32,12 +39,41 @@ const abi = [
   },
 ]
 
+const faqItems = [
+  {
+    q: 'What is a .safu domain?',
+    a: 'A .safu domain is your decentralized Web3 identity on the BNB Chain. It replaces long wallet addresses with human-readable names.',
+  },
+  {
+    q: 'How do I register a domain?',
+    a: 'Simply search for your desired name above, check availability, and follow the registration process. You can pay with BNB, CAKE, or USD1.',
+  },
+  {
+    q: 'What can I do with my domain?',
+    a: 'Use it as your universal Web3 identity, receive payments, access exclusive features in the Safuverse ecosystem, and more.',
+  },
+  {
+    q: 'How long does registration last?',
+    a: 'You can register for 1+ years or choose lifetime registration. Renewals are available before expiry.',
+  },
+  {
+    q: 'Is my domain an NFT?',
+    a: 'Yes! Your .safu domain is a fully tradeable NFT that you own and control.',
+  },
+  {
+    q: 'What about referrals?',
+    a: 'Share your referral link and earn rewards when others register domains using your link.',
+  },
+]
+
 export default function Home() {
   const navigate = useNavigate()
+  const [theme, setTheme] = useState('light')
   const [available, setAvailable] = useState('')
   const [search, setSearch] = useState('')
   const [recents, setRecents] = useState<string[]>([])
   const [open, setOpen] = useState(false)
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
 
   const { data, isPending } = useReadContract({
     address: constants.Controller,
@@ -61,14 +97,41 @@ export default function Home() {
       setRecents(recent)
     }
   }, [])
+
+  useEffect(() => {
+    const initial = getPreferredTheme()
+    setTheme(initial)
+  }, [])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const isDark = theme === 'dark'
+    document.body.classList.toggle('dark-mode', isDark)
+  }, [theme])
+
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem(THEME_KEY) : null
+    if (stored || !window.matchMedia) return
+
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (event: MediaQueryListEvent) => {
+      if (!window.localStorage.getItem(THEME_KEY)) {
+        setTheme(event.matches ? 'dark' : 'light')
+      }
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
   const [showBox, setShowBox] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const boxRef = useRef<HTMLDivElement | null>(null)
   const modalRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    document.title = `safu Domains - Get a Domain name with a safu identity`
+    document.title = `Safu Domains - Get a Domain name with a safu identity`
   }, [])
+
   const setRecent = (search: string) => {
     const recent = JSON.parse(localStorage.getItem('Recent') as string)
     if (recent == null) {
@@ -81,12 +144,14 @@ export default function Home() {
       localStorage.setItem('Recent', JSON.stringify(recent))
     }
   }
+
   const updateRecent = (search: string) => {
     const index = recents.indexOf(search)
     const newArray = recents.filter((_, i) => i !== index)
     setRecents(newArray)
     localStorage.setItem('Recent', JSON.stringify(newArray))
   }
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -109,16 +174,17 @@ export default function Home() {
     } else if (search.length < 2) {
       setAvailable('Too Short')
     } else if (isPending) {
-      setAvailable('Loading…')
+      setAvailable('Loading...')
     } else if (data === true) {
       setAvailable('Available')
     } else if (data === false) {
       setAvailable('Registered')
     } else {
-      setAvailable('') // or whatever default you like
+      setAvailable('')
     }
   }, [search, isPending, data])
-  const handleChange = (e: any) => {
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault()
     setSearch(e.target.value.toLowerCase().trim())
     if (e.target.value.length > 0) {
@@ -153,139 +219,298 @@ export default function Home() {
     }
   }, [open])
 
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(nextTheme)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(THEME_KEY, nextTheme)
+    }
+  }
+
+  const handleFaqClick = (index: number) => {
+    setOpenFaqIndex((prev) => (prev === index ? null : index))
+  }
+
   return (
-    <div className="text-white flex flex-col items-center pb-30 md:pb-0">
-      {/* Header */}
+    <>
+      {/* TOP NAVBAR */}
+      <nav className="top-nav">
+        <a href="https://safuverse.com" className="nav-logo">
+          <img src="/Safuverse.png" alt="Safuverse" style={{ height: '40px' }} className="hidden md:block" />
+          <img src="/small.png" alt="Safuverse" style={{ height: '50px' }} className="md:hidden" />
+        </a>
+        <div className="nav-right">
+          <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 600 }}>
+            Docs
+          </a>
+          <a href="https://academy.safuverse.com/courses/all" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 600 }}>
+            Academy
+          </a>
+          <button className="dark-toggle-btn" type="button" onClick={toggleTheme}>
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button className="nav-login-btn" type="button" onClick={() => navigate('/mynames')}>
+            My Names
+          </button>
+        </div>
+      </nav>
 
-      {/* Hero Section */}
-      <main className="text-center mt-20 md:mt-42">
-        <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-[#FFF700] to-orange-400 text-transparent bg-clip-text">
-          Your .safu username
-        </h1>
-        <p className="mt-4 text-gray-400 text-md md:text-lg  max-w-xl mx-auto">
-          Your digital identity accross all web3 platforms. Search your domain
-          name below and make it yours.
-        </p>
+      <div className="hero-spacer" />
 
-        {/* Search Bar */}
-        <div className="mt-10 relative">
-          <div
-            onClick={() => {
-              setOpen(true)
-            }}
-            className="w-80 md:w-96 pl-6 pr-1 py-1 text-xl text-left flex mx-auto items-center rounded-xl bg-gray-900 font-semibold text-gray-500 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500  cursor-pointer"
-          >
-            <div className="flex grow-1 py-3 "> Search For A Name </div>
-            <div className="flex items-center bg-[#FFB000] p-4 rounded-xl">
-              <FaSearch className="text-black" />
+      {/* HERO SECTION */}
+      <section className="hero-section-wrapper">
+        <div className="soft-mist-bg" />
+        <div className="hero-inner">
+          <div className="hero-icon">
+            <img src="/small.png" alt="Safu" style={{ height: '40px' }} />
+          </div>
+
+          <div className="hero-pill">
+            <span className="hero-pill-dot" />
+            <span style={{ color: '#000', fontWeight: 500 }}>Live on BNB Chain</span>
+          </div>
+
+          <h1>
+            Claim Your
+            <br />
+            <span>.safu Domain Name</span>
+          </h1>
+
+          <p className="hero-subtext">
+            Your digital identity across all Web3 platforms. Search your domain name below and make it yours.
+          </p>
+
+          <div className="email-box-wrapper">
+            <div className="email-box-premium">
+              <input
+                type="text"
+                placeholder="Search for a name"
+                onClick={() => setOpen(true)}
+                readOnly
+                style={{ cursor: 'pointer' }}
+              />
+              <button type="button" onClick={() => setOpen(true)}>
+                <FaSearch style={{ marginRight: '8px', display: 'inline' }} />
+                Search
+              </button>
             </div>
           </div>
 
-          {/* Search Results Popup */}
-          {open && (
-            <div className="bg-black/45 fixed min-h-screen inset-0 flex items-center justify-center p-5 z-10">
-              <div
-                ref={modalRef}
-                className="bg-black/95 h-100 w-[100%] md:w-200 p-5 rounded-2xl"
-              >
-                <div className="pl-6 py-1 text-xl w-[100%] text-left flex items-center rounded-xl bg-gray-900 font-semibold text-white border border-gray-700 focus:outline-none cursor-pointer">
-                  <input
-                    ref={inputRef}
-                    placeholder="Search For A Name"
-                    onChange={handleChange}
-                    value={search}
-                    className="font-semibold py-3 text-white w-full placeholder-gray-500 flex grow-1 focus:outline-none cursor-pointer"
-                  />
-                  <button
-                    className="flex items-center bg-[#FFB000] p-4 rounded-xl"
-                    onClick={route}
-                  >
-                    <FaSearch className="text-black" />
-                  </button>
-                </div>
-                <div className="text-left mt-5 text-sm text-gray-700 flex md:items-center">
-                  Recents
-                  <div className="cursor-pointer flex flex-wrap ml-2 gap-3">
-                    {recents.map((item, idx) => (
-                      <div
-                        className={`group ${
-                          idx > 0 ? 'md:mt-0' : ''
-                        } rounded-full bg-[#FFB000] px-5 py-2 text-black flex items-center text-[12px] md:text-md hover:bg-[#FFB000]/80 transition-all duration-300 cursor-pointer`}
-                      >
-                        <div
-                          key={idx}
-                          className=""
-                          onClick={() => {
-                            setSearch(item)
-                            setShowBox(true)
-                          }}
-                        >
-                          {item}
-                        </div>
-                        <div className="group-hover:ml-3 transition-opacity opacity-0 invisible group-hover:visible group-hover:opacity-100 duration-300 flex">
-                          <FaXmark onClick={() => updateRecent(item)} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          <div className="social-proof">
+            <div className="social-avatars">
+              <div className="social-avatar" style={{ backgroundImage: 'linear-gradient(135deg,#ddd,#bbb)' }} />
+              <div className="social-avatar" style={{ backgroundImage: 'linear-gradient(135deg,#ccc,#aaa)' }} />
+              <div className="social-avatar" style={{ backgroundImage: 'linear-gradient(135deg,#bbb,#999)' }} />
+            </div>
+            <span className="founder-text">Join thousands of Web3 users</span>
+          </div>
+        </div>
+      </section>
 
-                <div
-                  ref={boxRef}
-                  className={`w-full mt-2 bg-gray-800 border border-gray-700 rounded-xl shadow-lg text-left z-10 transform origin-top
-              transition-transform duration-300 ease-out
-              overflow-hidden ${showBox ? 'scale-y-100' : 'scale-y-0'}`}
-                >
-                  <ul className="divide-y divide-gray-700">
-                    <li
-                      className="px-6 py-3 hover:bg-gray-700 font-bold rounded-xl cursor-pointer flex justify-between"
-                      onClick={route}
+      {/* Search Modal */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-5" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
+          <div
+            ref={modalRef}
+            className="page-card w-full max-w-xl"
+            style={{ maxHeight: '80vh', overflow: 'auto' }}
+          >
+            <div className="email-box-premium" style={{ maxWidth: '100%', marginBottom: '20px' }}>
+              <input
+                ref={inputRef}
+                placeholder="Search for a name"
+                onChange={handleChange}
+                value={search}
+                style={{ color: theme === 'dark' ? '#fff' : '#111' }}
+              />
+              <button type="button" onClick={route}>
+                <FaSearch />
+              </button>
+            </div>
+
+            {recents.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px', textAlign: 'left' }}>Recent searches</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {recents.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all"
+                      style={{
+                        background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : '#f4f4f4',
+                        fontSize: '14px',
+                      }}
+                      onClick={() => {
+                        setSearch(item)
+                        setShowBox(true)
+                      }}
                     >
-                      <div>{`${search != '' ? search + '.safu' : ''}`}</div>{' '}
-                      {available != '' ? (
-                        <div className="text-[13px] bg-green-800 text-green-300 p-1 rounded-full">
-                          {available}
-                        </div>
-                      ) : (
-                        ''
-                      )}
-                    </li>
-                  </ul>
+                      {item}
+                      <FaXmark
+                        style={{ opacity: 0.5, cursor: 'pointer' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          updateRecent(item)
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
+
+            {showBox && search && (
+              <div
+                ref={boxRef}
+                className="page-card"
+                style={{ padding: '0', marginTop: '8px' }}
+              >
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer transition-all hover:opacity-80"
+                  onClick={route}
+                  style={{ borderRadius: '14px' }}
+                >
+                  <span style={{ fontWeight: 600 }}>{search}.safu</span>
+                  {available && (
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        padding: '4px 12px',
+                        borderRadius: '9999px',
+                        background: available === 'Available' ? '#14d46b' : available === 'Registered' ? '#f59e0b' : '#888',
+                        color: '#fff',
+                      }}
+                    >
+                      {available}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* FEATURES SECTION */}
+      <section className="features">
+        <div className="feature-card">
+          <div className="feature-icon">🪪</div>
+          <h3 style={{ fontSize: '18px', color: '#111', fontWeight: 600, marginTop: '22px' }}>
+            Web3 Identity
+          </h3>
+          <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.55, marginTop: '10px' }}>
+            Your .safu name becomes your universal on-chain username across the Safuverse ecosystem.
+          </p>
+        </div>
+
+        <div className="feature-card">
+          <div className="feature-icon">🎓</div>
+          <h3 style={{ fontSize: '18px', color: '#111', fontWeight: 600, marginTop: '22px' }}>
+            Academy Access
+          </h3>
+          <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.55, marginTop: '10px' }}>
+            Use your domain to access courses, AI tutors, and learning tools inside the Safuverse Academy.
+          </p>
+        </div>
+
+        <div className="feature-card">
+          <div className="feature-icon">💰</div>
+          <h3 style={{ fontSize: '18px', color: '#111', fontWeight: 600, marginTop: '22px' }}>
+            Referral Rewards
+          </h3>
+          <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.55, marginTop: '10px' }}>
+            Earn rewards when others register domains using your referral link.
+          </p>
+        </div>
+      </section>
+
+      {/* CONTENT SECTION */}
+      <section className="content-section">
+        <div className="soft-mist-bg" />
+        <div className="content-inner" style={{ padding: '0 20px' }}>
+          <div className="content-card">
+            <div className="content-pill">About</div>
+            <h2 className="content-title">Your Gateway to Web3 Identity</h2>
+            <p className="content-text" style={{ marginBottom: '14px' }}>
+              Safu Domains is the official naming service for the Safuverse ecosystem on BNB Chain.
+              Replace your long wallet address with a memorable .safu name.
+            </p>
+            <p className="content-text">
+              Own your identity, receive payments easily, and unlock exclusive features across the Safuverse platforms.
+            </p>
+
+            <div style={{ marginTop: '22px', fontSize: '14px', color: '#222' }}>
+              <p><strong>Network:</strong> BNB Chain</p>
+              <p><strong>Extension:</strong> .safu</p>
+              <p><strong>Features:</strong> Lifetime registration available</p>
             </div>
-          )}
+          </div>
         </div>
-        <div className="hidden lg:flex space-x-50 items-center w-full">
-          <img src="/dns.png" className="h-90 -mt-30" />
-          <img src="/dns2.png" className="h-60 mt-7" />
-          <img src="/dns3.png" className="h-90 -mt-30" />
+      </section>
+
+      {/* FAQ SECTION */}
+      <section className="faq">
+        <h2>
+          <span className="faq-label">FAQ</span>
+          <span style={{ fontSize: '32px', fontWeight: 600 }}>
+            Frequently Asked{' '}
+            <em style={{ fontFamily: 'Times New Roman, serif', fontStyle: 'italic' }}>Questions</em>
+          </span>
+        </h2>
+
+        <div className="faq-grid">
+          {faqItems.map((item, index) => {
+            const isOpen = openFaqIndex === index
+            return (
+              <div
+                key={index}
+                className={`faq-item${isOpen ? ' open' : ''}`}
+                onClick={() => handleFaqClick(index)}
+              >
+                <div className="faq-header">
+                  <span>{item.q}</span>
+                  <span className="faq-icon">+</span>
+                </div>
+                <p className="faq-answer">{item.a}</p>
+              </div>
+            )
+          })}
         </div>
-        <div className="block lg:hidden mt-10 w-full flex justify-center">
-          <Carousel className="w-[80%] max-w-md">
-            <CarouselContent>
-              <CarouselItem>
-                <img
-                  src="/dns.png"
-                  className="h-[250px] object-contain mx-auto"
-                />
-              </CarouselItem>
-              <CarouselItem>
-                <img
-                  src="/dns2.png"
-                  className="h-[250px] object-contain mx-auto"
-                />
-              </CarouselItem>
-              <CarouselItem>
-                <img
-                  src="/dns3.png"
-                  className="h-[250px] object-contain mx-auto"
-                />
-              </CarouselItem>
-            </CarouselContent>
-          </Carousel>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="footer">
+        <div className="footer-inner">
+          <section className="footer-promo">
+            <div className="footer-promo-bg" />
+            <h2 className="footer-title">
+              Explore the Safuverse
+              <br />
+              Ecosystem
+            </h2>
+            <a href="https://academy.safuverse.com/courses/all" target="_blank" rel="noopener noreferrer">
+              <button className="footer-btn" type="button">
+                Visit Academy
+              </button>
+            </a>
+          </section>
+
+          <div className="footer-actions">
+            <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer">
+              <button className="footer-chip" type="button">
+                📄 Documentation
+              </button>
+            </a>
+            <a href="https://safuverse.com" target="_blank" rel="noopener noreferrer">
+              <button className="footer-chip" type="button">
+                🌐 Main Website
+              </button>
+            </a>
+          </div>
+
+          <div className="footer-copy">Safuverse 2025. All rights reserved.</div>
         </div>
-      </main>
-    </div>
+      </footer>
+    </>
   )
 }

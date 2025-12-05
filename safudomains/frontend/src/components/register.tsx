@@ -22,6 +22,8 @@ import PriceDisplay from './register/PriceDisplay'
 import { Input } from './ui/input'
 import { validateYears, VALIDATION_CONSTANTS } from '../utils/validation'
 
+const THEME_KEY = 'safudomains-theme'
+
 type RegisterParams = {
   domain: string
   duration: number
@@ -40,6 +42,16 @@ const Register = () => {
   const [currency, setCurrency] = useState<'BNB' | 'USD'>('BNB')
   const [bnb, setBnb] = useState(true)
   const now = useMemo(() => new Date(), [])
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(THEME_KEY)
+    if (stored === 'light' || stored === 'dark') {
+      setTheme(stored)
+    }
+  }, [])
+
+  const isDark = theme === 'dark'
 
   const { address, isDisconnected } = useAccount()
   const { name: myName } = useENSName({ owner: address as `0x${string}` })
@@ -194,7 +206,6 @@ const Register = () => {
   const increment = () => {
     setYears((prev) => {
       const newValue = prev + 1
-      // Validate before setting
       if (newValue > VALIDATION_CONSTANTS.MAX_YEARS) {
         setValidationError(
           `Maximum ${VALIDATION_CONSTANTS.MAX_YEARS} years allowed`,
@@ -240,7 +251,6 @@ const Register = () => {
   const decrease = () => {
     setYears((prev) => {
       const newValue = prev - 1
-      // Validate before setting
       if (newValue < VALIDATION_CONSTANTS.MIN_YEARS) {
         setValidationError(
           `Minimum ${VALIDATION_CONSTANTS.MIN_YEARS} year required`,
@@ -255,22 +265,18 @@ const Register = () => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
 
-    // Clear error when user starts typing
     setValidationError('')
 
-    // Validate the input
     const validation = validateYears(value)
 
     if (!validation.isValid) {
       setValidationError(validation.error || 'Invalid input')
-      // Set to sanitized value if available, otherwise keep current
       if (validation.sanitizedValue !== undefined) {
         setYears(validation.sanitizedValue)
       }
       return
     }
 
-    // Valid input - set the sanitized value
     setYears(validation.sanitizedValue!)
   }
 
@@ -349,39 +355,109 @@ const Register = () => {
 
   const card = false
 
+  // Card styles
+  const cardStyle = {
+    background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.92)',
+    backdropFilter: 'saturate(180%) blur(28px)',
+    border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.06)',
+    borderRadius: '26px',
+    boxShadow: isDark ? '0 25px 50px rgba(0,0,0,0.55)' : '0 22px 55px rgba(0,0,0,0.08)',
+  }
+
+  const buttonPrimaryStyle = {
+    padding: '14px 28px',
+    background: isDark ? '#fff' : '#111',
+    color: isDark ? '#000' : '#fff',
+    border: 'none',
+    borderRadius: '40px',
+    fontSize: '16px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
+    transition: 'all 0.25s ease',
+  }
+
+  const buttonSecondaryStyle = {
+    padding: '14px 28px',
+    background: isDark ? 'transparent' : '#fff',
+    color: isDark ? '#fff' : '#111',
+    border: isDark ? '1.5px solid #fff' : '1.5px solid #111',
+    borderRadius: '40px',
+    fontSize: '16px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.25s ease',
+  }
+
   return (
     <div className="mb-25 md:mb-0">
-      <div className="flex flex-col mx-auto px-2 md:px-30 mt-20 lg:px-60 md:mt-15">
-        <div className="">
-          <h2 className="font-bold text-2xl text-white">{label}.safu</h2>
+      <div className="hero-spacer" />
+      <div className="flex flex-col mx-auto px-4 md:px-30 mt-10 lg:px-60">
+        <div>
+          <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
+            {label}.safu
+          </h2>
+
           {next == 0 ? (
-            <div className="rounded-xl bg-neutral-800 px-5 md:px-10 py-5 mt-5 border-[0.5px] border-gray-400">
-              <h1 className="text-lg font-semibold text-white">
-                {' '}
-                Register {label}.safu{' '}
+            <div style={{ ...cardStyle, padding: '32px' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: 600, color: isDark ? '#f8f8f8' : '#111', marginBottom: '24px' }}>
+                Register {label}.safu
               </h1>
+
               {date ? (
-                <div className="rounded-full py-4 px-4  border-[0.5px] border-gray-400 mt-5 flex items-center relative">
+                <div
+                  style={{
+                    ...cardStyle,
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    position: 'relative',
+                  }}
+                >
                   <button
-                    className="flex items-center justify-center text-3xl w-10 h-10 p-2  rounded-full border-[0.5px] cursor-pointer border-gray-400 bg-[#FFF700] disabled:bg-neutral-500 disabled:cursor-not-allowed text-neutral-900 "
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: lifetime || disable ? (isDark ? '#444' : '#ccc') : (isDark ? '#fff' : '#111'),
+                      color: lifetime || disable ? '#888' : (isDark ? '#000' : '#fff'),
+                      border: 'none',
+                      fontSize: '24px',
+                      cursor: lifetime || disable ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                     disabled={disable || lifetime}
                     onClick={decrease}
                   >
                     -
                   </button>
+
                   {input ? (
                     <div
-                      className="text-3xl md:text-3xl text-[#FFF700] font-semibold grow-1 text-center hover:bg-[#807F00]  transition-all duration-300 rounded-full cursor-pointer mx-5"
+                      style={{
+                        flex: 1,
+                        textAlign: 'center',
+                        fontSize: '28px',
+                        fontWeight: 600,
+                        color: isDark ? '#fff' : '#111',
+                        cursor: lifetime ? 'default' : 'pointer',
+                        padding: '8px',
+                        borderRadius: '20px',
+                        margin: '0 16px',
+                        transition: 'all 0.3s ease',
+                      }}
                       onClick={() => {
                         if (!lifetime) setInput(false)
                       }}
                     >
                       {lifetime ? (
-                        <p className="opacity-90">Lifetime Registration</p>
+                        <span style={{ opacity: 0.9 }}>Lifetime Registration</span>
                       ) : (
-                        <p className="opacity-90">
+                        <span style={{ opacity: 0.9 }}>
                           {years} Year{years > 1 ? 's' : ''}
-                        </p>
+                        </span>
                       )}
                     </div>
                   ) : (
@@ -389,14 +465,37 @@ const Register = () => {
                       ref={inputRef}
                       type="number"
                       min={1}
-                      className="text-3xl md:text-4xl w-30 md:w-full text-[#FFF700] font-semibold grow-1 text-center hover:bg-[#807F00] transition-all duration-300 rounded-full cursor-pointer mx-5"
+                      style={{
+                        flex: 1,
+                        textAlign: 'center',
+                        fontSize: '28px',
+                        fontWeight: 600,
+                        color: isDark ? '#fff' : '#111',
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        margin: '0 16px',
+                      }}
                       value={years}
                       onChange={handleChange}
                       disabled={lifetime}
                     />
                   )}
+
                   <button
-                    className="flex items-center justify-center text-3xl w-10 h-10 p-2 rounded-full bg-[#FFF700] border-[0.5px] border-gray-400 cursor-pointer text-neutral-900 disabled:bg-neutral-500 disabled:cursor-not-allowed"
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: lifetime ? (isDark ? '#444' : '#ccc') : (isDark ? '#fff' : '#111'),
+                      color: lifetime ? '#888' : (isDark ? '#000' : '#fff'),
+                      border: 'none',
+                      fontSize: '24px',
+                      cursor: lifetime ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                     onClick={increment}
                     disabled={lifetime}
                   >
@@ -406,7 +505,13 @@ const Register = () => {
               ) : (
                 <div
                   ref={containerRef}
-                  className="rounded-full p-4 border-[0.5px] border-gray-400 mt-5 flex items-center hover:bg-[#807F00] cursor-pointer transition-all ease-in-out duration-300 relative"
+                  style={{
+                    ...cardStyle,
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: lifetime ? 'default' : 'pointer',
+                  }}
                   onClick={() => {
                     if (!lifetime) setPicker(true)
                   }}
@@ -431,7 +536,7 @@ const Register = () => {
                       </div>
                     )}
                   />
-                  <div className="flex grow-1 text-3xl text-[#FFF700] font-semibold relative items-center ">
+                  <div style={{ flex: 1, fontSize: '24px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
                     {dateText?.toLocaleString('en-US', {
                       month: 'long',
                       day: 'numeric',
@@ -439,60 +544,69 @@ const Register = () => {
                     })}
                   </div>
 
-                  <button className="flex items-center justify-center text-3xl w-10 h-10 p-2  rounded-full bg-[#FFF700] border-[0.5px] border-gray-400 cursor-pointer text-neutral-900">
+                  <button
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: isDark ? '#fff' : '#111',
+                      color: isDark ? '#000' : '#fff',
+                      border: 'none',
+                      fontSize: '24px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     +
                   </button>
                 </div>
               )}
-              {/* Validation Error Message */}
+
               {validationError && (
-                <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/50">
-                  <p className="text-sm text-red-400 text-center">
+                <div style={{ marginTop: '12px', padding: '12px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
+                  <p style={{ fontSize: '14px', color: '#ef4444', textAlign: 'center' }}>
                     {validationError}
                   </p>
                 </div>
               )}
+
               {date && !lifetime ? (
-                <p className="text-center mt-5 text-sm flex justify-center font-semibold">
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: isDark ? '#ccc' : '#555' }}>
                   {years} year{years > 1 ? 's' : ''} registration.{' '}
                   <span
-                    className="text-[#FFF700] text-center ml-2 cursor-pointer"
-                    onClick={() => {
-                      setDate(!date)
-                    }}
+                    style={{ color: isDark ? '#fff' : '#111', cursor: 'pointer', fontWeight: 600 }}
+                    onClick={() => setDate(!date)}
                   >
                     Pick by date
                   </span>
                 </p>
               ) : !date && !lifetime ? (
-                <p className="text-center mt-5 text-sm flex justify-center font-semibold">
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: isDark ? '#ccc' : '#555' }}>
                   {formatDuration(duration)} registration.{' '}
                   <span
-                    className="text-[#FFF700] text-center ml-2 cursor-pointer"
-                    onClick={() => {
-                      setDate(!date)
-                    }}
+                    style={{ color: isDark ? '#fff' : '#111', cursor: 'pointer', fontWeight: 600 }}
+                    onClick={() => setDate(!date)}
                   >
                     Pick by Years
                   </span>
                 </p>
-              ) : (
-                ''
-              )}
-              <p className="text-center mt-5 text-sm flex justify-center font-semibold">
+              ) : null}
+
+              <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '14px' }}>
                 <span
-                  className="text-[#FFF700] text-center ml-2 cursor-pointer"
-                  onClick={() => {
-                    setLifetime(!lifetime)
-                  }}
+                  style={{ color: isDark ? '#fff' : '#111', cursor: 'pointer', fontWeight: 600 }}
+                  onClick={() => setLifetime(!lifetime)}
                 >
                   {!lifetime
                     ? 'Would you like a lifetime registration?'
                     : 'Or Pick By Years/Date?'}
                 </span>
               </p>
-              <div>
-                <div className="inline-flex bg-neutral-900 rounded-full p-1 mt-5">
+
+              <div style={{ marginTop: '24px' }}>
+                <div style={{ display: 'inline-flex', background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', borderRadius: '9999px', padding: '4px' }}>
                   {(['BNB', 'USD'] as const).map((curr) => {
                     const isActive = curr === currency
                     return (
@@ -502,20 +616,24 @@ const Register = () => {
                           setCurrency(curr)
                           setBnb(!bnb)
                         }}
-                        className={`
-                            px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer
-                            ${
-                              isActive
-                                ? 'bg-[#FFF700] text-neutral-800'
-                                : 'text-gray-400 hover:text-white'
-                            }
-                            `}
+                        style={{
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          borderRadius: '9999px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.25s ease',
+                          background: isActive ? (isDark ? '#fff' : '#111') : 'transparent',
+                          color: isActive ? (isDark ? '#000' : '#fff') : (isDark ? '#888' : '#666'),
+                        }}
                       >
                         {curr}
                       </button>
                     )
                   })}
                 </div>
+
                 <PriceDisplay
                   currency={currency}
                   price={price}
@@ -528,38 +646,57 @@ const Register = () => {
                   years={years}
                   lifetime={lifetime}
                 />
-                <div className="flex mt-5">
-                  <div>
-                    <h1 className="text-xl font-semibold">
+
+                <div style={{ display: 'flex', marginTop: '24px', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
                       Set as Primary Name
-                    </h1>
-                    <p className="text-gray-400 text-sm max-w-60 md:max-w-100 mt-5">
-                      This links your address to this name, allowing dApps to
-                      display it as your profile when connected to them. You can
-                      only have one primary name per address.
+                    </h3>
+                    <p style={{ fontSize: '14px', color: isDark ? '#aaa' : '#666', marginTop: '8px', maxWidth: '400px' }}>
+                      This links your address to this name, allowing dApps to display it as your profile when connected to them.
                     </p>
                   </div>
-                  <div className="flex grow-1"></div>
                   <button
                     onClick={() => setIsPrimary(!isPrimary)}
-                    className={`flex items-center justify-center w-14 h-14
-                     rounded-full transition-colors duration-300 border-8 border-gray-200 ${
-                       isPrimary ? 'bg-black' : 'bg-gray-300'
-                     }`}
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      border: `3px solid ${isDark ? '#555' : '#ddd'}`,
+                      background: isPrimary ? '#111' : (isDark ? '#333' : '#f4f4f4'),
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease',
+                    }}
                   >
                     <Check
-                      className={`w-5 h-5 text-white transition-opacity duration-200  ${
-                        isPrimary ? 'opacity-100' : 'opacity-0'
-                      }`}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        color: '#fff',
+                        opacity: isPrimary ? 1 : 0,
+                        transition: 'opacity 0.2s ease',
+                      }}
                     />
                   </button>
                 </div>
-                <div className="mt-5">
-                  <h1 className="text-lg font-semibold">Referrer</h1>
+
+                <div style={{ marginTop: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>Referrer</h3>
                   <Input
                     value={referrer}
                     placeholder="The primary name of the referrer (Optional)"
-                    className="mt-2 py-2 placeholder:text-gray-400 max-w-2/3 w-3/4"
+                    style={{
+                      marginTop: '8px',
+                      padding: '12px 16px',
+                      background: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
+                      border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)',
+                      borderRadius: '14px',
+                      color: isDark ? '#fff' : '#111',
+                      maxWidth: '70%',
+                    }}
                     type="text"
                     onChange={(e) => {
                       if (e.target.value.includes('.')) {
@@ -570,82 +707,89 @@ const Register = () => {
                     }}
                   />
                 </div>
-                <div className="flex mt-5 items-center">
-                  <div>
-                    <h1 className="text-lg font-semibold">
+
+                <div style={{ display: 'flex', marginTop: '24px', alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
                       Pay with Cake ({price.cake} $CAKE)
-                    </h1>
+                    </h3>
                   </div>
-                  <div className="flex grow-1"></div>
                   <button
                     onClick={() => {
                       setUseToken(!useToken)
                       setToken('0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82')
                     }}
-                    className={`flex items-center justify-center w-10 h-10
-                     rounded-full transition-colors duration-300 border-6 border-gray-200 ${
-                       useToken &&
-                       token == '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82'
-                         ? 'bg-black'
-                         : 'bg-gray-300'
-                     }`}
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      border: `3px solid ${isDark ? '#555' : '#ddd'}`,
+                      background: useToken && token == '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82' ? '#111' : (isDark ? '#333' : '#f4f4f4'),
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease',
+                    }}
                   >
                     <Check
-                      className={`w-5 h-5 text-white transition-opacity duration-200  ${
-                        useToken &&
-                        token == '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82'
-                          ? 'opacity-100'
-                          : 'opacity-0'
-                      }`}
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        color: '#fff',
+                        opacity: useToken && token == '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82' ? 1 : 0,
+                        transition: 'opacity 0.2s ease',
+                      }}
                     />
                   </button>
                 </div>
-                <div className="flex mt-5 items-center">
-                  <div>
-                    <h1 className="text-lg font-semibold">
+
+                <div style={{ display: 'flex', marginTop: '20px', alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
                       Pay with USD1 ({price.usd1} $USD1)
-                    </h1>
+                    </h3>
                   </div>
-                  <div className="flex grow-1"></div>
                   <button
                     onClick={() => {
                       setUseToken(!useToken)
                       setToken('0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d')
                     }}
-                    className={`flex items-center justify-center w-10 h-10
-                     rounded-full transition-colors duration-300 border-6 border-gray-200 ${
-                       useToken &&
-                       token == '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d'
-                         ? 'bg-black'
-                         : 'bg-gray-300'
-                     }`}
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      border: `3px solid ${isDark ? '#555' : '#ddd'}`,
+                      background: useToken && token == '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d' ? '#111' : (isDark ? '#333' : '#f4f4f4'),
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease',
+                    }}
                   >
                     <Check
-                      className={`w-5 h-5 text-white transition-opacity duration-200  ${
-                        useToken &&
-                        token == '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d'
-                          ? 'opacity-100'
-                          : 'opacity-0'
-                      }`}
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        color: '#fff',
+                        opacity: useToken && token == '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d' ? 1 : 0,
+                        transition: 'opacity 0.2s ease',
+                      }}
                     />
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                {!isDisconnected ? (
-                  <div className="flex gap-4">
-                    <button
-                      className="px-5 py-3 bg-[#FFF700] text-neutral-900 font-semibold mt-5 rounded-xl cursor-pointer hover:bg-[#B3AE00] transition-all duration-300 flex items-center"
-                      onClick={() => {
-                        setNext(1)
-                      }}
-                      disabled={isLoading}
-                    >
-                      Continue
-                    </button>
-                  </div>
-                ) : (
-                  ''
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '32px' }}>
+                {!isDisconnected && (
+                  <button
+                    style={buttonPrimaryStyle}
+                    onClick={() => setNext(1)}
+                    disabled={isLoading}
+                  >
+                    Continue
+                  </button>
                 )}
               </div>
             </div>
@@ -667,10 +811,10 @@ const Register = () => {
               buildCommitData={buildCommitData}
             />
           ) : next == 2 ? (
-            <div className="rounded-xl bg-neutral-800 px-5 md:px-10 py-5 mt-5 border-[0.5px] border-gray-400">
+            <div style={{ ...cardStyle, padding: '32px', marginTop: '20px' }}>
               <RegistrationSteps />
-              <div className="mt-10">
-                <div className="inline-flex bg-neutral-900 rounded-full p-1">
+              <div style={{ marginTop: '40px' }}>
+                <div style={{ display: 'inline-flex', background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', borderRadius: '9999px', padding: '4px' }}>
                   {(['BNB', 'USD'] as const).map((curr) => {
                     const isActive = curr === currency
                     return (
@@ -680,14 +824,17 @@ const Register = () => {
                           setCurrency(curr)
                           setBnb(!bnb)
                         }}
-                        className={`
-                            px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer
-                            ${
-                              isActive
-                                ? 'bg-[#FFF700] text-neutral-800'
-                                : 'text-gray-400 hover:text-white'
-                            }
-                            `}
+                        style={{
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          borderRadius: '9999px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.25s ease',
+                          background: isActive ? (isDark ? '#fff' : '#111') : 'transparent',
+                          color: isActive ? (isDark ? '#000' : '#fff') : (isDark ? '#888' : '#666'),
+                        }}
                       >
                         {curr}
                       </button>
@@ -707,17 +854,15 @@ const Register = () => {
                 />
               </div>
 
-              <div className="flex space-x-5 mt-10 justify-center">
+              <div style={{ display: 'flex', gap: '20px', marginTop: '40px', justifyContent: 'center' }}>
                 <button
-                  className="p-3 px-10 md:px-15 bg-gray-300 text-black rounded-lg font-semibold cursor-pointer"
-                  onClick={() => {
-                    setNext((prev) => prev - 1)
-                  }}
+                  style={buttonSecondaryStyle}
+                  onClick={() => setNext((prev) => prev - 1)}
                 >
                   Back
                 </button>
                 <button
-                  className="p-3 px-10 md:px-15 bg-[#FFF700]  rounded-lg text-black font-semibold cursor-pointer"
+                  style={buttonPrimaryStyle}
                   onClick={() => {
                     setNext((prev) => prev + 1)
                     if (!card) {
@@ -730,13 +875,25 @@ const Register = () => {
               </div>
             </div>
           ) : next == 3 && !card ? (
-            <div className="bg-white dark:bg-neutral-900 p-8 rounded-2xl shadow-2xl  mx-auto mt-5 flex flex-col items-center gap-6 border-1 border-gray-300">
-              <h2 className="text-2xl font-bold text-center text-neutral-800 dark:text-white">
+            <div style={{ ...cardStyle, padding: '40px', marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
                 Almost there
               </h2>
 
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full border-8 border-blue-300 flex justify-center items-center text-4xl font-bold text-blue-600">
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  width: '128px',
+                  height: '128px',
+                  borderRadius: '50%',
+                  border: '8px solid',
+                  borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  fontSize: '36px',
+                  fontWeight: 700,
+                  color: isDark ? '#fff' : '#111',
+                }}>
                   {commithash && (
                     <Countdown
                       date={Date.now() + wait * 1000}
@@ -752,35 +909,34 @@ const Register = () => {
                 </div>
               </div>
 
-              <p className="text-center text-sm text-gray-500 px-4">
-                This wait prevents others from{' '}
-                <a href="#" className="underline text-blue-500">
-                  front running
-                </a>{' '}
-                your transaction.
+              <p style={{ textAlign: 'center', fontSize: '14px', color: isDark ? '#aaa' : '#666', padding: '0 16px' }}>
+                This wait prevents others from front running your transaction.
                 <br />
                 You'll complete the second transaction when the timer ends.
               </p>
 
-              <div className="flex gap-4 w-full mt-4">
+              <div style={{ display: 'flex', gap: '16px', width: '100%', marginTop: '16px' }}>
                 <button
-                  onClick={() => {
-                    setNext((prev) => prev - 1)
-                  }}
-                  className="flex-1 bg-red-100 text-red-600 py-2 rounded-lg font-semibold hover:bg-red-200 transition"
+                  onClick={() => setNext((prev) => prev - 1)}
+                  style={{ ...buttonSecondaryStyle, flex: 1 }}
                 >
                   Back
                 </button>
                 {done == false ? (
                   <button
                     disabled
-                    className="flex-1 bg-gray-300 text-gray-500 py-2 rounded-lg font-semibold cursor-not-allowed"
+                    style={{
+                      ...buttonPrimaryStyle,
+                      flex: 1,
+                      opacity: 0.5,
+                      cursor: 'not-allowed',
+                    }}
                   >
-                    Wait ⏳
+                    Wait...
                   </button>
                 ) : (
                   <button
-                    className="flex-1 bg-[#FFF700] text-gray-500 py-2 rounded-lg font-semibold cursor-pointer"
+                    style={{ ...buttonPrimaryStyle, flex: 1 }}
                     onClick={() => {
                       setNext((prev) => prev + 1)
                       setIsOpen(true)
@@ -802,7 +958,7 @@ const Register = () => {
           ) : next == 3 && card ? (
             <UserForm address={owner} registerParams={registerParams} />
           ) : next == 4 ? (
-            <div className="bg-white dark:bg-neutral-900 p-8 rounded-2xl shadow-2xl  mx-auto mt-5 flex flex-col items-center gap-6 border-1 border-gray-300">
+            <div style={{ ...cardStyle, padding: '40px', marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
               <RegisterDetailsModal
                 isOpen={isOpen}
                 onRequestClose={() => setNext((prev) => prev - 1)}
@@ -811,106 +967,103 @@ const Register = () => {
                 duration={durationString}
               />
               {registerPending ? (
-                <h2 className="text-3xl font-bold text-center text-neutral-800 dark:text-white">
-                  Waiting for transaction to complete...`
+                <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
+                  Waiting for transaction to complete...
                 </h2>
               ) : !registerhash ? (
-                <h2 className="text-3xl font-bold text-center text-neutral-800 dark:text-white">
+                <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
                   Complete your registration
                 </h2>
               ) : registerError ? (
-                <h2 className="text-3xl font-bold text-center text-neutral-800 dark:text-white">
+                <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
                   There was an error while registering your name. Please{' '}
                   <span
-                    className="cursor-pointer text-blue"
+                    style={{ cursor: 'pointer', textDecoration: 'underline' }}
                     onClick={() => setIsOpen(true)}
                   >
                     try again
                   </span>
                 </h2>
               ) : registerhash ? (
-                <div className="min-h-screen flex items-center justify-center bg-neutral-800 p-6">
-                  <div className="bg-neutral-900 rounded-2xl shadow-xl p-8 max-w-md w-full text-center text-white">
-                    <h1 className="text-2xl font-bold mb-2 text-white">
+                <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                  <div style={{ ...cardStyle, padding: '40px', maxWidth: '420px', width: '100%', textAlign: 'center' }}>
+                    <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px', color: isDark ? '#fff' : '#111' }}>
                       Congratulations!
                     </h1>
-                    <p className="text-neutral-400 mb-6">
+                    <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
                       You are now the owner of{' '}
-                      <span className="text-blue-400 font-semibold">
+                      <span style={{ fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
                         {label}.safu
                       </span>
                     </p>
 
-                    <div className="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-2xl p-10 mb-6 flex flex-col items-center">
-                      <div className="bg-neutral-900 rounded-full p-3 mb-4">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-8 w-8 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                          />
-                        </svg>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      borderRadius: '20px',
+                      padding: '40px',
+                      marginBottom: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}>
+                      <div style={{
+                        background: isDark ? '#111' : '#fff',
+                        borderRadius: '50%',
+                        padding: '12px',
+                        marginBottom: '16px',
+                      }}>
+                        <Check style={{ width: '32px', height: '32px', color: isDark ? '#fff' : '#111' }} />
                       </div>
-                      <p className="text-white font-semibold text-lg">{`${label}.safu`}</p>
+                      <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.safu`}</p>
                     </div>
 
-                    <div className="bg-neutral-800 rounded-xl p-4 mb-6 text-sm text-left space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-neutral-400">
+                    <div style={{
+                      background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      marginBottom: '24px',
+                      textAlign: 'left',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span style={{ color: isDark ? '#888' : '#666', fontSize: '14px' }}>
                           {durationString}
                         </span>
-                        <span className="font-medium text-white">
+                        <span style={{ fontWeight: 500, fontSize: '14px', color: isDark ? '#fff' : '#111' }}>
                           {price.bnb} BNB{' '}
-                          <span className="text-neutral-500">{`($${price.usd})`}</span>
+                          <span style={{ color: isDark ? '#888' : '#666' }}>{`($${price.usd})`}</span>
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-400">Name expires</span>
-                        <div className="flex flex-col items-end">
-                          <span className="font-medium text-white">
-                            {dateText?.toLocaleDateString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </span>
-                          <button className="text-blue-400 text-xs hover:underline mt-1">
-                            Set reminder
-                          </button>
-                        </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: isDark ? '#888' : '#666', fontSize: '14px' }}>Name expires</span>
+                        <span style={{ fontWeight: 500, fontSize: '14px', color: isDark ? '#fff' : '#111' }}>
+                          {dateText?.toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex gap-4">
+                    <div style={{ display: 'flex', gap: '16px' }}>
                       <button
                         onClick={() => navigate(`/`)}
-                        className="bg-neutral-800 border border-blue-400 text-blue-400 font-semibold py-2 px-4 rounded-lg hover:bg-neutral-700"
+                        style={buttonSecondaryStyle}
                       >
                         Register another
                       </button>
                       <button
                         onClick={() => navigate(`/resolve/${label}`)}
-                        className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600"
+                        style={buttonPrimaryStyle}
                       >
                         View name
                       </button>
                     </div>
                   </div>
                 </div>
-              ) : (
-                ''
-              )}
+              ) : null}
             </div>
-          ) : (
-            ''
-          )}
+          ) : null}
         </div>
       </div>
     </div>
