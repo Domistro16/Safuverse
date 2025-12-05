@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useReadContract } from 'wagmi'
 import { IdentificationIcon } from '@heroicons/react/outline'
 import { CustomConnect } from '@/components/connectButton'
