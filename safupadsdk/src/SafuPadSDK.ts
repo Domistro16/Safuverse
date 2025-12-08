@@ -17,7 +17,7 @@ import { NETWORKS, DEFAULT_CONFIG } from './constants';
  * import { SafuPadSDK } from '@safupad/sdk';
  *
  * const sdk = new SafuPadSDK({
- *   network: 'bsc',
+ *   network: 'monad',
  *   provider: window.ethereum,
  * });
  *
@@ -73,7 +73,7 @@ export class SafuPadSDK {
     } else {
       this.networkConfig = this.config.network!;
     }
- 
+
     // Setup provider
     if (this.config.provider) {
       if (typeof this.config.provider === 'string') {
@@ -183,7 +183,7 @@ export class SafuPadSDK {
     }
     this.initialized = true;
 
-    
+
   }
 
   /**

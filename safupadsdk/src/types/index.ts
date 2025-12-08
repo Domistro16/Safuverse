@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 /**
  * Network names supported by the SDK
  */
-export type NetworkName = 'bsc' | 'bscTestnet' | 'monad' | 'monadTestnet' | 'localhost';
+export type NetworkName = 'monad' | 'monadTestnet' | 'localhost';
 
 /**
  * Launch type enum

@@ -4,17 +4,17 @@ import { NetworkConfig, SDKConfig } from '../types';
  * Network configurations
  */
 export const NETWORKS: Record<string, NetworkConfig> = {
-  bsc: {
+  monad: {
     name: 'Monad',
-    chainId: 56,
-    rpcUrl: 'https://bsc-dataseed.binance.org/',
-    alchemyRpcUrlTemplate: 'https://bnb-mainnet.g.alchemy.com/v2/{apiKey}',
-    explorerUrl: 'https://bscscan.com',
+    chainId: 143, // Monad mainnet chain ID (placeholder - update when known)
+    rpcUrl: 'https://rpc.monad.xyz/', // Monad RPC URL (placeholder - update when known)
+    alchemyRpcUrlTemplate: 'https://monad-mainnet.g.alchemy.com/v2/{apiKey}', // (placeholder - update when known)
+    explorerUrl: 'https://explorer.monad.xyz', // Monad explorer (placeholder - update when known)
     subgraphUrl:
       'https://api.studio.thegraph.com/query/<SUBGRAPH_ID>/safupad-subgraph/version/latest', // TODO: UPDATE AFTER DEPLOYMENT
     nativeCurrency: {
-      name: 'BNB',
-      symbol: 'BNB',
+      name: 'MON',
+      symbol: 'MON',
       decimals: 18,
     },
     contracts: {
@@ -23,22 +23,22 @@ export const NETWORKS: Record<string, NetworkConfig> = {
       tokenFactory: '0x15E2ccAeb4D1eeA1A7b8d839FFA30D63519D1c50', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
       priceOracle: '0x3De1d0D44c9609b99D05BA14Ff48c691fF6059Ff', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
       lpFeeHarvester: '0x8b4499143ac1CDb7bDB25a2FEc1786F8BD9772F9', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
-      pancakeRouter: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
-      pancakeFactory: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
+      pancakeRouter: '0x10ED43C718714eb63d5aA57B78B54704E256024E', // Monad DEX router (placeholder)
+      pancakeFactory: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73', // Monad DEX factory (placeholder)
     },
   },
 
-  bscTestnet: {
-    name: 'BSC Testnet',
-    chainId: 97,
-    rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
-    alchemyRpcUrlTemplate: 'https://bnb-testnet.g.alchemy.com/v2/{apiKey}',
-    explorerUrl: 'https://testnet.bscscan.com',
+  monadTestnet: {
+    name: 'Monad Testnet',
+    chainId: 10143, // Monad testnet chain ID (placeholder - update when known)
+    rpcUrl: 'https://testnet-rpc.monad.xyz/', // Monad testnet RPC (placeholder - update when known)
+    alchemyRpcUrlTemplate: 'https://monad-testnet.g.alchemy.com/v2/{apiKey}', // (placeholder - update when known)
+    explorerUrl: 'https://testnet-explorer.monad.xyz', // Monad testnet explorer (placeholder - update when known)
     subgraphUrl:
       'https://api.studio.thegraph.com/query/<SUBGRAPH_ID>/safupad-testnet/version/latest', // TODO: UPDATE AFTER DEPLOYMENT
     nativeCurrency: {
-      name: 'BNB',
-      symbol: 'BNB',
+      name: 'MON',
+      symbol: 'MON',
       decimals: 18,
     },
     contracts: {
@@ -47,8 +47,8 @@ export const NETWORKS: Record<string, NetworkConfig> = {
       tokenFactory: '0xcb7526b9598240A737237C52f852705e6A449cD0',
       priceOracle: '0x56f0b1f80F8cc37f875Be42e2f4D09810514F346',
       lpFeeHarvester: '0xa886B8897814193f99A88701d70b31b4a8E27a1E',
-      pancakeRouter: '0xD99D1c33F9fC3444f8101754aBC46c52416550D1',
-      pancakeFactory: '0x6725F303b657a9451d8BA641348b6761A6CC7a17',
+      pancakeRouter: '0xD99D1c33F9fC3444f8101754aBC46c52416550D1', // Monad testnet DEX router (placeholder)
+      pancakeFactory: '0x6725F303b657a9451d8BA641348b6761A6CC7a17', // Monad testnet DEX factory (placeholder)
     },
   },
 
@@ -59,8 +59,8 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     explorerUrl: 'http://localhost:8545',
     subgraphUrl: 'http://localhost:8000/subgraphs/name/safupad-subgraph', // Local Graph Node
     nativeCurrency: {
-      name: 'ETH',
-      symbol: 'ETH',
+      name: 'MON',
+      symbol: 'MON',
       decimals: 18,
     },
     contracts: {
@@ -226,8 +226,8 @@ export const TIME = {
  * Block time estimates (in seconds)
  */
 export const BLOCK_TIME = {
-  bsc: 3,
-  bscTestnet: 3,
+  monad: 1, // Monad has 1s block time (placeholder - update when known)
+  monadTestnet: 1,
   ethereum: 12,
 };
 

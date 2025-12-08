@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Coursecontract.sol";
+import "./Level3Course.sol";
 import "./ILevel3Course.sol";
 
 contract CourseFactory is Ownable, ILevel3Course {
@@ -15,20 +15,26 @@ contract CourseFactory is Ownable, ILevel3Course {
     event QuizAdded(uint256 indexed courseId, uint256 lessonId);
     event LessonAdded(uint256 indexed courseId, uint256 lessonId, string title);
 
-    constructor(address _level3course, address owner) Ownable(owner) {
+    error CourseNotFound();
+
+    constructor(address _level3course, address _owner) Ownable(_owner) {
         courseCounter = 0;
         level3Course = Level3Course(_level3course);
     }
 
-    function numCourses() public view returns (uint256) {
+    /// @notice Get the total number of courses
+    function numCourses() external view returns (uint256) {
         return courseCounter;
     }
 
-    function deleteCourse(uint256 _courseId) public onlyOwner {
+    /// @notice Delete a course
+    /// @param _courseId The course ID to delete
+    function deleteCourse(uint256 _courseId) external onlyOwner {
         delete courses[_courseId];
         level3Course.deleteCourse(_courseId);
     }
 
+    /// @notice Add a new course
     function addCourse(
         string memory _title,
         string memory _description,
@@ -39,9 +45,9 @@ contract CourseFactory is Ownable, ILevel3Course {
         string memory _category,
         string memory _level,
         string memory _url,
-        Lesson[] memory lessons,
+        Lesson[] memory _lessons,
         string memory _duration
-    ) public onlyOwner {
+    ) external onlyOwner {
         Course storage c = courses[courseCounter];
         c.id = courseCounter;
         c.title = _title;
@@ -53,13 +59,19 @@ contract CourseFactory is Ownable, ILevel3Course {
         c.objectives = _objectives;
         c.category = _category;
         c.prerequisites = _prerequisites;
-        c.lessons = lessons;
         c.duration = _duration;
+        
+        // Copy lessons
+        for (uint256 i = 0; i < _lessons.length; i++) {
+            c.lessons.push(_lessons[i]);
+        }
+        
         level3Course.updateCourseRegistry(courseCounter, c);
         emit CourseAdded(courseCounter, _title);
         courseCounter = courseCounter + 1;
     }
 
+    /// @notice Edit an existing course
     function editCourse(
         uint256 _courseId,
         string memory _title,
@@ -73,7 +85,11 @@ contract CourseFactory is Ownable, ILevel3Course {
         string memory _url,
         Lesson[] memory _lessons,
         string memory _duration
-    ) public onlyOwner {
+    ) external onlyOwner {
+        if (_courseId >= courseCounter) {
+            revert CourseNotFound();
+        }
+        
         Course storage c = courses[_courseId];
         c.title = _title;
         c.description = _description;
@@ -82,63 +98,83 @@ contract CourseFactory is Ownable, ILevel3Course {
         c.longDescription = _longDescription;
         c.instructor = _instructor;
         c.objectives = _objectives;
-        c.lessons = _lessons;
         c.category = _category;
         c.prerequisites = _prerequisites;
         c.duration = _duration;
+        
+        // Clear existing lessons and add new ones
+        delete c.lessons;
+        for (uint256 i = 0; i < _lessons.length; i++) {
+            c.lessons.push(_lessons[i]);
+        }
+        
         level3Course.updateCourse(c, _courseId);
         emit CourseEdited(_courseId, _title);
     }
 
+    /// @notice Add a quiz to a lesson
     function addQuiz(
         uint256 _courseId,
-        uint256 _lessonid,
-        string memory quizzes
-    ) public onlyOwner {
-        require(_courseId < courseCounter, "Course does not exist");
-        courses[_courseId].lessons[_lessonid].quizzes = quizzes;
+        uint256 _lessonId,
+        string memory _quizzes
+    ) external onlyOwner {
+        if (_courseId >= courseCounter) {
+            revert CourseNotFound();
+        }
+        courses[_courseId].lessons[_lessonId].quizzes = _quizzes;
         level3Course.updateCourse(courses[_courseId], _courseId);
-        emit QuizAdded(_courseId, _lessonid);
+        emit QuizAdded(_courseId, _lessonId);
     }
 
+    /// @notice Edit a quiz in a lesson
     function editQuiz(
         uint256 _courseId,
-        uint256 _lessonid,
-        string memory quizzes
-    ) public onlyOwner {
-        require(_courseId < courseCounter, "Course does not exist");
-        courses[_courseId].lessons[_lessonid].quizzes = quizzes;
+        uint256 _lessonId,
+        string memory _quizzes
+    ) external onlyOwner {
+        if (_courseId >= courseCounter) {
+            revert CourseNotFound();
+        }
+        courses[_courseId].lessons[_lessonId].quizzes = _quizzes;
         level3Course.updateCourse(courses[_courseId], _courseId);
-        emit QuizAdded(_courseId, _lessonid);
+        emit QuizAdded(_courseId, _lessonId);
     }
 
+    /// @notice Add a lesson to a course
     function addLesson(
         uint256 _courseId,
-        string memory _text,
+        string memory _title,
         string[] memory _url
-    ) public onlyOwner {
-        require(_courseId < courseCounter, "Course does not exist");
+    ) external onlyOwner {
+        if (_courseId >= courseCounter) {
+            revert CourseNotFound();
+        }
 
         Lesson storage newLesson = courses[_courseId].lessons.push();
         newLesson.id = courses[_courseId].lessons.length - 1;
-        newLesson.lessontitle = _text;
+        newLesson.lessontitle = _title;
         newLesson.url = _url;
+        
         level3Course.updateCourse(courses[_courseId], _courseId);
-        emit LessonAdded(_courseId, newLesson.id, _text);
+        emit LessonAdded(_courseId, newLesson.id, _title);
     }
 
+    /// @notice Edit a lesson in a course
     function editLesson(
         uint256 _courseId,
         uint256 _lessonId,
-        string memory _text,
+        string memory _title,
         string[] memory _url
-    ) public onlyOwner {
-        require(_courseId < courseCounter, "Course does not exist");
+    ) external onlyOwner {
+        if (_courseId >= courseCounter) {
+            revert CourseNotFound();
+        }
 
         Lesson storage lesson = courses[_courseId].lessons[_lessonId];
-        lesson.lessontitle = _text;
+        lesson.lessontitle = _title;
         lesson.url = _url;
+        
         level3Course.updateCourse(courses[_courseId], _courseId);
-        emit LessonAdded(_courseId, lesson.id, _text);
+        emit LessonAdded(_courseId, lesson.id, _title);
     }
 }

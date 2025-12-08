@@ -1,21 +1,7 @@
-# SafuPad SDK
-
-A comprehensive TypeScript SDK for interacting with SafuPad smart contracts **deployed on BNB Chain** (BNB Smart Chain - BSC).
-
-## Deployment Information
-
-**Primary Network**: BNB Smart Chain (BSC)
-- **BSC Mainnet**: Chain ID 56
-- **BSC Testnet**: Chain ID 97
-
-This SDK provides TypeScript/JavaScript bindings for the SafuPad token launchpad platform deployed on BNB Chain, enabling developers to integrate fair token launches, bonding curve trading, and PancakeSwap graduation features into their applications.
-
-## Features
-
 - 🔐 **Type-safe** - Full TypeScript support with comprehensive types
 - 🎯 **Easy to use** - Simple, intuitive API
 - ⚡ **Fast** - Optimized for performance
-- 🌐 **Multi-network** - Support for BSC Mainnet, Testnet, and localhost
+- 🌐 **Multi-network** - Support for Monad Mainnet, Testnet, and localhost
 - 🔌 **Flexible** - Works in Node.js and browsers
 - 📊 **Complete** - All contract functions wrapped with helpers
 - 🎨 **Event handling** - Easy event listening and filtering
@@ -41,7 +27,7 @@ import { SafuPadSDK } from '@safupad/sdk';
 
 // Initialize SDK with MetaMask or other injected provider
 const sdk = new SafuPadSDK({
-  network: 'bsc',
+  network: 'monad',
   provider: window.ethereum,
 });
 
@@ -62,7 +48,7 @@ await tx.wait();
 import { SafuPadSDK } from '@safupad/sdk';
 
 const sdk = new SafuPadSDK({
-  network: 'bscTestnet',
+  network: 'MonadTestnet',
   privateKey: process.env.PRIVATE_KEY,
 });
 
@@ -73,8 +59,8 @@ const tx = await sdk.launchpad.createLaunch({
   name: 'MyToken',
   symbol: 'MTK',
   totalSupply: 1000000000,
-  raiseTargetBNB: '50', // ✅ NEW: BNB amounts instead of USD
-  raiseMaxBNB: '100', // ✅ NEW: BNB amounts instead of USD
+  raiseTargetMON: '50', // ✅ NEW: MON amounts instead of USD
+  raiseMaxMON: '100', // ✅ NEW: MON amounts instead of USD
   vestingDuration: 90,
   metadata: {
     logoURI: 'https://example.com/logo.png',
@@ -114,7 +100,7 @@ await sdk.launchpad.createLaunch({
 });
 ```
 
-### Changed to BNB-Based Raises
+### Changed to MON-Based Raises
 
 **Before (v1.x):**
 
@@ -130,8 +116,8 @@ await sdk.launchpad.createLaunch({
 
 ```typescript
 await sdk.launchpad.createLaunch({
-  raiseTargetBNB: '50', // ✅ BNB amounts (50-500 BNB)
-  raiseMaxBNB: '100', // ✅ BNB amounts
+  raiseTargetMON: '50', // ✅ MON amounts (50- MON)
+  raiseMaxMON: '100', // ✅ MON amounts
   // ...
 });
 ```
@@ -161,7 +147,7 @@ The main entry point for all SafuPad interactions:
 
 ```typescript
 const sdk = new SafuPadSDK({
-  network: 'bsc' | 'bscTestnet' | 'localhost',
+  network: 'Monad' | 'MonadTestnet' | 'localhost',
   provider?: string | Provider | BrowserProvider,
   privateKey?: string,
 });
@@ -186,13 +172,13 @@ The SDK exposes five main contract modules:
 #### Create Project Raise
 
 ```typescript
-// ✅ UPDATED: No projectInfoFiWallet, uses BNB amounts
+// ✅ UPDATED: No projectInfoFiWallet, uses MON amounts
 const tx = await sdk.launchpad.createLaunch({
   name: 'MyToken',
   symbol: 'MTK',
   totalSupply: 1000000000, // 1 billion
-  raiseTargetBNB: '50', // ✅ Minimum 50 BNB
-  raiseMaxBNB: '100', // ✅ Maximum 500 BNB
+  raiseTargetMON: '50', // ✅ Minimum  MON
+  raiseMaxMON: '100', // ✅ Maximum  MON
   vestingDuration: 90, // days (90-180)
   metadata: {
     logoURI: 'https://example.com/logo.png',
@@ -209,8 +195,8 @@ const tx = await sdk.launchpad.createLaunch({
 
 **Parameters:**
 
-- `raiseTargetBNB`: String - Minimum raise target (50-500 BNB)
-- `raiseMaxBNB`: String - Maximum raise cap (50-500 BNB)
+- `raiseTargetMON`: String - Minimum raise target (50- MON)
+- `raiseMaxMON`: String - Maximum raise cap (50- MON)
 - `burnLP`: Boolean - `true` burns LP permanently, `false` locks in fee harvester
 - ~~`projectInfoFiWallet`~~ - Removed, uses global InfoFi address
 
@@ -222,7 +208,7 @@ const tx = await sdk.launchpad.createInstantLaunch({
   symbol: 'MEME',
   totalSupply: 1000000000,       // must be 1 billion
   metadata: {...},
-  initialBuyBNB: '0.1',          // Initial buy amount
+  initialBuyMON: '0.1',          // Initial buy amount
   burnLP: true,                   // Burn LP on graduation
   vanitySalt: '0x...',           // optional
 });
@@ -233,7 +219,7 @@ const tx = await sdk.launchpad.createInstantLaunch({
 ```typescript
 const tx = await sdk.launchpad.contribute(
   tokenAddress,
-  '0.5' // BNB amount
+  '0.5' // MON amount
 );
 ```
 
@@ -243,10 +229,10 @@ const tx = await sdk.launchpad.contribute(
 // ✅ UPDATED: No longer includes projectInfoFiWallet
 const info = await sdk.launchpad.getLaunchInfo(tokenAddress);
 console.log('Founder:', info.founder);
-console.log('Raised:', sdk.formatBNB(info.totalRaised));
-console.log('Target:', sdk.formatBNB(info.raiseTarget));
+console.log('Raised:', sdk.formatMON(info.totalRaised));
+console.log('Target:', sdk.formatMON(info.raiseTarget));
 console.log('Completed:', info.raiseCompleted);
-console.log('Graduated:', info.graduatedToPancakeSwap);
+console.log('Graduated:', info.graduatedToMonad DEX);
 console.log('LP Burned:', info.burnLP);
 ```
 
@@ -260,7 +246,7 @@ console.log('LP Burned:', info.burnLP);
   totalRaised: bigint;
   raiseDeadline: bigint;
   raiseCompleted: boolean;
-  graduatedToPancakeSwap: boolean;
+  graduatedToMonad DEX: boolean;
   raisedFundsVesting: bigint;
   raisedFundsClaimed: bigint;
   launchType: LaunchType;
@@ -272,12 +258,12 @@ console.log('LP Burned:', info.burnLP);
 #### Get Launch Info with USD
 
 ```typescript
-// ✅ Provides both BNB and USD values
+// ✅ Provides both MON and USD values
 const info = await sdk.launchpad.getLaunchInfoWithUSD(tokenAddress);
-console.log('Target BNB:', sdk.formatBNB(info.raiseTargetBNB));
-console.log('Target USD:', sdk.formatBNB(info.raiseTargetUSD));
-console.log('Raised BNB:', sdk.formatBNB(info.totalRaisedBNB));
-console.log('Raised USD:', sdk.formatBNB(info.totalRaisedUSD));
+console.log('Target MON:', sdk.formatMON(info.raiseTargetMON));
+console.log('Target USD:', sdk.formatMON(info.raiseTargetUSD));
+console.log('Raised MON:', sdk.formatMON(info.totalRaisedMON));
+console.log('Raised USD:', sdk.formatMON(info.totalRaisedUSD));
 ```
 
 #### Claim Founder Rewards
@@ -292,7 +278,7 @@ if (amounts.claimableTokens > 0n) {
   await tx.wait();
 }
 
-// Claim vested BNB
+// Claim vested MON
 if (amounts.claimableFunds > 0n) {
   const tx = await sdk.launchpad.claimRaisedFunds(tokenAddress);
   await tx.wait();
@@ -304,11 +290,11 @@ if (amounts.claimableFunds > 0n) {
 - Tokens to be released are burned
 - Raised funds go to global InfoFi address for redistribution
 
-#### Graduate to PancakeSwap
+#### Graduate to Monad DEX
 
 ```typescript
-// Token graduates at 15 BNB in bonding curve
-const tx = await sdk.launchpad.graduateToPancakeSwap(tokenAddress);
+// Token graduates at  MON in bonding curve
+const tx = await sdk.launchpad.graduateToMonad DEX(tokenAddress);
 await tx.wait();
 ```
 
@@ -324,7 +310,7 @@ console.log('You will receive:', sdk.formatToken(quote.tokensOut));
 // Buy with 1% slippage tolerance
 const tx = await sdk.bondingDex.buyTokens(
   tokenAddress,
-  '0.1', // BNB amount
+  '0.1', // MON amount
   1 // slippage %
 );
 await tx.wait();
@@ -335,7 +321,7 @@ await tx.wait();
 ```typescript
 // Get quote
 const quote = await sdk.bondingDex.getSellQuote(tokenAddress, '1000');
-console.log('You will receive:', sdk.formatBNB(quote.tokensOut), 'BNB');
+console.log('You will receive:', sdk.formatMON(quote.tokensOut), 'MON');
 
 // Sell with 1% slippage
 const tx = await sdk.bondingDex.sellTokens(
@@ -349,18 +335,18 @@ const tx = await sdk.bondingDex.sellTokens(
 
 ```typescript
 const pool = await sdk.bondingDex.getPoolInfo(tokenAddress);
-console.log('Market Cap USD:', sdk.formatBNB(pool.marketCapUSD));
-console.log('Market Cap BNB:', sdk.formatBNB(pool.marketCapBNB));
-console.log('BNB Reserve:', sdk.formatBNB(pool.bnbReserve));
+console.log('Market Cap USD:', sdk.formatMON(pool.marketCapUSD));
+console.log('Market Cap MON:', sdk.formatMON(pool.marketCapMON));
+console.log('MON Reserve:', sdk.formatMON(pool.monReserve));
 console.log('Token Reserve:', sdk.formatToken(pool.tokenReserve));
-console.log('Current Price:', sdk.formatBNB(pool.currentPrice));
+console.log('Current Price:', sdk.formatMON(pool.currentPrice));
 console.log('Graduation:', Number(pool.graduationProgress), '%');
 console.log('Graduated:', pool.graduated);
 ```
 
 **Graduation Threshold:**
 
-- All INSTANT_LAUNCH tokens graduate at **15 BNB** in bonding curve
+- All INSTANT_LAUNCH tokens graduate at ** MON** in bonding curve
 - PROJECT_RAISE require their raise target to be met before graduation
 
 #### Get Fee Information
@@ -385,14 +371,14 @@ console.log('Blocks until next tier:', feeInfo.blocksUntilNextTier);
 ```typescript
 // Get 24h trading volume
 const volume24h = await sdk.bondingDex.get24hVolume(tokenAddress);
-console.log('24h Volume:', sdk.formatBNB(volume24h.totalVolumeBNB), 'BNB');
-console.log('Buy Volume:', sdk.formatBNB(volume24h.totalBuyVolumeBNB));
-console.log('Sell Volume:', sdk.formatBNB(volume24h.totalSellVolumeBNB));
+console.log('24h Volume:', sdk.formatMON(volume24h.totalVolumeMON), 'MON');
+console.log('Buy Volume:', sdk.formatMON(volume24h.totalBuyVolumeMON));
+console.log('Sell Volume:', sdk.formatMON(volume24h.totalSellVolumeMON));
 console.log('Total Trades:', volume24h.buyCount + volume24h.sellCount);
 console.log('Unique Traders:', volume24h.uniqueTraders);
 console.log(
   'Buy/Sell Ratio:',
-  Number(volume24h.totalBuyVolumeBNB) / Number(volume24h.totalSellVolumeBNB)
+  Number(volume24h.totalBuyVolumeMON) / Number(volume24h.totalSellVolumeMON)
 );
 
 // Get total all-time volume
@@ -408,14 +394,14 @@ const hourlyVolume = await sdk.bondingDex.getVolumeHistory(
 // Get recent trades
 const trades = await sdk.bondingDex.getRecentTrades(tokenAddress, 50);
 trades.forEach((trade) => {
-  console.log(`${trade.type}: ${sdk.formatBNB(trade.bnbAmount)} BNB`);
+  console.log(`${trade.type}: ${sdk.formatMON(trade.monAmount)} MON`);
 });
 
 // Get top traders
 const topTraders = await sdk.bondingDex.getTopTraders(tokenAddress, 10);
 topTraders.forEach((trader, i) => {
   console.log(`#${i + 1}: ${trader.address}`);
-  console.log(`  Volume: ${sdk.formatBNB(trader.totalVolumeBNB)} BNB`);
+  console.log(`  Volume: ${sdk.formatMON(trader.totalVolumeMON)} MON`);
   console.log(`  Net Position: ${sdk.formatToken(trader.netTokens)}`);
 });
 ```
@@ -436,22 +422,22 @@ if (feeInfo.canClaim) {
 ```typescript
 const stats = await sdk.bondingDex.getPostGraduationStats(tokenAddress);
 console.log('Tokens sold:', sdk.formatToken(stats.totalTokensSold));
-console.log('Liquidity added:', sdk.formatBNB(stats.totalLiquidityAdded));
+console.log('Liquidity added:', sdk.formatMON(stats.totalLiquidityAdded));
 console.log('LP generated:', stats.lpTokensGenerated);
 ```
 
 ### Price Oracle
 
 ```typescript
-// Get current BNB price in USD
-const price = await sdk.priceOracle.getBNBPrice();
-console.log('BNB Price:', sdk.formatUnits(price, 8), 'USD');
+// Get current MON price in USD
+const price = await sdk.priceOracle.getMONPrice();
+console.log('MON Price:', sdk.formatUnits(price, 8), 'USD');
 
-// Convert USD to BNB
-const bnbAmount = await sdk.priceOracle.usdToBNB(ethers.parseUnits('50000', 18));
+// Convert USD to MON
+const monAmount = await sdk.priceOracle.usdToMON(ethers.parseUnits('50000', 18));
 
-// Convert BNB to USD
-const usdAmount = await sdk.priceOracle.bnbToUSD(ethers.parseEther('10'));
+// Convert MON to USD
+const usdAmount = await sdk.priceOracle.monToUSD(ethers.parseEther('10'));
 ```
 
 ### LP Fee Harvester
@@ -461,7 +447,7 @@ const usdAmount = await sdk.priceOracle.bnbToUSD(ethers.parseEther('10'));
 const lockInfo = await sdk.lpHarvester.getLockInfo(tokenAddress);
 console.log('LP Amount:', sdk.formatToken(lockInfo.lpAmount));
 console.log('Unlock Time:', new Date(Number(lockInfo.unlockTime) * 1000));
-console.log('Fees Harvested:', sdk.formatBNB(lockInfo.totalFeesHarvested));
+console.log('Fees Harvested:', sdk.formatMON(lockInfo.totalFeesHarvested));
 
 // Check if can harvest
 const [canHarvest, timeRemaining] = await sdk.lpHarvester.canHarvest(tokenAddress);
@@ -473,19 +459,19 @@ if (canHarvest) {
 
 // Get platform stats
 const stats = await sdk.lpHarvester.getPlatformStats();
-console.log('Total Value Locked:', sdk.formatBNB(stats.totalValueLocked));
-console.log('Total Fees Distributed:', sdk.formatBNB(stats.totalFeesDistributed));
+console.log('Total Value Locked:', sdk.formatMON(stats.totalValueLocked));
+console.log('Total Fees Distributed:', sdk.formatMON(stats.totalFeesDistributed));
 ```
 
 ### Utility Functions
 
 ```typescript
 // Format amounts
-const bnb = sdk.formatBNB(bigintAmount); // "0.5"
+const MON = sdk.formatMON(bigintAmount); // "0.5"
 const tokens = sdk.formatToken(bigintAmount, 18); // "1000.0"
 
 // Parse amounts
-const bnbWei = sdk.parseBNB('0.5'); // bigint
+const bnbWei = sdk.parseMON('0.5'); // bigint
 const tokenWei = sdk.parseToken('1000', 18); // bigint
 
 // Get balance
@@ -506,36 +492,36 @@ const txUrl = sdk.getExplorerUrl('tx', '0x...');
 
 ```typescript
 // Launch events
-const unsubscribe1 = sdk.launchpad.onLaunchCreated((event) => {
+const unsuMonadribe1 = sdk.launchpad.onLaunchCreated((event) => {
   console.log('New launch:', event.args.token);
   console.log('Founder:', event.args.founder);
   console.log('Burn LP:', event.args.burnLP);
 });
 
 // Trading events
-const unsubscribe2 = sdk.bondingDex.onTokensBought((event) => {
+const unsuMonadribe2 = sdk.bondingDex.onTokensBought((event) => {
   console.log('Buyer:', event.args.buyer);
-  console.log('Amount:', sdk.formatBNB(event.args.bnbAmount));
-  console.log('Price:', sdk.formatBNB(event.args.currentPrice));
+  console.log('Amount:', sdk.formatMON(event.args.monAmount));
+  console.log('Price:', sdk.formatMON(event.args.currentPrice));
 });
 
 // Sell events
-const unsubscribe3 = sdk.bondingDex.onTokensSold((event) => {
+const unsuMonadribe3 = sdk.bondingDex.onTokensSold((event) => {
   console.log('Seller:', event.args.seller);
-  console.log('Amount:', sdk.formatBNB(event.args.bnbReceived));
+  console.log('Amount:', sdk.formatMON(event.args.bnbReceived));
 });
 
 // Graduation events
-const unsubscribe4 = sdk.bondingDex.onPoolGraduated((event) => {
+const unsuMonadribe4 = sdk.bondingDex.onPoolGraduated((event) => {
   console.log('Pool graduated:', event.args.token);
-  console.log('Final Market Cap:', sdk.formatBNB(event.args.finalMarketCap));
+  console.log('Final Market Cap:', sdk.formatMON(event.args.finalMarketCap));
 });
 
 // Cleanup
-unsubscribe1();
-unsubscribe2();
-unsubscribe3();
-unsubscribe4();
+unsuMonadribe1();
+unsuMonadribe2();
+unsuMonadribe3();
+unsuMonadribe4();
 ```
 
 ### Query Past Events
@@ -586,8 +572,8 @@ const sdk = new SafuPadSDK({
     rpcUrl: 'https://custom-rpc.com',
     explorerUrl: 'https://custom-explorer.com',
     nativeCurrency: {
-      name: 'BNB',
-      symbol: 'BNB',
+      name: 'MON',
+      symbol: 'MON',
       decimals: 18,
     },
     contracts: {
@@ -645,7 +631,7 @@ function useSafuPad() {
   useEffect(() => {
     const initSDK = async () => {
       const newSdk = new SafuPadSDK({
-        network: 'bsc',
+        network: 'Monad',
         provider: window.ethereum,
       });
 
@@ -697,7 +683,7 @@ function App() {
           <button onClick={fetchVolume}>Get 24h Volume</button>
           {volume && (
             <div>
-              <p>Total Volume: {sdk.formatBNB(volume.totalVolumeBNB)} BNB</p>
+              <p>Total Volume: {sdk.formatMON(volume.totalVolumeMON)} MON</p>
               <p>Trades: {volume.buyCount + volume.sellCount}</p>
             </div>
           )}
@@ -756,8 +742,8 @@ await sdk.launchpad.createLaunch({
 
 // ✅ New (v2.x)
 await sdk.launchpad.createLaunch({
-  raiseTargetBNB: '50', // Now in BNB
-  raiseMaxBNB: '100', // Now in BNB
+  raiseTargetMON: '50', // Now in MON
+  raiseMaxMON: '100', // Now in MON
   // projectInfoFiWallet removed
   // ...
 });
@@ -783,89 +769,608 @@ console.log(info.burnLP); // Still available
 if (raiseTarget >= 50000 && raiseTarget <= 500000) // USD
 
 // ✅ New (v2.x)
-if (raiseTarget >= 50 && raiseTarget <= 500) // BNB
+if (raiseTarget >= 50 && raiseTarget <= 500) // MON
 ```
 
-## BNB Chain Integration Details
+## Frontend Integration Guide - Monad Migration
 
-This SDK is specifically designed for BNB Chain (BNB Smart Chain) deployment:
+This guide covers everything you need to integrate the Monad-migrated SDK into your React/Vue/Next.js frontend applications.
+
+### 1. Wallet Configuration for Monad
+
+#### Add Monad Network to MetaMask
+
+Users need to add the Monad network to their wallet before interacting with your dApp:
+
+```typescript
+// utils/addMonadNetwork.ts
+export const MONAD_MAINNET = {
+  chainId: '0x279F', // 10143 in hex
+  chainName: 'Monad',
+  nativeCurrency: {
+    name: 'MON',
+    symbol: 'MON',
+    decimals: 18,
+  },
+  rpcUrls: ['https://rpc.monad.xyz/'],
+  blockExplorerUrls: ['https://explorer.monad.xyz'],
+};
+
+export const MONAD_TESTNET = {
+  chainId: '0x2803', // 10243 in hex
+  chainName: 'Monad Testnet',
+  nativeCurrency: {
+    name: 'MON',
+    symbol: 'MON',
+    decimals: 18,
+  },
+  rpcUrls: ['https://testnet-rpc.monad.xyz/'],
+  blockExplorerUrls: ['https://testnet-explorer.monad.xyz'],
+};
+
+export async function addMonadNetwork() {
+  if (!window.ethereum) {
+    throw new Error('MetaMask is not installed');
+  }
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params: [MONAD_MAINNET],
+    });
+  } catch (error) {
+    console.error('Failed to add Monad network:', error);
+    throw error;
+  }
+}
+```
+
+#### Auto-Switch to Monad Network
+
+```typescript
+// utils/switchToMonad.ts
+export async function switchToMonadNetwork() {
+  if (!window.ethereum) {
+    throw new Error('MetaMask is not installed');
+  }
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0x279F' }], // Monad mainnet
+    });
+  } catch (switchError: any) {
+    // Network not added yet
+    if (switchError.code === 4902) {
+      await addMonadNetwork();
+    } else {
+      throw switchError;
+    }
+  }
+}
+```
+
+### 2. SDK Initialization in React
+
+#### Create a Custom Hook
+
+```typescript
+// hooks/useSafuPad.ts
+import { SafuPadSDK } from '@safupad/sdk';
+import { useState, useEffect } from 'react';
+
+export function useSafuPad() {
+  const [sdk, setSdk] = useState<SafuPadSDK | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [chainId, setChainId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const initSDK = async () => {
+      try {
+        if (!window.ethereum) {
+          throw new Error('MetaMask not installed');
+        }
+
+        const newSdk = new SafuPadSDK({
+          network: 'monad', // ✅ Changed from 'bsc' to 'monad'
+          provider: window.ethereum,
+        });
+
+        await newSdk.initialize();
+        setSdk(newSdk);
+
+        // Get current chain
+        const chain = await window.ethereum.request({ method: 'eth_chainId' });
+        setChainId(parseInt(chain, 16));
+
+        // Listen for chain changes
+        window.ethereum.on('chainChanged', (newChainId: string) => {
+          setChainId(parseInt(newChainId, 16));
+          window.location.reload(); // Recommended by MetaMask
+        });
+
+        // Listen for account changes
+        window.ethereum.on('accountsChanged', (accounts: string[]) => {
+          if (accounts.length === 0) {
+            setAddress(null);
+          } else {
+            setAddress(accounts[0]);
+          }
+        });
+      } catch (error) {
+        console.error('Failed to initialize SDK:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initSDK();
+
+    return () => {
+      // Cleanup listeners
+      if (window.ethereum) {
+        window.ethereum.removeAllListeners('chainChanged');
+        window.ethereum.removeAllListeners('accountsChanged');
+      }
+    };
+  }, []);
+
+  const connect = async () => {
+    if (!sdk) throw new Error('SDK not initialized');
+
+    // Check if on correct network
+    if (chainId !== 10143) {
+      await switchToMonadNetwork();
+    }
+
+    const addr = await sdk.connect();
+    setAddress(addr);
+    return addr;
+  };
+
+  return { sdk, address, connect, isLoading, chainId };
+}
+```
+
+### 3. Migration Checklist for Existing Frontends
+
+#### Step 1: Update Environment Variables
+
+```bash
+# .env.local (BEFORE - BSC)
+NEXT_PUBLIC_CHAIN_ID=56
+NEXT_PUBLIC_RPC_URL=https://bsc-dataseed.binance.org/
+NEXT_PUBLIC_EXPLORER_URL=https://bscscan.com
+NEXT_PUBLIC_CURRENCY_SYMBOL=BNB
+
+# .env.local (AFTER - Monad)
+NEXT_PUBLIC_CHAIN_ID=10143
+NEXT_PUBLIC_RPC_URL=https://rpc.monad.xyz/
+NEXT_PUBLIC_EXPLORER_URL=https://explorer.monad.xyz
+NEXT_PUBLIC_CURRENCY_SYMBOL=MON
+```
+
+#### Step 2: Update Network References
+
+```typescript
+// ❌ BEFORE (BSC)
+const SUPPORTED_CHAINS = [56, 97]; // BSC mainnet, testnet
+const NETWORK_NAMES = {
+  56: 'BSC Mainnet',
+  97: 'BSC Testnet',
+};
+
+// ✅ AFTER (Monad)
+const SUPPORTED_CHAINS = [10143, 10243]; // Monad mainnet, testnet
+const NETWORK_NAMES = {
+  10143: 'Monad',
+  10243: 'Monad Testnet',
+};
+```
+
+#### Step 3: Update SDK Initialization
+
+```typescript
+// ❌ BEFORE
+const sdk = new SafuPadSDK({
+  network: 'bsc', // Old BSC network
+  provider: window.ethereum,
+});
+
+// ✅ AFTER
+const sdk = new SafuPadSDK({
+  network: 'monad', // New Monad network
+  provider: window.ethereum,
+});
+```
+
+#### Step 4: Update Function Calls
+
+```typescript
+// ❌ BEFORE
+const price = await sdk.priceOracle.getBNBPrice();
+const formatted = sdk.formatBNB(amount);
+const bnbAmount = await sdk.priceOracle.usdToBNB(usdAmount);
+
+// ✅ AFTER
+const price = await sdk.priceOracle.getMONPrice();
+const formatted = sdk.formatMON(amount);
+const monAmount = await sdk.priceOracle.usdToMON(usdAmount);
+```
+
+#### Step 5: Update Parameter Names
+
+```typescript
+// ❌ BEFORE
+await sdk.launchpad.createLaunch({
+  raiseTargetBNB: '100',
+  raiseMaxBNB: '200',
+  // ...
+});
+
+// ✅ AFTER
+await sdk.launchpad.createLaunch({
+  raiseTargetMON: '100',
+  raiseMaxMON: '200',
+  // ...
+});
+```
+
+### 4. Display Components
+
+#### Currency Display Component
+
+```tsx
+// components/MonDisplay.tsx
+import React from 'react';
+
+interface MonDisplayProps {
+  amount: string | bigint;
+  showSymbol?: boolean;
+  decimals?: number;
+}
+
+export function MonDisplay({ amount, showSymbol = true, decimals = 4 }: MonDisplayProps) {
+  const formatted = typeof amount === 'bigint' 
+    ? parseFloat(ethers.formatEther(amount)).toFixed(decimals)
+    : parseFloat(amount).toFixed(decimals);
+
+  return (
+    <span className="mon-amount">
+      {formatted} {showSymbol && 'MON'}
+    </span>
+  );
+}
+```
+
+#### Network Status Indicator
+
+```tsx
+// components/NetworkStatus.tsx
+import React from 'react';
+import { useSafuPad } from '../hooks/useSafuPad';
+import { switchToMonadNetwork } from '../utils/switchToMonad';
+
+export function NetworkStatus() {
+  const { chainId } = useSafuPad();
+  const isMonad = chainId === 10143;
+
+  if (isMonad) {
+    return (
+      <div className="network-status success">
+        ✓ Connected to Monad
+      </div>
+    );
+  }
+
+  return (
+    <div className="network-status warning">
+      ⚠️ Wrong Network
+      <button onClick={switchToMonadNetwork}>
+        Switch to Monad
+      </button>
+    </div>
+  );
+}
+```
+
+### 5. Complete React Example
+
+```tsx
+// pages/LaunchToken.tsx
+import React, { useState } from 'react';
+import { useSafuPad } from '../hooks/useSafuPad';
+import { MonDisplay } from '../components/MonDisplay';
+import { NetworkStatus } from '../components/NetworkStatus';
+
+export default function LaunchToken() {
+  const { sdk, address, connect, isLoading } = useSafuPad();
+  const [formData, setFormData] = useState({
+    name: '',
+    symbol: '',
+    totalSupply: '1000000000',
+    raiseTargetMON: '50',
+    raiseMaxMON: '100',
+  });
+
+  const handleLaunch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!sdk || !address) {
+      alert('Please connect your wallet');
+      return;
+    }
+
+    try {
+      const tx = await sdk.launchpad.createLaunch({
+        name: formData.name,
+        symbol: formData.symbol,
+        totalSupply: parseInt(formData.totalSupply),
+        raiseTargetMON: formData.raiseTargetMON,
+        raiseMaxMON: formData.raiseMaxMON,
+        vestingDuration: 90,
+        metadata: {
+          logoURI: '',
+          description: '',
+          website: '',
+          twitter: '',
+          telegram: '',
+          discord: '',
+        },
+        burnLP: false,
+      });
+
+      console.log('Transaction:', tx.hash);
+      await tx.wait();
+      alert('Launch created successfully!');
+    } catch (error) {
+      console.error('Launch failed:', error);
+      alert('Launch failed: ' + error.message);
+    }
+  };
+
+  if (isLoading) {
+    return <div>Loading SDK...</div>;
+  }
+
+  return (
+    <div className="launch-page">
+      <NetworkStatus />
+      
+      {!address ? (
+        <button onClick={connect}>Connect Wallet</button>
+      ) : (
+        <div>
+          <p>Connected: {address}</p>
+          
+          <form onSubmit={handleLaunch}>
+            <input
+              placeholder="Token Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+            
+            <input
+              placeholder="Symbol"
+              value={formData.symbol}
+              onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
+            />
+            
+            <input
+              type="number"
+              placeholder="Raise Target (MON)"
+              value={formData.raiseTargetMON}
+              onChange={(e) => setFormData({ ...formData, raiseTargetMON: e.target.value })}
+            />
+            
+            <input
+              type="number"
+              placeholder="Raise Max (MON)"
+              value={formData.raiseMaxMON}
+              onChange={(e) => setFormData({ ...formData, raiseMaxMON: e.target.value })}
+            />
+            
+            <MonDisplay amount={formData.raiseTargetMON} />
+            
+            <button type="submit">Launch Token</button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### 6. Testing on Monad Testnet
+
+```typescript
+// Use testnet for development
+const sdk = new SafuPadSDK({
+  network: 'monadTestnet', // Use testnet
+  provider: window.ethereum,
+});
+
+// Request testnet MON from faucet
+// Visit: https://faucet.monad.xyz (placeholder - update when available)
+```
+
+### 7. Common Issues and Solutions
+
+#### Issue: "Unsupported Chain ID"
+
+**Solution:** Make sure user is connected to Monad network (chain ID 10143)
+
+```typescript
+if (chainId !== 10143) {
+  await switchToMonadNetwork();
+}
+```
+
+#### Issue: "Insufficient MON for gas"
+
+**Solution:** Users need MON tokens for gas fees (not BNB anymore)
+
+```typescript
+const balance = await sdk.getBalance(address);
+if (balance < ethers.parseEther('0.01')) {
+  alert('You need at least 0.01 MON for gas fees');
+}
+```
+
+#### Issue: "Transaction Reverted"
+
+**Solution:** Check that contract addresses are updated for Monad
+
+```typescript
+// Verify you're using the correct network configuration
+console.log(sdk.config.contracts);
+```
+
+### 8. Performance Optimization
+
+```typescript
+// Use React Query for caching
+import { useQuery } from '@tanstack/react-query';
+
+function useTokenPrice(tokenAddress: string) {
+  const { sdk } = useSafuPad();
+  
+  return useQuery({
+    queryKey: ['tokenPrice', tokenAddress],
+    queryFn: async () => {
+      if (!sdk) throw new Error('SDK not ready');
+      return await sdk.bondingDex.getPoolInfo(tokenAddress);
+    },
+    enabled: !!sdk && !!tokenAddress,
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
+}
+```
+
+### 9. TypeScript Types
+
+```typescript
+// types/monad.ts
+export interface MonadToken {
+  address: string;
+  name: string;
+  symbol: string;
+  raiseTargetMON: string;
+  raiseMaxMON: string;
+  totalRaisedMON: string;
+}
+
+export interface MonadNetwork {
+  chainId: number;
+  name: string;
+  rpcUrl: string;
+  explorerUrl: string;
+  nativeCurrency: {
+    name: 'MON';
+    symbol: 'MON';
+    decimals: 18;
+  };
+}
+```
+
+### 10. Build Configuration
+
+Update your build configuration to handle the new network:
+
+```javascript
+// next.config.js
+module.exports = {
+  env: {
+    NEXT_PUBLIC_MONAD_CHAIN_ID: '10143',
+    NEXT_PUBLIC_MONAD_RPC: 'https://rpc.monad.xyz/',
+  },
+};
+```
+
+---
+
+## Monad Integration Details
+
+
+This SDK is specifically designed for Monad (Monad) deployment:
 
 ### Network Configuration
 
 The SDK includes pre-configured support for BSC networks:
 
 ```typescript
-// BSC Mainnet (default for 'bsc')
+// BSC Mainnet (default for 'Monad')
 {
   chainId: 56,
-  rpcUrl: 'https://bsc-dataseed.binance.org/',
-  explorerUrl: 'https://bscscan.com',
-  nativeCurrency: 'BNB'
+  rpcUrl: 'https://Monad-dataseed.binance.org/',
+  explorerUrl: 'https://Monadscan.com',
+  nativeCurrency: 'MON'
 }
 
 // BSC Testnet
 {
   chainId: 97,
-  rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
-  explorerUrl: 'https://testnet.bscscan.com',
+  rpcUrl: 'https://data-seed-preMonad-1-s1.binance.org:8545/',
+  explorerUrl: 'https://testnet.Monadscan.com',
   nativeCurrency: 'tBNB'
 }
 ```
 
-### BNB Chain Specific Features
+### Monad Specific Features
 
-1. **BNB-Denominated Launches**: All token raises are denominated in BNB (50-500 BNB range)
-2. **PancakeSwap Integration**: Automatic graduation to PancakeSwap V2 on BSC at 15 BNB threshold
-3. **Chainlink Price Feeds**: Uses Chainlink BNB/USD oracle deployed on BSC for accurate pricing
-4. **Low Gas Costs**: Optimized for BSC's affordable transaction fees
-5. **BSCScan Integration**: Built-in support for BSCScan transaction and contract links
+1. **MON-Denominated Launches**: All token raises are denominated in MON (50- MON range)
+2. **Monad DEX Integration**: Automatic graduation to Monad DEX V2 on BSC at  MON threshold
+3. **Chainlink Price Feeds**: Uses Chainlink MON/USD oracle deployed on BSC for accurate pricing
+4. **Low Gas Costs**: Optimized for Monad's affordable transaction fees
+5. **MonadScan Integration**: Built-in support for MonadScan transaction and contract links
 
-### PancakeSwap on BNB Chain
+### Monad DEX on Monad
 
-The SDK integrates with PancakeSwap V2 contracts on BSC:
+The SDK integrates with Monad DEX V2 contracts on Monad:
 - **Router**: 0x10ED43C718714eb63d5aA57B78B54704E256024E (BSC Mainnet)
 - **Factory**: 0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73 (BSC Mainnet)
 
-Tokens automatically graduate from bonding curve to PancakeSwap when reaching 15 BNB liquidity.
+Tokens automatically graduate from bonding curve to Monad DEX when reaching  MON liquidity.
 
-### BSCScan Verification
+### MonadScan Verification
 
-All contract addresses and transactions can be verified on BSCScan:
+All contract addresses and transactions can be verified on MonadScan:
 
 ```typescript
-// Get BSCScan URL for transaction
+// Get MonadScan URL for transaction
 const txUrl = sdk.getExplorerUrl('tx', txHash);
-// https://bscscan.com/tx/0x...
+// https://Monadscan.com/tx/0x...
 
-// Get BSCScan URL for token
+// Get MonadScan URL for token
 const tokenUrl = sdk.getExplorerUrl('address', tokenAddress);
-// https://bscscan.com/address/0x...
+// https://Monadscan.com/address/0x...
 ```
 
 ### Network Information
 
 #### BSC Mainnet
 - **Chain ID**: 56
-- **RPC URL**: https://bsc-dataseed.binance.org/
-- **Explorer**: https://bscscan.com
-- **Native Token**: BNB
-- **Faucet**: N/A (use exchanges to acquire BNB)
+- **RPC URL**: https://Monad-dataseed.binance.org/
+- **Explorer**: https://Monadscan.com
+- **Native Token**: MON
+- **Faucet**: N/A (use exchanges to acquire MON)
 
 #### BSC Testnet
 - **Chain ID**: 97
-- **RPC URL**: https://data-seed-prebsc-1-s1.binance.org:8545/
-- **Explorer**: https://testnet.bscscan.com
+- **RPC URL**: https://data-seed-preMonad-1-s1.binance.org:8545/
+- **Explorer**: https://testnet.Monadscan.com
 - **Native Token**: tBNB
 - **Faucet**: https://testnet.bnbchain.org/faucet-smart
 
 ### Integration with Safuverse Ecosystem
 
-The SafuPad SDK is part of the larger Safuverse ecosystem on BNB Chain:
+The SafuPad SDK is part of the larger Safuverse ecosystem on Monad:
 - **SafuAcademyy**: Token economics education integration
-- **Safucard**: Project scorecard NFTs on BSC
+- **Safucard**: Project scorecard NFTs on Monad
 - **SafuAgents**: AI-powered launch analytics
 
-All ecosystem components are deployed on BNB Chain for seamless interoperability.
+All ecosystem components are deployed on Monad for seamless interoperability.
 
 ## Contributing
 
@@ -887,8 +1392,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ### v2.0.0 (Breaking Changes)
 
 - ✅ **Removed `projectInfoFiWallet` parameter** - Now uses global InfoFi address
-- ✅ **Changed to BNB-based raises** - `raiseTargetBNB` and `raiseMaxBNB` instead of USD
-- ✅ **Unified graduation threshold** - All tokens graduate at 15 BNB
+- ✅ **Changed to MON-based raises** - `raiseTargetMON` and `raiseMaxMON` instead of USD
+- ✅ **Unified graduation threshold** - All tokens graduate at  MON
 - ✅ **Added volume tracking** - 24h volume, top traders, and trading analytics
 - ✅ **Fixed event parsing** - Improved reliability of volume tracking
 - 🔧 Updated ABIs for new contract versions
@@ -905,4 +1410,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built for BNB Chain** - TypeScript SDK for SafuPad token launchpad platform on BNB Smart Chain.
+**Built for Monad** - TypeScript SDK for SafuPad token launchpad platform on Monad.

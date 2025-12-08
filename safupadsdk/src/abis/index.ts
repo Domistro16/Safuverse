@@ -144,11 +144,10 @@ export const TokenFactoryABI = [
   'function computeAddress(string,string,uint256,uint8,address,tuple(string,string,string,string,string,string),bytes32) view returns (address)',
 ];
 
-// Note: Contract function names still use "BNB" for compatibility, but they return MON prices on Monad
 export const PriceOracleABI = [
-  'function getBNBPrice() view returns (uint256)', // Returns MON price in USD
-  'function usdToBNB(uint256) view returns (uint256)', // Converts USD to MON
-  'function bnbToUSD(uint256) view returns (uint256)', // Converts MON to USD
+  'function getMONPrice() view returns (uint256)', // Returns MON price in USD
+  'function usdToMON(uint256) view returns (uint256)', // Converts USD to MON
+  'function monToUSD(uint256) view returns (uint256)', // Converts MON to USD
   'function priceFeed() view returns (address)',
 ];
 

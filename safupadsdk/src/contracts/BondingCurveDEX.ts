@@ -347,8 +347,8 @@ export class BondingCurveDEX extends BaseContract {
       return 0;
     }
 
-    // Assume 3 second block time for BSC
-    const secondsRemaining = Number(feeInfo.blocksUntilNextTier) * 3;
+    // Assume 1 second block time for Monad
+    const secondsRemaining = Number(feeInfo.blocksUntilNextTier) * 1;
     return secondsRemaining;
   }
 
@@ -1012,9 +1012,9 @@ export class BondingCurveDEX extends BaseContract {
     }
 
     // ⚠️ Fallback to events (slower, use only when Graph not available)
-    // Calculate blocks in last 24 hours (BSC: ~3 seconds per block = ~28,800 blocks/day)
+    // Calculate blocks in last 24 hours (Monad: ~1 second per block = ~86,400 blocks/day)
     const latestBlock = await this.provider.getBlockNumber();
-    const blocksPerDay = 28800;
+    const blocksPerDay = 86400;
     const fromBlock = Math.max(0, latestBlock - blocksPerDay);
 
     const [buyEvents, sellEvents] = await Promise.all([

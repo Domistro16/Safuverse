@@ -19,7 +19,7 @@ export class PriceOracle extends BaseContract {
    * Get current MON price in USD (8 decimals) - Monad native token
    */
   async getMONPrice(): Promise<bigint> {
-    return await this.contract.getBNBPrice();
+    return await this.contract.getMONPrice();
   }
 
   /**
@@ -41,7 +41,7 @@ export class PriceOracle extends BaseContract {
    * Convert MON to USD (Monad native token)
    */
   async monToUSD(monAmount: bigint): Promise<bigint> {
-    return await this.contract.bnbToUSD(monAmount);
+    return await this.contract.monToUSD(monAmount);
   }
 
   /**
