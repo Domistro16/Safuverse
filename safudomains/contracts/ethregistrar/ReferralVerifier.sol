@@ -22,8 +22,8 @@ contract ReferralVerifier is Ownable {
     mapping(bytes32 => bool) public usedNonces;
     mapping(address => uint256) public referralCount;
 
-    // Earnings tracking (in USD with 18 decimals for precision)
-    mapping(address => uint256) public totalEarningsUsd;
+    // Total earnings tracking (in native token, e.g., BNB)
+    mapping(address => uint256) public totalEarnings;
 
     // Fiat tracking
     uint256 public untrackedFiatEarnings;
@@ -35,7 +35,6 @@ contract ReferralVerifier is Ownable {
         address indexed registrant,
         bytes32 indexed nameHash,
         uint256 amount,
-        uint256 amountUsd,
         address token,
         bool isFiat
     );
@@ -78,7 +77,6 @@ contract ReferralVerifier is Ownable {
         ReferralData calldata data,
         bytes calldata signature,
         uint256 totalPrice,
-        uint256 totalPriceUsd,
         address token,
         bool isFiat
     ) external payable returns (uint256 paidAmount) {
@@ -121,11 +119,10 @@ contract ReferralVerifier is Ownable {
         // Calculate payout based on referrer's tier
         uint256 pct = referralCount[data.referrer] >= BONUS_THRESHOLD ? BONUS_PCT : BASE_PCT;
         paidAmount = (totalPrice * pct) / 100;
-        uint256 paidAmountUsd = (totalPriceUsd * pct) / 100;
 
-        // Increment referral count and track USD earnings
+        // Increment referral count and track total earnings
         referralCount[data.referrer]++;
-        totalEarningsUsd[data.referrer] += paidAmountUsd;
+        totalEarnings[data.referrer] += paidAmount;
 
         // Process payment based on type
         if (isFiat) {
@@ -166,7 +163,6 @@ contract ReferralVerifier is Ownable {
             data.registrant,
             data.nameHash,
             paidAmount,
-            paidAmountUsd,
             token,
             isFiat
         );

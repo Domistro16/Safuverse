@@ -14,7 +14,7 @@ const REFERRAL_VERIFIER_ABI = [
   },
   {
     inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'totalEarningsUsd',
+    name: 'totalEarnings',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
@@ -40,11 +40,11 @@ export function useReferralStats(address: `0x${string}` | undefined) {
     },
   });
 
-  // Get total earnings in USD (stored with 18 decimals)
-  const { data: totalEarningsUsd, isLoading: earningsLoading } = useReadContract({
+  // Get total earnings in native token (BNB, stored with 18 decimals)
+  const { data: totalEarnings, isLoading: earningsLoading } = useReadContract({
     address: constants.Referral,
     abi: REFERRAL_VERIFIER_ABI,
-    functionName: 'totalEarningsUsd',
+    functionName: 'totalEarnings',
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
@@ -64,7 +64,7 @@ export function useReferralStats(address: `0x${string}` | undefined) {
 
   return {
     referralCount: referralCount as bigint | undefined,
-    totalEarningsUsd: totalEarningsUsd as bigint | undefined,
+    totalEarnings: totalEarnings as bigint | undefined,
     referralPct: referralPct as bigint | undefined,
     isLoading: countLoading || earningsLoading || pctLoading,
   };

@@ -22,7 +22,7 @@ export default function Profile() {
   const { domains } = useAllOwnedNames(address?.toLowerCase() || '');
 
   // Fetch referral stats from ReferralVerifier contract
-  const { referralCount, totalEarningsUsd, referralPct, isLoading: referralLoading } = useReferralStats(address);
+  const { referralCount, totalEarnings, referralPct, isLoading: referralLoading } = useReferralStats(address);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(THEME_KEY);
@@ -48,8 +48,8 @@ export default function Profile() {
   // Calculate stats
   const domainsOwned = domains.length;
   const totalReferrals = referralCount ? Number(referralCount) : 0;
-  // totalEarningsUsd is stored with 18 decimals in the contract
-  const earningsInUsd = totalEarningsUsd ? Number(formatEther(totalEarningsUsd)) : 0;
+  // totalEarnings is stored in BNB with 18 decimals
+  const earningsInBnb = totalEarnings ? Number(formatEther(totalEarnings)) : 0;
   const currentPct = referralPct ? Number(referralPct) : 25;
 
   // Get the primary domain for referral link
@@ -199,10 +199,10 @@ export default function Profile() {
               </span>
             </div>
             <p className={`text-4xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {referralLoading ? '...' : `$${earningsInUsd.toFixed(2)}`}
+              {referralLoading ? '...' : `${earningsInBnb.toFixed(4)} BNB`}
             </p>
             <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-              Total earnings from referral rewards in USD.
+              Total earnings from referral rewards.
             </p>
           </article>
         </section>
