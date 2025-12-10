@@ -41,9 +41,9 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
   let mockPancakeRouter: MockPancakeRouter;
   let mockPancakeFactory: MockPancakeFactory;
 
-  const INITIAL_LIQUIDITY_MON = ethers.parseEther("0.01");
+  const INITIAL_LIQUIDITY_BNB = ethers.parseEther("0.01");
   const INITIAL_LIQUIDITY_TOKENS = ethers.parseEther("1000000000"); // ✅ FIXED: Must be 1B (100% of total) for createInstantLaunchPool
-  const MON_PRICE_USD = ethers.parseEther("0.04"); // $580 per MON
+  const BNB_PRICE_USD = ethers.parseEther("0.04"); // $580 per BNB
 
   const defaultMetadata = {
     logoURI: "https://example.com/logo.png",
@@ -61,7 +61,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
     const MockPriceOracle = await ethers.getContractFactory("MockPriceOracle");
     priceOracle = await MockPriceOracle.deploy();
     await priceOracle.waitForDeployment();
-    await priceOracle.setMONPrice(MON_PRICE_USD);
+    await priceOracle.setBNBPrice(BNB_PRICE_USD);
     const MockPancakeFactory = await ethers.getContractFactory(
       "MockPancakeFactory"
     );
@@ -155,10 +155,10 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
     await bondingCurveDEX
       .connect(owner)
       .buyTokens(await token.getAddress(), 0, {
-        value: INITIAL_LIQUIDITY_MON,
+        value: INITIAL_LIQUIDITY_BNB,
       });
   });
-  describe("Pool Creation - INSTANT_LAUNCH with Initial MON Seed", function () {
+  describe("Pool Creation - INSTANT_LAUNCH with Initial BNB Seed", function () {
     it("Should create a pool with correct reserves", async function () {
       const tx1 = await tokenFactory.createToken(
         "Tester Token",
@@ -215,11 +215,11 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       // ✅ FIXED: Expected reserve is 800M tokens on curve
       // Input: 900M (90% of 1B), Reserved: 100M (10% of 1B), On curve: 800M (80% of 1B)
       const expectedReserve = ethers.parseEther("800000000");
-      expect(poolInfo.monReserve).to.equal(0);
+      expect(poolInfo.bnbReserve).to.equal(0);
       expect(poolInfo.graduated).to.be.false;
     });
 
-    it("Should set graduation market cap in MON based on USD threshold", async function () {
+    it("Should set graduation market cap in BNB based on USD threshold", async function () {
       const poolInfo = await bondingCurveDEX.getPoolInfo(
         await token.getAddress()
       );
@@ -234,7 +234,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
           INITIAL_LIQUIDITY_TOKENS,
           owner.address, // creator
           false, // burnLP
-          { value: INITIAL_LIQUIDITY_MON }
+          { value: INITIAL_LIQUIDITY_BNB }
         )
       ).to.be.revertedWith("Pool already exists");
     });
@@ -255,14 +255,14 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       const expectedMarketCapFromPrice =
         (poolInfo.currentPrice * poolInfo.tokenReserve) / 10n ** 18n;
 
-      expect(poolInfo.marketCapMON).to.be.closeTo(
+      expect(poolInfo.marketCapBNB).to.be.closeTo(
         expectedMarketCapFromPrice,
         expectedMarketCapFromPrice / 2n // 50% tolerance due to reserve vs total supply differences
       );
     });
   });
 
-  describe("Pool Creation - INSTANT_LAUNCH without Initial MON", function () {
+  describe("Pool Creation - INSTANT_LAUNCH without Initial BNB", function () {
     let instantToken: any;
 
     beforeEach(async function () {
@@ -321,7 +321,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       expect(pool.creator).to.equal(trader1.address);
     });
 
-    it("Should initialize virtual MON reserve for price shaping", async function () {
+    it("Should initialize virtual BNB reserve for price shaping", async function () {
       await bondingCurveDEX.createInstantLaunchPool(
         await instantToken.getAddress(),
         ethers.parseEther("1000000000"),
@@ -332,7 +332,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
 
       const pool = await bondingCurveDEX.pools(await instantToken.getAddress());
 
-      expect(pool.virtualMonReserve).to.be.gt(0);
+      expect(pool.virtualBnbReserve).to.be.gt(0);
     });
 
     it("Should initialize creator fees tracking for instant launch", async function () {
@@ -351,7 +351,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       expect(feeInfo.accumulatedFees).to.equal(0);
     });
 
-    it("Should graduate based on MON threshold (INSTANT_LAUNCH)", async function () {
+    it("Should graduate based on BNB threshold (INSTANT_LAUNCH)", async function () {
       await bondingCurveDEX.createInstantLaunchPool(
         await instantToken.getAddress(),
         ethers.parseEther("1000000000"),
@@ -387,8 +387,8 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       );
 
       if (poolInfo.graduated) {
-        expect(poolInfo.monReserve).to.be.gte(
-          ethers.parseEther("1000000") // GRADUATION_MON_THRESHOLD = 1M MON
+        expect(poolInfo.bnbReserve).to.be.gte(
+          ethers.parseEther("1000000") // GRADUATION_BNB_THRESHOLD = 1M BNB
         );
       }
     });
@@ -404,7 +404,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
           value: buyAmount,
         });
       const pool = await bondingCurveDEX.pools(await token.getAddress());
-      console.log(pool.monReserve);
+      console.log(pool.bnbReserve);
       const balance = await token.balanceOf(trader1.address);
       expect(balance).to.be.gt(0);
     });
@@ -424,7 +424,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         await token.getAddress()
       );
 
-      expect(poolInfoAfter.monReserve).to.be.gt(poolInfoBefore.monReserve);
+      expect(poolInfoAfter.bnbReserve).to.be.gt(poolInfoBefore.bnbReserve);
       expect(poolInfoAfter.tokenReserve).to.be.lt(poolInfoBefore.tokenReserve);
     });
 
@@ -539,15 +539,15 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         .connect(trader1)
         .approve(await bondingCurveDEX.getAddress(), sellAmount);
 
-      const monBefore = await ethers.provider.getBalance(trader1.address);
+      const bnbBefore = await ethers.provider.getBalance(trader1.address);
 
       await bondingCurveDEX
         .connect(trader1)
         .sellTokens(await token.getAddress(), sellAmount, 0);
 
-      const monAfter = await ethers.provider.getBalance(trader1.address);
+      const bnbAfter = await ethers.provider.getBalance(trader1.address);
 
-      expect(monAfter).to.be.gt(monBefore);
+      expect(bnbAfter).to.be.gt(bnbBefore);
     });
 
     it("Should update reserves after sell", async function () {
@@ -570,7 +570,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         await token.getAddress()
       );
 
-      expect(poolInfoAfter.monReserve).to.be.lt(poolInfoBefore.monReserve);
+      expect(poolInfoAfter.bnbReserve).to.be.lt(poolInfoBefore.bnbReserve);
       expect(poolInfoAfter.tokenReserve).to.be.gt(poolInfoBefore.tokenReserve);
     });
 
@@ -610,7 +610,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         .connect(trader1)
         .approve(await bondingCurveDEX.getAddress(), sellAmount);
 
-      const unrealisticMin = quote.monOut * 2n;
+      const unrealisticMin = quote.bnbOut * 2n;
 
       await expect(
         bondingCurveDEX
@@ -632,7 +632,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         .connect(trader1)
         .approve(await bondingCurveDEX.getAddress(), sellAmount);
 
-      const monBefore = await ethers.provider.getBalance(trader1.address);
+      const bnbBefore = await ethers.provider.getBalance(trader1.address);
 
       const tx = await bondingCurveDEX
         .connect(trader1)
@@ -641,12 +641,12 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       const receipt = await tx.wait();
       const gasUsed = receipt!.gasUsed * receipt!.gasPrice;
 
-      const monAfter = await ethers.provider.getBalance(trader1.address);
-      const actualMonReceived = monAfter - monBefore + gasUsed;
+      const bnbAfter = await ethers.provider.getBalance(trader1.address);
+      const actualBnbReceived = bnbAfter - bnbBefore + gasUsed;
 
-      expect(actualMonReceived).to.be.closeTo(
-        quote.monOut,
-        quote.monOut / 100n
+      expect(actualBnbReceived).to.be.closeTo(
+        quote.bnbOut,
+        quote.bnbOut / 100n
       );
     });
   });
@@ -702,7 +702,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
   });
 
   describe("Graduation (INSTANT_LAUNCH)", function () {
-    it("Should graduate when MON threshold reached", async function () {
+    it("Should graduate when BNB threshold reached", async function () {
       let graduated = false;
       let attempts = 0;
 
@@ -711,7 +711,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
           await bondingCurveDEX
             .connect(trader1)
             .buyTokens(await token.getAddress(), 0, {
-              value: ethers.parseEther("200000"), // Larger amount to reach 1M MON threshold
+              value: ethers.parseEther("200000"), // Larger amount to reach 1M BNB threshold
             });
 
           const poolInfo = await bondingCurveDEX.getPoolInfo(
@@ -831,12 +831,12 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
   });
 
   describe("Price Oracle Integration (INSTANT_LAUNCH)", function () {
-    it("Should update market cap USD when MON price changes", async function () {
+    it("Should update market cap USD when BNB price changes", async function () {
       const poolInfo1 = await bondingCurveDEX.getPoolInfo(
         await token.getAddress()
       );
 
-      await priceOracle.setMONPrice(ethers.parseEther("700"));
+      await priceOracle.setBNBPrice(ethers.parseEther("700"));
 
       const poolInfo2 = await bondingCurveDEX.getPoolInfo(
         await token.getAddress()
@@ -892,7 +892,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         INITIAL_LIQUIDITY_TOKENS,
         owner.address, // creator
         false, // burnLP
-        { value: INITIAL_LIQUIDITY_MON }
+        { value: INITIAL_LIQUIDITY_BNB }
       );
     });
 
@@ -907,7 +907,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         await token.getAddress()
       );
 
-      await priceOracle.setMONPrice(ethers.parseEther("700"));
+      await priceOracle.setBNBPrice(ethers.parseEther("700"));
 
       await bondingCurveDEX
         .connect(trader2)
@@ -999,7 +999,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       const poolInfo = await bondingCurveDEX.getPoolInfo(
         await token.getAddress()
       );
-      expect(poolInfo.monReserve).to.be.gt(0);
+      expect(poolInfo.bnbReserve).to.be.gt(0);
       expect(poolInfo.tokenReserve).to.be.gt(0);
       expect(poolInfo.marketCapUSD).to.be.gt(0);
     });
@@ -1063,7 +1063,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         bondingCurveDEX
           .connect(trader1)
           .buyTokens(await token.getAddress(), 0, { value: 0 })
-      ).to.be.revertedWith("Must send MON");
+      ).to.be.revertedWith("Must send BNB");
     });
 
     it("Should reject zero amount sells", async function () {
@@ -1089,7 +1089,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
         await token.getAddress()
       );
 
-      const hugeBuy = poolInfo.monReserve * 100n;
+      const hugeBuy = poolInfo.bnbReserve * 100n;
       const unrealisticMin = poolInfo.tokenReserve;
 
       await expect(

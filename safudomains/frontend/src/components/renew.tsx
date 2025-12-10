@@ -266,7 +266,7 @@ const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
         <div className="rounded-xl bg-neutral-800 px-10 py-5 mt-5 border-[0.5px] border-gray-400 h-120 w-150">
           <h1 className="text-lg font-semibold text-white">
             {' '}
-            Renew {label}.bald{' '}
+            Renew {label}.safu{' '}
           </h1>
           {date ? (
             <div className="rounded-full p-5 border-[0.5px] border-gray-400 mt-5 flex items-center">
@@ -395,11 +395,10 @@ const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
                     }}
                     className={`
                             px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer 
-                            ${
-                              isActive
-                                ? 'bg-[#FFF700] text-neutral-800' // active
-                                : 'text-gray-400 hover:text-white'
-                            } // inactive
+                            ${isActive
+                        ? 'bg-[#FFF700] text-neutral-800' // active
+                        : 'text-gray-400 hover:text-white'
+                      } // inactive
                             `}
                   >
                     {curr}
@@ -418,19 +417,16 @@ const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
                     ) : (
                       <div className="text-sm flex font-semibold text-gray-400 grow-1">
                         {duration.years > 0
-                          ? ` ${duration.years} year${
-                              duration.years > 1 ? 's' : ''
-                            }`
+                          ? ` ${duration.years} year${duration.years > 1 ? 's' : ''
+                          }`
                           : ''}
                         {duration.months > 0
-                          ? `${duration.years > 0 ? ',' : ''} ${
-                              duration.months
-                            } months`
+                          ? `${duration.years > 0 ? ',' : ''} ${duration.months
+                          } months`
                           : ''}
                         {duration.days > 0
-                          ? `${duration.months > 0 ? ',' : ''} ${
-                              duration.days
-                            } days`
+                          ? `${duration.months > 0 ? ',' : ''} ${duration.days
+                          } days`
                           : ''}{' '}
                         registration.
                       </div>
@@ -484,19 +480,16 @@ const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
                     ) : (
                       <div className="text-sm flex font-semibold text-gray-400 grow-1">
                         {duration.years > 0
-                          ? ` ${duration.years} year${
-                              duration.years > 1 ? 's' : ''
-                            }`
+                          ? ` ${duration.years} year${duration.years > 1 ? 's' : ''
+                          }`
                           : ''}
                         {duration.months > 0
-                          ? `${duration.years > 0 ? ',' : ''} ${
-                              duration.months
-                            } months`
+                          ? `${duration.years > 0 ? ',' : ''} ${duration.months
+                          } months`
                           : ''}
                         {duration.days > 0
-                          ? `${duration.months > 0 ? ',' : ''} ${
-                              duration.days
-                            } days`
+                          ? `${duration.months > 0 ? ',' : ''} ${duration.days
+                          } days`
                           : ''}{' '}
                         registration.
                       </div>
@@ -575,7 +568,7 @@ const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
             <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
               <div className="text-gray-500 text-sm">Name</div>
               <div className="flex items-center gap-2 font-bold text-black dark:text-white">
-                {`${label}.bald`}
+                {`${label}.safu`}
                 <div className="w-4 h-4 rounded-full bg-gradient-to-r from-pink-400 to-pink-600" />
               </div>
             </div>

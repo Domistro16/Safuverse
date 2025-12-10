@@ -39,7 +39,7 @@ export const LaunchpadManagerABI = [
 
   // Admin functions
   'function updateInfoFiAddress(address)',
-  'function handlePostGraduationSell(address token, uint256 tokenAmount,uint256 minMONOut)',
+  'function handlePostGraduationSell(address token, uint256 tokenAmount,uint256 minBNBOut)',
   'function handlePostGraduationBuy(address token, uint256 minTokensOut) payable',
 
   // ✅ NEW: Additional admin functions
@@ -145,9 +145,9 @@ export const TokenFactoryABI = [
 ];
 
 export const PriceOracleABI = [
-  'function getMONPrice() view returns (uint256)', // Returns MON price in USD
-  'function usdToMON(uint256) view returns (uint256)', // Converts USD to MON
-  'function monToUSD(uint256) view returns (uint256)', // Converts MON to USD
+  'function getBNBPrice() view returns (uint256)', // Returns BNB price in USD
+  'function usdToBNB(uint256) view returns (uint256)', // Converts USD to BNB
+  'function bnbToUSD(uint256) view returns (uint256)', // Converts BNB to USD
   'function priceFeed() view returns (address)',
 ];
 

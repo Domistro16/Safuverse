@@ -13,9 +13,9 @@ import {
  */
 export class Formatter {
   /**
-   * Format MON amount to string (Monad native token)
+   * Format BNB amount to string (BSC native token)
    */
-  static formatMON(amount: bigint | string): string {
+  static formatBNB(amount: bigint | string): string {
     return ethers.formatEther(amount);
   }
 
@@ -115,10 +115,10 @@ export class Formatter {
   static formatPoolInfo(info: PoolInfo): FormattedPoolInfo {
     return {
       marketCapUSD: Formatter.formatUSD(info.marketCapUSD),
-      marketCapMON: Formatter.formatMON(info.marketCapMON),
-      monReserve: Formatter.formatMON(info.monReserve),
+      marketCapBNB: Formatter.formatBNB(info.marketCapBNB),
+      bnbReserve: Formatter.formatBNB(info.bnbReserve),
       tokenReserve: Formatter.formatToken(info.tokenReserve),
-      currentPrice: Formatter.formatMON(info.currentPrice),
+      currentPrice: Formatter.formatBNB(info.currentPrice),
       priceMultiplier: `${Number(info.priceMultiplier) / 100}x`,
       graduationProgress: Number(info.graduationProgress),
       graduated: info.graduated,
@@ -327,9 +327,9 @@ export class TimeHelper {
  */
 export class GasHelper {
   /**
-   * Estimate gas cost in MON (Monad native token)
+   * Estimate gas cost in BNB (BSC native token)
    */
-  static estimateCostMON(gasLimit: bigint, gasPrice: bigint): string {
+  static estimateCostBNB(gasLimit: bigint, gasPrice: bigint): string {
     const cost = gasLimit * gasPrice;
     return ethers.formatEther(cost);
   }

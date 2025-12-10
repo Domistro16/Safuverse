@@ -48,7 +48,7 @@ contract NameWrapper is
 
     uint64 private constant GRACE_PERIOD = 30 days;
     bytes32 private constant CRE8OR_NODE =
-        0x3fa9586c8b0c91c603728cff1ac819679a70197b33df9263d68750d8601fdf1f;
+        0xf92e9539a836c60f519caef3f817b823139813f56a7a19c9621f7b47f35b340d;
 
     bytes32 private constant CRE8OR_LABELHASH =
         0x5b7218b9fa9136601dc9992219571b5b20ef11b579b651383f4a9890866c08f3;
@@ -82,7 +82,7 @@ contract NameWrapper is
             MAX_EXPIRY
         );
         names[ROOT_NODE] = "\x00";
-        names[CRE8OR_NODE] = "\x04bald\x00";
+        names[CRE8OR_NODE] = "\x04safu\x00";
     }
 
     function setMetadata(address _metadata) public onlyOwner {
@@ -1009,7 +1009,7 @@ contract NameWrapper is
         bytes32 labelhash = keccak256(bytes(label));
         bytes32 node = _makeNode(CRE8OR_NODE, labelhash);
         // hardcode dns-encoded eth string for gas savings
-        bytes memory name = _addLabel(label, "\x04bald\x00");
+        bytes memory name = _addLabel(label, "\x04safu\x00");
         names[node] = name;
 
         _wrap(

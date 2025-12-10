@@ -16,49 +16,49 @@ export class PriceOracle extends BaseContract {
     super(address, PriceOracleABI, provider, signer, eventQueryProvider, graph);
   }
   /**
-   * Get current MON price in USD (8 decimals) - Monad native token
+   * Get current BNB price in USD (8 decimals) - BSC native token
    */
-  async getMONPrice(): Promise<bigint> {
-    return await this.contract.getMONPrice();
+  async getBNBPrice(): Promise<bigint> {
+    return await this.contract.getBNBPrice();
   }
 
   /**
-   * Get MON price formatted as string (Monad native token)
+   * Get BNB price formatted as string (BSC native token)
    */
-  async getMONPriceFormatted(): Promise<string> {
-    const price = await this.getMONPrice();
+  async getBNBPriceFormatted(): Promise<string> {
+    const price = await this.getBNBPrice();
     return ethers.formatUnits(price, 8);
   }
 
   /**
-   * Convert USD to MON (Monad native token)
+   * Convert USD to BNB (BSC native token)
    */
-  async usdToMON(usdAmount: bigint): Promise<bigint> {
-    return await this.contract.usdToMON(usdAmount);
+  async usdToBNB(usdAmount: bigint): Promise<bigint> {
+    return await this.contract.usdToBNB(usdAmount);
   }
 
   /**
-   * Convert MON to USD (Monad native token)
+   * Convert BNB to USD (BSC native token)
    */
-  async monToUSD(monAmount: bigint): Promise<bigint> {
-    return await this.contract.monToUSD(monAmount);
+  async bnbToUSD(bnbAmount: bigint): Promise<bigint> {
+    return await this.contract.bnbToUSD(bnbAmount);
   }
 
   /**
-   * Convert USD string to MON (Monad native token)
+   * Convert USD string to BNB (BSC native token)
    */
-  async convertUSDToMON(usdAmountStr: string): Promise<string> {
+  async convertUSDToBNB(usdAmountStr: string): Promise<string> {
     const usdAmount = ethers.parseUnits(usdAmountStr, 18);
-    const monAmount = await this.usdToMON(usdAmount);
-    return ethers.formatEther(monAmount);
+    const bnbAmount = await this.usdToBNB(usdAmount);
+    return ethers.formatEther(bnbAmount);
   }
 
   /**
-   * Convert MON string to USD (Monad native token)
+   * Convert BNB string to USD (BSC native token)
    */
-  async convertMONToUSD(monAmountStr: string): Promise<string> {
-    const monAmount = ethers.parseEther(monAmountStr);
-    const usdAmount = await this.monToUSD(monAmount);
+  async convertBNBToUSD(bnbAmountStr: string): Promise<string> {
+    const bnbAmount = ethers.parseEther(bnbAmountStr);
+    const usdAmount = await this.bnbToUSD(bnbAmount);
     return ethers.formatUnits(usdAmount, 18);
   }
 

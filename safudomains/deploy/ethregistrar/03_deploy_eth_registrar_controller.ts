@@ -88,22 +88,22 @@ const func: DeployFunction = async function (hre) {
   const artifact = await deployments.getArtifact('IETHRegistrarController')
   const interfaceId = createInterfaceId(artifact.abi)
 
-  const resolver = await registry.read.resolver([namehash('bald')])
+  const resolver = await registry.read.resolver([namehash('safu')])
   if (resolver === zeroAddress) {
     console.log(
-      `No resolver set for .bald; not setting interface ${interfaceId} for bald Registrar Controller`,
+      `No resolver set for .safu; not setting interface ${interfaceId} for safu Registrar Controller`,
     )
     return
   }
 
   const ethOwnedResolver = await viem.getContract('OwnedResolver')
   const setInterfaceHash = await ethOwnedResolver.write.setInterface([
-    namehash('bald'),
+    namehash('safu'),
     interfaceId,
     controller.address,
   ])
   console.log(
-    `Setting ETHRegistrarController interface ID ${interfaceId} on .bald resolver (tx: ${setInterfaceHash})...`,
+    `Setting ETHRegistrarController interface ID ${interfaceId} on .safu resolver (tx: ${setInterfaceHash})...`,
   )
   await viem.waitForTransactionSuccess(setInterfaceHash)
 }

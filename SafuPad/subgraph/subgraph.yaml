@@ -5,7 +5,7 @@ dataSources:
   # LaunchpadManagerV2
   - kind: ethereum/contract
     name: LaunchpadManager
-    network: monad
+    network: bsc
     source:
       address: "0xcCfcfeB17609f0C5aE604bC71c4907B90B94a3e9" # Replace with deployed address
       abi: LaunchpadManager
@@ -70,7 +70,7 @@ dataSources:
   # TokenFactoryV2
   - kind: ethereum/contract
     name: TokenFactory
-    network: monad
+    network: bsc
     source:
       address: "0x15E2ccAeb4D1eeA1A7b8d839FFA30D63519D1c50" # Replace with deployed address
       abi: TokenFactory
@@ -94,7 +94,7 @@ dataSources:
   # BondingDEX
   - kind: ethereum/contract
     name: BondingDEX
-    network: monad
+    network: bsc
     source:
       address: "0xE96baB0D0661Fbfc710d79d58Cdb32bcD7bB8815" # Replace with deployed address
       abi: BondingDEX

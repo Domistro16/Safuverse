@@ -33,7 +33,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
   let academyFee: any;
   let infoFiFee: any;
   let contributors: any[]; // Additional contributors for multi-wallet tests
-  const MON_PRICE_USD = ethers.parseEther("580");
+  const BNB_PRICE_USD = ethers.parseEther("580");
 
   const defaultMetadata = {
     logoURI: "https://example.com/logo.png",
@@ -63,7 +63,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
     const MockPriceOracle = await ethers.getContractFactory("MockPriceOracle");
     priceOracle = await MockPriceOracle.deploy();
     await priceOracle.waitForDeployment();
-    await priceOracle.setMONPrice(MON_PRICE_USD);
+    await priceOracle.setBNBPrice(BNB_PRICE_USD);
 
     // Deploy MockPancakeFactory first
     const MockPancakeFactory = await ethers.getContractFactory(
@@ -151,7 +151,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
     );
   });
 
-  // Helper function to complete a raise using multiple contributors (respects 4.44 MON per-wallet limit)
+  // Helper function to complete a raise using multiple contributors (respects 4.44 BNB per-wallet limit)
   async function completeRaise(tokenAddress: string, targetBNB: bigint) {
     const maxContribution = ethers.parseEther("4.44");
     const numContributors = Number((targetBNB * 10n ** 18n) / (maxContribution * 10n ** 18n)) + 1;
@@ -172,9 +172,9 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
   }
 
   describe("PROJECT_RAISE - Launch Creation", function () {
-    it("Should create a PROJECT_RAISE launch with MON amounts", async function () {
-      const raiseTargetMON = ethers.parseEther("50"); // Min 50 MON
-      const raiseMaxMON = ethers.parseEther("100"); // Max 100 MON
+    it("Should create a PROJECT_RAISE launch with BNB amounts", async function () {
+      const raiseTargetBNB = ethers.parseEther("50"); // Min 50 BNB
+      const raiseMaxBNB = ethers.parseEther("100"); // Max 100 BNB
       const vestingDuration = 90 * 24 * 60 * 60;
 
       // ✅ FIXED: Removed projectInfoFiWallet parameter, added burnLP
@@ -183,8 +183,8 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
           "Test Token",
           "TEST",
           1_000_000_000,
-          raiseTargetMON,
-          raiseMaxMON,
+          raiseTargetBNB,
+          raiseMaxBNB,
           vestingDuration,
           defaultMetadata,
           false // burnLP
@@ -233,8 +233,8 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
         "Test Token",
         "TEST",
         1_000_000_000,
-        ethers.parseEther("50"), // 50 MON target
-        ethers.parseEther("100"), // 100 MON max
+        ethers.parseEther("50"), // 50 BNB target
+        ethers.parseEther("100"), // 100 BNB max
         90 * 24 * 60 * 60,
         defaultMetadata,
         false
@@ -261,27 +261,27 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       expect(contribution.amount).to.equal(ethers.parseEther("4"));
     });
 
-    it("Should enforce 4.44 MON max per wallet", async function () {
-      // First contribution: 4 MON (within limit)
+    it("Should enforce 4.44 BNB max per wallet", async function () {
+      // First contribution: 4 BNB (within limit)
       await launchpadManager.connect(user1).contribute(tokenAddress, {
         value: ethers.parseEther("4"),
       });
 
-      // Second contribution: 0.44 MON (should succeed, total 4.44)
+      // Second contribution: 0.44 BNB (should succeed, total 4.44)
       await launchpadManager.connect(user1).contribute(tokenAddress, {
         value: ethers.parseEther("0.44"),
       });
 
-      // Third contribution: 0.01 MON (should fail, would exceed 4.44)
+      // Third contribution: 0.01 BNB (should fail, would exceed 4.44)
       await expect(
         launchpadManager.connect(user1).contribute(tokenAddress, {
           value: ethers.parseEther("0.01"),
         })
-      ).to.be.revertedWith("Exceeds per-wallet contribution limit (4.44 MON)");
+      ).to.be.revertedWith("Exceeds per-wallet contribution limit (4.44 BNB)");
     });
 
     it("Should complete raise when target met", async function () {
-      // Complete the 50 MON raise using multiple contributors
+      // Complete the 50 BNB raise using multiple contributors
       await completeRaise(tokenAddress, ethers.parseEther("50"));
 
       const launchInfo = await launchpadManager.getLaunchInfo(tokenAddress);
@@ -400,7 +400,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
         "Test Token",
         "TEST",
         1_000_000_000,
-        ethers.parseEther("50"), // Target: 50 MON
+        ethers.parseEther("50"), // Target: 50 BNB
         ethers.parseEther("100"),
         90 * 24 * 60 * 60,
         defaultMetadata,
@@ -413,13 +413,13 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       );
       tokenAddress = (event as any).args[0];
 
-      // Contribute less than target (50 MON)
+      // Contribute less than target (50 BNB)
       await launchpadManager.connect(user1).contribute(tokenAddress, {
         value: ethers.parseEther("4.44"), // Max per wallet
       });
 
       await launchpadManager.connect(user2).contribute(tokenAddress, {
-        value: ethers.parseEther("4.44"), // Total: 8.88 MON (below 50 MON target)
+        value: ethers.parseEther("4.44"), // Total: 8.88 BNB (below 50 BNB target)
       });
 
       // Fast forward past deadline
@@ -440,7 +440,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
 
       const user1BalanceAfter = await ethers.provider.getBalance(user1.address);
 
-      // Should get back 4.44 MON minus gas
+      // Should get back 4.44 BNB minus gas
       const expectedIncrease = ethers.parseEther("4.44") - gasUsed;
       const actualIncrease = user1BalanceAfter - user1BalanceBefore;
 
@@ -555,7 +555,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       await completeRaise(tokenAddress, ethers.parseEther("50"));
     });
 
-    it("Should graduate to PancakeSwap with 10% tokens and 50% MON", async function () {
+    it("Should graduate to PancakeSwap with 10% tokens and 50% BNB", async function () {
       await expect(
         launchpadManager.graduateToPancakeSwap(tokenAddress)
       ).to.emit(launchpadManager, "GraduatedToPancakeSwap");
@@ -564,7 +564,7 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       expect(launchInfo.graduatedToPancakeSwap).to.be.true;
     });
 
-    it("Should deduct 1% platform fee from liquidity MON", async function () {
+    it("Should deduct 1% platform fee from liquidity BNB", async function () {
       const platformBalanceBefore = await ethers.provider.getBalance(
         platformFee.address
       );
@@ -575,8 +575,8 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
         platformFee.address
       );
 
-      // 50% of 50 MON = 25 MON for liquidity
-      // 1% of 25 MON = 0.25 MON platform fee
+      // 50% of 50 BNB = 25 BNB for liquidity
+      // 1% of 25 BNB = 0.25 BNB platform fee
       const expectedFee = ethers.parseEther("0.25");
       const actualFee = platformBalanceAfter - platformBalanceBefore;
 

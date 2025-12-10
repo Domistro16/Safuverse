@@ -17,7 +17,7 @@ import type {
 /**
  * Full Lifecycle Tests
  *
- * This test suite demonstrates the complete lifecycle of both launch types:
+ * This test suite debnbstrates the complete lifecycle of both launch types:
  * 1. PROJECT_RAISE - Traditional fundraising with contributor allocation
  * 2. INSTANT_LAUNCH - Immediate trading on bonding curve DEX
  */
@@ -39,9 +39,9 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
   let contributors: any[];
   let traders: any[];
 
-  const MON_PRICE_USD = ethers.parseEther("580");
-  const RAISE_TARGET_MON = ethers.parseEther("50");
-  const RAISE_MAX_MON = ethers.parseEther("100");
+  const BNB_PRICE_USD = ethers.parseEther("580");
+  const RAISE_TARGET_BNB = ethers.parseEther("50");
+  const RAISE_MAX_BNB = ethers.parseEther("100");
   const VESTING_DURATION = 90 * 24 * 60 * 60; // 90 days
 
   const defaultMetadata = {
@@ -63,7 +63,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     const MockPriceOracle = await ethers.getContractFactory("MockPriceOracle");
     priceOracle = await MockPriceOracle.deploy();
     await priceOracle.waitForDeployment();
-    await priceOracle.setMONPrice(MON_PRICE_USD);
+    await priceOracle.setBNBPrice(BNB_PRICE_USD);
 
     // Deploy MockPancakeFactory
     const MockPancakeFactory = await ethers.getContractFactory(
@@ -159,8 +159,8 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         "SafuRaise Token",
         "SRAISE",
         1_000_000_000,
-        RAISE_TARGET_MON,
-        RAISE_MAX_MON,
+        RAISE_TARGET_BNB,
+        RAISE_MAX_BNB,
         VESTING_DURATION,
         defaultMetadata,
         false // Don't burn LP
@@ -185,11 +185,11 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(`  ✅ Token created: ${tokenAddress}`);
       console.log(`  📝 Name: ${await token.name()}`);
       console.log(
-        `  🎯 Raise Target: ${ethers.formatEther(RAISE_TARGET_MON)} MON`
+        `  🎯 Raise Target: ${ethers.formatEther(RAISE_TARGET_BNB)} BNB`
       );
 
       const launchInfo = await launchpadManager.getLaunchInfo(tokenAddress);
-      expect(launchInfo.raiseTarget).to.equal(RAISE_TARGET_MON);
+      expect(launchInfo.raiseTarget).to.equal(RAISE_TARGET_BNB);
       expect(launchInfo.launchType).to.equal(0); // PROJECT_RAISE = 0
     });
 
@@ -202,7 +202,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       for (let i = 0; i < allContributors.length; i++) {
         const contributor = allContributors[i];
         const launchInfo = await launchpadManager.getLaunchInfo(tokenAddress);
-        const remaining = RAISE_TARGET_MON - launchInfo.totalRaised;
+        const remaining = RAISE_TARGET_BNB - launchInfo.totalRaised;
 
         if (remaining <= 0n) break;
 
@@ -214,7 +214,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         });
 
         console.log(
-          `  💵 Contributor ${i + 1}: ${ethers.formatEther(contribution)} MON`
+          `  💵 Contributor ${i + 1}: ${ethers.formatEther(contribution)} BNB`
         );
       }
 
@@ -222,11 +222,11 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(
         `  ✅ Raise completed! Total: ${ethers.formatEther(
           launchInfo.totalRaised
-        )} MON`
+        )} BNB`
       );
 
       expect(launchInfo.raiseCompleted).to.be.true;
-      expect(launchInfo.totalRaised).to.be.gte(RAISE_TARGET_MON);
+      expect(launchInfo.totalRaised).to.be.gte(RAISE_TARGET_BNB);
     });
 
     it("Phase 3: Should allow contributors to claim tokens", async function () {
@@ -289,7 +289,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         founder.address
       );
 
-      // Try to harvest fees - may fail if fees < MIN_HARVEST_AMOUNT (0.01 MON)
+      // Try to harvest fees - may fail if fees < MIN_HARVEST_AMOUNT (0.01 BNB)
       try {
         await lpFeeHarvester.harvestFees(tokenAddress);
 
@@ -298,7 +298,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         );
         const fees = founderBalanceAfter - founderBalanceBefore;
 
-        console.log(`  💰 Fees harvested: ${ethers.formatEther(fees)} MON`);
+        console.log(`  💰 Fees harvested: ${ethers.formatEther(fees)} BNB`);
         console.log(`  ✅ Fee distribution: 70% creator, 30% platform`);
 
         const lockInfo = await lpFeeHarvester.getLockInfo(tokenAddress);
@@ -307,7 +307,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       } catch (error: any) {
         if (error.message.includes("Harvest amount too small")) {
           console.log(
-            `  ⚠️  Harvest skipped - fees below minimum threshold (0.01 MON)`
+            `  ⚠️  Harvest skipped - fees below minimum threshold (0.01 BNB)`
           );
           console.log(
             `     Note: In production, fees accumulate from real PancakeSwap trading`
@@ -361,7 +361,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(`  Token: ${await token.name()} (${await token.symbol()})`);
       console.log(`  Total Supply: ${ethers.formatEther(totalSupply)}`);
       console.log(
-        `  Funds Raised: ${ethers.formatEther(launchInfo.totalRaised)} MON`
+        `  Funds Raised: ${ethers.formatEther(launchInfo.totalRaised)} BNB`
       );
       console.log(
         `  Graduated: ${launchInfo.graduatedToPancakeSwap ? "✅" : "❌"}`
@@ -371,7 +371,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(
         `  Total Fees Harvested: ${ethers.formatEther(
           lockInfo.totalFeesHarvested
-        )} MON`
+        )} BNB`
       );
       console.log(`\n✅ PROJECT_RAISE lifecycle completed successfully!`);
     });
@@ -385,7 +385,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log("\n🚀 INSTANT_LAUNCH LIFECYCLE - PHASE 1: Token Creation");
 
       const initialBuy = ethers.parseEther("0"); // No initial buy to avoid reentrancy
-      const initialLiquidity = ethers.parseEther("1"); // 1 MON initial liquidity
+      const initialLiquidity = ethers.parseEther("1"); // 1 BNB initial liquidity
 
       const tx = await launchpadManager.connect(founder).createInstantLaunch(
         "SafuInstant Token",
@@ -416,7 +416,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(`  ✅ Token created: ${tokenAddress}`);
       console.log(`  📝 Name: ${await token.name()}`);
       console.log(
-        `  💧 Initial Liquidity: ${ethers.formatEther(initialLiquidity)} MON`
+        `  💧 Initial Liquidity: ${ethers.formatEther(initialLiquidity)} BNB`
       );
 
       const poolInfo = await bondingCurveDEX.pools(tokenAddress);
@@ -439,7 +439,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       const balance1 = await token.balanceOf(trader1.address);
       console.log(
-        `  🛒 Trader 1 bought: ${ethers.formatEther(balance1)} tokens for 2 MON`
+        `  🛒 Trader 1 bought: ${ethers.formatEther(balance1)} tokens for 2 BNB`
       );
 
       // Second buy
@@ -449,14 +449,14 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       const balance2 = await token.balanceOf(trader2.address);
       console.log(
-        `  🛒 Trader 2 bought: ${ethers.formatEther(balance2)} tokens for 3 MON`
+        `  🛒 Trader 2 bought: ${ethers.formatEther(balance2)} tokens for 3 BNB`
       );
 
       const poolInfo = await bondingCurveDEX.getPoolInfo(tokenAddress);
       console.log(
         `  💹 Current Price: ${ethers.formatEther(
           poolInfo.currentPrice
-        )} MON per token`
+        )} BNB per token`
       );
       console.log(
         `  💰 Market Cap: $${ethers.formatEther(poolInfo.marketCapUSD)}`
@@ -476,40 +476,40 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(
         `  💰 Accumulated Fees: ${ethers.formatEther(
           feeInfo.accumulatedFees
-        )} MON`
+        )} BNB`
       );
 
       expect(feeInfo.accumulatedFees).to.be.gt(0);
     });
 
-    it("Phase 4: Should graduate when MON threshold is reached", async function () {
+    it("Phase 4: Should graduate when BNB threshold is reached", async function () {
       console.log(
         "\n🎓 INSTANT_LAUNCH LIFECYCLE - PHASE 4: Automatic Graduation"
       );
 
-      // Buy more to reach graduation threshold (1M MON)
-      console.log(`  🔄 Buying tokens to reach 1M MON threshold...`);
+      // Buy more to reach graduation threshold (1M BNB)
+      console.log(`  🔄 Buying tokens to reach 1M BNB threshold...`);
 
       for (let i = 0; i < 5; i++) {
         try {
           await bondingCurveDEX
             .connect(traders[i % traders.length])
             .buyTokens(tokenAddress, 0, {
-              value: ethers.parseEther("200000"), // Larger amounts to reach 1M MON threshold
+              value: ethers.parseEther("200000"), // Larger amounts to reach 1M BNB threshold
             });
 
           const poolInfo = await bondingCurveDEX.getPoolInfo(tokenAddress);
           console.log(
-            `    Buy ${i + 1}: MON Reserve = ${ethers.formatEther(
-              poolInfo.monReserve
-            )} MON`
+            `    Buy ${i + 1}: BNB Reserve = ${ethers.formatEther(
+              poolInfo.bnbReserve
+            )} BNB`
           );
 
           if (poolInfo.graduated) {
             console.log(
               `  ✅ Pool graduated at ${ethers.formatEther(
-                poolInfo.monReserve
-              )} MON!`
+                poolInfo.bnbReserve
+              )} BNB!`
             );
             break;
           }
@@ -522,10 +522,10 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       if (poolInfo.graduated) {
         expect(poolInfo.graduated).to.be.true;
-        expect(poolInfo.monReserve).to.be.gte(ethers.parseEther("1000000")); // 1M MON
+        expect(poolInfo.bnbReserve).to.be.gte(ethers.parseEther("1000000")); // 1M BNB
         console.log(`  🎉 Graduation threshold reached!`);
       } else {
-        console.log(`  ⚠️  Not enough buys to reach graduation (need 1M MON)`);
+        console.log(`  ⚠️  Not enough buys to reach graduation (need 1M BNB)`);
       }
     });
 
@@ -571,7 +571,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
           founder.address
         );
 
-        // Try to harvest fees - may fail if fees < MIN_HARVEST_AMOUNT (0.01 MON)
+        // Try to harvest fees - may fail if fees < MIN_HARVEST_AMOUNT (0.01 BNB)
         try {
           await lpFeeHarvester.harvestFees(tokenAddress);
 
@@ -580,21 +580,21 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
           );
           const fees = creatorBalanceAfter - creatorBalanceBefore;
 
-          console.log(`  💰 Fees harvested: ${ethers.formatEther(fees)} MON`);
+          console.log(`  💰 Fees harvested: ${ethers.formatEther(fees)} BNB`);
 
           const lockInfoAfter = await lpFeeHarvester.getLockInfo(tokenAddress);
           console.log(`  ✅ Harvest count: ${lockInfoAfter.harvestCount}`);
           console.log(
             `  📊 Total fees: ${ethers.formatEther(
               lockInfoAfter.totalFeesHarvested
-            )} MON`
+            )} BNB`
           );
 
           expect(lockInfoAfter.harvestCount).to.be.gt(0);
         } catch (error: any) {
           if (error.message.includes("Harvest amount too small")) {
             console.log(
-              `  ⚠️  Harvest skipped - fees below minimum threshold (0.01 MON)`
+              `  ⚠️  Harvest skipped - fees below minimum threshold (0.01 BNB)`
             );
             console.log(
               `     Note: In production, fees accumulate from real PancakeSwap trading`
@@ -623,14 +623,13 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(`  Total Supply: ${ethers.formatEther(totalSupply)}`);
       console.log(`  Pool Graduated: ${poolInfo.graduated ? "✅" : "❌"}`);
       console.log(
-        `  MON Reserve: ${ethers.formatEther(poolInfo.monReserve)} MON`
+        `  BNB Reserve: ${ethers.formatEther(poolInfo.bnbReserve)} BNB`
       );
       console.log(
         `  Market Cap: $${ethers.formatEther(poolInfo.marketCapUSD)}`
       );
       console.log(
-        `  PancakeSwap Migration: ${
-          launchInfo.graduatedToPancakeSwap ? "✅" : "❌"
+        `  PancakeSwap Migration: ${launchInfo.graduatedToPancakeSwap ? "✅" : "❌"
         }`
       );
       console.log(`  LP Locked: ${lockInfo.active ? "✅" : "❌"}`);
@@ -640,7 +639,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         console.log(
           `  Total Fees Harvested: ${ethers.formatEther(
             lockInfo.totalFeesHarvested
-          )} MON`
+          )} BNB`
         );
       }
 
@@ -649,7 +648,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
   });
 
   describe("Lifecycle Comparison", function () {
-    it("Should demonstrate key differences between launch types", function () {
+    it("Should debnbstrate key differences between launch types", function () {
       console.log("\n🔍 LAUNCH TYPE COMPARISON");
       console.log("\n PROJECT_RAISE:");
       console.log("  • Fundraising period with contributor allocations");
@@ -657,8 +656,8 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         "  • 70% tokens to contributors, 20% to founder (vested), 10% to LP"
       );
       console.log("  • Founder gets 10% immediately, rest vested over time");
-      console.log("  • Requires minimum 50 MON raise");
-      console.log("  • Contributors limited to 4.44 MON per wallet");
+      console.log("  • Requires minimum 50 BNB raise");
+      console.log("  • Contributors limited to 4.44 BNB per wallet");
       console.log("  • Graduated to PancakeSwap after raise completes");
 
       console.log("\n INSTANT_LAUNCH:");
@@ -666,7 +665,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log("  • 100% tokens in bonding curve pool");
       console.log("  • No founder allocation (unless initialBuy > 0)");
       console.log("  • Price discovery through automated market maker");
-      console.log("  • Graduates at 1M MON reserve threshold");
+      console.log("  • Graduates at 1M BNB reserve threshold");
       console.log("  • Creator earns fees from trading");
 
       console.log("\n Both Types:");

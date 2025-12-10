@@ -14,7 +14,7 @@ contract MockPriceOracle {
     /**
      * @dev Set BNB price (owner or anyone in tests)
      */
-    function setMONPrice(uint256 _price) external {
+    function setBNBPrice(uint256 _price) external {
         require(_price > 0, "Invalid price");
         price = _price;
         emit PriceUpdated(_price);
@@ -23,14 +23,14 @@ contract MockPriceOracle {
     /**
      * @dev Get BNB price
      */
-    function getMONPrice() external view returns (uint256) {
+    function getBNBPrice() external view returns (uint256) {
         return price;
     }
 
     /**
      * @dev Convert USD to BNB
      */
-    function usdToMON(uint256 usdAmount) external view returns (uint256) {
+    function usdToBNB(uint256 usdAmount) external view returns (uint256) {
         require(price > 0, "Price not set");
         return (usdAmount * 10**18) / price;
     }
@@ -38,7 +38,7 @@ contract MockPriceOracle {
     /**
      * @dev Convert BNB to USD
      */
-    function monToUSD(uint256 bnbAmount) external view returns (uint256) {
+    function bnbToUSD(uint256 bnbAmount) external view returns (uint256) {
         require(price > 0, "Price not set");
         return (bnbAmount * price) / 10**18;
     }

@@ -53,7 +53,7 @@ export interface GraphLaunch {
   consecutiveMonthsBelowStart: string;
   communityControlTriggered: boolean;
   // Liquidity
-  liquidityMON?: string;
+  liquidityBNB?: string;
   liquidityTokens?: string;
   raisedFundsVesting?: string;
   raisedFundsClaimed?: string;
@@ -66,10 +66,10 @@ export interface GraphPool {
   id: string;
   token: GraphToken;
   creator: string;
-  monReserve: string;
+  bnbReserve: string;
   tokenReserve: string;
   reservedTokens: string;
-  virtualMonReserve: string;
+  virtualBnbReserve: string;
   marketCap: string;
   graduationMarketCap: string;
   currentPrice: string;
@@ -77,9 +77,9 @@ export interface GraphPool {
   graduated: boolean;
   burnLP: boolean;
   lpToken?: string;
-  monForPancakeSwap: string;
+  bnbForPancakeSwap: string;
   launchBlock: string;
-  graduationMonThreshold: string;
+  graduationBnbThreshold: string;
   totalVolume: string;
   totalBuys: string;
   totalSells: string;
@@ -94,7 +94,7 @@ export interface GraphTrade {
   token: GraphToken;
   trader: string;
   isBuy: boolean;
-  monAmount: string;
+  bnbAmount: string;
   tokenAmount: string;
   price: string;
   feeRate: string;

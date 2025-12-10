@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Search, SortAsc, SortDesc } from 'lucide-react'
 import { shortenAddress } from '../utils/domainUtils'
 
-const THEME_KEY = 'balddomains-theme'
+const THEME_KEY = 'safudomains-theme'
 
 export default function Names() {
   const { address, isDisconnected } = useAccount()
@@ -250,7 +250,7 @@ export default function Names() {
               <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
                 {searchQuery
                   ? 'No domains match your search query.'
-                  : 'You don\'t have any .bald domains yet.'}
+                  : 'You don\'t have any .safu domains yet.'}
               </p>
               {!searchQuery && (
                 <button
@@ -294,7 +294,7 @@ export default function Names() {
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
                       }}
-                      onClick={() => navigate(`/resolve/${domain.name.replace(/\.bald$/, '')}`)}
+                      onClick={() => navigate(`/resolve/${domain.name.replace(/\.safu$/, '')}`)}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-2px)'
                         e.currentTarget.style.boxShadow = isDark

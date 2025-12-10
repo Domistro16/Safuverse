@@ -75,9 +75,9 @@ async function main(): Promise<void> {
     infoFiAddress: string;
     adminAddress: string;
   } = {
-    priceFeed: "0xBcD78f76005B7515837af6b50c7C52BCf73822fb", // MON Mainnet
-    pancakeRouter: "0xB1Bc24c34e88f7D43D5923034E3a14B24DaACfF9", // MON Mainnet
-    pancakeFactory: "0x02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E", // MON Mainnet
+    priceFeed: "0xBcD78f76005B7515837af6b50c7C52BCf73822fb", // BNB Mainnet
+    pancakeRouter: "0xB1Bc24c34e88f7D43D5923034E3a14B24DaACfF9", // BNB Mainnet
+    pancakeFactory: "0x02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E", // BNB Mainnet
     platformFeeAddress: "0x235799785E387C2612d4A881919436B612ed391D",
     academyFeeAddress: "0x235799785E387C2612d4A881919436B612ed391D",
     infoFiAddress: "0x7d378514f15fd176745902b9662cffc30b0d794c",
@@ -269,8 +269,7 @@ async function main(): Promise<void> {
     deployedContracts.launchpadManager
   ));
   log(
-    `LaunchpadManager has MANAGER_ROLE on BondingCurveDEX: ${
-      hasManagerRole ? "✅" : "❌"
+    `LaunchpadManager has MANAGER_ROLE on BondingCurveDEX: ${hasManagerRole ? "✅" : "❌"
     }`,
     hasManagerRole ? colors.green : colors.red
   );
@@ -280,8 +279,7 @@ async function main(): Promise<void> {
     deployedContracts.launchpadManager
   ));
   log(
-    `LaunchpadManager has MANAGER_ROLE on LPFeeHarvester: ${
-      hasHarvesterRole ? "✅" : "❌"
+    `LaunchpadManager has MANAGER_ROLE on LPFeeHarvester: ${hasHarvesterRole ? "✅" : "❌"
     }`,
     hasHarvesterRole ? colors.green : colors.red
   );
@@ -291,8 +289,7 @@ async function main(): Promise<void> {
       ? await (lpFeeHarvester as any).getPlatformStats()
       : (lpFeeHarvester as any).getPlatformStats;
   log(
-    `LPFeeHarvester initialized: Total Value Locked = ${
-      platformStats?._totalValueLocked ?? "unknown"
+    `LPFeeHarvester initialized: Total Value Locked = ${platformStats?._totalValueLocked ?? "unknown"
     }`,
     colors.yellow
   );
@@ -389,7 +386,7 @@ async function main(): Promise<void> {
 3. 🧪 Test create launch on testnet first
 4. 💰 Fund contracts with initial liquidity if needed
 5. 🌐 Update frontend with contract addresses
-6. 📊 Set up monitoring and alerts
+6. 📊 Set up bnbitoring and alerts
 7. 🎨 Update documentation with addresses
 
 💡 TIP: Keep the deployment info JSON file safe - it contains all addresses!

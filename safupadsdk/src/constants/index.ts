@@ -4,17 +4,17 @@ import { NetworkConfig, SDKConfig } from '../types';
  * Network configurations
  */
 export const NETWORKS: Record<string, NetworkConfig> = {
-  monad: {
-    name: 'Monad',
-    chainId: 143, // Monad mainnet chain ID (placeholder - update when known)
-    rpcUrl: 'https://rpc.monad.xyz/', // Monad RPC URL (placeholder - update when known)
-    alchemyRpcUrlTemplate: 'https://monad-mainnet.g.alchemy.com/v2/{apiKey}', // (placeholder - update when known)
-    explorerUrl: 'https://explorer.monad.xyz', // Monad explorer (placeholder - update when known)
+  bsc: {
+    name: 'BNB Smart Chain',
+    chainId: 56, // BSC mainnet chain ID
+    rpcUrl: 'https://bsc-dataseed.binance.org/', // BSC RPC URL
+    alchemyRpcUrlTemplate: 'https://bnb-mainnet.g.alchemy.com/v2/{apiKey}',
+    explorerUrl: 'https://bscscan.com', // BSC explorer
     subgraphUrl:
       'https://api.studio.thegraph.com/query/<SUBGRAPH_ID>/safupad-subgraph/version/latest', // TODO: UPDATE AFTER DEPLOYMENT
     nativeCurrency: {
-      name: 'MON',
-      symbol: 'MON',
+      name: 'BNB',
+      symbol: 'BNB',
       decimals: 18,
     },
     contracts: {
@@ -23,22 +23,22 @@ export const NETWORKS: Record<string, NetworkConfig> = {
       tokenFactory: '0x15E2ccAeb4D1eeA1A7b8d839FFA30D63519D1c50', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
       priceOracle: '0x3De1d0D44c9609b99D05BA14Ff48c691fF6059Ff', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
       lpFeeHarvester: '0x8b4499143ac1CDb7bDB25a2FEc1786F8BD9772F9', // TODO: UPDATE AFTER MAINNET DEPLOYMENT
-      pancakeRouter: '0x10ED43C718714eb63d5aA57B78B54704E256024E', // Monad DEX router (placeholder)
-      pancakeFactory: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73', // Monad DEX factory (placeholder)
+      pancakeRouter: '0x10ED43C718714eb63d5aA57B78B54704E256024E', // PancakeSwap router
+      pancakeFactory: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73', // PancakeSwap factory
     },
   },
 
-  monadTestnet: {
-    name: 'Monad Testnet',
-    chainId: 10143, // Monad testnet chain ID (placeholder - update when known)
-    rpcUrl: 'https://testnet-rpc.monad.xyz/', // Monad testnet RPC (placeholder - update when known)
-    alchemyRpcUrlTemplate: 'https://monad-testnet.g.alchemy.com/v2/{apiKey}', // (placeholder - update when known)
-    explorerUrl: 'https://testnet-explorer.monad.xyz', // Monad testnet explorer (placeholder - update when known)
+  bscTestnet: {
+    name: 'BNB Smart Chain Testnet',
+    chainId: 97, // BSC testnet chain ID
+    rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/', // BSC testnet RPC
+    alchemyRpcUrlTemplate: 'https://bnb-testnet.g.alchemy.com/v2/{apiKey}',
+    explorerUrl: 'https://testnet.bscscan.com', // BSC testnet explorer
     subgraphUrl:
       'https://api.studio.thegraph.com/query/<SUBGRAPH_ID>/safupad-testnet/version/latest', // TODO: UPDATE AFTER DEPLOYMENT
     nativeCurrency: {
-      name: 'MON',
-      symbol: 'MON',
+      name: 'BNB',
+      symbol: 'BNB',
       decimals: 18,
     },
     contracts: {
@@ -47,8 +47,8 @@ export const NETWORKS: Record<string, NetworkConfig> = {
       tokenFactory: '0xcb7526b9598240A737237C52f852705e6A449cD0',
       priceOracle: '0x56f0b1f80F8cc37f875Be42e2f4D09810514F346',
       lpFeeHarvester: '0xa886B8897814193f99A88701d70b31b4a8E27a1E',
-      pancakeRouter: '0xD99D1c33F9fC3444f8101754aBC46c52416550D1', // Monad testnet DEX router (placeholder)
-      pancakeFactory: '0x6725F303b657a9451d8BA641348b6761A6CC7a17', // Monad testnet DEX factory (placeholder)
+      pancakeRouter: '0xD99D1c33F9fC3444f8101754aBC46c52416550D1', // BSC testnet DEX router
+      pancakeFactory: '0x6725F303b657a9451d8BA641348b6761A6CC7a17', // BSC testnet DEX factory
     },
   },
 
@@ -59,8 +59,8 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     explorerUrl: 'http://localhost:8545',
     subgraphUrl: 'http://localhost:8000/subgraphs/name/safupad-subgraph', // Local Graph Node
     nativeCurrency: {
-      name: 'MON',
-      symbol: 'MON',
+      name: 'BNB',
+      symbol: 'BNB',
       decimals: 18,
     },
     contracts: {
@@ -84,13 +84,13 @@ export const DEFAULT_CONFIG: Partial<SDKConfig> = {
 };
 
 /**
- * Contract constants (LaunchpadManagerV3 - Monad)
+ * Contract constants (LaunchpadManagerV3 - BSC)
  */
 export const CONSTANTS = {
-  // Launch parameters - MON amounts (Monad native currency)
-  MIN_RAISE_MON: '5000000', // 5M MON
-  MAX_RAISE_MON: '20000000', // 20M MON
-  MAX_CONTRIBUTION_PER_WALLET: '50000', // 50K MON per wallet
+  // Launch parameters - BNB amounts (BSC native currency)
+  MIN_RAISE_BNB: '5000000', // 5M BNB
+  MAX_RAISE_BNB: '20000000', // 20M BNB
+  MAX_CONTRIBUTION_PER_WALLET: '50000', // 50K BNB per wallet
   RAISE_DURATION: 72 * 60 * 60, // 72 hours (3 days) in seconds
 
   // Token allocation percentages
@@ -104,7 +104,7 @@ export const CONSTANTS = {
 
   // Liquidity percentages
   LIQUIDITY_TOKEN_PERCENT: 10, // 10% of token supply for liquidity
-  LIQUIDITY_MON_PERCENT: 20, // 20% of raised MON for liquidity
+  LIQUIDITY_BNB_PERCENT: 20, // 20% of raised BNB for liquidity
 
   // Vesting (for conditional 10% allocation)
   MIN_VESTING_DURATION: 90 * 24 * 60 * 60, // 90 days
@@ -119,7 +119,7 @@ export const CONSTANTS = {
   // LP Harvester
   CLAIM_COOLDOWN: 24 * 60 * 60, // 24 hours
   HARVEST_COOLDOWN: 24 * 60 * 60, // 24 hours
-  MIN_HARVEST_AMOUNT: '0.001', // 0.001 MON
+  MIN_HARVEST_AMOUNT: '0.001', // 0.001 BNB
   DEFAULT_LOCK_DURATION: 365 * 24 * 60 * 60, // 365 days
   MIN_LOCK_DURATION: 90 * 24 * 60 * 60, // 90 days
   MAX_LOCK_DURATION: 1460 * 24 * 60 * 60, // 4 years
@@ -226,8 +226,8 @@ export const TIME = {
  * Block time estimates (in seconds)
  */
 export const BLOCK_TIME = {
-  monad: 1, // Monad has 1s block time (placeholder - update when known)
-  monadTestnet: 1,
+  bsc: 3, // BSC has ~3s block time
+  bscTestnet: 3,
   ethereum: 12,
 };
 

@@ -45,7 +45,7 @@ const marqueeItems = [
   },
   {
     id: 5,
-    text: 'Powered by bald Identity',
+    text: 'Powered by safu Identity',
     iconUrl:
       'https://storage.googleapis.com/hostinger-horizons-assets-prod/f58d1886-73c2-4ebb-b115-6d931332e7b4/d5d14a8ef379eb234412a66174080ac7.png',
   },
@@ -83,11 +83,11 @@ const HeroSection = () => {
           >
             Welcome to the
             <span className="primary-gradient-text font-bold p-1.5 rounded-md  shadow-sm">
-              Baldverse!
+              safuverse!
             </span>{' '}
             Powered By{' '}
             <span className="primary-gradient-text font-bold p-1.5 rounded-md  shadow-sm">
-              .bald
+              .safu
             </span>
           </motion.p>
 
@@ -95,13 +95,13 @@ const HeroSection = () => {
             variants={fadeInUp}
             className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center items-center mb-8"
           >
-            <a href="https://names.baldverse.com">
+            <a href="https://names.safuverse.com">
               <Button
                 size="md"
                 className="bg-gradient-to-r from-primary to-orange-400 hover:from-orange-500 hover:to-primary text-background font-semibold text-sm px-4 py-3 rounded-lg shadow-xl hover:shadow-primary/50 transition-all duration-300 transform hover:scale-105 neon-glow"
               >
                 <LinkIcon className="w-5 h-5 mr-2.5" />
-                Mint .bald Domain
+                Mint .safu Domain
               </Button>
             </a>
             <Button
@@ -122,8 +122,8 @@ const HeroSection = () => {
         </motion.div>
       </div>
       <div className="mt-8  flex justify-center opacity-100 mx-auto flex-col md:gap-10 lg:flex-row">
-        <img src="/baldleft.png" className="h-60  2xl:h-[256px]" />
-        <img src="/baldright.png" className="h-40 2xl:h-[256px]" />
+        <img src="/safuleft.png" className="h-60  2xl:h-[256px]" />
+        <img src="/safuright.png" className="h-40 2xl:h-[256px]" />
       </div>
     </section>
   )

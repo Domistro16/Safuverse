@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 /**
  * Network names supported by the SDK
  */
-export type NetworkName = 'monad' | 'monadTestnet' | 'localhost';
+export type NetworkName = 'bsc' | 'bscTestnet' | 'localhost';
 
 /**
  * Launch type enum
@@ -67,14 +67,14 @@ export interface TokenMetadata {
 
 /**
  * Launch creation parameters
- * ✅ UPDATED: Removed projectInfoFiWallet, changed to MON amounts (Monad migration)
+ * ✅ UPDATED: Removed projectInfoFiWallet, changed to BNB amounts (BSC)
  */
 export interface CreateLaunchParams {
   name: string;
   symbol: string;
   totalSupply: number;
-  raiseTargetMON: string; // ✅ Changed from BNB to MON (Monad migration)
-  raiseMaxMON: string; // ✅ Changed from BNB to MON (Monad migration)
+  raiseTargetBNB: string; // BNB amount for raise target (BSC native token)
+  raiseMaxBNB: string; // BNB amount for max raise (BSC native token)
   vestingDuration: number; // in days
   metadata: TokenMetadata;
   burnLP: boolean;
@@ -89,7 +89,7 @@ export interface CreateInstantLaunchParams {
   symbol: string;
   totalSupply: number;
   metadata: TokenMetadata;
-  initialBuyMON: string; // ✅ Changed from BNB to MON (Monad migration)
+  initialBuyBNB: string; // BNB amount for initial buy (BSC native token)
   burnLP: boolean;
   vanitySalt?: string;
 }
@@ -114,15 +114,15 @@ export interface LaunchInfo {
 
 /**
  * Launch information with USD values
- * ✅ UPDATED: Removed projectInfoFiWallet, changed to MON (Monad migration)
+ * ✅ UPDATED: Removed projectInfoFiWallet, changed to BNB (BSC)
  */
 export interface LaunchInfoWithUSD {
   founder: string;
-  raiseTargetMON: bigint;
+  raiseTargetBNB: bigint;
   raiseTargetUSD: bigint;
-  raiseMaxMON: bigint;
+  raiseMaxBNB: bigint;
   raiseMaxUSD: bigint;
-  totalRaisedMON: bigint;
+  totalRaisedBNB: bigint;
   totalRaisedUSD: bigint;
   raiseDeadline: bigint;
   raiseCompleted: boolean;
@@ -132,12 +132,12 @@ export interface LaunchInfoWithUSD {
 
 /**
  * Pool information from bonding curve
- * ✅ UPDATED: Changed to MON (Monad migration)
+ * ✅ UPDATED: Changed to BNB (BSC)
  */
 export interface PoolInfo {
-  marketCapMON: bigint;
+  marketCapBNB: bigint;
   marketCapUSD: bigint;
-  monReserve: bigint;
+  bnbReserve: bigint;
   tokenReserve: bigint;
   reservedTokens: bigint;
   currentPrice: bigint;
@@ -176,14 +176,14 @@ export interface PostGraduationStats {
 
 /**
  * Creator fee information
- * ✅ UPDATED: Changed to MON (Monad migration)
+ * ✅ UPDATED: Changed to BNB (BSC)
  */
 export interface CreatorFeeInfo {
   accumulatedFees: bigint;
   lastClaimTime: bigint;
   graduationMarketCap: bigint;
   currentMarketCap: bigint;
-  monInPool: bigint;
+  bnbInPool: bigint;
   canClaim: boolean;
 }
 
@@ -209,10 +209,10 @@ export interface LPLockInfo {
 
 /**
  * Harvest statistics
- * ✅ UPDATED: Changed to MON (Monad migration)
+ * ✅ UPDATED: Changed to BNB (BSC)
  */
 export interface HarvestStats {
-  monAmount: bigint;
+  bnbAmount: bigint;
   token0Amount: bigint;
   token1Amount: bigint;
   timestamp: bigint;
@@ -265,12 +265,12 @@ export interface FormattedLaunchInfo {
 
 /**
  * Formatted pool information (for display)
- * ✅ UPDATED: Changed to MON (Monad migration)
+ * ✅ UPDATED: Changed to BNB (BSC)
  */
 export interface FormattedPoolInfo {
   marketCapUSD: string;
-  marketCapMON: string;
-  monReserve: string;
+  marketCapBNB: string;
+  bnbReserve: string;
   tokenReserve: string;
   currentPrice: string;
   priceMultiplier: string;

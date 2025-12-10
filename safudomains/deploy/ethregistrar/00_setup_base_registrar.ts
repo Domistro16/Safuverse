@@ -26,11 +26,11 @@ const func: DeployFunction = async function (hre) {
   await viem.waitForTransactionSuccess(transferOwnershipHash)
 
   const setSubnodeOwnerHash = await root.write.setSubnodeOwner(
-    [labelhash('bald'), registrar.address],
+    [labelhash('safu'), registrar.address],
     { account: owner.account },
   )
   console.log(
-    `Setting owner of bald node to registrar on root (tx: ${setSubnodeOwnerHash})...`,
+    `Setting owner of safu node to registrar on root (tx: ${setSubnodeOwnerHash})...`,
   )
   await viem.waitForTransactionSuccess(setSubnodeOwnerHash)
 }

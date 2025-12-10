@@ -95,7 +95,7 @@ export function WalletModal({
           {name != '' ? (
             <button
               onClick={() =>
-                navigate(`/resolve/${name.replace(/\.bald$/, '')}`)
+                navigate(`/resolve/${name.replace(/\.safu$/, '')}`)
               }
               className="flex w-full flex-col items-center justify-center rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700 cursor-pointer hover:scale-105 duration-200"
             >

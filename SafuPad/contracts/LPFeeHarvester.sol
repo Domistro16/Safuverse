@@ -10,18 +10,18 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /**
  * @title LPFeeHarvester
  * @author SafuPad Team (patched)
- * @notice LP token locker with fee-harvesting (WMON pairs only)
+ * @notice LP token locker with fee-harvesting (WBNB pairs only)
  *
  * Key fixes:
  * - store initial pair reserves and totalSupply on lock
  * - compute fee-only amounts attributable to locked LP (estimate)
  * - remove minimal LP required to extract those fees
  * - checks-effects-interactions ordering
- * - safe approvals, use call() for MON transfers (pull preferable but kept push for parity)
- * - validate pair belongs to project <> WMON via factory
+ * - safe approvals, use call() for BNB transfers (pull preferable but kept push for parity)
+ * - validate pair belongs to project <> WBNB via factory
  *
  * Limitations:
- * - still supports only pairs where one side is WMON (same as original)
+ * - still supports only pairs where one side is WBNB (same as original)
  * - estimates rely on PancakeRouter.getAmountsOut for pricing; tests needed
  */
 
@@ -99,7 +99,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
 
     /// @notice Harvest constraints
     uint256 public constant HARVEST_COOLDOWN = 24 hours;
-    uint256 public constant MIN_HARVEST_AMOUNT = 0.01 ether; // Minimum MON to harvest
+    uint256 public constant MIN_HARVEST_AMOUNT = 0.01 ether; // Minimum BNB to harvest
     uint256 public constant HARVEST_LP_PERCENT = 5; // 5 basis points = 0.1% (fallback cap)
 
     struct LPLock {
@@ -112,7 +112,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         uint256 lockTime;
         uint256 unlockTime;
         bool active;
-        uint256 totalFeesHarvestedMON;
+        uint256 totalFeesHarvestedBNB;
         uint256 lastHarvestTime;
         // store raw reserves and totalSupply at lock time for fee-only calculation
         uint256 initialReserve0;
@@ -122,7 +122,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     }
 
     struct HarvestStats {
-        uint256 monAmount;
+        uint256 bnbAmount;
         uint256 token0Amount;
         uint256 token1Amount;
         uint256 timestamp;
@@ -132,7 +132,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     IPancakeRouter02 public pancakeRouter;
     IPancakeFactory public pancakeFactory;
     address public platformFeeAddress;
-    address public wmonAddress;
+    address public wbnbAddress;
 
     mapping(address => LPLock) public lpLocks;
     mapping(address => HarvestStats[]) public harvestHistory;
@@ -153,7 +153,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
 
     event FeesHarvested(
         address indexed projectToken,
-        uint256 monAmount,
+        uint256 bnbAmount,
         uint256 token0Amount,
         uint256 token1Amount,
         uint256 lpBurned,
@@ -202,7 +202,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         pancakeRouter = IPancakeRouter02(_pancakeRouter);
         pancakeFactory = IPancakeFactory(_pancakeFactory);
         platformFeeAddress = _platformFeeAddress;
-        wmonAddress = pancakeRouter.WETH();
+        wbnbAddress = pancakeRouter.WETH();
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(MANAGER_ROLE, _admin);
@@ -237,14 +237,14 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
             "Invalid lock duration"
         );
 
-        // Validate pair is projectToken <> WMON
+        // Validate pair is projectToken <> WBNB
         address expectedPair = pancakeFactory.getPair(
             projectToken,
-            wmonAddress
+            wbnbAddress
         );
         require(
             expectedPair == lpToken,
-            "LP token mismatch (expected project<>WMON pair)"
+            "LP token mismatch (expected project<>WBNB pair)"
         );
 
         // Transfer LP tokens from sender to this contract
@@ -255,8 +255,8 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
 
         uint256 totalSupply = pair.totalSupply();
-        // Calculate initial value in MON (estimate)
-        uint256 initialValue = _estimateLPValueInMON(lpToken, lpAmount);
+        // Calculate initial value in BNB (estimate)
+        uint256 initialValue = _estimateLPValueInBNB(lpToken, lpAmount);
 
         uint256 unlockTime = block.timestamp + lockDuration;
         lpLocks[projectToken] = LPLock({
@@ -269,7 +269,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
             lockTime: block.timestamp,
             unlockTime: unlockTime,
             active: true,
-            totalFeesHarvestedMON: 0,
+            totalFeesHarvestedBNB: 0,
             lastHarvestTime: block.timestamp,
             initialReserve0: uint256(reserve0),
             initialReserve1: uint256(reserve1),
@@ -310,8 +310,8 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         address token1 = pair.token1();
 
         require(
-            token0 == wmonAddress || token1 == wmonAddress,
-            "Only WMON pairs supported"
+            token0 == wbnbAddress || token1 == wbnbAddress,
+            "Only WBNB pairs supported"
         );
 
         // Current pool state
@@ -342,70 +342,70 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
             myFee1 = (feesPool1 * lock.initialLPAmount) / curTotalSupply;
         }
 
-        // Estimate MON value of these fee tokens
-        uint256 monFrom0 = 0;
-        uint256 monFrom1 = 0;
+        // Estimate BNB value of these fee tokens
+        uint256 bnbFrom0 = 0;
+        uint256 bnbFrom1 = 0;
 
-        bool token0IsWMON = token0 == wmonAddress;
-        bool token1IsWMON = token1 == wmonAddress;
+        bool token0IsWBNB = token0 == wbnbAddress;
+        bool token1IsWBNB = token1 == wbnbAddress;
 
-        if (token0IsWMON) {
-            monFrom0 = myFee0;
+        if (token0IsWBNB) {
+            bnbFrom0 = myFee0;
         } else if (myFee0 > 0) {
             address[] memory path0 = new address[](2);
             path0[0] = token0;
-            path0[1] = wmonAddress;
+            path0[1] = wbnbAddress;
             uint[] memory out0 = pancakeRouter.getAmountsOut(myFee0, path0);
-            monFrom0 = out0[out0.length - 1];
+            bnbFrom0 = out0[out0.length - 1];
         }
 
-        if (token1IsWMON) {
-            monFrom1 = myFee1;
+        if (token1IsWBNB) {
+            bnbFrom1 = myFee1;
         } else if (myFee1 > 0) {
             address[] memory path1 = new address[](2);
             path1[0] = token1;
-            path1[1] = wmonAddress;
+            path1[1] = wbnbAddress;
             uint[] memory out1 = pancakeRouter.getAmountsOut(myFee1, path1);
-            monFrom1 = out1[out1.length - 1];
+            bnbFrom1 = out1[out1.length - 1];
         }
 
-        uint256 estimatedFeeMON = monFrom0 + monFrom1;
+        uint256 estimatedFeeBNB = bnbFrom0 + bnbFrom1;
 
         require(
-            estimatedFeeMON >= MIN_HARVEST_AMOUNT,
+            estimatedFeeBNB >= MIN_HARVEST_AMOUNT,
             "Harvest amount too small"
         );
 
-        // Estimate total pool value in MON
-        uint256 poolValueMON = 0;
-        if (token0IsWMON) {
-            uint256 reserveWMON = curRes0;
-            uint256 tokenReservePriceMON = 0;
+        // Estimate total pool value in BNB
+        uint256 poolValueBNB = 0;
+        if (token0IsWBNB) {
+            uint256 reserveWBNB = curRes0;
+            uint256 tokenReservePriceBNB = 0;
             if (curRes1 > 0) {
                 address[] memory path = new address[](2);
                 path[0] = token1;
-                path[1] = wmonAddress;
+                path[1] = wbnbAddress;
                 uint[] memory out = pancakeRouter.getAmountsOut(curRes1, path);
-                tokenReservePriceMON = out[out.length - 1];
+                tokenReservePriceBNB = out[out.length - 1];
             }
-            poolValueMON = reserveWMON + tokenReservePriceMON;
+            poolValueBNB = reserveWBNB + tokenReservePriceBNB;
         } else {
-            uint256 reserveWMON = curRes1;
-            uint256 tokenReservePriceMON = 0;
+            uint256 reserveWBNB = curRes1;
+            uint256 tokenReservePriceBNB = 0;
             if (curRes0 > 0) {
                 address[] memory path = new address[](2);
                 path[0] = token0;
-                path[1] = wmonAddress;
+                path[1] = wbnbAddress;
                 uint[] memory out = pancakeRouter.getAmountsOut(curRes0, path);
-                tokenReservePriceMON = out[out.length - 1];
+                tokenReservePriceBNB = out[out.length - 1];
             }
-            poolValueMON = reserveWMON + tokenReservePriceMON;
+            poolValueBNB = reserveWBNB + tokenReservePriceBNB;
         }
-        require(poolValueMON > 0, "Pool value is zero");
+        require(poolValueBNB > 0, "Pool value is zero");
 
         // Calculate LP to remove
-        uint256 numerator = estimatedFeeMON * curTotalSupply;
-        uint256 lpToRemove = numerator / poolValueMON;
+        uint256 numerator = estimatedFeeBNB * curTotalSupply;
+        uint256 lpToRemove = numerator / poolValueBNB;
         if (lpToRemove == 0) {
             lpToRemove = 1;
         }
@@ -427,24 +427,24 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
 
         // Update state before external calls
         lock.lpAmount = lock.lpAmount - lpToRemove;
-        lock.totalFeesHarvestedMON += estimatedFeeMON;
+        lock.totalFeesHarvestedBNB += estimatedFeeBNB;
         lock.lastHarvestTime = block.timestamp;
         lock.harvestCount += 1;
         totalHarvests += 1;
-        totalFeesDistributed += estimatedFeeMON;
+        totalFeesDistributed += estimatedFeeBNB;
 
-        uint256 removedLPValueMON = (poolValueMON * lpToRemove) /
+        uint256 removedLPValueBNB = (poolValueBNB * lpToRemove) /
             curTotalSupply;
-        if (removedLPValueMON > totalValueLocked) {
+        if (removedLPValueBNB > totalValueLocked) {
             totalValueLocked = 0;
         } else {
-            totalValueLocked -= removedLPValueMON;
+            totalValueLocked -= removedLPValueBNB;
         }
 
         // Remove liquidity
-        (uint256 tokenAmountOut, uint256 monAmountOut) = pancakeRouter
+        (uint256 tokenAmountOut, uint256 bnbAmountOut) = pancakeRouter
             .removeLiquidityETH(
-                token0IsWMON ? token1 : token0,
+                token0IsWBNB ? token1 : token0,
                 lpToRemove,
                 0,
                 0,
@@ -452,18 +452,18 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
                 block.timestamp + 300
             );
 
-        // Convert non-WMON token to MON
-        uint256 monFromSwappedToken = 0;
-        address nonWMON = token0IsWMON ? token1 : token0;
+        // Convert non-WBNB token to BNB
+        uint256 bnbFromSwappedToken = 0;
+        address nonWBNB = token0IsWBNB ? token1 : token0;
 
         if (tokenAmountOut > 0) {
 
-            IERC20(nonWMON).approve(address(pancakeRouter), 0);
-            IERC20(nonWMON).approve(address(pancakeRouter), tokenAmountOut);
+            IERC20(nonWBNB).approve(address(pancakeRouter), 0);
+            IERC20(nonWBNB).approve(address(pancakeRouter), tokenAmountOut);
 
             address[] memory swapPath = new address[](2);
-            swapPath[0] = nonWMON;
-            swapPath[1] = wmonAddress;
+            swapPath[0] = nonWBNB;
+            swapPath[1] = wbnbAddress;
 
             uint256[] memory swapOut = pancakeRouter.swapExactTokensForETH(
                 tokenAmountOut,
@@ -472,22 +472,22 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
                 address(this),
                 block.timestamp + 300
             );
-            monFromSwappedToken = swapOut[swapOut.length - 1];
+            bnbFromSwappedToken = swapOut[swapOut.length - 1];
         }
 
-        uint256 totalMONReceived = monAmountOut + monFromSwappedToken;
+        uint256 totalBNBReceived = bnbAmountOut + bnbFromSwappedToken;
 
         require(
-            totalMONReceived >= MIN_HARVEST_AMOUNT,
-            "Received too little MON"
+            totalBNBReceived >= MIN_HARVEST_AMOUNT,
+            "Received too little BNB"
         );
 
         // Record harvest history
         harvestHistory[projectToken].push(
             HarvestStats({
-                monAmount: totalMONReceived,
-                token0Amount: token0IsWMON ? monAmountOut : tokenAmountOut,
-                token1Amount: token0IsWMON ? tokenAmountOut : monAmountOut,
+                bnbAmount: totalBNBReceived,
+                token0Amount: token0IsWBNB ? bnbAmountOut : tokenAmountOut,
+                token1Amount: token0IsWBNB ? tokenAmountOut : bnbAmountOut,
                 timestamp: block.timestamp,
                 lpBurned: lpToRemove
             })
@@ -495,38 +495,38 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
 
         emit FeesHarvested(
             projectToken,
-            totalMONReceived,
-            token0IsWMON ? monAmountOut : tokenAmountOut,
-            token0IsWMON ? tokenAmountOut : monAmountOut,
+            totalBNBReceived,
+            token0IsWBNB ? bnbAmountOut : tokenAmountOut,
+            token0IsWBNB ? tokenAmountOut : bnbAmountOut,
             lpToRemove,
             lock.harvestCount
         );
 
-        _distributeFees(projectToken, totalMONReceived);
+        _distributeFees(projectToken, totalBNBReceived);
     }
 
     /**
      * @notice Distribute fees according to 70/20/10 split
      */
-    function _distributeFees(address projectToken, uint256 totalMON) private {
+    function _distributeFees(address projectToken, uint256 totalBNB) private {
         LPLock storage lock = lpLocks[projectToken];
         require(lock.active || lock.initialLPAmount > 0, "Lock not active");
-        require(totalMON > 0, "No fees to distribute");
+        require(totalBNB > 0, "No fees to distribute");
 
-        uint256 creatorAmount = (totalMON * CREATOR_FEE_BPS) / BASIS_POINTS;
-        uint256 projectInfoFiAmount = (totalMON * PROJECT_INFOFI_BPS) /
+        uint256 creatorAmount = (totalBNB * CREATOR_FEE_BPS) / BASIS_POINTS;
+        uint256 projectInfoFiAmount = (totalBNB * PROJECT_INFOFI_BPS) /
             BASIS_POINTS;
-        uint256 platformAmount = (totalMON * PLATFORM_FEE_BPS) / BASIS_POINTS;
+        uint256 platformAmount = (totalBNB * PLATFORM_FEE_BPS) / BASIS_POINTS;
 
         // Handle rounding remainder
         uint256 distributed = creatorAmount +
             projectInfoFiAmount +
             platformAmount;
-        if (distributed < totalMON) {
-            creatorAmount += (totalMON - distributed);
+        if (distributed < totalBNB) {
+            creatorAmount += (totalBNB - distributed);
         }
 
-        // Use call to transfer MON and bubble revert if fails
+        // Use call to transfer BNB and bubble revert if fails
         (bool ok1, ) = payable(lock.creator).call{value: creatorAmount}("");
         require(ok1, "creator transfer failed");
         (bool ok2, ) = payable(lock.projectInfoFi).call{
@@ -558,7 +558,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         uint256 lpAmount = lock.lpAmount;
         address recipient = lock.creator;
         address lpToken = lock.lpToken;
-        uint256 totalFees = lock.totalFeesHarvestedMON;
+        uint256 totalFees = lock.totalFeesHarvestedBNB;
 
         // Deactivate lock
         lock.active = false;
@@ -627,9 +627,9 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Estimate LP value in MON of a given lpAmount
+     * @notice Estimate LP value in BNB of a given lpAmount
      */
-    function _estimateLPValueInMON(
+    function _estimateLPValueInBNB(
         address lpToken,
         uint256 lpAmount
     ) private view returns (uint256) {
@@ -644,37 +644,37 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         uint256 totalSupply = pair.totalSupply();
         if (totalSupply == 0 || lpAmount == 0) return 0;
 
-        // Determine which side is WMON and price the other side to WMON
-        uint256 poolValueMON = 0;
-        if (token0 == wmonAddress) {
-            // reserve0 is WMON, reserve1 priced to WMON
-            uint256 token1PriceInMON = 0;
+        // Determine which side is WBNB and price the other side to WBNB
+        uint256 poolValueBNB = 0;
+        if (token0 == wbnbAddress) {
+            // reserve0 is WBNB, reserve1 priced to WBNB
+            uint256 token1PriceInBNB = 0;
             if (reserve1 > 0) {
                 address[] memory path = new address[](2);
                 path[0] = token1;
-                path[1] = wmonAddress;
+                path[1] = wbnbAddress;
                 uint[] memory out = pancakeRouter.getAmountsOut(reserve1, path);
 
-                token1PriceInMON = out[out.length - 1];
+                token1PriceInBNB = out[out.length - 1];
             }
-            poolValueMON = reserve0 + token1PriceInMON;
-        } else if (token1 == wmonAddress) {
-            uint256 token0PriceInMON = 0;
+            poolValueBNB = reserve0 + token1PriceInBNB;
+        } else if (token1 == wbnbAddress) {
+            uint256 token0PriceInBNB = 0;
             if (reserve0 > 0) {
                 address[] memory path = new address[](2);
                 path[0] = token0;
-                path[1] = wmonAddress;
+                path[1] = wbnbAddress;
                 uint[] memory out = pancakeRouter.getAmountsOut(reserve0, path);
-                token0PriceInMON = out[out.length - 1];
+                token0PriceInBNB = out[out.length - 1];
             }
-            poolValueMON = reserve1 + token0PriceInMON;
+            poolValueBNB = reserve1 + token0PriceInBNB;
         } else {
-            // can't price non-WMON pairs in this contract
+            // can't price non-WBNB pairs in this contract
             return 0;
         }
 
-        // LP share value = poolValueMON * lpAmount / totalSupply
-        return (poolValueMON * lpAmount) / totalSupply;
+        // LP share value = poolValueBNB * lpAmount / totalSupply
+        return (poolValueBNB * lpAmount) / totalSupply;
     }
 
     // VIEW FUNCTIONS
@@ -705,7 +705,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
             ? lock.unlockTime - block.timestamp
             : 0;
         uint256 value = lock.active
-            ? _estimateLPValueInMON(lock.lpToken, lock.lpAmount)
+            ? _estimateLPValueInBNB(lock.lpToken, lock.lpAmount)
             : 0;
 
         return (
@@ -717,7 +717,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
             lock.lockTime,
             lock.unlockTime,
             lock.active,
-            lock.totalFeesHarvestedMON,
+            lock.totalFeesHarvestedBNB,
             lock.harvestCount,
             timeLeft,
             value,

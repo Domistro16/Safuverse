@@ -16,12 +16,12 @@ import { BondingCurveDEXABI } from '../abis';
 
 /**
  * Volume data structure
- * ✅ UPDATED: Changed to MON (Monad migration)
+ * ✅ UPDATED: Changed to BNB (BNBad migration)
  */
 export interface VolumeData {
-  totalBuyVolumeMON: bigint;
-  totalSellVolumeMON: bigint;
-  totalVolumeMON: bigint;
+  totalBuyVolumeBNB: bigint;
+  totalSellVolumeBNB: bigint;
+  totalVolumeBNB: bigint;
   totalBuyVolumeTokens: bigint;
   totalSellVolumeTokens: bigint;
   buyCount: number;
@@ -33,13 +33,13 @@ export interface VolumeData {
 
 /**
  * Trade data structure
- * ✅ UPDATED: Changed to MON (Monad migration)
+ * ✅ UPDATED: Changed to BNB (BNBad migration)
  */
 export interface TradeData {
   type: 'buy' | 'sell';
   trader: string;
   tokenAddress: string;
-  monAmount: bigint;
+  BNBAmount: bigint;
   tokenAmount: bigint;
   price: bigint;
   feeRate: bigint;
@@ -102,17 +102,17 @@ export class BondingCurveDEX extends BaseContract {
    */
   async buyTokens(
     tokenAddress: string,
-    monAmount: string,
+    BNBAmount: string,
     slippageTolerance: number = 1, // 1% default
     options?: TxOptions
   ): Promise<TxResult> {
     this.requireSigner();
     this.validateAddress(tokenAddress);
 
-    const amount = this.safeParseEther(monAmount);
+    const amount = this.safeParseEther(BNBAmount);
 
     // Get quote
-    const quote = await this.getBuyQuote(tokenAddress, monAmount);
+    const quote = await this.getBuyQuote(tokenAddress, BNBAmount);
 
     // Calculate min tokens with slippage
     const minTokensOut = (quote.tokensOut * BigInt(100 - slippageTolerance)) / 100n;
@@ -146,13 +146,13 @@ export class BondingCurveDEX extends BaseContract {
     // Get quote
     const quote = await this.getSellQuote(tokenAddress, tokenAmount);
 
-    // Calculate min MON with slippage
-    const minMONOut = (quote.tokensOut * BigInt(100 - slippageTolerance)) / 100n;
+    // Calculate min BNB with slippage
+    const minBNBOut = (quote.tokensOut * BigInt(100 - slippageTolerance)) / 100n;
 
     const tx = await this.contract.sellTokens(
       tokenAddress,
       amount,
-      minMONOut,
+      minBNBOut,
       this.buildTxOptions(options, GAS_LIMITS.SELL_TOKENS)
     );
 
@@ -163,12 +163,12 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Get buy quote (how many tokens for X MON)
+   * Get buy quote (how many tokens for X BNB)
    */
-  async getBuyQuote(tokenAddress: string, monAmount: string): Promise<Quote> {
+  async getBuyQuote(tokenAddress: string, BNBAmount: string): Promise<Quote> {
     this.validateAddress(tokenAddress);
 
-    const amount = this.safeParseEther(monAmount);
+    const amount = this.safeParseEther(BNBAmount);
     const quote = await this.contract.getBuyQuote(tokenAddress, amount);
 
     return {
@@ -178,7 +178,7 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Get sell quote (how much MON for X tokens)
+   * Get sell quote (how much BNB for X tokens)
    */
   async getSellQuote(tokenAddress: string, tokenAmount: string): Promise<Quote> {
     this.validateAddress(tokenAddress);
@@ -187,7 +187,7 @@ export class BondingCurveDEX extends BaseContract {
     const quote = await this.contract.getSellQuote(tokenAddress, amount);
 
     return {
-      tokensOut: quote[0], // monOut
+      tokensOut: quote[0], // BNBOut
       pricePerToken: quote[1], // pricePerToken
     };
   }
@@ -201,9 +201,9 @@ export class BondingCurveDEX extends BaseContract {
     const info = await this.contract.getPoolInfo(tokenAddress);
 
     return {
-      marketCapMON: info[0],
+      marketCapBNB: info[0],
       marketCapUSD: info[1],
-      monReserve: info[2],
+      BNBReserve: info[2],
       tokenReserve: info[3],
       reservedTokens: info[4],
       currentPrice: info[5],
@@ -251,7 +251,7 @@ export class BondingCurveDEX extends BaseContract {
       lastClaimTime: info[1],
       graduationMarketCap: info[2],
       currentMarketCap: info[3],
-      monInPool: info[4],
+      BNBInPool: info[4],
       canClaim: info[5],
     };
   }
@@ -304,15 +304,15 @@ export class BondingCurveDEX extends BaseContract {
   /**
    * Calculate price impact for buy
    */
-  async calculateBuyPriceImpact(tokenAddress: string, monAmount: string): Promise<number> {
+  async calculateBuyPriceImpact(tokenAddress: string, BNBAmount: string): Promise<number> {
     const poolInfo = await this.getPoolInfo(tokenAddress);
-    const quote = await this.getBuyQuote(tokenAddress, monAmount);
+    const quote = await this.getBuyQuote(tokenAddress, BNBAmount);
 
     if (poolInfo.currentPrice === 0n || quote.tokensOut === 0n) {
       return 0;
     }
 
-    const avgPrice = (this.safeParseEther(monAmount) * 10n ** 18n) / quote.tokensOut;
+    const avgPrice = (this.safeParseEther(BNBAmount) * 10n ** 18n) / quote.tokensOut;
     const priceImpact =
       Number(((avgPrice - poolInfo.currentPrice) * 10000n) / poolInfo.currentPrice) / 100;
 
@@ -347,7 +347,7 @@ export class BondingCurveDEX extends BaseContract {
       return 0;
     }
 
-    // Assume 1 second block time for Monad
+    // Assume 1 second block time for BNBad
     const secondsRemaining = Number(feeInfo.blocksUntilNextTier) * 1;
     return secondsRemaining;
   }
@@ -374,9 +374,9 @@ export class BondingCurveDEX extends BaseContract {
       const pool = await this.graph.getPool(tokenAddress.toLowerCase());
       if (pool) {
         return {
-          totalBuyVolumeMON: BigInt(pool.totalVolume) / 2n, // Rough estimate
-          totalSellVolumeMON: BigInt(pool.totalVolume) / 2n, // Rough estimate
-          totalVolumeMON: BigInt(pool.totalVolume),
+          totalBuyVolumeBNB: BigInt(pool.totalVolume) / 2n, // Rough estimate
+          totalSellVolumeBNB: BigInt(pool.totalVolume) / 2n, // Rough estimate
+          totalVolumeBNB: BigInt(pool.totalVolume),
           totalBuyVolumeTokens: 0n, // Not available in pool stats
           totalSellVolumeTokens: 0n, // Not available in pool stats
           buyCount: Number(pool.totalBuys),
@@ -420,8 +420,8 @@ export class BondingCurveDEX extends BaseContract {
       const buyTrades = filteredTrades.filter((t: any) => t.isBuy);
       const sellTrades = filteredTrades.filter((t: any) => !t.isBuy);
 
-      const buyVolumeMON = buyTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.monAmount), 0n);
-      const sellVolumeMON = sellTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.monAmount), 0n);
+      const buyVolumeBNB = buyTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.BNBAmount), 0n);
+      const sellVolumeBNB = sellTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.BNBAmount), 0n);
       const buyVolumeTokens = buyTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.tokenAmount), 0n);
       const sellVolumeTokens = sellTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.tokenAmount), 0n);
 
@@ -430,9 +430,9 @@ export class BondingCurveDEX extends BaseContract {
       const allTraders = new Set([...buyers, ...sellers]);
 
       return {
-        totalBuyVolumeMON: buyVolumeMON,
-        totalSellVolumeMON: sellVolumeMON,
-        totalVolumeMON: buyVolumeMON + sellVolumeMON,
+        totalBuyVolumeBNB: buyVolumeBNB,
+        totalSellVolumeBNB: sellVolumeBNB,
+        totalVolumeBNB: buyVolumeBNB + sellVolumeBNB,
         totalBuyVolumeTokens: buyVolumeTokens,
         totalSellVolumeTokens: sellVolumeTokens,
         buyCount: buyTrades.length,
@@ -459,8 +459,8 @@ export class BondingCurveDEX extends BaseContract {
     }
 
     // Calculate volumes
-    const buyVolumeMON = filteredBuyEvents.reduce((sum, e) => sum + e.monAmount, 0n);
-    const sellVolumeMON = filteredSellEvents.reduce((sum, e) => sum + e.monAmount, 0n);
+    const buyVolumeBNB = filteredBuyEvents.reduce((sum, e) => sum + e.BNBAmount, 0n);
+    const sellVolumeBNB = filteredSellEvents.reduce((sum, e) => sum + e.BNBAmount, 0n);
     const buyVolumeTokens = filteredBuyEvents.reduce((sum, e) => sum + e.tokenAmount, 0n);
     const sellVolumeTokens = filteredSellEvents.reduce((sum, e) => sum + e.tokenAmount, 0n);
 
@@ -470,9 +470,9 @@ export class BondingCurveDEX extends BaseContract {
     const allTraders = new Set([...buyers, ...sellers]);
 
     return {
-      totalBuyVolumeMON: buyVolumeMON,
-      totalSellVolumeMON: sellVolumeMON,
-      totalVolumeMON: buyVolumeMON + sellVolumeMON,
+      totalBuyVolumeBNB: buyVolumeBNB,
+      totalSellVolumeBNB: sellVolumeBNB,
+      totalVolumeBNB: buyVolumeBNB + sellVolumeBNB,
       totalBuyVolumeTokens: buyVolumeTokens,
       totalSellVolumeTokens: sellVolumeTokens,
       buyCount: filteredBuyEvents.length,
@@ -539,8 +539,8 @@ export class BondingCurveDEX extends BaseContract {
         const intervalStart = currentTime - (periods - i) * intervalSeconds;
         const data = intervals.get(intervalStart) || { buys: [], sells: [] };
 
-        const buyVolumeMON = data.buys.reduce((sum: bigint, t: any) => sum + BigInt(t.monAmount), 0n);
-        const sellVolumeMON = data.sells.reduce((sum: bigint, t: any) => sum + BigInt(t.monAmount), 0n);
+        const buyVolumeBNB = data.buys.reduce((sum: bigint, t: any) => sum + BigInt(t.BNBAmount), 0n);
+        const sellVolumeBNB = data.sells.reduce((sum: bigint, t: any) => sum + BigInt(t.BNBAmount), 0n);
         const buyVolumeTokens = data.buys.reduce((sum: bigint, t: any) => sum + BigInt(t.tokenAmount), 0n);
         const sellVolumeTokens = data.sells.reduce((sum: bigint, t: any) => sum + BigInt(t.tokenAmount), 0n);
 
@@ -551,9 +551,9 @@ export class BondingCurveDEX extends BaseContract {
         results.push({
           timestamp: intervalStart + intervalSeconds,
           intervalStart,
-          totalBuyVolumeMON: buyVolumeMON,
-          totalSellVolumeMON: sellVolumeMON,
-          totalVolumeMON: buyVolumeMON + sellVolumeMON,
+          totalBuyVolumeBNB: buyVolumeBNB,
+          totalSellVolumeBNB: sellVolumeBNB,
+          totalVolumeBNB: buyVolumeBNB + sellVolumeBNB,
           totalBuyVolumeTokens: buyVolumeTokens,
           totalSellVolumeTokens: sellVolumeTokens,
           buyCount: data.buys.length,
@@ -606,8 +606,8 @@ export class BondingCurveDEX extends BaseContract {
       const intervalStart = currentTime - (periods - i) * intervalSeconds;
       const data = intervals.get(intervalStart) || { buys: [], sells: [] };
 
-      const buyVolumeMON = data.buys.reduce((sum, e) => sum + e.monAmount, 0n);
-      const sellVolumeMON = data.sells.reduce((sum, e) => sum + e.monAmount, 0n);
+      const buyVolumeBNB = data.buys.reduce((sum, e) => sum + e.BNBAmount, 0n);
+      const sellVolumeBNB = data.sells.reduce((sum, e) => sum + e.BNBAmount, 0n);
       const buyVolumeTokens = data.buys.reduce((sum, e) => sum + e.tokenAmount, 0n);
       const sellVolumeTokens = data.sells.reduce((sum, e) => sum + e.tokenAmount, 0n);
 
@@ -618,9 +618,9 @@ export class BondingCurveDEX extends BaseContract {
       results.push({
         timestamp: intervalStart + intervalSeconds,
         intervalStart,
-        totalBuyVolumeMON: buyVolumeMON,
-        totalSellVolumeMON: sellVolumeMON,
-        totalVolumeMON: buyVolumeMON + sellVolumeMON,
+        totalBuyVolumeBNB: buyVolumeBNB,
+        totalSellVolumeBNB: sellVolumeBNB,
+        totalVolumeBNB: buyVolumeBNB + sellVolumeBNB,
         totalBuyVolumeTokens: buyVolumeTokens,
         totalSellVolumeTokens: sellVolumeTokens,
         buyCount: data.buys.length,
@@ -656,7 +656,7 @@ export class BondingCurveDEX extends BaseContract {
         type: t.isBuy ? 'buy' : 'sell',
         trader: t.trader,
         tokenAddress: t.token.id,
-        monAmount: BigInt(t.monAmount),
+        BNBAmount: BigInt(t.BNBAmount),
         tokenAmount: BigInt(t.tokenAmount),
         price: BigInt(t.price),
         feeRate: BigInt(t.feeRate),
@@ -713,7 +713,7 @@ export class BondingCurveDEX extends BaseContract {
         type: 'buy',
         trader: args[1], // buyer
         tokenAddress: args[2], // token
-        monAmount: topics[0], // monReceived
+        BNBAmount: topics[0], // BNBReceived
         tokenAmount: topics[1], // tokensAmount
         price: topics[2], // currentPrice
         feeRate: topics[3], // feeRate
@@ -759,7 +759,7 @@ export class BondingCurveDEX extends BaseContract {
         type: 'sell',
         trader: args[0], // seller
         tokenAddress: args[1], // token
-        monAmount: topics[0], // monReceived
+        BNBAmount: topics[0], // BNBReceived
         tokenAmount: topics[1], // tokensAmount
         price: topics[2], // currentPrice
         feeRate: topics[3], // feeRate
@@ -783,9 +783,9 @@ export class BondingCurveDEX extends BaseContract {
   ): Promise<
     Array<{
       address: string;
-      buyVolumeMON: bigint;
-      sellVolumeMON: bigint;
-      totalVolumeMON: bigint;
+      buyVolumeBNB: bigint;
+      sellVolumeBNB: bigint;
+      totalVolumeBNB: bigint;
       buyCount: number;
       sellCount: number;
       netTokens: bigint;
@@ -804,8 +804,8 @@ export class BondingCurveDEX extends BaseContract {
       const traderMap = new Map<
         string,
         {
-          buyVolumeMON: bigint;
-          sellVolumeMON: bigint;
+          buyVolumeBNB: bigint;
+          sellVolumeBNB: bigint;
           buyCount: number;
           sellCount: number;
           netTokens: bigint;
@@ -815,19 +815,19 @@ export class BondingCurveDEX extends BaseContract {
       for (const trade of allTrades) {
         const addr = trade.trader.toLowerCase();
         const existing = traderMap.get(addr) || {
-          buyVolumeMON: 0n,
-          sellVolumeMON: 0n,
+          buyVolumeBNB: 0n,
+          sellVolumeBNB: 0n,
           buyCount: 0,
           sellCount: 0,
           netTokens: 0n,
         };
 
         if (trade.isBuy) {
-          existing.buyVolumeMON += BigInt(trade.monAmount);
+          existing.buyVolumeBNB += BigInt(trade.BNBAmount);
           existing.buyCount++;
           existing.netTokens += BigInt(trade.tokenAmount);
         } else {
-          existing.sellVolumeMON += BigInt(trade.monAmount);
+          existing.sellVolumeBNB += BigInt(trade.BNBAmount);
           existing.sellCount++;
           existing.netTokens -= BigInt(trade.tokenAmount);
         }
@@ -839,14 +839,14 @@ export class BondingCurveDEX extends BaseContract {
       const traders = Array.from(traderMap.entries())
         .map(([address, data]) => ({
           address,
-          buyVolumeMON: data.buyVolumeMON,
-          sellVolumeMON: data.sellVolumeMON,
-          totalVolumeMON: data.buyVolumeMON + data.sellVolumeMON,
+          buyVolumeBNB: data.buyVolumeBNB,
+          sellVolumeBNB: data.sellVolumeBNB,
+          totalVolumeBNB: data.buyVolumeBNB + data.sellVolumeBNB,
           buyCount: data.buyCount,
           sellCount: data.sellCount,
           netTokens: data.netTokens,
         }))
-        .sort((a, b) => (a.totalVolumeMON > b.totalVolumeMON ? -1 : 1));
+        .sort((a, b) => (a.totalVolumeBNB > b.totalVolumeBNB ? -1 : 1));
 
       return traders.slice(0, limit);
     }
@@ -862,8 +862,8 @@ export class BondingCurveDEX extends BaseContract {
     const traderMap = new Map<
       string,
       {
-        buyVolumeMON: bigint;
-        sellVolumeMON: bigint;
+        buyVolumeBNB: bigint;
+        sellVolumeBNB: bigint;
         buyCount: number;
         sellCount: number;
         netTokens: bigint;
@@ -873,14 +873,14 @@ export class BondingCurveDEX extends BaseContract {
     for (const trade of buyEvents) {
       const addr = trade.trader.toLowerCase();
       const existing = traderMap.get(addr) || {
-        buyVolumeMON: 0n,
-        sellVolumeMON: 0n,
+        buyVolumeBNB: 0n,
+        sellVolumeBNB: 0n,
         buyCount: 0,
         sellCount: 0,
         netTokens: 0n,
       };
 
-      existing.buyVolumeMON += trade.monAmount;
+      existing.buyVolumeBNB += trade.BNBAmount;
       existing.buyCount++;
       existing.netTokens += trade.tokenAmount;
       traderMap.set(addr, existing);
@@ -889,14 +889,14 @@ export class BondingCurveDEX extends BaseContract {
     for (const trade of sellEvents) {
       const addr = trade.trader.toLowerCase();
       const existing = traderMap.get(addr) || {
-        buyVolumeMON: 0n,
-        sellVolumeMON: 0n,
+        buyVolumeBNB: 0n,
+        sellVolumeBNB: 0n,
         buyCount: 0,
         sellCount: 0,
         netTokens: 0n,
       };
 
-      existing.sellVolumeMON += trade.monAmount;
+      existing.sellVolumeBNB += trade.BNBAmount;
       existing.sellCount++;
       existing.netTokens -= trade.tokenAmount;
       traderMap.set(addr, existing);
@@ -906,14 +906,14 @@ export class BondingCurveDEX extends BaseContract {
     const traders = Array.from(traderMap.entries())
       .map(([address, data]) => ({
         address,
-        buyVolumeMON: data.buyVolumeMON,
-        sellVolumeMON: data.sellVolumeMON,
-        totalVolumeMON: data.buyVolumeMON + data.sellVolumeMON,
+        buyVolumeBNB: data.buyVolumeBNB,
+        sellVolumeBNB: data.sellVolumeBNB,
+        totalVolumeBNB: data.buyVolumeBNB + data.sellVolumeBNB,
         buyCount: data.buyCount,
         sellCount: data.sellCount,
         netTokens: data.netTokens,
       }))
-      .sort((a, b) => (a.totalVolumeMON > b.totalVolumeMON ? -1 : 1));
+      .sort((a, b) => (a.totalVolumeBNB > b.totalVolumeBNB ? -1 : 1));
 
     return traders.slice(0, limit);
   }
@@ -969,15 +969,15 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Get 24h trading volume in MON
+   * Get 24h trading volume in BNB
    * Returns both the bigint value and formatted string
    * Uses The Graph if available, falls back to events
    */
   async get24hVolume(tokenAddress: string): Promise<{
-    volumeMON: bigint;
+    volumeBNB: bigint;
     volumeFormatted: string;
-    buyVolumeMON: bigint;
-    sellVolumeMON: bigint;
+    buyVolumeBNB: bigint;
+    sellVolumeBNB: bigint;
     tradeCount: number;
   }> {
     this.validateAddress(tokenAddress);
@@ -998,21 +998,21 @@ export class BondingCurveDEX extends BaseContract {
       const buyTrades = recent24hTrades.filter((t: any) => t.isBuy);
       const sellTrades = recent24hTrades.filter((t: any) => !t.isBuy);
 
-      const buyVolume = buyTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.monAmount), 0n);
-      const sellVolume = sellTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.monAmount), 0n);
+      const buyVolume = buyTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.BNBAmount), 0n);
+      const sellVolume = sellTrades.reduce((sum: bigint, t: any) => sum + BigInt(t.BNBAmount), 0n);
       const totalVolume = buyVolume + sellVolume;
 
       return {
-        volumeMON: totalVolume,
+        volumeBNB: totalVolume,
         volumeFormatted: this.safeFormatEther(totalVolume),
-        buyVolumeMON: buyVolume,
-        sellVolumeMON: sellVolume,
+        buyVolumeBNB: buyVolume,
+        sellVolumeBNB: sellVolume,
         tradeCount: recent24hTrades.length,
       };
     }
 
     // ⚠️ Fallback to events (slower, use only when Graph not available)
-    // Calculate blocks in last 24 hours (Monad: ~1 second per block = ~86,400 blocks/day)
+    // Calculate blocks in last 24 hours (BNBad: ~1 second per block = ~86,400 blocks/day)
     const latestBlock = await this.provider.getBlockNumber();
     const blocksPerDay = 86400;
     const fromBlock = Math.max(0, latestBlock - blocksPerDay);
@@ -1022,15 +1022,15 @@ export class BondingCurveDEX extends BaseContract {
       this.getTokensSoldEvents(tokenAddress, fromBlock, latestBlock),
     ]);
 
-    const buyVolume = buyEvents.reduce((sum, trade) => sum + trade.monAmount, 0n);
-    const sellVolume = sellEvents.reduce((sum, trade) => sum + trade.monAmount, 0n);
+    const buyVolume = buyEvents.reduce((sum, trade) => sum + trade.BNBAmount, 0n);
+    const sellVolume = sellEvents.reduce((sum, trade) => sum + trade.BNBAmount, 0n);
     const totalVolume = buyVolume + sellVolume;
 
     return {
-      volumeMON: totalVolume,
+      volumeBNB: totalVolume,
       volumeFormatted: this.safeFormatEther(totalVolume),
-      buyVolumeMON: buyVolume,
-      sellVolumeMON: sellVolume,
+      buyVolumeBNB: buyVolume,
+      sellVolumeBNB: sellVolume,
       tradeCount: buyEvents.length + sellEvents.length,
     };
   }
@@ -1133,10 +1133,10 @@ export class BondingCurveDEX extends BaseContract {
   // ==================== UTILITY METHODS ====================
 
   /**
-   * Format MON amount (bigint) to readable string
+   * Format BNB amount (bigint) to readable string
    * Handles very small amounts without scientific notation
    */
-  formatMONAmount(amount: bigint): string {
+  formatBNBAmount(amount: bigint): string {
     return this.safeFormatEther(amount);
   }
 
@@ -1157,10 +1157,10 @@ export class BondingCurveDEX extends BaseContract {
   }
 
   /**
-   * Parse MON amount string to bigint
+   * Parse BNB amount string to bigint
    * Handles scientific notation and very small values
    */
-  parseMONAmount(amount: string): bigint {
+  parseBNBAmount(amount: string): bigint {
     return this.safeParseEther(amount);
   }
 
@@ -1201,3 +1201,4 @@ export class BondingCurveDEX extends BaseContract {
     return this.addEventListener('CreatorFeesClaimed', callback, filter);
   }
 }
+

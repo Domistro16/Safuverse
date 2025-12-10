@@ -29,31 +29,31 @@ const func: DeployFunction = async function (hre) {
   await viem.waitForTransactionSuccess(reverseRegistrarSetDefaultResolverHash)
 
   const resolverEthOwner = await registry.read.owner([
-    namehash('resolver.bald'),
+    namehash('resolver.safu'),
   ])
 
   if (resolverEthOwner === owner.address) {
     const publicResolver = await viem.getContract('PublicResolver', owner)
     const setResolverHash = await registry.write.setResolver([
-      namehash('resolver.bald'),
+      namehash('resolver.safu'),
       publicResolver.address,
     ])
     console.log(
-      `Setting resolver for resolver.bald to PublicResolver (tx: ${setResolverHash})...`,
+      `Setting resolver for resolver.safu to PublicResolver (tx: ${setResolverHash})...`,
     )
     await viem.waitForTransactionSuccess(setResolverHash)
 
     const setAddrHash = await publicResolver.write.setAddr([
-      namehash('resolver.bald'),
+      namehash('resolver.safu'),
       publicResolver.address,
     ])
     console.log(
-      `Setting address for resolver.bald to PublicResolver (tx: ${setAddrHash})...`,
+      `Setting address for resolver.safu to PublicResolver (tx: ${setAddrHash})...`,
     )
     await viem.waitForTransactionSuccess(setAddrHash)
   } else {
     console.log(
-      'resolver.bald is not owned by the owner address, not setting resolver',
+      'resolver.safu is not owned by the owner address, not setting resolver',
     )
   }
 }

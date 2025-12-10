@@ -481,7 +481,7 @@ describe("LPFeeHarvester", function () {
       expect(projectFees).to.gt(0); // Project InfoFi gets 0%
       expect(platformFees).to.be.gt(0);
 
-    
+
     });
 
     it("Should update harvest statistics", async function () {
@@ -541,7 +541,7 @@ describe("LPFeeHarvester", function () {
       );
 
       expect(history.length).to.equal(1);
-      expect(history[0].monAmount).to.be.gt(0);
+      expect(history[0].bnbAmount).to.be.gt(0);
       expect(history[0].lpBurned).to.be.gt(0);
       expect(history[0].timestamp).to.be.gt(0);
     });

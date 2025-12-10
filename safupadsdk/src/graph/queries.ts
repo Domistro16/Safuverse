@@ -49,7 +49,7 @@ export const GET_TOKEN = `
         monthlyMarketCaps
         consecutiveMonthsBelowStart
         communityControlTriggered
-        liquidityMON
+        liquidityBNB
         liquidityTokens
         raisedFundsVesting
         raisedFundsClaimed
@@ -59,10 +59,10 @@ export const GET_TOKEN = `
       pool {
         id
         creator
-        monReserve
+        bnbReserve
         tokenReserve
         reservedTokens
-        virtualMonReserve
+        virtualBnbReserve
         marketCap
         graduationMarketCap
         currentPrice
@@ -70,9 +70,9 @@ export const GET_TOKEN = `
         graduated
         burnLP
         lpToken
-        monForPancakeSwap
+        bnbForPancakeSwap
         launchBlock
-        graduationMonThreshold
+        graduationBnbThreshold
         totalVolume
         totalBuys
         totalSells
@@ -155,7 +155,7 @@ export const GET_LAUNCH = `
       monthlyMarketCaps
       consecutiveMonthsBelowStart
       communityControlTriggered
-      liquidityMON
+      liquidityBNB
       liquidityTokens
       raisedFundsVesting
       raisedFundsClaimed
@@ -194,10 +194,10 @@ export const GET_POOL = `
     pool(id: $id) {
       id
       creator
-      monReserve
+      bnbReserve
       tokenReserve
       reservedTokens
-      virtualMonReserve
+      virtualBnbReserve
       marketCap
       graduationMarketCap
       currentPrice
@@ -205,9 +205,9 @@ export const GET_POOL = `
       graduated
       burnLP
       lpToken
-      monForPancakeSwap
+      bnbForPancakeSwap
       launchBlock
-      graduationMonThreshold
+      graduationBnbThreshold
       totalVolume
       totalBuys
       totalSells
@@ -244,7 +244,7 @@ export const GET_POOLS = `
     ) {
       id
       creator
-      monReserve
+      bnbReserve
       tokenReserve
       currentPrice
       marketCap
@@ -285,7 +285,7 @@ export const GET_TRADES = `
       id
       trader
       isBuy
-      monAmount
+      bnbAmount
       tokenAmount
       price
       feeRate
@@ -485,7 +485,7 @@ export const GET_USER_TRADES = `
     ) {
       id
       isBuy
-      monAmount
+      bnbAmount
       tokenAmount
       price
       timestamp

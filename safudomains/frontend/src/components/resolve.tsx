@@ -14,7 +14,7 @@ import { useResolveData } from '../hooks/useResolveData'
 import ProfileTab from './resolve/ProfileTab'
 import { Switch } from '@headlessui/react'
 
-const THEME_KEY = 'balddomains-theme'
+const THEME_KEY = 'safudomains-theme'
 
 const Resolve = () => {
   const { label } = useParams<string>()
@@ -70,7 +70,7 @@ const Resolve = () => {
   } = useResolveData(label as string, walletAddress as `0x${string}`)
 
   useEffect(() => {
-    document.title = `${label}.bald`
+    document.title = `${label}.safu`
   }, [label])
 
   useEffect(() => {
@@ -207,7 +207,7 @@ const Resolve = () => {
       <div className="flex flex-col mx-auto p-4 mb-20 md:mb-5 md:px-30 mt-10 lg:px-60">
         <div>
           <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
-            {label as string}.bald
+            {label as string}.safu
           </h2>
 
           {/* Tabs */}
@@ -476,11 +476,10 @@ const Resolve = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px' }}>
                   <h1 style={{ fontSize: '20px', fontWeight: 700, color: isDark ? '#fff' : '#111' }}>Token</h1>
                   <a
-                    href={`https://bscscan.com/nft/${
-                      wrapped == true
+                    href={`https://bscscan.com/nft/${wrapped == true
                         ? constants.NameWrapper + '/' + BigInt(node).toString(10)
                         : constants.BaseRegistrar + '/' + BigInt(keccak256(toBytes(label as string))).toString(10)
-                    }`}
+                      }`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: isDark ? '#fff' : '#111', fontWeight: 600, textDecoration: 'none' }}
@@ -520,7 +519,7 @@ const Resolve = () => {
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
                     <DomainImage
                       className="h-48 md:h-40 md:w-60"
-                      domain={`${label}.bald`}
+                      domain={`${label}.safu`}
                     />
                   </div>
                 </div>

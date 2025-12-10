@@ -7,7 +7,7 @@ import { constants } from '../constant'
 import { motion } from 'framer-motion'
 import { BookOpen, X, Menu } from 'lucide-react'
 
-const THEME_KEY = 'balddomains-theme'
+const THEME_KEY = 'safudomains-theme'
 
 const abi = [
   {
@@ -70,7 +70,7 @@ export default function Nav() {
 
   const navLinks = [
     {
-      href: 'https://baldverse.gitbook.io/baldverse-docs/',
+      href: 'https://safuverse.gitbook.io/safuverse-docs/',
       label: 'Docs',
       isExternal: true,
     },
@@ -161,24 +161,23 @@ export default function Nav() {
       }}
     >
       <div className="flex justify-between items-center h-[70px] w-full max-w-[1400px] mx-auto px-4 md:px-8">
-        <a href="https://baldverse.com" className="flex items-center gap-1.5">
+        <a href="https://safuverse.com" className="flex items-center gap-1.5">
           <img
-            src="/Baldverse.png"
+            src="/safuverse.png"
             className="h-10 hidden lg:block"
-            alt="Baldverse"
+            alt="safuverse"
           />
           <img
             src="/small.png"
             className="h-12 lg:hidden block"
-            alt="Baldverse"
+            alt="safuverse"
           />
         </a>
 
         {/* Search Bar - Hidden on Homepage */}
         <div
-          className={`ml-5 relative ${
-            location.pathname == '/' ? 'hidden' : 'block'
-          }`}
+          className={`ml-5 relative ${location.pathname == '/' ? 'hidden' : 'block'
+            }`}
         >
           <input
             ref={inputRef}
@@ -211,7 +210,7 @@ export default function Nav() {
                 onClick={route}
               >
                 <div className="text-[15px] font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
-                  {search != '' ? search + '.bald' : ''}
+                  {search != '' ? search + '.safu' : ''}
                 </div>
                 {available != '' && (
                   <div
@@ -254,7 +253,7 @@ export default function Nav() {
           ))}
 
           <a
-            href="https://academy.baldverse.com/courses/all"
+            href="https://academy.safuverse.com/courses/all"
             className="flex items-center font-semibold transition-all hover:opacity-70"
             style={{ color: isDark ? '#f5f5f5' : '#111' }}
             target="_blank"
@@ -371,7 +370,7 @@ export default function Nav() {
             ))}
 
             <a
-              href="https://academy.baldverse.com/courses/all"
+              href="https://academy.safuverse.com/courses/all"
               className="flex items-center font-semibold"
               style={{ color: isDark ? '#f5f5f5' : '#111' }}
               target="_blank"

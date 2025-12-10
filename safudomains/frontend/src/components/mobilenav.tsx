@@ -4,7 +4,7 @@ import { IdentificationIcon, SearchIcon } from '@heroicons/react/outline'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
-const THEME_KEY = 'balddomains-theme'
+const THEME_KEY = 'safudomains-theme'
 
 export const MobileNav = () => {
   const { isConnected } = useAccount()

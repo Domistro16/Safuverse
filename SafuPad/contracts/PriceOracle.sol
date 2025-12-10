@@ -47,7 +47,7 @@ contract PriceOracle is Ownable {
 
     /**
      * @dev Constructor
-     * @param _priceFeed Address of Chainlink MON/USD price feed
+     * @param _priceFeed Address of Chainlink BNB/USD price feed
      * BSC Mainnet: 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE
      * BSC Testnet: 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526
      */
@@ -57,10 +57,10 @@ contract PriceOracle is Ownable {
     }
 
     /**
-     * @dev Get current MON price in USD (with 18 decimals)
+     * @dev Get current BNB price in USD (with 18 decimals)
      * Uses cache if fresh, otherwise fetches from Chainlink
      */
-    function getMONPrice() public view returns (uint256) {
+    function getBNBPrice() public view returns (uint256) {
         // Return cached price if still fresh
         if (block.timestamp - cachedPrice.timestamp < CACHE_DURATION) {
             return cachedPrice.price;
@@ -81,58 +81,58 @@ contract PriceOracle is Ownable {
     }
 
     /**
-     * @dev Convert USD amount to MON
+     * @dev Convert USD amount to BNB
      * @param usdAmount Amount in USD (with 18 decimals)
-     * @return monAmount Amount in MON (with 18 decimals)
+     * @return bnbAmount Amount in BNB (with 18 decimals)
      */
-    function usdToMON(uint256 usdAmount) external view returns (uint256) {
-        uint256 monPrice = getMONPrice();
-        require(monPrice > 0, "Invalid MON price");
+    function usdToBNB(uint256 usdAmount) external view returns (uint256) {
+        uint256 bnbPrice = getBNBPrice();
+        require(bnbPrice > 0, "Invalid BNB price");
 
-        // usdAmount * 10^18 / monPrice = monAmount
-        return (usdAmount * 10 ** 18) / monPrice;
+        // usdAmount * 10^18 / bnbPrice = bnbAmount
+        return (usdAmount * 10 ** 18) / bnbPrice;
     }
 
     /**
-     * @dev Convert MON amount to USD
-     * @param monAmount Amount in MON (with 18 decimals)
+     * @dev Convert BNB amount to USD
+     * @param bnbAmount Amount in BNB (with 18 decimals)
      * @return usdAmount Amount in USD (with 18 decimals)
      */
-    function monToUSD(uint256 monAmount) external view returns (uint256) {
-        uint256 monPrice = getMONPrice();
-        require(monPrice > 0, "Invalid MON price");
+    function bnbToUSD(uint256 bnbAmount) external view returns (uint256) {
+        uint256 bnbPrice = getBNBPrice();
+        require(bnbPrice > 0, "Invalid BNB price");
 
-        // monAmount * monPrice / 10^18 = usdAmount
-        return (monAmount * monPrice) / 10 ** 18;
+        // bnbAmount * bnbPrice / 10^18 = usdAmount
+        return (bnbAmount * bnbPrice) / 10 ** 18;
     }
 
     /**
-     * @dev Check if USD amount meets minimum in MON terms
-     * @param monAmount MON amount to check
+     * @dev Check if USD amount meets minimum in BNB terms
+     * @param bnbAmount BNB amount to check
      * @param minUSD Minimum USD amount required
-     * @return bool True if MON amount meets USD minimum
+     * @return bool True if BNB amount meets USD minimum
      */
     function meetsMinimumUSD(
-        uint256 monAmount,
+        uint256 bnbAmount,
         uint256 minUSD
     ) external view returns (bool) {
-        uint256 monPrice = getMONPrice();
-        uint256 usdValue = (monAmount * monPrice) / 10 ** 18;
+        uint256 bnbPrice = getBNBPrice();
+        uint256 usdValue = (bnbAmount * bnbPrice) / 10 ** 18;
         return usdValue >= minUSD;
     }
 
     /**
-     * @dev Check if USD amount exceeds maximum in MON terms
-     * @param monAmount MON amount to check
+     * @dev Check if USD amount exceeds maximum in BNB terms
+     * @param bnbAmount BNB amount to check
      * @param maxUSD Maximum USD amount allowed
-     * @return bool True if MON amount exceeds USD maximum
+     * @return bool True if BNB amount exceeds USD maximum
      */
     function exceedsMaximumUSD(
-        uint256 monAmount,
+        uint256 bnbAmount,
         uint256 maxUSD
     ) external view returns (bool) {
-        uint256 monPrice = getMONPrice();
-        uint256 usdValue = (monAmount * monPrice) / 10 ** 18;
+        uint256 bnbPrice = getBNBPrice();
+        uint256 usdValue = (bnbAmount * bnbPrice) / 10 ** 18;
         return usdValue > maxUSD;
     }
 
@@ -157,7 +157,7 @@ contract PriceOracle is Ownable {
         );
 
         // Chainlink returns price with 8 decimals, convert to 18 decimals
-        // MON/USD price feed returns price like 58000000000 (8 decimals) = $580
+        // BNB/USD price feed returns price like 58000000000 (8 decimals) = $580
         uint8 decimals = priceFeed.decimals();
         uint256 priceWith18Decimals = uint256(price) * 10 ** (18 - decimals);
 

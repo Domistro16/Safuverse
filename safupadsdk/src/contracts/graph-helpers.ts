@@ -15,7 +15,7 @@ export async function getRecentTradesGraph(
   type: 'buy' | 'sell';
   trader: string;
   tokenAddress: string;
-  monAmount: bigint;
+  bnbAmount: bigint;
   tokenAmount: bigint;
   price: bigint;
   feeRate: bigint;
@@ -32,7 +32,7 @@ export async function getRecentTradesGraph(
     type: t.isBuy ? 'buy' as const : 'sell' as const,
     trader: t.trader,
     tokenAddress: t.token.id,
-    monAmount: BigInt(t.monAmount),
+    bnbAmount: BigInt(t.bnbAmount),
     tokenAmount: BigInt(t.tokenAmount),
     price: BigInt(t.price),
     feeRate: BigInt(t.feeRate),

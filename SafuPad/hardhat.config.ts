@@ -3,7 +3,7 @@ import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mo
 import { configVariable, task } from "hardhat/config";
 import hardhatNetworkHelpers from "@nomicfoundation/hardhat-network-helpers";
 import hardhatNetworkHelpersPlugin from "@nomicfoundation/hardhat-network-helpers";
-import hardhatTypechain from "@nomicfoundation/hardhat-typechain";         
+import hardhatTypechain from "@nomicfoundation/hardhat-typechain";
 import hardhatVerify from "@nomicfoundation/hardhat-verify";
 const config: HardhatUserConfig = {
   plugins: [
@@ -45,7 +45,7 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       forking: {
         enabled: true,
-        url: "https://rpc1.monad.xyz",
+        url: "https://bsc-dataseed.binance.org/",
       },
     },
     hardhatOp: {
@@ -67,12 +67,6 @@ const config: HardhatUserConfig = {
       type: "http",
       chainType: "l1",
       url: "https://bsc-rpc.publicnode.com",
-      accounts: [configVariable("PRIVATE_KEY")],
-    },
-    monad: {
-      type: "http",
-      chainType: "l1",
-      url: "https://rpc1.monad.xyz",
       accounts: [configVariable("PRIVATE_KEY")],
     },
   },

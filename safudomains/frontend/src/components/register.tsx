@@ -22,7 +22,7 @@ import PriceDisplay from './register/PriceDisplay'
 import { Input } from './ui/input'
 import { validateYears, VALIDATION_CONSTANTS } from '../utils/validation'
 
-const THEME_KEY = 'balddomains-theme'
+const THEME_KEY = 'safudomains-theme'
 
 type RegisterParams = {
   domain: string
@@ -236,7 +236,7 @@ const Register = () => {
   }, [input])
 
   useEffect(() => {
-    document.title = `Register – ${label}.bald`
+    document.title = `Register – ${label}.safu`
   }, [label])
 
   useEffect(() => {
@@ -395,13 +395,13 @@ const Register = () => {
       <div className="flex flex-col mx-auto px-4 md:px-30 mt-10 lg:px-60">
         <div>
           <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
-            {label}.bald
+            {label}.safu
           </h2>
 
           {next == 0 ? (
             <div style={{ ...cardStyle, padding: '32px' }}>
               <h1 style={{ fontSize: '20px', fontWeight: 600, color: isDark ? '#f8f8f8' : '#111', marginBottom: '24px' }}>
-                Register {label}.bald
+                Register {label}.safu
               </h1>
 
               {date ? (
@@ -950,7 +950,7 @@ const Register = () => {
               <ConfirmDetailsModal
                 isOpen={isOpen}
                 onRequestClose={() => setNext((prev) => prev - 1)}
-                name={`${label}.bald` || ''}
+                name={`${label}.safu` || ''}
                 action="Start timer"
                 info="Start timer to register name"
               />
@@ -962,7 +962,7 @@ const Register = () => {
               <RegisterDetailsModal
                 isOpen={isOpen}
                 onRequestClose={() => setNext((prev) => prev - 1)}
-                name={`${label}.bald` || ''}
+                name={`${label}.safu` || ''}
                 action="Register name"
                 duration={durationString}
               />
@@ -993,7 +993,7 @@ const Register = () => {
                     <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
                       You are now the owner of{' '}
                       <span style={{ fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
-                        {label}.bald
+                        {label}.safu
                       </span>
                     </p>
 
@@ -1014,7 +1014,7 @@ const Register = () => {
                       }}>
                         <Check style={{ width: '32px', height: '32px', color: isDark ? '#fff' : '#111' }} />
                       </div>
-                      <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.bald`}</p>
+                      <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.safu`}</p>
                     </div>
 
                     <div style={{
