@@ -1,160 +1,61 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
-import {
-  Target,
-  Play,
-  Rocket,
-  Brain,
-  Lock,
-  LucideIcon,
-  Star,
-  Clock,
-  PlayCircle,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { abi, Course, Deploy } from "@/constants";
-import { useAccount, useReadContract } from "wagmi";
+import React from "react";
 
-const iconMap = {
-  Target,
-  Play,
-  Rocket,
-  Brain,
+type CourseCardProps = {
+  title: string;
+  price: string;
+  level: string;
+  badge: string;
+  summary: string;
+  highlight?: boolean;
 };
 
-export const getRandomIcon = (title: string): LucideIcon => {
-  const iconKeys = Object.keys(iconMap) as (keyof typeof iconMap)[];
-  const hash = [...title].reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const index = hash % iconKeys.length;
-  return iconMap[iconKeys[index]];
-};
-type UserType = [
-  Course, // replace with the actual structure or use `any` if unknown
-  boolean,
-  number,
-  string[], // or `any[]` if it's not an array of strings
-  bigint
-];
-
-const CourseCard = ({
-  course,
-  animationDelay = 0,
-}: {
-  course: Course;
-  animationDelay?: number;
+export const CourseCard: React.FC<CourseCardProps> = ({
+  title,
+  price,
+  level,
+  badge,
+  summary,
+  highlight
 }) => {
-  // Mock enrollment for card display: For demo, let's assume no course is pre-enrolled on general cards
-  // Actual enrollment state would come from user context or props
-  const { address } = useAccount();
-  const { data: userCourse } = useReadContract({
-    abi: abi,
-    functionName: "getCourse",
-    address: Deploy,
-    args: [Number(course.id), address],
-  }) as {
-    data: UserType;
-    isPending: boolean;
-  };
-  const navigate = useNavigate();
-
-  const [isEnrolled, setIsEnrolled] = useState(false); // Mock state
-  useEffect(() => {
-    if (userCourse && Symbol.iterator in Object(userCourse)) {
-      const [, isActive] = userCourse;
-      setIsEnrolled(isActive);
-    }
-  }, [userCourse]);
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.95 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      whileHover={{ y: -8 }}
-      transition={{ duration: 0.6, delay: animationDelay, ease: "easeOut" }}
-      viewport={{ once: true, amount: 0.3 }}
-      className="rounded-2xl overflow-hidden bg-card border border-border hover:border-primary transition-all duration-300 group cursor-pointer flex flex-col h-full hover:shadow-[0_0_30px_rgba(0,212,170,0.3)]"
-      onClick={() => navigate(`/courses/${course.id}`)}
+    <div
+      className={`relative rounded-[28px] bg-white/70 border ${
+        highlight
+          ? "border-[#111] shadow-[0_28px_80px_rgba(15,23,42,0.22)]"
+          : "border-black/5 shadow-[0_18px_55px_rgba(15,23,42,0.10)]"
+      } overflow-hidden flex flex-col transition duration-500 [transform:preserve-3d] hover:-translate-y-3 hover:shadow-[0_40px_110px_rgba(15,23,42,0.32)] hover:[transform:rotate(-1deg)_scale(1.05)]`}
+      style={{ perspective: "900px" }}
     >
-      {/* Thumbnail */}
-      <div className="relative aspect-video overflow-hidden">
-        <img
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          alt={`${course.title} course preview`}
-          src={course.url}
-        />
-
-        {/* Price/Free Badge */}
-        <div className="absolute top-3 left-3">
-          {course.isFree || Number(course.price) === 0 ? (
-            <Badge variant="free" className="font-semibold">
-              FREE
-            </Badge>
-          ) : (
-            <span className="px-3 py-1 rounded-full bg-background/80 backdrop-blur text-foreground text-sm font-semibold">
-              ${Number(course.price) / 1000000}
-            </span>
-          )}
-        </div>
-
-        {/* Featured Badge (if applicable) */}
-        {course.isFeatured && (
-          <div className="absolute top-3 right-3">
-            <Badge variant="premium" className="font-semibold text-xs">
-              Featured
-            </Badge>
+      <div className="w-full h-52 md:h-60 bg-white border-b border-black/5 overflow-hidden flex items-center justify-center p-5">
+        <div
+          className="w-full h-full rounded-[20px] overflow-hidden border-[20px] border-white shadow-[0_10px_40px_rgba(0,0,0,0.08)] transition-transform duration-500 hover:scale-[1.04]"
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          <div className="w-full h-full bg-[radial-gradient(circle_at_0%_0%,#fff3cd,transparent_55%),radial-gradient(circle_at_100%_120%,#ffe1a3,transparent_55%)] flex items-center justify-center text-sm font-semibold text-[#aa7a09]">
+            Safu Course Preview
           </div>
-        )}
-
-        {/* Rating */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-background/80 backdrop-blur">
-          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-          <span className="text-xs font-medium">{course.rating || 4.8}</span>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-5 flex flex-col flex-grow">
-        <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors min-h-[56px]">
-          {course.title}
+      <div className="p-6 flex-1 flex flex-col">
+        <div className="flex items-center justify-between mb-2 text-[11px] text-[#777]">
+          <span className="text-[#f5a623] tracking-[0.16em]">★★★★★</span>
+          <span>{price}</span>
+        </div>
+        <h3 className="font-semibold text-[17px] text-[#111] mb-2 leading-snug line-clamp-2">
+          {title}
         </h3>
-
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-grow min-h-[40px]">
-          {course.description.split(" Access with .safu domain.")[0]}
+        <p className="text-[#555] text-sm mb-4 flex-1 leading-relaxed line-clamp-3">
+          {summary}
         </p>
-
-        {/* Meta */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-          <Badge
-            variant={
-              course.level.toLowerCase() === 'beginner' ? 'beginner' :
-              course.level.toLowerCase() === 'intermediate' ? 'intermediate' :
-              course.level.toLowerCase() === 'advanced' ? 'advanced' : 'default'
-            }
-            className="font-medium"
-          >
-            {course.level}
-          </Badge>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {course.duration}m
+        <div className="flex items-center justify-between text-[11px] mt-auto">
+          <span className="px-3 py-1 bg-[#fff7df] text-[#c89216] font-semibold rounded-full">
+            {badge}
           </span>
-          <span className="flex items-center gap-1">
-            <PlayCircle className="w-3 h-3" />
-            {course.lessons.length || 12} lessons
-          </span>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-auto">
-          {!isEnrolled && (
-            <p className="text-xs text-amber-400 mb-2 flex items-center justify-center">
-              <Lock size={12} className="mr-1" /> Requires .safu domain
-            </p>
-          )}
+          <span className="text-[#777]">{level}</span>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
