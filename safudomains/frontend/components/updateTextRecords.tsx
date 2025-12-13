@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { namehash, encodeFunctionData } from 'viem'
 import { buildTextRecords } from '../hooks/setText'
 import { useWriteContract } from 'wagmi'
@@ -15,7 +15,11 @@ interface UpdateProps {
   image: string
 }
 
-Modal.setAppElement('#root')
+// Set app element for react-modal on client side only
+if (typeof window !== 'undefined') {
+  Modal.setAppElement(document.body)
+}
+
 const addrResolver = [
   {
     inputs: [

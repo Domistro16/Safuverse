@@ -163,7 +163,7 @@ export default function Nav() {
       }}
     >
       <div className="flex justify-between items-center h-[70px] w-full max-w-[1400px] mx-auto px-4 md:px-8">
-        <a href="https://safuverse.com" className="flex items-center gap-1.5">
+        <div onClick={() => router.push('/')} className="flex items-center gap-1.5 cursor-pointer">
           <img
             src="/safuverse.png"
             className="h-10 hidden lg:block"
@@ -174,12 +174,11 @@ export default function Nav() {
             className="h-12 lg:hidden block"
             alt="safuverse"
           />
-        </a>
+        </div>
 
         {/* Search Bar - Hidden on Homepage */}
         <div
-          className={`ml-5 relative ${pathname == '/' ? 'hidden' : 'block'
-            }`}
+          className={`ml-5 relative ${pathname == '/' ? 'hidden' : 'block'}`}
         >
           <input
             ref={inputRef}
@@ -198,7 +197,7 @@ export default function Nav() {
           {/* Search Results Popup */}
           <div
             ref={boxRef}
-            className={`absolute left-1/2 transform -translate-x-1/2 mt-2 w-60 md:w-70 lg:w-96 rounded-2xl shadow-lg text-left z-10 transform origin-top
+            className={`absolute left-1/2 transform -translate-x-1/2 mt-2 w-60 md:w-70 lg:w-96 rounded-2xl shadow-lg text-left z-10 origin-top
               transition-transform duration-300 ease-out
               overflow-hidden ${showBox ? 'scale-y-100' : 'scale-y-0'}`}
             style={{
@@ -214,7 +213,7 @@ export default function Nav() {
                 <div className="text-[15px] font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
                   {search != '' ? search + '.safu' : ''}
                 </div>
-                {available != '' && (
+                {available != '' && search != '' && (
                   <div
                     className="text-[11px] px-3 py-1 rounded-full"
                     style={{

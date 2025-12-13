@@ -4,17 +4,20 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { keccak256, toBytes, zeroAddress } from 'viem'
 import { useAccount } from 'wagmi'
+import dynamic from 'next/dynamic'
 import Update from './updateTextRecords'
 import Unwrap from './unwrap'
 import ChangeResolver from './changeResolver'
 import Wrap from './wrap'
-import DomainImage from './DomainImage'
 import { constants } from '../constant'
 import { shortenAddress, getCID } from '../utils/domainUtils'
 import { getPermissions, getPermissionItems } from '../utils/fusePermissions'
 import { useResolveData } from '../hooks/useResolveData'
 import ProfileTab from './resolve/ProfileTab'
 import { Switch } from '@headlessui/react'
+
+// Dynamic import with SSR disabled to prevent canvas/fabric bundling issues
+const DomainImage = dynamic(() => import('./DomainImage'), { ssr: false })
 
 const THEME_KEY = 'safudomains-theme'
 

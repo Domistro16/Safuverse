@@ -44,7 +44,7 @@ const abi = [
 const faqItems = [
   {
     q: 'What is a .safu domain?',
-    a: 'A .safu domain is your decentralized Web3 identity on the Monad. It replaces long wallet addresses with human-readable names.',
+    a: 'A .safu domain is your decentralized Web3 identity on the BSC. It replaces long wallet addresses with human-readable names.',
   },
   {
     q: 'How do I register a domain?',
@@ -221,13 +221,6 @@ export default function Home() {
     }
   }, [open])
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(nextTheme)
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(THEME_KEY, nextTheme)
-    }
-  }
 
   const handleFaqClick = (index: number) => {
     setOpenFaqIndex((prev) => (prev === index ? null : index))
@@ -235,28 +228,6 @@ export default function Home() {
 
   return (
     <>
-      {/* TOP NAVBAR */}
-      <nav className="top-nav">
-        <a href="https://safuverse.com" className="nav-logo">
-          <img src="/safuverse.png" alt="safuverse" style={{ height: '40px' }} className="hidden md:block" />
-          <img src="/small.png" alt="safuverse" style={{ height: '50px' }} className="md:hidden" />
-        </a>
-        <div className="nav-right">
-          <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 600 }}>
-            Docs
-          </a>
-          <a href="https://academy.safuverse.com/courses/all" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 600 }}>
-            Academy
-          </a>
-          <button className="dark-toggle-btn" type="button" onClick={toggleTheme}>
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-          <button className="nav-login-btn" type="button" onClick={() => router.push('/mynames')}>
-            My Names
-          </button>
-        </div>
-      </nav>
-
       <div className="hero-spacer" />
 
       {/* HERO SECTION */}
@@ -269,7 +240,7 @@ export default function Home() {
 
           <div className="hero-pill">
             <span className="hero-pill-dot" />
-            <span style={{ color: '#000', fontWeight: 500 }}>Live on Monad</span>
+            <span style={{ color: 'white', fontWeight: 500 }}>Live on BSC</span>
           </div>
 
           <h1>
@@ -434,7 +405,7 @@ export default function Home() {
             <div className="content-pill">About</div>
             <h2 className="content-title">Your Gateway to Web3 Identity</h2>
             <p className="content-text" style={{ marginBottom: '14px' }}>
-              safu Domains is the official naming service for the safuverse ecosystem on Monad.
+              safu Domains is the official naming service for the safuverse ecosystem on BSC.
               Replace your long wallet address with a memorable .safu name.
             </p>
             <p className="content-text">
@@ -442,7 +413,7 @@ export default function Home() {
             </p>
 
             <div style={{ marginTop: '22px', fontSize: '14px', color: '#222' }}>
-              <p><strong>Network:</strong> Monad</p>
+              <p><strong>Network:</strong> BSC</p>
               <p><strong>Extension:</strong> .safu</p>
               <p><strong>Features:</strong> Lifetime registration available</p>
             </div>

@@ -10,9 +10,10 @@ import AllCourses from "@/pages/AllCourses";
 import Certificates from "@/pages/Certificates";
 import PointsHistory from "@/pages/PointsHistory";
 import CourseDetailPage from "@/pages/CourseDetailPage";
+import Profile from "@/pages/Profile";
+import ChatAgent from "@/pages/ChatAgent";
 
 // Legacy pages (use existing Navbar/Footer wrapper)
-import LessonPlayer from "@/pages/LessonPage";
 import QuizPage from "@/pages/QuizPage";
 
 function App() {
@@ -26,20 +27,10 @@ function App() {
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         <Route path="/certificates" element={<Certificates />} />
         <Route path="/points" element={<PointsHistory />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/chat" element={<ChatAgent />} />
 
-        {/* Legacy pages with existing Navbar/Footer */}
-        <Route
-          path="/courses/lesson/:courseId/:id"
-          element={
-            <div className="min-h-screen bg-background overflow-x-hidden font-gilroy subtle-bg-pattern">
-              <Navbar />
-              <main className="pt-20">
-                <LessonPlayer />
-              </main>
-              <Footer />
-            </div>
-          }
-        />
+        {/* Quiz page with existing Navbar/Footer */}
         <Route
           path="/courses/:courseId/lessons/:lessonId/quiz"
           element={

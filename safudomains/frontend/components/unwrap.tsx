@@ -10,7 +10,10 @@ interface UpdateProps {
   isOpen: boolean
 }
 
-Modal.setAppElement('#root')
+// Set app element for react-modal on client side only
+if (typeof window !== 'undefined') {
+  Modal.setAppElement(document.body)
+}
 
 const unwrapETH2LD = [
   {

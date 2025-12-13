@@ -12,7 +12,6 @@ export const constants = {
   Referral: '0x9fd7Bb7d8A6B3EF32C5435896aE5478aF80F6F2D' as `0x${string}`,
   Course: '0x2967A3EDA537630Fb4eb144Fa02f5081457506BE' as `0x${string}`,
 }
-
 export interface Params {
   /** The name to register */
   name: string

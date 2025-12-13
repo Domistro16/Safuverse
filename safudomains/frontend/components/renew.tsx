@@ -73,7 +73,10 @@ const PriceAbi = [
   },
 ]
 
-Modal.setAppElement('#root')
+// Set app element for react-modal on client side only
+if (typeof window !== 'undefined') {
+  Modal.setAppElement(document.body)
+}
 
 const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
   const {

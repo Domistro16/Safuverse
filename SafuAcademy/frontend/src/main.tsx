@@ -19,44 +19,41 @@ import {
   binanceWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { http } from "viem";
-import { createConfig } from "wagmi";
+import { createConfig, WagmiProvider } from "wagmi";
+import { ThemeProvider } from "@/hooks/useTheme";
 
-const WagmiProvider = React.lazy(() =>
-  import("wagmi").then((mod) => ({
-    default: mod.WagmiProvider,
-  }))
+const queryClient = new QueryClient();
+
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Recommended",
+      wallets: [
+        rainbowWallet,
+        binanceWallet,
+        metaMaskWallet,
+        coinbaseWallet,
+        walletConnectWallet,
+      ],
+    },
+  ],
+  {
+    appName: "SafuAcademy",
+    projectId: "21fef48091f12692cad574a6f7753643",
+  }
 );
 
+const config = createConfig({
+  connectors,
+  transports: {
+    [bsc.id]: http(),
+  },
+  chains: [bsc],
+});
+
 function BootStrap() {
-  const queryClient = new QueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const connectors = connectorsForWallets(
-    [
-      {
-        groupName: "Recommended",
-        wallets: [
-          rainbowWallet,
-          binanceWallet,
-          metaMaskWallet,
-          coinbaseWallet,
-          walletConnectWallet,
-        ],
-      },
-    ],
-    {
-      appName: "SafuDomains",
-      projectId: "YOUR_PROJECT_ID",
-    }
-  );
-
-  const config = createConfig({
-    connectors,
-    transports: {
-      [bsc.id]: http(),
-    },
-    chains: [bsc],
-  });
   return (
     <>
       <iframe
@@ -65,23 +62,25 @@ function BootStrap() {
         style={{ display: "none" }}
         title="session-sync"
       />
-      <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={config}>
-          <RainbowKitProvider
-            theme={darkTheme({
-              accentColor: "#FF7000",
-              accentColorForeground: "white",
-              borderRadius: "large",
-              fontStack: "system",
-              overlayBlur: "small",
-            })}
-          >
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
-          </RainbowKitProvider>
-        </WagmiProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <WagmiProvider config={config}>
+            <RainbowKitProvider
+              theme={darkTheme({
+                accentColor: "#fffb00",
+                accentColorForeground: "black",
+                borderRadius: "large",
+                fontStack: "system",
+                overlayBlur: "small",
+              })}
+            >
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </RainbowKitProvider>
+          </WagmiProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </>
   );
 }

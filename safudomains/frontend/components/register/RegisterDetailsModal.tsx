@@ -8,7 +8,10 @@ interface RegisterDetailsModalProps {
   duration: string
 }
 
-Modal.setAppElement('#root') // IMPORTANT for accessibility
+// Set app element for react-modal on client side only
+if (typeof window !== 'undefined') {
+  Modal.setAppElement(document.body)
+}
 
 function RegisterDetailsModal({
   isOpen,

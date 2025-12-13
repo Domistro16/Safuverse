@@ -1,272 +1,567 @@
 import React from "react";
-import { Layout } from "../components/Layout";
+import { Link } from "react-router-dom";
 import { CourseCard } from "../components/CourseCard";
 import { ChatWidget } from "../components/ChatWidget";
+import { useReadContract } from "wagmi";
+import { abi, Course, Deploy } from "@/constants";
+import { useTheme } from "@/hooks/useTheme";
+import { CustomConnect } from "@/components/connectButton";
+
+// Component to fetch and display featured courses from smart contract
+function FeaturedCourses() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const { data: courses, isPending } = useReadContract({
+    abi: abi,
+    functionName: "getCourses",
+    address: Deploy,
+  }) as {
+    data: Course[];
+    isPending: boolean;
+  };
+
+  const featuredCourses = courses?.slice(0, 3) ?? [];
+
+  if (isPending) {
+    return (
+      <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={`rounded-[28px] border shadow-[0_18px_55px_rgba(15,23,42,0.10)] h-80 animate-pulse ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/70 border-black/5'
+              }`}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (featuredCourses.length === 0) {
+    return (
+      <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+        No courses available yet. Check back soon!
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+      {featuredCourses.map((course) => (
+        <CourseCard key={String(course.id)} course={course} />
+      ))}
+    </div>
+  );
+}
 
 export const Home: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const testimonials = [
+    {
+      name: "Ada",
+      role: "Web3 Designer",
+      quote: "The courses are clear, modern and not overloaded. Safu Academy helped me become job-ready fast.",
+      color: "from-[#ffbdf2] to-[#cbb8ff]",
+    },
+    {
+      name: "Leo",
+      role: "Protocol Founder",
+      quote: "I onboard all new team members with Safu Academy. It saves me weeks of explaining.",
+      color: "from-[#c6e7ff] to-[#ffb8cb]",
+    },
+    {
+      name: "Sakura",
+      role: "Community Lead",
+      quote: "This is the first Web3 academy that feels like it was designed in 2025.",
+      color: "from-[#ffd7b8] to-[#b8e2ff]",
+    },
+  ];
+
   const stats = [
-    { label: "HOURS OF CONTENT", value: "100+", icon: "⏱" },
-    { label: "COURSES", value: "20+", icon: "📚" },
-    { label: "LEARNERS", value: "20k+", icon: "👥" }
+    { label: "HOURS OF CONTENT", value: "100+", icon: "📅" },
+    { label: "COURSES", value: "15+", icon: "📚" },
+    { label: "STUDENTS", value: "20k+", icon: "👥" },
+  ];
+
+  const topics = [
+    "Wallet Basics",
+    "On-Chain Safety",
+    "Smart Contracts",
+    "On-Chain Data",
+    "Agents",
+    "EduFi",
+    "Domains",
+    "Personal Branding",
+    "DeFi",
+    "NFTs",
   ];
 
   const faqItems = [
-    {
-      q: "What is Safu Academy?",
-      a: "Safu Academy is an on-chain learning platform inside the SafuVerse offering modern micro-courses, agents, and EduFi-powered skill paths."
-    },
-    {
-      q: "Who can enroll?",
-      a: "Anyone and everyone! Simply choose a .safu name of your choice to get started."
-    },
-    {
-      q: "What's the cost to mint a .safu domain?",
-      a: "Prices vary depending on domain name length and registration period. $10 gets you started."
-    },
-    {
-      q: "What can be done with a .safu domain?",
-      a: "You can enroll in any course, earn referral fees, and share in platform revenue using your .safu domain."
-    },
-    {
-      q: "Will there be a future airdrop?",
-      a: "Yes. When 1 million points from Season 1 are reached. See our docs for details."
-    },
-    {
-      q: "Can someone take my domain after I mint it?",
-      a: "No — once you mint a domain, it belongs to you for as long as you keep it registered."
-    }
+    { q: "What is Safu Academy?", a: "Safu Academy is an on-chain learning platform inside the SafuVerse offering modern micro-courses, agents, and EduFi-powered skill paths." },
+    { q: "Who can enroll?", a: "Anyone and everyone! Simply choose a .safu name of your choice to get started." },
+    { q: "What's the cost to mint a .safu domain?", a: "Prices vary depending on domain name length and registration period. $10 gets you started." },
+    { q: "What can be done with a .safu domain?", a: "You can enroll in any course, earn referral fees, and share in platform revenue using your .safu domain." },
+    { q: "Will there be a future airdrop?", a: "Yes. When 1 million points from Season 1 are reached. See our docs for details." },
+    { q: "Can someone take my domain after I mint it?", a: "No — once you mint a domain, it belongs to you for as long as you keep it registered." },
   ];
 
   const [openFAQ, setOpenFAQ] = React.useState<number | null>(0);
 
   return (
-    <Layout>
-      {/* HERO */}
-      <section className="relative w-full pt-10 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,#fff0c7,transparent_60%),radial-gradient(circle_at_100%_0%,#ffe3b3,transparent_55%),radial-gradient(circle_at_50%_120%,#fff6da,transparent_55%)]" />
-        <div className="relative z-10 max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 shadow-[0_10px_30px_rgba(15,23,42,0.08)] border border-black/5 text-xs sm:text-sm text-[#444] mb-5">
-              <span className="w-5 h-5 rounded-full bg-[#111] text-white flex items-center justify-center text-[11px] font-semibold">
-                SA
-              </span>
-              <span className="tracking-[-0.01em]">
-                On‑chain Education · Creator-Centric
-              </span>
-            </div>
+    <div className={isDark ? "dark" : ""}>
+      <div className={`w-full min-h-screen font-sans antialiased ${isDark
+        ? 'bg-[#0a0a0f] text-white'
+        : 'bg-[radial-gradient(circle_at_20%_0%,#fff5d9,transparent_60%),radial-gradient(circle_at_80%_120%,#fff3cd,transparent_60%),linear-gradient(to_bottom,#ffffff,#fff9ea)] text-[#050509]'
+        }`}>
 
-            <h1 className="text-[34px] sm:text-[42px] lg:text-[52px] font-bold leading-[1.02] tracking-[-0.05em] text-[#050509]">
-              Learn Web3
-              <br />
-              <span className="inline-block mt-1 bg-clip-text text-transparent bg-[linear-gradient(120deg,#f6b948,#ffd873,#fff0b3)]">
-                inside the SafuVerse.
-              </span>
-            </h1>
-
-            <p className="mt-4 text-[#333] text-sm sm:text-base max-w-xl leading-relaxed">
-              Human-curated, AI-presented skill-based multilingual courses, available in 32
-              languages, powered by your .safu domains. A unique digital identity for content
-              creators, artists, and innovators.
-            </p>
-
-            <div className="flex flex-wrap gap-3 mt-7">
-              <button className="px-7 sm:px-8 py-3 rounded-full bg-[#111] text-white text-[13px] sm:text-[14px] font-semibold shadow-[0_20px_50px_rgba(15,23,42,0.35)] hover:bg-[#222] transition transform hover:scale-105">
-                Start Learning
-              </button>
-              <button className="px-7 sm:px-8 py-3 rounded-full bg-white/70 border border-black/10 text-[13px] sm:text-[14px] font-semibold text-[#111] hover:bg-white transition flex items-center gap-2 shadow-[0_10px_30px_rgba(15,23,42,0.10)]">
-                <span className="w-6 h-6 rounded-full bg-[#111] text-white flex items-center justify-center text-[10px]">
-                  ▶
-                </span>
-                Watch intro lesson
-              </button>
-            </div>
-
-            <div className="flex items-center gap-4 mt-6 text-[11px] sm:text-xs text-[#555]">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffe1a3] via-[#ffd2b3] to-[#fff0b3] border-2 border-white" />
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#fff1bd] via-[#ffd6a8] to-[#ffe4c4] border-2 border-white" />
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffe9b8] via-[#ffe0c1] to-[#fff6da] border-2 border-white" />
-              </div>
-              <div>
-                <div className="font-semibold text-[#111] tracking-[-0.01em]">
-                  20,000+ Safu learners
-                </div>
-                <div className="text-[10px] sm:text-[11px] text-[#777]">
-                  From BNB, Plasma, Monad and Solana ecosystems
-                </div>
-              </div>
-            </div>
+        {/* NAVBAR */}
+        <nav className={`w-full flex items-center justify-between px-6 lg:px-10 py-4 lg:py-5 backdrop-blur border-b sticky top-0 z-50 ${isDark ? 'bg-[#0a0a0f]/90 border-white/10' : 'bg-white/60 border-black/5'
+          }`}>
+          <div className={`flex items-center gap-2 text-[18px] lg:text-[20px] font-bold tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'
+            }`}>
+            ✦ Safu Academy
           </div>
 
-          {/* Hero card */}
-          <div className="relative">
-            <div className="rounded-[32px] bg-white/75 backdrop-blur-xl border border-black/5 shadow-[0_32px_100px_rgba(15,23,42,0.30)] p-6 sm:p-7">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fff7df] text-[10px] sm:text-[11px] text-[#555] mb-4">
-                <span className="w-6 h-6 rounded-full bg-[#111] text-white flex items-center justify-center text-[10px]">
-                  ▶
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center gap-6 text-sm">
+            <Link to="/" className={`hover:opacity-100 transition ${isDark ? 'text-white font-semibold' : 'text-[#111] font-semibold'}`}>
+              Home
+            </Link>
+            <Link to="/courses" className={`hover:opacity-100 transition ${isDark ? 'text-gray-400 opacity-80' : 'text-[#555] opacity-80'}`}>
+              All Courses
+            </Link>
+            <Link to="/points" className={`hover:opacity-100 transition ${isDark ? 'text-gray-400 opacity-80' : 'text-[#555] opacity-80'}`}>
+              Points
+            </Link>
+            <Link to="/certificates" className={`hover:opacity-100 transition ${isDark ? 'text-gray-400 opacity-80' : 'text-[#555] opacity-80'}`}>
+              Certificates
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-3 lg:gap-5">
+            <a href="#" className={`text-[18px] lg:text-[20px] opacity-80 hover:opacity-100 transition transform hover:scale-105 ${isDark ? 'text-white' : 'text-[#111]'
+              }`}>
+              𝕏
+            </a>
+            <a href="#" className="text-[20px] lg:text-[22px] text-[#5865F2]">
+              💬
+            </a>
+            <button
+              className={`hidden sm:flex w-[38px] h-[38px] lg:w-[42px] h-[42px] rounded-full items-center justify-center text-[16px] lg:text-[17px] transition cursor-pointer ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-[#f3f3f8] hover:bg-[#e7e7f3]'
+                }`}
+              type="button"
+              onClick={toggleTheme}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+            <CustomConnect />
+          </div>
+        </nav>
+
+        {/* HERO SECTION */}
+        <section className="relative w-full pt-24 md:pt-28 lg:pt-32 pb-32 lg:pb-40 overflow-hidden">
+          {isDark ? (
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,#1a1a3e,transparent_60%),radial-gradient(circle_at_100%_0%,#2a1a3e,transparent_55%),radial-gradient(circle_at_50%_120%,#1a2a3e,transparent_55%)]" />
+          ) : (
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,#fff0c7,transparent_60%),radial-gradient(circle_at_100%_0%,#ffd6e9,transparent_55%),radial-gradient(circle_at_50%_120%,#e4f1ff,transparent_55%),linear-gradient(to_bottom,#ffffff,#fff9ea)]" />
+          )}
+          {!isDark && <div className="absolute left-1/2 -translate-x-1/2 bottom-[-180px] w-[980px] h-[980px] bg-white/55 blur-[190px]" />}
+
+          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-2 gap-20 items-center">
+            {/* LEFT: TEXT COLUMN */}
+            <div className="text-left">
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.08)] border text-xs sm:text-sm mb-6 ${isDark ? 'bg-white/10 border-white/10 text-gray-300' : 'bg-white/50 border-black/5 text-[#444]'
+                }`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                  }`}>
+                  SA
                 </span>
-                <span className="truncate">Lesson 03 · Reading SafuVerse Activity</span>
+                <span className="tracking-[-0.01em]">On-chain Education · Safu Academy</span>
               </div>
 
-              <h3 className="text-base sm:text-lg font-semibold text-[#111] mb-2 leading-snug">
-                See a full Safu Academy lesson in action.
-              </h3>
-              <p className="text-xs sm:text-sm text-[#555] mb-5 leading-relaxed">
-                Follow a real walkthrough of on-chain dashboards, agents, and transactions. No
-                fluff, just the exact flows you'll use inside the SafuVerse.
+              <h1 className={`text-[34px] sm:text-[42px] lg:text-[56px] xl:text-[64px] font-bold leading-[1.02] tracking-[-0.05em] ${isDark ? 'text-white' : 'text-[#050509]'
+                }`}>
+                Learn Web3
+                <br />
+                <span className="inline-block mt-1 bg-clip-text text-transparent bg-[linear-gradient(120deg,#fffb00,#ffd700,#fff0b3)]">
+                  inside the SafuVerse.
+                </span>
+              </h1>
+
+              <p className={`mt-5 text-sm sm:text-base lg:text-[15px] max-w-xl leading-relaxed ${isDark ? 'text-gray-300' : 'text-[#333]'
+                }`}>
+                Bite-sized, project-based crypto lessons that move you from confused to
+                confident — with on-chain examples, Safu domains and agents you can use
+                immediately.
               </p>
 
-              <div className="mb-5">
-                <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-[#777] mb-2">
-                  <span>Progress</span>
-                  <span>36 min · Intermediate</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-[#fff0c7] overflow-hidden">
-                  <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-[#f6b948] via-[#ffd873] to-[#fff0b3]" />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-[#555]">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#111] text-white flex items-center justify-center text-[10px]">
-                    ◎
+              <div className="flex flex-wrap gap-3 sm:gap-4 mt-7">
+                <Link to="/courses">
+                  <button className={`px-7 sm:px-8 py-3 rounded-full text-[13px] sm:text-[14px] font-semibold shadow-[0_20px_50px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#fffb00] text-black hover:bg-[#fff000]' : 'bg-[#111] text-white hover:bg-[#222]'
+                    }`}>
+                    Start Learning
+                  </button>
+                </Link>
+                <button className={`px-7 sm:px-8 py-3 rounded-full border text-[13px] sm:text-[14px] font-semibold transition flex items-center gap-2 shadow-[0_10px_30px_rgba(15,23,42,0.10)] ${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-white/50 border-black/10 text-[#111] hover:bg-white'
+                  }`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                    }`}>
+                    ▶
                   </span>
-                  <span>Certificate & on‑chain proof of completion</span>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-[#fff7df] text-[#111] font-medium">
-                  Live cohorts
-                </span>
+                  Watch intro lesson
+                </button>
               </div>
-            </div>
 
-            <div className="absolute -top-4 -right-4 w-28 rounded-2xl bg-[#111] text-white text-[10px] sm:text-[11px] shadow-[0_22px_60px_rgba(15,23,42,0.55)] p-3 flex flex-col gap-1">
-              <span className="text-[9px] uppercase tracking-[0.18em] text-[#ffe9a6]">
-                XP EARNED
-              </span>
-              <span className="text-sm font-semibold">+320 Safu Points</span>
-              <span className="text-[9px] text-[#f5f5f5]">This week</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* STATS */}
-      <section className="py-10">
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="relative p-7 rounded-[26px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] border border-white/70"
-            >
-              <div className="absolute -top-5 left-6 w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ffe1a3] via-[#ffd873] to-[#fff0b3] shadow-md flex items-center justify-center text-xl">
-                {stat.icon}
-              </div>
-              <div className="mt-6">
-                <div className="text-2xl md:text-3xl font-bold text-[#111]">
-                  {stat.value}
+              <div className={`flex items-center gap-4 mt-6 text-[11px] sm:text-xs ${isDark ? 'text-gray-400' : 'text-[#555]'
+                }`}>
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffb5e8] via-[#c9b8ff] to-[#9ad4ff] border-2 border-white" />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffd1b3] via-[#ff9ac2] to-[#9ad4ff] border-2 border-white" />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#b3e9ff] via-[#c9b8ff] to-[#ffb5e8] border-2 border-white" />
                 </div>
-                <div className="mt-1 text-[11px] tracking-[0.18em] text-[#777]">
-                  {stat.label}
+                <div>
+                  <div className={`font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                    20,000+ Safu learners
+                  </div>
+                  <div className={`text-[10px] sm:text-[11px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
+                    From BNB, Plasma, Monad and Solana ecosystems
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-        <p className="mt-8 text-center text-[11px] text-[#999]">
-          Adopted by builders across{" "}
-          <span className="font-semibold text-[#555]">Blockchain, Marketing, AI, and more</span>
-        </p>
-      </section>
 
-      {/* FEATURED COURSES */}
-      <section className="py-14">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1 mb-4 rounded-full bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] border border-black/5 text-[11px] text-[#777]">
-            <span className="text-base">🎓</span>
-            <span>Featured Courses</span>
+            {/* RIGHT: HERO CARD STACK */}
+            <div className="relative h-full flex justify-center lg:justify-end">
+              <div className={`relative w-full max-w-lg rounded-[32px] backdrop-blur-xl border shadow-[0_32px_100px_rgba(15,23,42,0.30)] p-6 sm:p-7 ${isDark ? 'bg-white/10 border-white/10' : 'bg-white/60 border-black/5'
+                }`}>
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-[11px] mb-4 ${isDark ? 'bg-white/10 text-gray-300' : 'bg-[#f5f2ff] text-[#555]'
+                  }`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                    }`}>
+                    ▶
+                  </span>
+                  <span className="truncate">Lesson 03 · Reading On-chain Activity</span>
+                </div>
+
+                <h3 className={`text-base sm:text-lg font-semibold mb-2 leading-snug ${isDark ? 'text-white' : 'text-[#111]'
+                  }`}>
+                  See a full Safu Academy lesson in action.
+                </h3>
+                <p className={`text-xs sm:text-sm mb-5 leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'
+                  }`}>
+                  Follow a real walkthrough of on-chain dashboards, agents and
+                  transactions. No fluff — just the exact flows you'll use in the SafuVerse.
+                </p>
+
+                <div className="mb-5">
+                  <div className={`flex items-center justify-between text-[10px] sm:text-[11px] mb-2 ${isDark ? 'text-gray-500' : 'text-[#777]'
+                    }`}>
+                    <span>Progress</span>
+                    <span>36 min · Intermediate</span>
+                  </div>
+                  <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-[#ecebff]'
+                    }`}>
+                    <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-[#fffb00] via-[#ffd700] to-[#fff0b3]" />
+                  </div>
+                </div>
+
+                <div className={`flex items-center justify-between text-[10px] sm:text-[11px] ${isDark ? 'text-gray-400' : 'text-[#555]'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                      }`}>
+                      ◎
+                    </span>
+                    <span>Certificate & on-chain proof of completion</span>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full font-medium ${isDark ? 'bg-white/10 text-white' : 'bg-[#f5f5ff] text-[#111]'
+                    }`}>
+                    Live cohorts
+                  </span>
+                </div>
+              </div>
+
+              {/* Floating XP card */}
+              <div className="absolute -top-4 -right-4 w-28 rounded-2xl bg-[#111] text-white text-[10px] sm:text-[11px] shadow-[0_22px_60px_rgba(15,23,42,0.55)] p-3 flex flex-col gap-1">
+                <span className="text-[9px] uppercase tracking-[0.18em] text-[#fffb00]">XP EARNED</span>
+                <span className="text-sm font-semibold">+320 Safu Points</span>
+                <span className="text-[9px] text-[#ccccff]">This week</span>
+              </div>
+
+              {/* Floating Agents card */}
+              <div className={`absolute -bottom-6 left-0 w-40 rounded-2xl border text-[10px] sm:text-[11px] shadow-[0_18px_55px_rgba(15,23,42,0.22)] p-3 flex items-center gap-2 ${isDark ? 'bg-white/10 border-white/10' : 'bg-white/60 border-black/5'
+                }`}>
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ffb5e8] via-[#c9b8ff] to-[#9ad4ff]" />
+                <div>
+                  <div className={`font-semibold leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                    Safu Agents Lab
+                  </div>
+                  <div className={`text-[9px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
+                    New cohort starts in 3 days
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#111] tracking-[-0.03em]">
-            Pick your first learning path
-          </h2>
-          <p className="text-[#555] max-w-2xl mx-auto mt-3 text-sm sm:text-base leading-relaxed">
-            From core skills to advanced on‑chain topics, choose a Safu Academy course that matches
-            where you are right now.
-          </p>
-        </div>
+        </section>
 
-        <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-          <CourseCard
-            title="Wallets & On‑Chain Safety"
-            price="$59"
-            level="Beginner"
-            badge="Start here"
-            summary="Understand wallets, signatures and safety habits before diving deeper into the SafuVerse."
-          />
-          <CourseCard
-            title="Safu Agents & Automations"
-            price="$89"
-            level="Intermediate"
-            badge="Popular"
-            summary="Use AI agents to monitor flows, trigger alerts and streamline your on‑chain work."
-            highlight
-          />
-          <CourseCard
-            title="On‑Chain Research 2025"
-            price="$79"
-            level="Intermediate"
-            badge="For builders"
-            summary="Decode data, read dashboards and spot opportunities across chains with confidence."
-          />
-        </div>
-      </section>
+        {/* MAIN CONTENT */}
+        <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-0 pb-32">
 
-      {/* FAQ */}
-      <section className="py-16">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] border border-black/5 text-[11px] text-[#777] mb-4">
-            <span className="text-base">❓</span>
-            <span>FAQ</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#111] tracking-[-0.04em]">
-            Frequently Asked Questions
-          </h2>
-        </div>
+          {/* STATS SECTION */}
+          <section className="py-16 lg:py-20">
+            <div className="text-center">
+              <div className={`inline-flex items-center gap-2 px-4 py-1 mb-5 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-xs sm:text-sm ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#555]'
+                }`}>
+                <span className="w-5 h-5 rounded-full bg-[#f4e8ff] flex items-center justify-center text-[10px]">🎓</span>
+                <span>Safu Academy · We Offer</span>
+              </div>
 
-        <div className="max-w-3xl mx-auto space-y-4">
-          {faqItems.map((item, idx) => (
-            <div
-              key={item.q}
-              className="group rounded-2xl bg-white/80 border border-black/5 shadow-[0_12px_35px_rgba(15,23,42,0.10)] p-5 cursor-pointer transition-all duration-500 hover:shadow-[0_22px_55px_rgba(15,23,42,0.18)]"
-              onClick={() => setOpenFAQ(openFAQ === idx ? null : idx)}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm sm:text-base text-[#111] font-medium tracking-[-0.01em]">
-                  {item.q}
-                </span>
-                <span
-                  className={`text-[#999] text-xl transition-transform duration-300 ${
-                    openFAQ === idx ? "rotate-180" : ""
-                  }`}
+              <h2 className={`text-3xl md:text-4xl font-bold mb-3 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                Boost Your Skills
+              </h2>
+              <p className={`max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+                From foundational concepts to advanced Web3 mastery, Safu Academy gives you the tools to grow and succeed.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mt-12 max-w-5xl mx-auto">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className={`relative p-9 rounded-[26px] shadow-[0_20px_60px_rgba(15,23,42,0.12)] border ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-white/70'
+                    }`}
                 >
-                  {openFAQ === idx ? "−" : "+"}
-                </span>
-              </div>
-              <div
-                className={`grid transition-all duration-500 overflow-hidden ${
-                  openFAQ === idx ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
-                }`}
-              >
-                <div className="overflow-hidden text-[#555] text-sm leading-relaxed">
-                  {item.a}
+                  <div className="absolute -top-5 left-6 w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ffb5e8] via-[#c9b8ff] to-[#9ad4ff] shadow-md flex items-center justify-center text-2xl">
+                    {stat.icon}
+                  </div>
+                  <div className="mt-6">
+                    <div className={`text-3xl md:text-4xl font-bold ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                      {stat.value}
+                    </div>
+                    <div className={`mt-1 text-[11px] tracking-[0.18em] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
+                      {stat.label}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
 
-      <ChatWidget />
-    </Layout>
+            <div className={`mt-12 text-center text-[11px] ${isDark ? 'text-gray-600' : 'text-[#999]'}`}>
+              Adopted by builders across
+              <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+                {" "}BNB Chain · Plasma · Monad · Solana
+              </span>
+            </div>
+          </section>
+
+          {/* FEATURED COURSES */}
+          <section className="py-16">
+            <div className="text-center mb-10 md:mb-12">
+              <div className={`inline-flex items-center gap-2 px-4 py-1 mb-4 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-[11px] ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#777]'
+                }`}>
+                <span className="text-base">🎓</span>
+                <span>Our Courses</span>
+              </div>
+              <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                Featured Courses
+              </h2>
+              <p className={`max-w-2xl mx-auto mt-3 text-sm sm:text-base leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+                From core skills to advanced on-chain topics, pick a path that matches where you are right now.
+              </p>
+            </div>
+
+            <FeaturedCourses />
+
+            <div className="flex justify-center mt-10">
+              <Link to="/courses">
+                <button className={`px-8 py-3 rounded-full border text-sm font-semibold shadow-[0_10px_30px_rgba(15,23,42,0.10)] transition transform hover:scale-105 ${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-white border-black/10 text-[#111] hover:bg-[#f7f7ff]'
+                  }`}>
+                  View All Courses
+                </button>
+              </Link>
+            </div>
+          </section>
+
+          {/* TESTIMONIALS */}
+          <section className="py-20 lg:py-24 relative">
+            {!isDark && (
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,#faf6ff,transparent_70%)] pointer-events-none" />
+            )}
+
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
+              <div>
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full shadow-[0_8px_25px_rgba(15,23,42,0.06)] border text-[11px] mb-4 ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white/60 border-black/5 text-[#777]'
+                  }`}>
+                  <span className="text-base">💜</span>
+                  <span>Testimonials</span>
+                </div>
+                <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                  What Safu Learners Are Saying
+                </h2>
+                <p className={`mt-3 text-sm sm:text-base max-w-md leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+                  Real learners from different chains using Safu Academy to level up.
+                </p>
+              </div>
+              <Link to="/courses">
+                <button className={`self-start sm:self-auto px-6 py-3 rounded-full text-sm font-semibold shadow-[0_20px_55px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#fffb00] text-black hover:bg-[#fff000]' : 'bg-[#111] text-white hover:bg-[#222]'
+                  }`}>
+                  Start Learning Now
+                </button>
+              </Link>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {testimonials.map((t) => (
+                <div
+                  key={t.name}
+                  className={`group relative p-7 rounded-[28px] backdrop-blur border shadow-[0_15px_45px_rgba(15,23,42,0.10)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_35px_95px_rgba(15,23,42,0.25)] ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/60 border-black/5'
+                    }`}
+                >
+                  <div className={`absolute -top-4 -right-4 w-10 h-10 rounded-2xl bg-gradient-to-br ${t.color} opacity-70 blur-sm transition-all duration-500 group-hover:scale-125`} />
+
+                  <p className={`mb-6 leading-relaxed text-[14px] ${isDark ? 'text-gray-300' : 'text-[#333]'}`}>"{t.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.color}`} />
+                    <div className="text-xs">
+                      <div className={`font-semibold ${isDark ? 'text-white' : 'text-[#111]'}`}>{t.name}</div>
+                      <div className={isDark ? 'text-gray-500' : 'text-[#777]'}>{t.role}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* COURSE TOPICS */}
+          <section className="py-24 relative overflow-hidden">
+            {!isDark && (
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,#f7e9ff,transparent_60%),radial-gradient(circle_at_80%_120%,#e1f0ff,transparent_60%)] opacity-70 pointer-events-none" />
+            )}
+
+            <div className="relative z-10 text-center mb-12">
+              <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-[12px] mb-4 ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#777]'
+                }`}>
+                <span className="text-base">📚</span>
+                <span>Course Topics</span>
+              </div>
+
+              <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                Explore Topics
+              </h2>
+              <p className={`mt-3 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+                Discover micro-courses and deep dives across the SafuVerse ecosystem.
+              </p>
+            </div>
+
+            <div className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+              {topics.map((topic) => (
+                <div
+                  key={topic}
+                  className={`group relative p-4 sm:p-5 rounded-[22px] border shadow-[0_12px_35px_rgba(15,23,42,0.08)] backdrop-blur transition duration-500 hover:-translate-y-2 hover:shadow-[0_25px_70px_rgba(15,23,42,0.18)] cursor-pointer ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/50 border-black/5'
+                    }`}
+                >
+                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-xl bg-gradient-to-br from-[#ffbdf2] to-[#cbb8ff] blur-sm opacity-60 group-hover:scale-125 transition duration-500" />
+                  <span className={`relative z-10 text-[13px] sm:text-[14px] font-medium tracking-[-0.01em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                    {topic}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* FAQ SECTION */}
+          <section className="py-24 relative overflow-hidden">
+            {!isDark && (
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,#f7e9ff,transparent_60%),radial-gradient(circle_at_80%_120%,#e1f0ff,transparent_60%)] opacity-70 pointer-events-none" />
+            )}
+
+            <div className="relative z-10 text-center mb-12">
+              <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-[11px] mb-4 ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#777]'
+                }`}>
+                <span className="text-base">❓</span>
+                <span>FAQ</span>
+              </div>
+              <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                Frequently Asked Questions
+              </h2>
+            </div>
+
+            <div className="max-w-3xl mx-auto space-y-4">
+              {faqItems.map((item, idx) => (
+                <div
+                  key={item.q}
+                  onClick={() => setOpenFAQ(openFAQ === idx ? null : idx)}
+                  className={`group rounded-2xl border shadow-[0_12px_35px_rgba(15,23,42,0.10)] p-6 cursor-pointer transition-all duration-500 hover:shadow-[0_22px_55px_rgba(15,23,42,0.18)] ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/60 border-black/5'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm sm:text-base font-medium tracking-[-0.01em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                      {item.q}
+                    </span>
+                    <span className={`text-xl transition-transform duration-300 ${openFAQ === idx ? "rotate-180" : ""} ${isDark ? 'text-gray-500' : 'text-[#999]'}`}>
+                      {openFAQ === idx ? "−" : "+"}
+                    </span>
+                  </div>
+                  <div className={`grid transition-all duration-500 overflow-hidden ${openFAQ === idx ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"}`}>
+                    <div className={`overflow-hidden text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+                      {item.a}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+
+        {/* FOOTER */}
+        <footer className={`w-full pt-28 pb-10 text-center border-t ${isDark ? 'bg-[#0a0a0f] border-white/10' : 'bg-[#fafafa] border-black/5'
+          }`}>
+          <h2 className={`text-3xl md:text-4xl font-bold mb-4 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
+            Boost your Learning & Knowledge
+            <br />
+            with Safu Academy Now
+          </h2>
+
+          <Link to="/courses">
+            <button className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark ? 'bg-[#fffb00] text-black hover:bg-[#fff000]' : 'bg-[#111] text-white hover:bg-[#222]'
+              }`}>
+              Start Learning Now
+            </button>
+          </Link>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10">
+            <button className={`px-8 py-3 rounded-full border font-medium transition text-sm ${isDark ? 'border-white/20 text-white bg-white/5 hover:bg-white/10' : 'border-black/80 text-[#111] bg-white hover:bg-[#f5f5f5]'
+              }`}>
+              Notify Me
+            </button>
+
+            <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
+              }`}>
+              ⭐ Try Demo
+            </button>
+
+            <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
+              }`}>
+              📄 Get Template
+            </button>
+
+            <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
+              }`}>
+              ⌗ Made in Framer
+            </button>
+          </div>
+
+          <p className={`mt-12 text-[11px] tracking-[0.18em] uppercase ${isDark ? 'text-gray-600' : 'text-[#777]'}`}>
+            Safu Academy © 2025 · Designed by Level3 Labs
+          </p>
+        </footer>
+
+        <ChatWidget />
+      </div>
+    </div>
   );
 };
 

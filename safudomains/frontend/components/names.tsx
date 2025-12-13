@@ -14,7 +14,7 @@ const THEME_KEY = 'safudomains-theme'
 export default function Names() {
   const { address, isDisconnected } = useAccount()
   const router = useRouter()
-  const { domains } = useAllOwnedNames(address?.toLowerCase() as string)
+  const { domains, isLoading: domainsLoading } = useAllOwnedNames(address?.toLowerCase() as string)
   const [sortBy, setSortBy] = useState<'name' | 'expiry'>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [searchQuery, setSearchQuery] = useState('')
@@ -244,7 +244,16 @@ export default function Names() {
           </div>
 
           {/* Domain List */}
-          {sortedDomains.length === 0 ? (
+          {domainsLoading ? (
+            <div style={{ ...cardStyle, padding: '60px 40px', textAlign: 'center' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 600, color: isDark ? '#fff' : '#111', marginBottom: '12px' }}>
+                Loading...
+              </h3>
+              <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
+                Fetching your .safu domains.
+              </p>
+            </div>
+          ) : sortedDomains.length === 0 ? (
             <div style={{ ...cardStyle, padding: '60px 40px', textAlign: 'center' }}>
               <h3 style={{ fontSize: '20px', fontWeight: 600, color: isDark ? '#fff' : '#111', marginBottom: '12px' }}>
                 No domains found

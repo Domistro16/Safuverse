@@ -1,61 +1,109 @@
 import React from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { Clock, Star } from "lucide-react";
+import { Course } from "@/constants";
+import { useTheme } from "@/hooks/useTheme";
 
-type CourseCardProps = {
-  title: string;
-  price: string;
-  level: string;
-  badge: string;
-  summary: string;
-  highlight?: boolean;
-};
+// Props interface that matches how the component is used across the codebase
+interface CourseCardProps {
+  course: Course;
+  animationDelay?: number;
+}
 
 export const CourseCard: React.FC<CourseCardProps> = ({
-  title,
-  price,
-  level,
-  badge,
-  summary,
-  highlight
+  course,
+  animationDelay = 0,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
-    <div
-      className={`relative rounded-[28px] bg-white/70 border ${
-        highlight
-          ? "border-[#111] shadow-[0_28px_80px_rgba(15,23,42,0.22)]"
-          : "border-black/5 shadow-[0_18px_55px_rgba(15,23,42,0.10)]"
-      } overflow-hidden flex flex-col transition duration-500 [transform:preserve-3d] hover:-translate-y-3 hover:shadow-[0_40px_110px_rgba(15,23,42,0.32)] hover:[transform:rotate(-1deg)_scale(1.05)]`}
-      style={{ perspective: "900px" }}
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: animationDelay, ease: "easeOut" }}
+      viewport={{ once: true, amount: 0.2 }}
     >
-      <div className="w-full h-52 md:h-60 bg-white border-b border-black/5 overflow-hidden flex items-center justify-center p-5">
-        <div
-          className="w-full h-full rounded-[20px] overflow-hidden border-[20px] border-white shadow-[0_10px_40px_rgba(0,0,0,0.08)] transition-transform duration-500 hover:scale-[1.04]"
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          <div className="w-full h-full bg-[radial-gradient(circle_at_0%_0%,#fff3cd,transparent_55%),radial-gradient(circle_at_100%_120%,#ffe1a3,transparent_55%)] flex items-center justify-center text-sm font-semibold text-[#aa7a09]">
-            Safu Course Preview
+      <Link
+        to={`/courses/${course.id}`}
+        className={`group relative block rounded-[28px] border overflow-hidden transition duration-500 hover:-translate-y-3 ${isDark
+            ? 'bg-[#12121a] border-[#2a2a3a] shadow-[0_18px_55px_rgba(0,0,0,0.4)] hover:shadow-[0_40px_110px_rgba(255,251,0,0.15)] hover:border-[#fffb00]/50'
+            : 'bg-white/70 border-black/5 shadow-[0_18px_55px_rgba(15,23,42,0.10)] hover:shadow-[0_40px_110px_rgba(15,23,42,0.32)] hover:border-[#fcd34d]'
+          }`}
+        style={{ perspective: "900px" }}
+      >
+        {/* Course Preview Image/Pattern */}
+        <div className={`w-full h-44 md:h-52 border-b overflow-hidden flex items-center justify-center p-4 ${isDark ? 'bg-[#1a1a24] border-[#2a2a3a]' : 'bg-white border-black/5'
+          }`}>
+          <div
+            className={`w-full h-full rounded-[16px] overflow-hidden transition-transform duration-500 group-hover:scale-[1.04] ${isDark ? 'border-2 border-[#2a2a3a]' : 'border-4 border-white shadow-[0_10px_40px_rgba(0,0,0,0.08)]'
+              }`}
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            <div className={`w-full h-full flex items-center justify-center flex-col gap-2 text-center px-4 ${isDark
+                ? 'bg-gradient-to-br from-[#1a1a2e] via-[#252540] to-[#1a1a3e]'
+                : 'bg-[radial-gradient(circle_at_0%_0%,#fff3cd,transparent_55%),radial-gradient(circle_at_100%_120%,#ffe1a3,transparent_55%)]'
+              }`}>
+              <span className="text-3xl">📚</span>
+              <span className={`text-sm font-semibold line-clamp-2 ${isDark ? 'text-[#fffb00]' : 'text-[#aa7a09]'
+                }`}>
+                {course.category}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="p-6 flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-2 text-[11px] text-[#777]">
-          <span className="text-[#f5a623] tracking-[0.16em]">★★★★★</span>
-          <span>{price}</span>
+        {/* Course Content */}
+        <div className={`p-5 flex flex-col gap-2 ${isDark ? 'bg-[#12121a]' : ''}`}>
+          {/* Category and Level Badge */}
+          <div className="flex items-center justify-between text-[11px]">
+            <span className={`px-2 py-1 font-semibold rounded-full ${isDark ? 'bg-[#fffb00]/10 text-[#fffb00] border border-[#fffb00]/30' : 'bg-[#fef3c7] text-[#92400e]'
+              }`}>
+              {course.level}
+            </span>
+            <span className={isDark ? 'text-gray-400' : 'text-[#777]'}>{course.duration}</span>
+          </div>
+
+          {/* Title */}
+          <h3 className={`font-semibold text-[16px] leading-snug line-clamp-2 mt-1 ${isDark ? 'text-white' : 'text-[#111]'
+            }`}>
+            {course.title}
+          </h3>
+
+          {/* Description */}
+          <p className={`text-[13px] leading-relaxed line-clamp-2 ${isDark ? 'text-gray-400' : 'text-[#555]'
+            }`}>
+            {course.description}
+          </p>
+
+          {/* Stats Row */}
+          <div className={`flex items-center gap-4 mt-2 text-[11px] ${isDark ? 'text-gray-500' : 'text-[#777]'
+            }`}>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {course.lessons.length} lessons
+            </span>
+            <span className="flex items-center gap-1">
+              <Star className={`w-3 h-3 ${isDark ? 'text-[#fffb00]' : 'text-[#f5a623]'}`} />
+              {course.rating ?? "New"}
+            </span>
+          </div>
+
+          {/* Instructor */}
+          <div className={`flex items-center justify-between mt-2 pt-2 border-t ${isDark ? 'border-[#2a2a3a]' : 'border-black/5'
+            }`}>
+            <span className={`text-[11px] ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
+              By {course.instructor}
+            </span>
+            <span className={`text-[11px] font-semibold group-hover:underline ${isDark ? 'text-[#fffb00]' : 'text-[#92400e]'
+              }`}>
+              View details →
+            </span>
+          </div>
         </div>
-        <h3 className="font-semibold text-[17px] text-[#111] mb-2 leading-snug line-clamp-2">
-          {title}
-        </h3>
-        <p className="text-[#555] text-sm mb-4 flex-1 leading-relaxed line-clamp-3">
-          {summary}
-        </p>
-        <div className="flex items-center justify-between text-[11px] mt-auto">
-          <span className="px-3 py-1 bg-[#fff7df] text-[#c89216] font-semibold rounded-full">
-            {badge}
-          </span>
-          <span className="text-[#777]">{level}</span>
-        </div>
-      </div>
-    </div>
+      </Link>
+    </motion.div>
   );
 };
 
