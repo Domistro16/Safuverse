@@ -1,7 +1,7 @@
 {
     "version": 2,
-    "buildCommand": "npm install && cd frontend && npm install && cd ../backend && npm install && cd .. && npm run build:all",
-    "outputDirectory": "dist",
+    "buildCommand": "npm install && cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build",
+    "outputDirectory": "frontend/dist",
     "functions": {
         "api/**/*.js": {
             "runtime": "@vercel/node@3"
@@ -9,6 +9,6 @@
     },
     "rewrites": [
         { "source": "/api/:path*", "destination": "/api/index.js" },
-        { "source": "/(.*)", "destination": "/dist/index.html" }
+        { "source": "/(.*)", "destination": "/index.html" }
     ]
 }
