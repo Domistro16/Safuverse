@@ -91,7 +91,7 @@ export class AuthService {
         return jwt.sign(
             { userId, walletAddress },
             config.jwtSecret,
-            { expiresIn: config.jwtExpiresIn }
+            { expiresIn: config.jwtExpiresIn as any }
         );
     }
 

@@ -1,181 +1,259 @@
 # SafuAcademy cPanel Deployment Guide
 
-## Prerequisites
-- cPanel with Node.js Selector / Application Manager
-- SSH access (optional but helpful)
-- Domain configured in cPanel
+Complete guide to deploy **both the frontend AND backend** on cPanel.
 
 ---
 
-## Step-by-Step Deployment
+## What Gets Deployed
 
-### 1. Prepare Files Locally
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `server.js` | Root | Main entry point |
+| `/dist` | Root | Built Vite frontend |
+| `/backend/dist` | Root | Compiled Express API |
+| `/backend/node_modules` | Root | Backend dependencies |
 
-Before uploading, ensure your project is ready:
+---
+
+## Prerequisites
+
+- cPanel with **Node.js Selector** / Application Manager
+- **PostgreSQL database** (Aiven, Supabase, or cPanel PostgreSQL)
+- SSH access (recommended)
+
+---
+
+## Step 1: Build Everything Locally
 
 ```bash
 cd c:\Users\PC\Safuverse\SafuAcademy
 
-# Build frontend (already done if you see /dist folder)
+# Build frontend
 npm run build:frontend
 
-# Copy dist to root (already done if /dist exists at root)
+# Build backend (compiles TypeScript)
+npm run build:backend
+
+# Copy frontend dist to root
 npm run copy:dist
 ```
 
-### 2. Upload Files to cPanel
+Verify these folders/files exist:
+- ✅ `/dist/index.html`
+- ✅ `/backend/dist/index.js`
 
-**Option A: File Manager**
-1. Login to cPanel
-2. Go to **File Manager**
-3. Navigate to your domain folder (e.g., `/home/username/public_html` or subdomain folder)
-4. Upload these files/folders:
-   - `server.js`
-   - `package.json`
-   - `package-lock.json`
-   - `/dist/` folder (the built frontend)
-   - `/node_modules/` (optional - can install on server)
+---
 
-**Option B: Upload ZIP**
-1. Create ZIP of the above files
-2. Upload and extract in cPanel
+## Step 2: Create .env File
 
-### 3. Setup Node.js Application
+Create `.env` in the **root folder** (copy from backend):
 
-1. In cPanel, find **Setup Node.js App** or **Node.js Selector**
+```env
+# Database (REQUIRED)
+DATABASE_URL="postgresql://user:password@host:port/dbname?schema=public"
+
+# JWT (REQUIRED)
+JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
+JWT_EXPIRES_IN="7d"
+
+# Blockchain
+RPC_URL="https://bsc-dataseed.binance.org/"
+CHAIN_ID=56
+LEVEL3_COURSE_ADDRESS="0x..."
+RELAYER_PRIVATE_KEY="0x..."
+
+# Server
+NODE_ENV="production"
+CORS_ORIGINS="https://yourdomain.com,https://www.yourdomain.com"
+```
+
+---
+
+## Step 3: Upload Files to cPanel
+
+Upload these to your app folder (e.g., `/home/user/safuacademy/`):
+
+```
+/home/user/safuacademy/
+├── server.js           ← Main entry
+├── package.json
+├── package-lock.json
+├── .env                ← Your environment variables
+├── dist/               ← Built frontend
+│   ├── index.html
+│   └── assets/
+├── backend/
+│   ├── dist/           ← Compiled backend (IMPORTANT!)
+│   │   ├── index.js
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── ...
+│   ├── node_modules/   ← Backend dependencies
+│   └── package.json
+└── node_modules/       ← Root dependencies (express, cors, dotenv)
+```
+
+### Quick Upload via ZIP
+
+1. Create ZIP of all above files
+2. Upload via cPanel File Manager
+3. Extract in target folder
+
+---
+
+## Step 4: Setup Node.js Application in cPanel
+
+1. Go to **Setup Node.js App** or **Node.js Selector**
 2. Click **Create Application**
 3. Configure:
 
 | Setting | Value |
 |---------|-------|
-| **Node.js version** | 18.x or 20.x (LTS) |
+| **Node.js version** | 18.x or 20.x |
 | **Application mode** | Production |
-| **Application root** | `/home/username/public_html/yourapp` |
-| **Application URL** | Your domain or subdomain |
+| **Application root** | `/home/user/safuacademy` |
+| **Application URL** | Your domain |
 | **Application startup file** | `server.js` |
 
 4. Click **Create**
 
-### 4. Install Dependencies
+---
 
-1. In the Node.js App page, click **Run NPM Install**
-   - OR via SSH: `cd /home/username/public_html/yourapp && npm install --production`
+## Step 5: Install Dependencies via SSH
 
-### 5. Set Environment Variables
+```bash
+# SSH into your server
+ssh user@yourdomain.com
 
-In the Node.js App configuration, add:
+# Navigate to app
+cd /home/user/safuacademy
 
-| Variable | Value |
-|----------|-------|
-| `NODE_ENV` | `production` |
-| `PORT` | (usually auto-set by Passenger) |
-| `CORS_ORIGINS` | `https://yourdomain.com,https://www.yourdomain.com` |
+# Install root dependencies
+npm install --production
 
-### 6. Start/Restart Application
+# Install backend dependencies
+cd backend
+npm install --production
 
-1. Click **Restart** in the Node.js App panel
-2. Your app should now be live!
+# Generate Prisma client
+npx prisma generate
+```
+
+---
+
+## Step 6: Start Application
+
+1. In cPanel Node.js App panel, click **Restart**
+2. Or via SSH: `touch tmp/restart.txt`
 
 ---
 
 ## Verification
 
-### Health Check
-```
-GET https://yourdomain.com/api/health
+### Check Health Endpoint
+```bash
+curl https://yourdomain.com/api/health
 ```
 
 Expected response:
 ```json
 {
   "ok": true,
-  "timestamp": "2025-12-13T20:35:20.240Z",
-  "env": "production"
+  "timestamp": "2025-12-13T...",
+  "env": "production",
+  "database": "connected",
+  "backend": "loaded"
 }
 ```
 
-### Frontend
-Visit `https://yourdomain.com/` - should show the SafuAcademy homepage.
+### Check Frontend
+Visit `https://yourdomain.com/` - should show SafuAcademy homepage.
+
+### Check API
+```bash
+# Get nonce for wallet
+curl -X POST https://yourdomain.com/api/auth/nonce \
+  -H "Content-Type: application/json" \
+  -d '{"walletAddress": "0x..."}'
+```
 
 ---
 
-## File Structure on Server
+## Environment Variables in cPanel
 
-```
-/home/username/public_html/yourapp/
-├── server.js          # Main entry point
-├── package.json       # Dependencies
-├── package-lock.json
-├── node_modules/      # Installed after npm install
-└── dist/              # Built frontend
-    ├── index.html
-    └── assets/
-```
+In the Node.js App panel, add these environment variables:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `JWT_SECRET` | ✅ | Secret for JWT (min 32 chars) |
+| `JWT_EXPIRES_IN` | No | Token expiry (default: 7d) |
+| `RPC_URL` | ✅ | BSC RPC endpoint |
+| `CHAIN_ID` | No | 56 for BSC |
+| `LEVEL3_COURSE_ADDRESS` | ✅ | Smart contract address |
+| `RELAYER_PRIVATE_KEY` | ✅ | Wallet private key for gas |
+| `CORS_ORIGINS` | Yes | Your domain(s) |
+| `NODE_ENV` | No | production |
+
+---
+
+## API Endpoints Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/nonce` | Get sign nonce |
+| POST | `/api/auth/verify` | Verify signature → JWT |
+| GET | `/api/courses` | List courses |
+| POST | `/api/courses/:id/enroll` | Enroll in course |
+| POST | `/api/lessons/:id/complete` | Complete lesson |
+| GET | `/api/user/profile` | Get user profile |
+| GET | `/api/health` | Health check |
 
 ---
 
 ## Troubleshooting
 
-### App Not Starting
-1. Check the **stderr.log** in your app folder
-2. Common issues:
-   - Missing `node_modules` - run `npm install`
-   - Wrong startup file - verify `server.js` exists
-   - Port conflicts - Passenger auto-assigns port
+### "Backend not compiled"
+```bash
+cd backend && npm run build
+```
+
+### "Cannot find module '@prisma/client'"
+```bash
+cd backend && npx prisma generate
+```
+
+### "Database connection failed"
+- Verify `DATABASE_URL` is correct
+- Check database is accessible from cPanel server
+- Ensure SSL settings match your database
 
 ### 502 Bad Gateway
-- Application crashed - check stderr.log
-- Run `npm install` again
+- Check `stderr.log` in app folder
 - Verify Node.js version compatibility
+- Run `npm install` again
 
-### Static Files Not Loading
-- Ensure `/dist/` folder was uploaded
-- Check paths in `server.js`
-
-### API Returns 404
-- Verify `server.js` includes `/api/health` route
-- Check application is running
-
-### View Logs
+### Check Logs
 ```bash
-# SSH into server
-cd /home/username/public_html/yourapp
+cd /home/user/safuacademy
 cat stderr.log
-cat stdout.log
+tail -f stderr.log  # Live logs
 ```
 
 ---
 
-## Quick Commands (SSH)
+## Quick Reference
 
 ```bash
-# Navigate to app
-cd /home/username/public_html/yourapp
+# Local build commands
+npm run build:frontend
+npm run build:backend  
+npm run copy:dist
+npm start  # Test locally
 
-# Install dependencies
+# Server commands (SSH)
+cd /home/user/safuacademy
 npm install --production
-
-# Test manually
-node server.js
-
-# View logs
-tail -f stderr.log
+cd backend && npm install --production && npx prisma generate
+touch ../tmp/restart.txt  # Restart app
 ```
-
----
-
-## Environment Variables Reference
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NODE_ENV` | No | Set to `production` |
-| `PORT` | Auto | Passenger sets this |
-| `CORS_ORIGINS` | Yes | Comma-separated allowed origins |
-
----
-
-## Notes
-
-- The `server.js` serves both static frontend files and the `/api/health` endpoint
-- For full backend API (with database), you need to also deploy the `/backend` folder with its own setup
-- Frontend uses client-side routing - all routes fallback to `index.html`
