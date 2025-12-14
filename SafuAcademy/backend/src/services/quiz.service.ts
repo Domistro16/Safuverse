@@ -44,7 +44,7 @@ export class QuizService {
         const quiz = await this.getQuizByLessonId(lessonId);
         if (!quiz) return null;
 
-        const questions = quiz.questions as QuizQuestion[];
+        const questions = quiz.questions as unknown as QuizQuestion[];
 
         // Return questions WITHOUT correct answers
         return {
@@ -102,7 +102,7 @@ export class QuizService {
             };
         }
 
-        const questions = quiz.questions as QuizQuestion[];
+        const questions = quiz.questions as unknown as QuizQuestion[];
         let totalPoints = 0;
         let earnedPoints = 0;
         const correctAnswers: Record<string, number> = {};

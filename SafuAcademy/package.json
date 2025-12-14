@@ -10,10 +10,12 @@
     "build:all": "npm run build:frontend && npm run build:backend",
     "copy:dist": "xcopy /E /I /Y frontend\\dist dist",
     "prepare:cpanel": "npm run build:frontend && npm run copy:dist",
+    "postinstall": "cd backend && npx prisma generate",
     "local:start": "hardhat node",
     "local:deploy": "hardhat run scripts/deploy.ts --network local",
     "deploy": "npx hardhat run scripts/deploy.s --network bsc",
-    "build": "rollup -c",
+    "build:action": "rollup -c",
+    "build": "npm run build:frontend",
     "invoke": "bash ./scripts/invoke.sh",
     "test": "NODE_ENV=test hardhat test"
   },
@@ -32,9 +34,17 @@
     "ts-node": "^10.9.2"
   },
   "dependencies": {
+    "@prisma/client": "^7.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
+    "ethers": "^6.16.0",
     "express": "^4.22.1",
-    "rollup": "^4.44.2"
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "rollup": "^4.44.2",
+    "serverless-http": "^4.0.0",
+    "zod": "^3.25.76"
   }
 }

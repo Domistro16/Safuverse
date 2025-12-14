@@ -1,186 +1,128 @@
 # SafuAcademy Vercel Deployment Guide
 
-Deploy frontend + serverless API functions to Vercel.
+Deploy the full stack (Frontend + Express API) to Vercel using `serverless-http`.
 
 ---
 
-## Architecture on Vercel
+## Architecture
 
-| Component | Location | Description |
-|-----------|----------|-------------|
-| Frontend | `/frontend` | Vite React app |
-| API | `/api/*.ts` | Serverless functions |
-| Database | External | PostgreSQL (Supabase, Neon, Railway) |
-
----
-
-## Step 1: Set Up Database
-
-Vercel doesn't include PostgreSQL - use one of these:
-
-### Recommended: Neon (Free Tier)
-1. Go to [neon.tech](https://neon.tech)
-2. Create project
-3. Copy connection string
-
-### Alternative: Supabase (Free Tier)
-1. Go to [supabase.com](https://supabase.com)
-2. Create project → Project Settings → Database
-3. Copy connection string
+We use **`serverless-http`** to wrap the existing Express app (`server.js`) into a single Vercel Serverless Function. This means:
+- **No rewriting routes**: All your existing Express routes work as-is.
+- **Frontend**: Served as static assets.
+- **Backend**: Served serverlessly at `/api`.
 
 ---
 
-## Step 2: Push Schema to Database
+## Step 1: Install Dependencies
+
+Ensure `serverless-http` is installed (we did this already):
 
 ```bash
-cd backend
-
-# Set DATABASE_URL temporarily
-$env:DATABASE_URL="postgresql://user:pass@host/db"
-
-# Push schema
-npx prisma db push
-
-# Generate client (for local dev)
-npx prisma generate
+npm install serverless-http
 ```
+
+---
+
+## Step 2: Database Setup
+
+Vercel functions are stateless, so you need an external PostgreSQL database.
+- **Neon** (Free)
+- **Supabase** (Free)
+- **Railway** / **Aiven**
+
+1. Get your **Connection String** (e.g., `postgresql://user:pass@host/db`).
+2. Run migration locally to set up schema:
+   ```bash
+   cd backend
+   # Set updated URL
+   $env:DATABASE_URL="..." 
+   npx prisma db push
+   ```
 
 ---
 
 ## Step 3: Deploy to Vercel
 
-### Option A: Via Vercel CLI
+### Option A: Vercel CLI
+
 ```bash
 npm install -g vercel
 vercel login
 vercel
 ```
 
-### Option B: Via GitHub
-1. Push to GitHub
-2. Go to [vercel.com](https://vercel.com)
-3. Import repository
-4. It will auto-detect Vite
+- When asked "Want to modify settings?", say **No**.
+- It will detect `vercel.json` and build automatically.
+
+### Option B: Git Push
+
+1. Push your changes to GitHub/GitLab.
+2. Import project in Vercel Dashboard.
+3. Vercel will auto-detect the configuration.
 
 ---
 
-## Step 4: Configure Environment Variables
+## Step 4: Environment Variables (Vercel Dashboard)
 
-In Vercel Dashboard → Project → Settings → Environment Variables:
+Go to **Settings → Environment Variables** and add:
 
 | Variable | Value | Required |
 |----------|-------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | ✅ |
-| `JWT_SECRET` | Random 32+ char string | ✅ |
+| `DATABASE_URL` | Your PostgreSQL URL | ✅ |
+| `JWT_SECRET` | Secret string | ✅ |
 | `JWT_EXPIRES_IN` | `7d` | No |
-| `RPC_URL` | `https://bsc-dataseed.binance.org/` | For blockchain |
-| `CHAIN_ID` | `56` | For blockchain |
-| `LEVEL3_COURSE_ADDRESS` | Smart contract address | For blockchain |
-| `RELAYER_PRIVATE_KEY` | Wallet private key | For blockchain |
+| `RPC_URL` | `https://bsc-dataseed.binance.org/` | ✅ |
+| `CHAIN_ID` | `56` | ✅ |
+| `LEVEL3_COURSE_ADDRESS` | Contract address | ✅ |
+| `RELAYER_PRIVATE_KEY` | Wallet private key | ✅ |
 
 ---
 
-## API Endpoints on Vercel
+## How It Works (`vercel.json`)
 
-| Endpoint | File | Method |
-|----------|------|--------|
-| `/api/health` | `api/health.ts` | GET |
-| `/api/auth/nonce` | `api/auth/nonce.ts` | POST |
-| `/api/auth/verify` | `api/auth/verify.ts` | POST |
-| `/api/courses` | `api/courses/index.ts` | GET |
-
----
-
-## Project Structure for Vercel
-
-```
-safuacademy/
-├── api/                    ← Serverless functions
-│   ├── health.ts
-│   ├── auth/
-│   │   ├── nonce.ts
-│   │   └── verify.ts
-│   └── courses/
-│       └── index.ts
-├── frontend/               ← Vite app
-│   ├── src/
-│   ├── dist/               ← Built by Vercel
-│   └── package.json
-├── backend/                ← Prisma schema source
-│   └── prisma/
-│       └── schema.prisma
-├── vercel.json             ← Vercel config
-└── package.json
-```
-
----
-
-## Vercel-Specific Considerations
-
-### Cold Starts
-Serverless functions have cold starts (~500ms). For better performance:
-- Use [Vercel Edge Functions](https://vercel.com/docs/functions/edge-functions) for simple endpoints
-- Consider a persistent backend for complex APIs
-
-### Prisma on Vercel
-Add to `package.json` scripts:
 ```json
 {
-  "postinstall": "prisma generate"
+  "builds": [
+    { "src": "server.js", "use": "@vercel/node" },        // Backend
+    { "src": "package.json", "use": "@vercel/static-build" } // Frontend
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/server.js" },        // API traffic -> serverless
+    { "src": "/(.*)", "dest": "/dist/$1" }               // Other traffic -> static frontend
+  ]
 }
 ```
 
-Or use `vercel.json`:
-```json
-{
-  "installCommand": "npm install && npx prisma generate"
-}
-```
-
-### Database Connection Pooling
-For production, use connection pooling:
-```
-DATABASE_URL="postgresql://...?pgbouncer=true&connection_limit=1"
-```
-
 ---
 
-## Testing Locally
+## Testing Local Build
+
+You can simulate the Vercel environment locally:
 
 ```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Run locally (simulates Vercel)
 vercel dev
 ```
 
----
-
-## Comparison: Vercel vs cPanel
-
-| Feature | Vercel | cPanel |
-|---------|--------|--------|
-| **Deployment** | Git push → auto deploy | Manual upload |
-| **Backend** | Serverless functions | Full Node.js server |
-| **Database** | External only | Can host PostgreSQL |
-| **Cold starts** | Yes (500ms) | No |
-| **Free tier** | Generous | Depends on host |
-| **WebSockets** | Limited | Full support |
-| **Best for** | Frontend + simple API | Complex backend |
+This runs both the frontend and the serverless backend on `localhost:3000`.
 
 ---
 
-## When to Use Which
+## Troubleshooting
 
-**Choose Vercel if:**
-- ✅ Simple API endpoints
-- ✅ Want automatic deployments
-- ✅ Frontend-focused app
-- ✅ Free hosting is priority
+### "Function size too large"
+- Delete `backend/node_modules` before deploying (Vercel installs its own).
+- Add `.vercelignore` to exclude heavy local files.
 
-**Choose cPanel/Railway if:**
-- ✅ Complex backend logic
-- ✅ Need WebSockets
-- ✅ Want to avoid cold starts
-- ✅ Self-host database
+### "Database connection error"
+- Ensure `DATABASE_URL` is correct in Vercel.
+- Use a pooled connection string (e.g., `pgbouncer` mode) for serverless stability.
+
+### "Frontend 404"
+- Ensure `npm run build:frontend` ran successfully during deploy.
+- Check `dist` folder exists after build.
+
+---
+
+## Verify Deployment
+- Visit `https://your-project.vercel.app` (Frontend)
+- Visit `https://your-project.vercel.app/api/health` (Backend)
