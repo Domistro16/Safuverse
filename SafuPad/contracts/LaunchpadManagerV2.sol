@@ -221,8 +221,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         bool claimed;
     }
 
-    uint256 public constant MIN_RAISE_BNB = 5000000 ether; // 5M BNB
-    uint256 public constant MAX_RAISE_BNB = 20000000 ether; // 20M BNB
+    uint256 public constant MIN_RAISE_BNB = 100 ether; // 5M BNB
+    uint256 public constant MAX_RAISE_BNB = 500 ether; // 20M BNB
     // REMOVED: MAX_LIQUIDITY_BNB - No longer capping liquidity
     uint256 public constant MAX_CONTRIBUTION_PER_WALLET = 50000 ether; // Per-wallet contribution cap
     uint256 public constant RAISE_DURATION = 72 hours;

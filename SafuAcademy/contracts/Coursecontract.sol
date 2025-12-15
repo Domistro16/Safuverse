@@ -4,38 +4,51 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IReverseRegistrar.sol";
 import "./ILevel3Course.sol";
-import "./CourseFactory.sol";
 import "./ENS.sol";
 import "./INameResolver.sol";
 
+/**
+ * @title Level3Course
+ * @notice On-chain course registry and completion tracking for SafuAcademy
+ * @dev Course content (videos, quizzes) is stored off-chain in PostgreSQL for privacy
+ *      Only metadata and completion status is stored on-chain
+ *      Some courses require points to enroll (point-gating)
+ */
 contract Level3Course is ILevel3Course, Ownable {
     IReverseRegistrar public reverse;
     ENS public registry;
-    address public courseFactory;
     address public relayer;
     
     uint256 public courseCounter;
     
-    mapping(address => mapping(uint256 => bool)) public isEnrolled;
-    mapping(address => mapping(uint256 => uint8)) public progress;
-    mapping(uint256 => address[]) public participants;
+    // Course metadata (public info only)
     mapping(uint256 => Course) public courses;
-    mapping(address => uint256) public points;
+    
+    // User enrollment and progress
+    mapping(address => mapping(uint256 => bool)) public isEnrolled;
     mapping(address => mapping(uint256 => bool)) public completedCourses;
+    mapping(address => uint256) public points;
+    
+    // Participant tracking
+    mapping(uint256 => address[]) public participants;
 
-    event CourseEnrolled(address indexed user, uint256 courseId);
-    event ProgressUpdated(address indexed user, uint256 courseId, uint8 progress);
+    // Events
+    event CourseCreated(uint256 indexed courseId, string title, string level, uint256 requiredPoints);
+    event CourseUpdated(uint256 indexed courseId, string title);
+    event CourseDeleted(uint256 indexed courseId);
+    event UserEnrolled(address indexed user, uint256 indexed courseId, uint256 pointsSpent);
+    event CourseCompleted(address indexed user, uint256 indexed courseId, uint256 totalPoints);
     event RelayerUpdated(address indexed oldRelayer, address indexed newRelayer);
+    event PointsUpdated(address indexed user, uint256 oldPoints, uint256 newPoints);
 
+    // Errors
     error NoSafuPrimaryName();
-    error NotCourseFactory();
     error NotRelayer();
     error CourseNotFound();
     error AlreadyEnrolled();
     error NotEnrolled();
-    error InvalidProgress();
-    error FactoryAlreadySet();
-    error RelayerNotSet();
+    error AlreadyCompleted();
+    error InsufficientPoints(uint256 required, uint256 available);
 
     modifier domainOwner(address user) {
         bytes32 node = reverse.node(user);
@@ -44,13 +57,6 @@ contract Level3Course is ILevel3Course, Ownable {
 
         if (keccak256(bytes(name)) == keccak256(bytes(""))) {
             revert NoSafuPrimaryName();
-        }
-        _;
-    }
-
-    modifier onlyFactory() {
-        if (msg.sender != courseFactory) {
-            revert NotCourseFactory();
         }
         _;
     }
@@ -73,184 +79,238 @@ contract Level3Course is ILevel3Course, Ownable {
 
     // ============ OWNER-ONLY ADMIN FUNCTIONS ============
     
-    /// @notice Set the relayer address (can be updated if compromised)
-    /// @param _relayer The new relayer address
+    /// @notice Set the relayer address
     function setRelayer(address _relayer) external onlyOwner {
         address oldRelayer = relayer;
         relayer = _relayer;
         emit RelayerUpdated(oldRelayer, _relayer);
     }
 
-    /// @notice Set the course factory address (one-time setup)
-    /// @param _factory The course factory address
-    function setCourseFactory(address _factory) external onlyOwner {
-        if (courseFactory != address(0)) {
-            revert FactoryAlreadySet();
-        }
-        courseFactory = _factory;
+    /// @notice Create a new course (metadata only)
+    /// @param _requiredPoints Points required to enroll (0 = free course)
+    function createCourse(
+        string memory _title,
+        string memory _description,
+        string memory _longDescription,
+        string memory _instructor,
+        string[] memory _objectives,
+        string[] memory _prerequisites,
+        string memory _category,
+        string memory _level,
+        string memory _thumbnailUrl,
+        string memory _duration,
+        uint256 _totalLessons,
+        uint256 _requiredPoints
+    ) external onlyOwner returns (uint256) {
+        uint256 courseId = courseCounter;
+        
+        Course storage c = courses[courseId];
+        c.id = courseId;
+        c.title = _title;
+        c.description = _description;
+        c.longDescription = _longDescription;
+        c.instructor = _instructor;
+        c.objectives = _objectives;
+        c.prerequisites = _prerequisites;
+        c.category = _category;
+        c.level = _level;
+        c.thumbnailUrl = _thumbnailUrl;
+        c.duration = _duration;
+        c.totalLessons = _totalLessons;
+        c.requiredPoints = _requiredPoints;
+        
+        courseCounter++;
+        
+        emit CourseCreated(courseId, _title, _level, _requiredPoints);
+        return courseId;
     }
 
-    /// @notice Delete a course (admin function)
-    /// @param _courseId The course ID to delete
+    /// @notice Update course metadata
+    function updateCourse(
+        uint256 _courseId,
+        string memory _title,
+        string memory _description,
+        string memory _longDescription,
+        string memory _instructor,
+        string[] memory _objectives,
+        string[] memory _prerequisites,
+        string memory _category,
+        string memory _level,
+        string memory _thumbnailUrl,
+        string memory _duration,
+        uint256 _totalLessons,
+        uint256 _requiredPoints
+    ) external onlyOwner {
+        if (_courseId >= courseCounter) revert CourseNotFound();
+        
+        Course storage c = courses[_courseId];
+        c.title = _title;
+        c.description = _description;
+        c.longDescription = _longDescription;
+        c.instructor = _instructor;
+        c.objectives = _objectives;
+        c.prerequisites = _prerequisites;
+        c.category = _category;
+        c.level = _level;
+        c.thumbnailUrl = _thumbnailUrl;
+        c.duration = _duration;
+        c.totalLessons = _totalLessons;
+        c.requiredPoints = _requiredPoints;
+        
+        emit CourseUpdated(_courseId, _title);
+    }
+
+    /// @notice Delete a course
     function deleteCourse(uint256 _courseId) external onlyOwner {
+        if (_courseId >= courseCounter) revert CourseNotFound();
         delete courses[_courseId];
+        emit CourseDeleted(_courseId);
     }
 
-    // ============ RELAYER FUNCTIONS (Called by Backend) ============
+    // ============ RELAYER FUNCTIONS ============
     
-    /// @notice Enroll a user in a course (called by relayer/backend)
-    /// @param _id The course ID
-    /// @param _user The user address to enroll
+    /// @notice Enroll a user in a course
+    /// @dev If course requires points, they are deducted from user's balance
     function enroll(
-        uint256 _id,
+        uint256 _courseId,
         address _user
     ) external onlyRelayer domainOwner(_user) {
-        if (_id >= courseCounter) {
-            revert CourseNotFound();
-        }
-        if (isEnrolled[_user][_id]) {
-            revert AlreadyEnrolled();
+        if (_courseId >= courseCounter) revert CourseNotFound();
+        if (isEnrolled[_user][_courseId]) revert AlreadyEnrolled();
+        
+        Course storage course = courses[_courseId];
+        uint256 requiredPoints = course.requiredPoints;
+        uint256 userPoints = points[_user];
+        
+        // Check if course requires points and user has enough
+        if (requiredPoints > 0) {
+            if (userPoints < requiredPoints) {
+                revert InsufficientPoints(requiredPoints, userPoints);
+            }
+            
+            // Deduct points
+            uint256 oldPoints = userPoints;
+            points[_user] = userPoints - requiredPoints;
+            
+            emit PointsUpdated(_user, oldPoints, points[_user]);
         }
 
-        isEnrolled[_user][_id] = true;
-        participants[_id].push(_user);
+        isEnrolled[_user][_courseId] = true;
+        participants[_courseId].push(_user);
         
-        emit CourseEnrolled(_user, _id);
+        emit UserEnrolled(_user, _courseId, requiredPoints);
     }
 
-    /// @notice Update a user's course progress (called by relayer/backend)
-    /// @param _courseId The course ID
-    /// @param _progress The new progress value (0-100)
-    /// @param _user The user address
-    /// @param _points The user's total points
-    function updateCourseProgress(
+    /// @notice Mark a course as completed and update points
+    /// @dev Called by backend when user completes all lessons and quizzes off-chain
+    function completeCourse(
         uint256 _courseId,
-        uint8 _progress,
         address _user,
-        uint256 _points
+        uint256 _totalPoints
     ) external onlyRelayer domainOwner(_user) {
-        if (_courseId >= courseCounter) {
-            revert CourseNotFound();
-        }
-        if (!isEnrolled[_user][_courseId]) {
-            revert NotEnrolled();
-        }
-        if (_progress > 100) {
-            revert InvalidProgress();
-        }
+        if (_courseId >= courseCounter) revert CourseNotFound();
+        if (!isEnrolled[_user][_courseId]) revert NotEnrolled();
+        if (completedCourses[_user][_courseId]) revert AlreadyCompleted();
 
-        progress[_user][_courseId] = _progress;
-        points[_user] = _points;
+        // Mark as completed
+        isEnrolled[_user][_courseId] = false;
+        completedCourses[_user][_courseId] = true;
         
-        if (_progress == 100) {
-            isEnrolled[_user][_courseId] = false;
-            completedCourses[_user][_courseId] = true;
-        }
+        // Update total points
+        uint256 oldPoints = points[_user];
+        points[_user] = _totalPoints;
         
-        emit ProgressUpdated(_user, _courseId, _progress);
-    }
-
-    // ============ FACTORY FUNCTIONS ============
-    
-    /// @notice Update course registry (called by factory when adding new course)
-    /// @param coursecounter The course counter value
-    /// @param course The course data
-    function updateCourseRegistry(
-        uint256 coursecounter,
-        Course memory course
-    ) external onlyFactory {
-        courses[coursecounter] = course;
-        courseCounter = coursecounter + 1;
-    }
-
-    /// @notice Update an existing course (called by factory when editing)
-    /// @param course The updated course data
-    /// @param coursecounter The course ID to update
-    function updateCourse(
-        Course memory course,
-        uint256 coursecounter
-    ) external onlyFactory {
-        courses[coursecounter] = course;
+        emit PointsUpdated(_user, oldPoints, _totalPoints);
+        emit CourseCompleted(_user, _courseId, _totalPoints);
     }
 
     // ============ VIEW FUNCTIONS ============
     
-    /// @notice Get the total number of courses
-    function numCourses() external view returns (uint256) {
-        return courseCounter;
+    function getCourse(uint256 _courseId) external view returns (Course memory) {
+        if (_courseId >= courseCounter) revert CourseNotFound();
+        return courses[_courseId];
     }
 
-    /// @notice Get course details for a specific user
-    /// @param _id The course ID
-    /// @param _user The user address
-    /// @return course The course data
-    /// @return enrolled Whether the user is enrolled
-    /// @return score The user's progress score
-    /// @return attendees The number of participants
-    function getCourse(
-        uint256 _id,
+    function getCourseWithUserStatus(
+        uint256 _courseId,
         address _user
-    )
-        external
-        view
-        returns (Course memory course, bool enrolled, uint8 score, uint256 attendees)
-    {
-        if (_id >= courseCounter) {
-            revert CourseNotFound();
-        }
-
-        course = courses[_id];
-        enrolled = isEnrolled[_user][_id];
-        score = enrolled ? progress[_user][_id] : 0;
-        attendees = participants[_id].length;
+    ) external view returns (
+        Course memory course,
+        bool enrolled,
+        bool completed,
+        bool canEnroll
+    ) {
+        if (_courseId >= courseCounter) revert CourseNotFound();
+        
+        course = courses[_courseId];
+        enrolled = isEnrolled[_user][_courseId];
+        completed = completedCourses[_user][_courseId];
+        
+        // User can enroll if:
+        // - Not already enrolled
+        // - Not already completed
+        // - Has enough points (if required)
+        canEnroll = !enrolled && 
+                    !completed && 
+                    (course.requiredPoints == 0 || points[_user] >= course.requiredPoints);
     }
 
-    /// @notice Get a user's total points
-    /// @param _user The user address
+    function getAllCourses() external view returns (Course[] memory) {
+        Course[] memory allCourses = new Course[](courseCounter);
+        for (uint256 i = 0; i < courseCounter; i++) {
+            allCourses[i] = courses[i];
+        }
+        return allCourses;
+    }
+
+    /// @notice Check if user has enough points to enroll in a course
+    function canUserEnroll(address _user, uint256 _courseId) external view returns (
+        bool canEnroll,
+        uint256 userPoints,
+        uint256 requiredPoints,
+        bool hasEnoughPoints,
+        bool alreadyEnrolled,
+        bool alreadyCompleted
+    ) {
+        if (_courseId >= courseCounter) revert CourseNotFound();
+        
+        Course storage course = courses[_courseId];
+        userPoints = points[_user];
+        requiredPoints = course.requiredPoints;
+        hasEnoughPoints = requiredPoints == 0 || userPoints >= requiredPoints;
+        alreadyEnrolled = isEnrolled[_user][_courseId];
+        alreadyCompleted = completedCourses[_user][_courseId];
+        
+        canEnroll = !alreadyEnrolled && !alreadyCompleted && hasEnoughPoints;
+    }
+
     function getUserPoints(address _user) external view returns (uint256) {
         return points[_user];
     }
 
-    /// @notice Check if a user has completed a specific course
-    /// @param _user The user address
-    /// @param _courseId The course ID
-    function hasCompletedCourse(address _user, uint256 _courseId) external view returns (bool) {
-        return completedCourses[_user][_courseId];
-    }
-
-    /// @notice Check if a user is enrolled in a specific course
-    /// @param _user The user address
-    /// @param _courseId The course ID
     function isUserEnrolled(address _user, uint256 _courseId) external view returns (bool) {
         return isEnrolled[_user][_courseId];
     }
 
-    /// @notice Get all courses
-    function getCourses() external view returns (Course[] memory) {
-        Course[] memory courseList = new Course[](courseCounter);
-        for (uint256 i = 0; i < courseCounter; i++) {
-            courseList[i] = courses[i];
-        }
-        return courseList;
+    function hasCompletedCourse(address _user, uint256 _courseId) external view returns (bool) {
+        return completedCourses[_user][_courseId];
     }
 
-    /// @notice Get the number of participants for a specific course
-    /// @param _courseId The course ID
-    function numParticipants(uint256 _courseId) external view returns (uint256) {
+    function getParticipantCount(uint256 _courseId) external view returns (uint256) {
         return participants[_courseId].length;
     }
 
-    /// @notice Get participant counts for all courses
-    function getAllParticipants() external view returns (uint256[] memory) {
-        uint256[] memory courseParticipants = new uint256[](courseCounter);
-        for (uint256 i = 0; i < courseCounter; i++) {
-            courseParticipants[i] = participants[i].length;
-        }
-        return courseParticipants;
+    function numCourses() external view returns (uint256) {
+        return courseCounter;
     }
 
-    /// @notice Get the current relayer address
     function getRelayer() external view returns (address) {
         return relayer;
+    }
+    
+    /// @notice Get required points for a course
+    function getCourseRequiredPoints(uint256 _courseId) external view returns (uint256) {
+        if (_courseId >= courseCounter) revert CourseNotFound();
+        return courses[_courseId].requiredPoints;
     }
 }
