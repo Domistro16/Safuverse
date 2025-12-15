@@ -1,4 +1,4 @@
-# SafuAcademyy (EduFi-contracts)
+# SafuAcademy (EduFi-contracts)
 
 Decentralized educational platform **deployed on BNB Chain** with on-chain courses linked to domain ownership. This smart contract system enables gasless course enrollment and progress tracking through a backend relayer integration on BNB Smart Chain.
 

@@ -2,9 +2,16 @@
     "version": 2,
     "installCommand": "npm install --ignore-scripts && cd frontend && npm install",
     "buildCommand": "cd frontend && npm run build",
+    "devCommand": "cd frontend && npm run dev",
     "outputDirectory": "frontend/dist",
     "rewrites": [
-        { "source": "/api/:path*", "destination": "/api/index.js" },
-        { "source": "/(.*)", "destination": "/index.html" }
+        {
+            "source": "/api/:path*",
+            "destination": "/api/index.js"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
     ]
 }

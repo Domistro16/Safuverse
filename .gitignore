@@ -329,3 +329,5 @@ reports/
 *.local.*.yml
 
 # End of file
+.vercel
+.env*.local
