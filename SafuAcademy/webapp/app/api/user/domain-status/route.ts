@@ -20,7 +20,7 @@ const NAME_RESOLVER_ABI = [
 
 // SafuDomains ENS addresses (from your contracts)
 const REVERSE_REGISTRAR_ADDRESS = '0x1D0831eA9486Fada3887a737E8d6f8C6Ad72a125';
-const ENS_REGISTRY_ADDRESS = '0x2a5c0c83d5d4b56c3c2b62e1db5f653709e35e9f'; // Update with actual address
+const ENS_REGISTRY_ADDRESS = '0xa886B8897814193f99A88701d70b31b4a8E27a1E'; // Update with actual address
 
 export async function GET(request: NextRequest) {
     try {

@@ -83,7 +83,7 @@ function CertificateCard({ course, userAddress }: { course: Course; userAddress:
     abi: abi,
     functionName: "getCourse",
     address: Deploy,
-    args: [Number(course.id), userAddress],
+    args: [BigInt(course.id), userAddress],
   }) as {
     data: [Course, boolean, number, bigint] | undefined;
     isPending: boolean;

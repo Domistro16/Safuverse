@@ -5,11 +5,11 @@ import { getStorageService } from '@/lib/services/storage.service';
 import { LessonType } from '@prisma/client';
 
 interface RouteContext {
-    params: Promise<{ courseId: string }>;
+    params: Promise<{ id: string }>;
 }
 
 /**
- * GET /api/admin/courses/[courseId]/lessons - List lessons with video URLs
+ * GET /api/admin/courses/[id]/lessons - List lessons with video URLs
  */
 export async function GET(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -18,8 +18,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     try {
-        const { courseId: courseIdStr } = await context.params;
-        const courseId = parseInt(courseIdStr, 10);
+        const { id } = await context.params;
+        const courseId = parseInt(id, 10);
 
         const lessons = await prisma.lesson.findMany({
             where: { courseId },
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 /**
- * POST /api/admin/courses/[courseId]/lessons - Create a new lesson
+ * POST /api/admin/courses/[id]/lessons - Create a new lesson
  * Supports multipart form data for video upload
  */
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -47,8 +47,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     try {
-        const { courseId: courseIdStr } = await context.params;
-        const courseId = parseInt(courseIdStr, 10);
+        const { id } = await context.params;
+        const courseId = parseInt(id, 10);
 
         // Check course exists
         const course = await prisma.course.findUnique({

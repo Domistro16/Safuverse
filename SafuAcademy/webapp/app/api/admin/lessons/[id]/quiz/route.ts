@@ -3,11 +3,11 @@ import { verifyAdmin } from '@/lib/middleware/admin.middleware';
 import prisma from '@/lib/prisma';
 
 interface RouteContext {
-    params: Promise<{ lessonId: string }>;
+    params: Promise<{ id: string }>;
 }
 
 /**
- * GET /api/admin/lessons/[lessonId]/quiz - Get quiz with correct answers
+ * GET /api/admin/lessons/[id]/quiz - Get quiz with correct answers
  */
 export async function GET(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     try {
-        const { lessonId: lessonIdStr } = await context.params;
-        const lessonId = parseInt(lessonIdStr, 10);
+        const { id } = await context.params;
+        const lessonId = parseInt(id, 10);
 
         const quiz = await prisma.quiz.findUnique({
             where: { lessonId },
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 /**
- * POST /api/admin/lessons/[lessonId]/quiz - Create quiz
+ * POST /api/admin/lessons/[id]/quiz - Create quiz
  */
 export async function POST(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -47,8 +47,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     try {
-        const { lessonId: lessonIdStr } = await context.params;
-        const lessonId = parseInt(lessonIdStr, 10);
+        const { id } = await context.params;
+        const lessonId = parseInt(id, 10);
 
         // Verify lesson exists
         const lesson = await prisma.lesson.findUnique({
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 }
 
 /**
- * PUT /api/admin/lessons/[lessonId]/quiz - Update quiz
+ * PUT /api/admin/lessons/[id]/quiz - Update quiz
  */
 export async function PUT(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -117,8 +117,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     try {
-        const { lessonId: lessonIdStr } = await context.params;
-        const lessonId = parseInt(lessonIdStr, 10);
+        const { id } = await context.params;
+        const lessonId = parseInt(id, 10);
 
         const existingQuiz = await prisma.quiz.findUnique({
             where: { lessonId },
@@ -148,7 +148,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 }
 
 /**
- * DELETE /api/admin/lessons/[lessonId]/quiz - Delete quiz
+ * DELETE /api/admin/lessons/[id]/quiz - Delete quiz
  */
 export async function DELETE(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -157,8 +157,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     try {
-        const { lessonId: lessonIdStr } = await context.params;
-        const lessonId = parseInt(lessonIdStr, 10);
+        const { id } = await context.params;
+        const lessonId = parseInt(id, 10);
 
         const existingQuiz = await prisma.quiz.findUnique({
             where: { lessonId },

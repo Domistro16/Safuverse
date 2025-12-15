@@ -47,7 +47,7 @@ export default function CourseDetailPage() {
     abi: abi,
     functionName: "getCourse",
     address: Deploy,
-    args: [Number(courseId), address || "0x0000000000000000000000000000000000000000"],
+    args: [BigInt(courseId), address || "0x0000000000000000000000000000000000000000"],
   }) as {
     data: [Course, boolean, number, bigint] | undefined;
     isPending: boolean;

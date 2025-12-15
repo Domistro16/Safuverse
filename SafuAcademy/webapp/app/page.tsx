@@ -7,7 +7,7 @@ import { ChatWidget } from "../components/ChatWidget";
 import { useReadContract } from "wagmi";
 import { abi, Course, Deploy } from "@/lib/constants";
 import { useTheme } from "@/app/providers";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { CustomConnect } from "@/components/connectButton";
 
 // Component to fetch and display featured courses from smart contract
 function FeaturedCourses() {
@@ -158,7 +158,7 @@ export const Home: React.FC = () => {
             >
               {isDark ? '☀️' : '🌙'}
             </button>
-            <ConnectButton />
+            <CustomConnect />
           </div>
         </nav>
 
