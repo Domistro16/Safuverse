@@ -13,14 +13,11 @@ const nextConfig = {
       },
     ],
   },
-  // Externalize problematic server-side packages
+  // Externalize problematic server-side packages (NOT the @reown packages since they're transpiled)
   serverExternalPackages: [
     'pino',
     'thread-stream',
-    '@reown/appkit',
-    '@reown/appkit-controllers',
-    '@reown/appkit-utils',
-    '@walletconnect/universal-provider',
+    'pino-pretty',
   ],
   // Turbopack configuration
   turbopack: {
@@ -36,14 +33,7 @@ const nextConfig = {
       net: false,
       tls: false,
     };
-    // Ignore test files in node_modules
-    config.module = config.module || {};
-    config.module.rules = config.module.rules || [];
-    config.module.rules.push({
-      test: /\.test\.(js|ts)$/,
-      use: 'ignore-loader',
-    });
-    // Externalize pino to avoid thread-stream issues
+    // Externalize pino to avoid thread-stream issues on client
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
@@ -52,7 +42,8 @@ const nextConfig = {
     }
     return config;
   },
+  // Transpile @reown packages (keep these ONLY here, not in serverExternalPackages)
+  transpilePackages: ['@reown/appkit', '@reown/appkit-controllers', '@reown/appkit-utils'],
 };
 
 module.exports = nextConfig;
-
