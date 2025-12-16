@@ -5,7 +5,6 @@ import "dotenv/config"
 
 const { API_URL, PRIVATE_KEY } = process.env
 
-import './tasks/etherscan-multichain.js'
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
@@ -27,6 +26,11 @@ const config: HardhatUserConfig = {
     bsc: {
       url: API_URL,
       chainId: 56,
+      accounts: [`0x${PRIVATE_KEY}`],
+    },
+    bscTestnet: {
+      url: API_URL,
+      chainId: 97,
       accounts: [`0x${PRIVATE_KEY}`],
     },
   },

@@ -1,17 +1,18 @@
-import { PrismaClient, LessonType } from '@prisma/client';
-import { CourseService } from './course.service';
-import { getPointsConfig, WATCH_THRESHOLD_PERCENT } from '../points';
+import { PrismaClient } from '@prisma/client';
+import { ProgressService } from './progress.service';
+import { RelayerService } from './relayer.service';
+import { WATCH_THRESHOLD_PERCENT } from '../points';
 
 export class LessonService {
     private prisma: PrismaClient;
-    private courseService: CourseService;
+    private progressService: ProgressService;
 
-    constructor(prisma: PrismaClient, courseService: CourseService) {
+    constructor(prisma: PrismaClient, relayerService: RelayerService) {
         this.prisma = prisma;
-        this.courseService = courseService;
+        this.progressService = new ProgressService(prisma, relayerService);
     }
 
-    async getLesson(lessonId: number) {
+    async getLesson(lessonId: string) {
         return this.prisma.lesson.findUnique({
             where: { id: lessonId },
             include: {
@@ -20,14 +21,14 @@ export class LessonService {
                     select: {
                         id: true,
                         passingScore: true,
-                        bonusPoints: true,
+                        passPoints: true,
                     },
                 },
             },
         });
     }
 
-    async getUserLessonProgress(userId: string, lessonId: number) {
+    async getUserLessonProgress(userId: string, lessonId: string) {
         return this.prisma.userLesson.findUnique({
             where: {
                 userId_lessonId: { userId, lessonId },
@@ -35,7 +36,7 @@ export class LessonService {
         });
     }
 
-    async startLesson(userId: string, lessonId: number) {
+    async startLesson(userId: string, lessonId: string) {
         const lesson = await this.getLesson(lessonId);
         if (!lesson) {
             throw new Error('Lesson not found');
@@ -63,10 +64,10 @@ export class LessonService {
             create: {
                 userId,
                 lessonId,
-                startedAt: new Date(),
+                lastWatchedAt: new Date(),
             },
             update: {
-                startedAt: new Date(),
+                lastWatchedAt: new Date(),
             },
         });
 
@@ -75,10 +76,11 @@ export class LessonService {
 
     /**
      * Update watch progress - awards points when 50% threshold is reached
+     * Delegates to ProgressService for actual logic
      */
     async updateWatchProgress(
         userId: string,
-        lessonId: number,
+        lessonId: string,
         videoProgress: number
     ): Promise<{
         userLesson: any;
@@ -86,175 +88,38 @@ export class LessonService {
         isNewlyWatched: boolean;
         courseProgress: number;
     }> {
-        const lesson = await this.getLesson(lessonId);
-        if (!lesson) {
-            throw new Error('Lesson not found');
-        }
+        const result = await this.progressService.updateLessonWatchProgress(
+            userId,
+            lessonId,
+            videoProgress
+        );
 
-        // Check enrollment
-        const enrollment = await this.prisma.userCourse.findUnique({
-            where: {
-                userId_courseId: { userId, courseId: lesson.courseId },
-            },
-        });
-
-        if (!enrollment) {
-            throw new Error('User not enrolled in this course');
-        }
-
-        // Get existing progress
-        let userLesson = await this.prisma.userLesson.findUnique({
+        // Fetch the updated userLesson for response
+        const userLesson = await this.prisma.userLesson.findUnique({
             where: { userId_lessonId: { userId, lessonId } },
         });
-
-        // Determine if we should award watch points
-        const shouldMarkWatched = videoProgress >= WATCH_THRESHOLD_PERCENT;
-        const wasAlreadyWatched = userLesson?.isWatched ?? false;
-        const wasPointsAwarded = userLesson?.watchPointsAwarded ?? false;
-
-        let pointsAwarded = 0;
-        const isNewlyWatched = shouldMarkWatched && !wasAlreadyWatched;
-
-        // Award points only if hitting threshold for first time and not already awarded
-        if (isNewlyWatched && !wasPointsAwarded) {
-            const pointsConfig = getPointsConfig(lesson.course.level);
-            pointsAwarded = pointsConfig.watchPoints;
-        }
-
-        // Update or create user lesson
-        userLesson = await this.prisma.userLesson.upsert({
-            where: { userId_lessonId: { userId, lessonId } },
-            create: {
-                userId,
-                lessonId,
-                videoProgress,
-                isWatched: shouldMarkWatched,
-                watchPointsAwarded: pointsAwarded > 0,
-                startedAt: new Date(),
-            },
-            update: {
-                videoProgress: Math.max(userLesson?.videoProgress ?? 0, videoProgress),
-                isWatched: shouldMarkWatched || wasAlreadyWatched,
-                watchPointsAwarded: wasPointsAwarded || pointsAwarded > 0,
-            },
-        });
-
-        // Award points to user if applicable
-        if (pointsAwarded > 0) {
-            await this.prisma.user.update({
-                where: { id: userId },
-                data: { points: { increment: pointsAwarded } },
-            });
-
-            // Also update UserCourse points earned
-            await this.prisma.userCourse.update({
-                where: { userId_courseId: { userId, courseId: lesson.courseId } },
-                data: { pointsEarned: { increment: pointsAwarded } },
-            });
-        }
-
-        // Recalculate course progress
-        const courseProgress = await this.courseService.recalculateProgress(userId, lesson.courseId);
 
         return {
             userLesson,
-            pointsAwarded,
-            isNewlyWatched,
-            courseProgress,
+            pointsAwarded: result.pointsAwarded ? 10 : 0,
+            isNewlyWatched: result.pointsAwarded,
+            courseProgress: result.courseProgress || 0,
         };
-    }
-
-    /**
-     * Mark lesson as completed (after both watching and passing quiz if applicable)
-     */
-    async completeLesson(
-        userId: string,
-        userAddress: string,
-        lessonId: number,
-        data: {
-            videoProgressPercent?: number;
-            timeSpentSeconds?: number;
-            quizPassed?: boolean;
-        }
-    ): Promise<{ success: boolean; error?: string; courseCompleted?: boolean }> {
-        const lesson = await this.getLesson(lessonId);
-        if (!lesson) {
-            return { success: false, error: 'Lesson not found' };
-        }
-
-        // Get current lesson progress
-        const userLesson = await this.getUserLessonProgress(userId, lessonId);
-
-        // Check if lesson is watched (50%+ threshold)
-        if (!userLesson?.isWatched) {
-            return { success: false, error: 'Lesson must be watched (50%+) before completing' };
-        }
-
-        // If lesson has a quiz, check if quiz was passed
-        if (lesson.quiz && !data.quizPassed) {
-            // Check if user has already passed the quiz
-            const passedQuiz = await this.prisma.quizAttempt.findFirst({
-                where: {
-                    userId,
-                    quiz: { lessonId },
-                    passed: true,
-                },
-            });
-
-            if (!passedQuiz) {
-                return { success: false, error: 'Quiz must be passed to complete this lesson' };
-            }
-        }
-
-        // Check if already completed
-        if (userLesson.completedAt) {
-            return { success: true, courseCompleted: false }; // Already completed
-        }
-
-        // Mark lesson as complete
-        await this.prisma.userLesson.update({
-            where: { userId_lessonId: { userId, lessonId } },
-            data: {
-                completedAt: new Date(),
-                timeSpent: data.timeSpentSeconds || userLesson.timeSpent,
-            },
-        });
-
-        // Recalculate course progress
-        const newProgress = await this.courseService.recalculateProgress(userId, lesson.courseId);
-
-        // If course is 100% complete, sync to blockchain
-        if (newProgress === 100) {
-            const syncResult = await this.courseService.syncCourseCompletion(
-                userId,
-                userAddress,
-                lesson.courseId
-            );
-
-            if (!syncResult.success) {
-                console.error('Blockchain sync failed:', syncResult.error);
-            }
-
-            return { success: true, courseCompleted: true };
-        }
-
-        return { success: true, courseCompleted: false };
     }
 
     async updateLessonProgress(
         userId: string,
-        lessonId: number,
+        lessonId: string,
         data: {
-            timeSpent?: number;
-            videoProgress?: number;
+            progressPercent?: number;
         }
     ) {
         // If videoProgress is provided, use the new updateWatchProgress method
-        if (data.videoProgress !== undefined) {
-            return this.updateWatchProgress(userId, lessonId, data.videoProgress);
+        if (data.progressPercent !== undefined) {
+            return this.updateWatchProgress(userId, lessonId, data.progressPercent);
         }
 
-        // Otherwise just update time spent
+        // Otherwise just update lastWatchedAt
         return this.prisma.userLesson.upsert({
             where: {
                 userId_lessonId: { userId, lessonId },
@@ -262,11 +127,42 @@ export class LessonService {
             create: {
                 userId,
                 lessonId,
-                timeSpent: data.timeSpent || 0,
+                lastWatchedAt: new Date(),
             },
             update: {
-                timeSpent: data.timeSpent,
+                lastWatchedAt: new Date(),
             },
         });
+    }
+
+    /**
+     * Get lesson with user progress
+     */
+    async getLessonWithProgress(userId: string, lessonId: string) {
+        const lesson = await this.getLesson(lessonId);
+        if (!lesson) {
+            return null;
+        }
+
+        const userLesson = await this.getUserLessonProgress(userId, lessonId);
+
+        return {
+            lesson: {
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                orderIndex: lesson.orderIndex,
+                videoDuration: lesson.videoDuration,
+                watchPoints: lesson.watchPoints,
+                hasQuiz: !!lesson.quiz,
+            },
+            progress: userLesson
+                ? {
+                    watchProgressPercent: userLesson.watchProgressPercent,
+                    isWatched: userLesson.isWatched,
+                    watchPointsAwarded: userLesson.watchPointsAwarded,
+                }
+                : null,
+        };
     }
 }

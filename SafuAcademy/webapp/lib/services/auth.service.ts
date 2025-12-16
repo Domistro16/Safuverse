@@ -133,7 +133,7 @@ export class AuthService {
             select: {
                 id: true,
                 walletAddress: true,
-                points: true,
+                totalPoints: true,
                 createdAt: true,
             },
         });
@@ -145,7 +145,7 @@ export class AuthService {
             select: {
                 id: true,
                 walletAddress: true,
-                points: true,
+                totalPoints: true,
                 createdAt: true,
             },
         });

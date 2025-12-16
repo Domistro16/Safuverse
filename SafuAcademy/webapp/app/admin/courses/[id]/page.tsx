@@ -5,15 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Lesson {
-    id: number;
+    id: string;
     title: string;
     description: string | null;
-    order: number;
-    type: string;
+    orderIndex: number;
     videoStorageKey: string | null;
     videoDuration: number;
     watchPoints: number;
-    quiz: { id: number; passingScore: number; bonusPoints: number } | null;
+    quiz: { id: string; passingScore: number; passPoints: number } | null;
 }
 
 interface Course {
@@ -29,7 +28,8 @@ interface Course {
     objectives: string[];
     prerequisites: string[];
     completionPoints: number;
-    requiredPoints: number;
+    minPointsToAccess: number;
+    enrollmentCost: number;
     isPublished: boolean;
     onChainSynced: boolean;
     lessons: Lesson[];
@@ -97,7 +97,8 @@ export default function EditCoursePage() {
                     objectives: course.objectives,
                     prerequisites: course.prerequisites,
                     completionPoints: course.completionPoints,
-                    requiredPoints: course.requiredPoints,
+                    minPointsToAccess: course.minPointsToAccess,
+                    enrollmentCost: course.enrollmentCost,
                 }),
             });
 
@@ -138,7 +139,7 @@ export default function EditCoursePage() {
         }
     }
 
-    async function deleteLesson(lessonId: number) {
+    async function deleteLesson(lessonId: string) {
         if (!confirm('Delete this lesson?')) return;
 
         try {
@@ -193,8 +194,8 @@ export default function EditCoursePage() {
                 <button
                     onClick={() => setActiveTab('details')}
                     className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'details'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         }`}
                 >
                     Course Details
@@ -202,8 +203,8 @@ export default function EditCoursePage() {
                 <button
                     onClick={() => setActiveTab('lessons')}
                     className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'lessons'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         }`}
                 >
                     Lessons ({course.lessons.length})
@@ -246,6 +247,7 @@ export default function EditCoursePage() {
                                 >
                                     <option value="BEGINNER">Beginner</option>
                                     <option value="INTERMEDIATE">Intermediate</option>
+                                    <option value="ADVANCED">Advanced</option>
                                 </select>
                             </div>
                             <div>
@@ -259,17 +261,7 @@ export default function EditCoursePage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-gray-400 mb-2">Required Points</label>
-                                <input
-                                    type="number"
-                                    value={course.requiredPoints}
-                                    onChange={(e) => setCourse({ ...course, requiredPoints: parseInt(e.target.value) || 0 })}
-                                    min="0"
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
+                        <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-gray-400 mb-2">Completion Points</label>
                                 <input
@@ -279,6 +271,29 @@ export default function EditCoursePage() {
                                     min="0"
                                     className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                                 />
+                                <p className="text-gray-500 text-xs mt-1">Awarded on completion</p>
+                            </div>
+                            <div>
+                                <label className="block text-gray-400 mb-2">Min Points to Access</label>
+                                <input
+                                    type="number"
+                                    value={course.minPointsToAccess}
+                                    onChange={(e) => setCourse({ ...course, minPointsToAccess: parseInt(e.target.value) || 0 })}
+                                    min="0"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                />
+                                <p className="text-gray-500 text-xs mt-1">Required (not deducted)</p>
+                            </div>
+                            <div>
+                                <label className="block text-gray-400 mb-2">Enrollment Cost</label>
+                                <input
+                                    type="number"
+                                    value={course.enrollmentCost}
+                                    onChange={(e) => setCourse({ ...course, enrollmentCost: parseInt(e.target.value) || 0 })}
+                                    min="0"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                />
+                                <p className="text-gray-500 text-xs mt-1">Deducted on enrollment</p>
                             </div>
                         </div>
                     </div>
@@ -347,9 +362,9 @@ export default function EditCoursePage() {
                             <tbody>
                                 {course.lessons.map((lesson) => (
                                     <tr key={lesson.id} className="border-t border-gray-700">
-                                        <td className="px-6 py-4 text-gray-400">{lesson.order + 1}</td>
+                                        <td className="px-6 py-4 text-gray-400">{lesson.orderIndex + 1}</td>
                                         <td className="px-6 py-4 text-white">{lesson.title}</td>
-                                        <td className="px-6 py-4 text-gray-300">{lesson.type}</td>
+                                        <td className="px-6 py-4 text-gray-300">{lesson.videoDuration}s</td>
                                         <td className="px-6 py-4 text-center">
                                             {lesson.videoStorageKey ? (
                                                 <span className="text-green-400">✓</span>

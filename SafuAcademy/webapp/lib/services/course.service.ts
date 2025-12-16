@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { RelayerService } from './relayer.service';
-import { getPointsConfig } from '../points';
 
 export class CourseService {
     private prisma: PrismaClient;
@@ -13,7 +12,7 @@ export class CourseService {
 
     async getAllCourses() {
         return this.prisma.course.findMany({
-            where: { isActive: true },
+            where: { isActive: true, isPublished: true },
             include: {
                 _count: {
                     select: { lessons: true },
@@ -28,20 +27,21 @@ export class CourseService {
             where: { id: courseId },
             include: {
                 lessons: {
-                    orderBy: { order: 'asc' },
+                    orderBy: { orderIndex: 'asc' }, // Updated to orderIndex
                     select: {
                         id: true,
                         title: true,
                         description: true,
-                        order: true,
-                        type: true,
-                        estimatedMinutes: true,
-                        pointsValue: true,
+                        orderIndex: true, // Updated to orderIndex
+                        // type: true, // Removed as LessonType might not be in schema anymore or not needed
+                        // estimatedMinutes: true, // Removed unless added to schema
+                        // pointsValue: true, // Removed
+                        watchPoints: true, // Added
                         quiz: {
                             select: {
                                 id: true,
                                 passingScore: true,
-                                bonusPoints: true,
+                                passPoints: true, // Updated from bonusPoints to passPoints
                             },
                         },
                     },
@@ -75,7 +75,7 @@ export class CourseService {
             by: ['quizId'],
             where: {
                 userId,
-                passed: true,
+                isPassed: true,
                 quiz: {
                     lesson: { courseId },
                 },
@@ -86,12 +86,12 @@ export class CourseService {
             where: { id: courseId },
             include: {
                 lessons: {
-                    orderBy: { order: 'asc' },
+                    orderBy: { orderIndex: 'asc' },
                     select: {
                         id: true,
                         title: true,
-                        order: true,
-                        type: true,
+                        orderIndex: true,
+                        // type: true,
                     },
                 },
             },
@@ -108,210 +108,134 @@ export class CourseService {
                     select: {
                         id: true,
                         title: true,
-                        order: true,
+                        orderIndex: true,
                     },
                 },
             },
         });
 
+        // Calculate stats
+        // Note: totalLessons usually refers to VIDEO lessons, but prompt implies total items?
+        // Let's stick to what we have.
+        // Schema has `lessons Lesson[]`.
+
         return {
             ...userCourse,
             watchedCount: watchedLessons,
             passedQuizzesCount: passedQuizzes.length,
-            totalLessons: course?.totalLessons || 0,
+            totalLessons: course?.lessons?.length || 0,
             lessons: course?.lessons || [],
             userLessons,
         };
     }
 
-    async enrollUser(
+    async enrollInCourse(
         userId: string,
-        userAddress: string,
         courseId: number
-    ): Promise<{ success: boolean; error?: string }> {
-        // Check if course exists
-        const course = await this.prisma.course.findUnique({
-            where: { id: courseId },
-        });
+    ): Promise<{
+        success: boolean;
+        enrolled: boolean;
+        pointsSpent?: number;
+        newTotalPoints?: number;
+        txHash?: string;
+        error?: string
+    }> {
+        // 1. Get User and Course
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        const course = await this.prisma.course.findUnique({ where: { id: courseId } });
 
-        if (!course) {
-            return { success: false, error: 'Course not found' };
+        if (!user || !course) {
+            return { success: false, enrolled: false, error: 'User or Course not found' };
         }
 
-        // Check if already enrolled
-        const existingEnrollment = await this.prisma.userCourse.findUnique({
-            where: {
-                userId_courseId: { userId, courseId },
-            },
-        });
+        // 2. Check Enrollment Requirements
 
-        if (existingEnrollment) {
-            return { success: true }; // Already enrolled, not an error
+        // CHECK 1: Access requirement (ADVANCED courses)
+        // User must HAVE enough points, but they are NOT deducted
+        if (course.minPointsToAccess > 0) {
+            if (user.totalPoints < course.minPointsToAccess) {
+                return {
+                    success: false,
+                    enrolled: false,
+                    error: `Insufficient points to access. Required: ${course.minPointsToAccess}, Available: ${user.totalPoints}`
+                };
+            }
         }
 
-        // Create enrollment in database
-        await this.prisma.userCourse.create({
-            data: {
-                userId,
-                courseId,
-                progress: 0,
-                pointsEarned: 0,
-            },
-        });
-
-        // Call smart contract to enroll
-        const result = await this.relayerService.enrollUser(userId, userAddress, courseId);
-
-        if (!result.success) {
-            console.error('Blockchain enrollment failed:', result.error);
-            // Don't fail the enrollment - user is still enrolled in DB
-            // They can retry blockchain sync later
-        } else if (result.txHash && result.txHash !== 'already-enrolled') {
-            await this.prisma.userCourse.update({
-                where: {
-                    userId_courseId: { userId, courseId },
-                },
-                data: {
-                    onChainSynced: true,
-                    txHash: result.txHash,
-                },
-            });
+        // CHECK 2: Cost requirement (PREMIUM courses)
+        // User must PAY this amount
+        if (course.enrollmentCost > 0) {
+            if (user.totalPoints < course.enrollmentCost) {
+                return {
+                    success: false,
+                    enrolled: false,
+                    error: `Insufficient points to pay enrollment. Cost: ${course.enrollmentCost}, Available: ${user.totalPoints}`
+                };
+            }
         }
 
-        return { success: true };
-    }
+        // 3. Perform Enrollment (Transaction)
+        try {
+            const result = await this.prisma.$transaction(async (tx) => {
+                // Check if already enrolled (double check inside tx)
+                const existing = await tx.userCourse.findUnique({
+                    where: { userId_courseId: { userId, courseId } }
+                });
 
-    /**
-     * Recalculate course progress based on watched lessons and passed quizzes
-     * Progress = (watched lessons + passed quizzes) / (total lessons * 2) * 100
-     */
-    async recalculateProgress(userId: string, courseId: number): Promise<number> {
-        const course = await this.prisma.course.findUnique({
-            where: { id: courseId },
-        });
+                if (existing) {
+                    return { enrollment: existing, user }; // Already enrolled
+                }
 
-        if (!course) return 0;
+                // Deduct cost if applicable
+                if (course.enrollmentCost > 0) {
+                    await tx.user.update({
+                        where: { id: userId },
+                        data: { totalPoints: { decrement: course.enrollmentCost } }
+                    });
+                }
 
-        // Count watched lessons
-        const watchedCount = await this.prisma.userLesson.count({
-            where: {
-                userId,
-                lesson: { courseId },
-                isWatched: true,
-            },
-        });
+                // Create enrollment record
+                const enrollment = await tx.userCourse.create({
+                    data: {
+                        userId,
+                        courseId,
+                        pointsSpent: course.enrollmentCost,
+                        progressPercent: 0
+                    }
+                });
 
-        // Count unique passed quizzes (user might attempt multiple times)
-        const passedQuizzes = await this.prisma.quizAttempt.groupBy({
-            by: ['quizId'],
-            where: {
-                userId,
-                passed: true,
-                quiz: {
-                    lesson: { courseId },
-                },
-            },
-        });
-
-        const passedQuizzesCount = passedQuizzes.length;
-
-        // Progress = (watched + passed quizzes) / (totalLessons * 2) * 100
-        // Each lesson has 2 steps: watch + quiz
-        const totalSteps = course.totalLessons * 2;
-        const completedSteps = watchedCount + passedQuizzesCount;
-        const progress = totalSteps > 0 ? Math.floor((completedSteps / totalSteps) * 100) : 0;
-
-        await this.prisma.userCourse.update({
-            where: {
-                userId_courseId: { userId, courseId },
-            },
-            data: { progress },
-        });
-
-        return progress;
-    }
-
-    /**
-     * Calculate total course points (watch points + quiz points)
-     */
-    async calculateCoursePoints(userId: string, courseId: number): Promise<number> {
-        const userCourse = await this.prisma.userCourse.findUnique({
-            where: { userId_courseId: { userId, courseId } },
-        });
-
-        return userCourse?.pointsEarned || 0;
-    }
-
-    /**
-     * Sync course completion to blockchain - only when 100% complete
-     * Includes completion bonus based on course level
-     */
-    async syncCourseCompletion(
-        userId: string,
-        userAddress: string,
-        courseId: number
-    ): Promise<{ success: boolean; txHash?: string; error?: string }> {
-        const userCourse = await this.prisma.userCourse.findUnique({
-            where: {
-                userId_courseId: { userId, courseId },
-            },
-        });
-
-        if (!userCourse || userCourse.progress !== 100) {
-            return { success: false, error: 'Course not completed (progress must be 100%)' };
-        }
-
-        if (userCourse.onChainSynced) {
-            return { success: true, txHash: userCourse.txHash || undefined };
-        }
-
-        // Get course for level-based completion bonus
-        const course = await this.prisma.course.findUnique({
-            where: { id: courseId },
-        });
-
-        if (!course) {
-            return { success: false, error: 'Course not found' };
-        }
-
-        // Calculate total points including completion bonus
-        const pointsConfig = getPointsConfig(course.level);
-        const earnedPoints = userCourse.pointsEarned;
-        const completionBonus = pointsConfig.completionBonus;
-        const totalPoints = earnedPoints + completionBonus;
-
-        // Call blockchain
-        const result = await this.relayerService.updateCourseProgress(
-            userId,
-            userAddress,
-            courseId,
-            100,
-            totalPoints
-        );
-
-        if (result.success && result.txHash) {
-            // Update database with completion info
-            await this.prisma.userCourse.update({
-                where: {
-                    userId_courseId: { userId, courseId },
-                },
-                data: {
-                    onChainSynced: true,
-                    txHash: result.txHash,
-                    pointsEarned: totalPoints, // Include completion bonus
-                    completedAt: new Date(),
-                },
+                const updatedUser = await tx.user.findUnique({ where: { id: userId } });
+                return { enrollment, user: updatedUser };
             });
 
-            // Add completion bonus to user's total points
-            await this.prisma.user.update({
-                where: { id: userId },
-                data: {
-                    points: { increment: completionBonus },
-                },
-            });
-        }
+            // If we are here, DB transaction succeeded
 
-        return result;
+            // 4. On-Chain Enrollment (Relayer)
+            // Note: We do this AFTER DB transaction commit.
+            // If it fails, we mark as not synced, but user IS enrolled in DB.
+            const txResult = await this.relayerService.enrollUser(userId, user.walletAddress, courseId);
+
+            if (txResult.success && txResult.txHash && txResult.txHash !== 'already-enrolled') {
+                await this.prisma.userCourse.update({
+                    where: { id: result.enrollment.id },
+                    data: {
+                        onChainSynced: true,
+                        enrollTxHash: txResult.txHash
+                    }
+                });
+            }
+
+            return {
+                success: true,
+                enrolled: true,
+                pointsSpent: course.enrollmentCost,
+                newTotalPoints: result.user?.totalPoints,
+                txHash: txResult.txHash
+            };
+
+        } catch (error) {
+            console.error("Enrollment error:", error);
+            return { success: false, enrolled: false, error: (error as Error).message };
+        }
     }
 }

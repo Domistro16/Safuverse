@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 
-// Contract ABI for createCourse
+// Contract ABI for createCourse - matches Level3Course.sol
 const COURSE_ABI = [
     {
         name: 'createCourse',
@@ -22,20 +22,21 @@ const COURSE_ABI = [
             { name: '_thumbnailUrl', type: 'string' },
             { name: '_duration', type: 'string' },
             { name: '_totalLessons', type: 'uint256' },
-            { name: '_requiredPoints', type: 'uint256' },
+            { name: '_minPointsToAccess', type: 'uint256' },
+            { name: '_enrollmentCost', type: 'uint256' },
         ],
-        outputs: [{ type: 'uint256' }],
-    },
-    {
-        name: 'numCourses',
-        type: 'function',
-        stateMutability: 'view',
-        inputs: [],
         outputs: [{ type: 'uint256' }],
     },
 ] as const;
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_LEVEL3_COURSE_ADDRESS as `0x${string}`;
+
+// Level-specific defaults
+const LEVEL_DEFAULTS = {
+    BEGINNER: { completionPoints: 50, minPointsToAccess: 0, enrollmentCost: 0 },
+    INTERMEDIATE: { completionPoints: 100, minPointsToAccess: 0, enrollmentCost: 0 },
+    ADVANCED: { completionPoints: 150, minPointsToAccess: 100, enrollmentCost: 50 },
+};
 
 export default function CreateCoursePage() {
     const router = useRouter();
@@ -49,13 +50,14 @@ export default function CreateCoursePage() {
         longDescription: '',
         instructor: '',
         category: 'DeFi',
-        level: 'BEGINNER',
+        level: 'BEGINNER' as keyof typeof LEVEL_DEFAULTS,
         thumbnailUrl: '',
         duration: '',
         objectives: [''],
         prerequisites: [''],
         completionPoints: 50,
-        requiredPoints: 0,
+        minPointsToAccess: 0,
+        enrollmentCost: 0,
     });
 
     const { writeContract, data: hash } = useWriteContract();
@@ -63,7 +65,20 @@ export default function CreateCoursePage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+
+        // If level changes, update default points values
+        if (name === 'level' && value in LEVEL_DEFAULTS) {
+            const defaults = LEVEL_DEFAULTS[value as keyof typeof LEVEL_DEFAULTS];
+            setFormData((prev) => ({
+                ...prev,
+                level: value as keyof typeof LEVEL_DEFAULTS,
+                completionPoints: defaults.completionPoints,
+                minPointsToAccess: defaults.minPointsToAccess,
+                enrollmentCost: defaults.enrollmentCost,
+            }));
+        } else {
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleArrayChange = (field: 'objectives' | 'prerequisites', index: number, value: string) => {
@@ -120,7 +135,8 @@ export default function CreateCoursePage() {
                     formData.thumbnailUrl,
                     formData.duration,
                     BigInt(0), // totalLessons - will update when adding lessons
-                    BigInt(formData.requiredPoints),
+                    BigInt(formData.minPointsToAccess),
+                    BigInt(formData.enrollmentCost),
                 ],
             });
         } catch (err) {
@@ -269,6 +285,7 @@ export default function CreateCoursePage() {
                             >
                                 <option value="BEGINNER">Beginner</option>
                                 <option value="INTERMEDIATE">Intermediate</option>
+                                <option value="ADVANCED">Advanced</option>
                             </select>
                         </div>
                     </div>
@@ -285,10 +302,19 @@ export default function CreateCoursePage() {
                     </div>
                 </div>
 
-                {/* Points */}
+                {/* Points Configuration */}
                 <div className="bg-gray-800 rounded-xl p-6 space-y-4">
-                    <h2 className="text-xl font-semibold text-white">Points</h2>
-                    <div className="grid grid-cols-2 gap-4">
+                    <h2 className="text-xl font-semibold text-white">Points Configuration</h2>
+
+                    {formData.level === 'ADVANCED' && (
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+                            <p className="text-yellow-400 text-sm">
+                                ⚡ Advanced courses require users to have minimum points to access and may deduct points on enrollment.
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-3 gap-4">
                         <div>
                             <label className="block text-gray-400 mb-2">Completion Points</label>
                             <input
@@ -299,17 +325,31 @@ export default function CreateCoursePage() {
                                 min="0"
                                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                             />
+                            <p className="text-gray-500 text-xs mt-1">Awarded on course completion</p>
                         </div>
                         <div>
-                            <label className="block text-gray-400 mb-2">Required Points (0 = Free)</label>
+                            <label className="block text-gray-400 mb-2">Min Points to Access</label>
                             <input
                                 type="number"
-                                name="requiredPoints"
-                                value={formData.requiredPoints}
+                                name="minPointsToAccess"
+                                value={formData.minPointsToAccess}
                                 onChange={handleChange}
                                 min="0"
                                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                             />
+                            <p className="text-gray-500 text-xs mt-1">Required to enroll (not deducted)</p>
+                        </div>
+                        <div>
+                            <label className="block text-gray-400 mb-2">Enrollment Cost</label>
+                            <input
+                                type="number"
+                                name="enrollmentCost"
+                                value={formData.enrollmentCost}
+                                onChange={handleChange}
+                                min="0"
+                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                            />
+                            <p className="text-gray-500 text-xs mt-1">Deducted on enrollment</p>
                         </div>
                     </div>
                 </div>

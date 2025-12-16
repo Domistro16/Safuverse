@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         const courses = await prisma.course.findMany({
             include: {
                 _count: {
-                    select: { lessons: true, userCourses: true },
+                    select: { lessons: true, enrollments: true },
                 },
             },
             orderBy: { id: 'asc' },
@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
             objectives = [],
             prerequisites = [],
             completionPoints = 50,
-            requiredPoints = 0,
+            minPointsToAccess = 0, // Gate check for ADVANCED courses
+            enrollmentCost = 0,    // Deducted for PREMIUM courses
             onChainTxHash, // Transaction hash from frontend's MetaMask signing
         } = body;
 
@@ -86,19 +87,21 @@ export async function POST(request: NextRequest) {
                 longDescription,
                 instructor,
                 category,
-                level: level || 'BEGINNER',
+                level: level || 'Beginner',
                 thumbnailUrl,
                 duration,
                 objectives,
                 prerequisites,
                 completionPoints,
-                requiredPoints,
+                minPointsToAccess,
+                enrollmentCost,
                 totalLessons: 0,
                 isPublished: false,
                 onChainSynced: !!onChainTxHash,
                 onChainTxHash,
             },
         });
+
 
         return NextResponse.json({
             course,

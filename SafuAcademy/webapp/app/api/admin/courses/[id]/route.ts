@@ -23,14 +23,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
             where: { id: courseId },
             include: {
                 lessons: {
-                    orderBy: { order: 'asc' },
+                    orderBy: { orderIndex: 'asc' },
                     include: {
                         quiz: {
-                            select: { id: true, passingScore: true, bonusPoints: true },
+                            select: { id: true, passingScore: true, passPoints: true },
                         },
                     },
                 },
-                _count: { select: { userCourses: true } },
+                _count: { select: { enrollments: true } },
             },
         });
 
@@ -82,7 +82,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             objectives,
             prerequisites,
             completionPoints,
-            requiredPoints,
+            minPointsToAccess,
+            enrollmentCost,
             isPublished,
             onChainTxHash, // From frontend after MetaMask signing
         } = body;
@@ -102,7 +103,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
                 ...(objectives !== undefined && { objectives }),
                 ...(prerequisites !== undefined && { prerequisites }),
                 ...(completionPoints !== undefined && { completionPoints }),
-                ...(requiredPoints !== undefined && { requiredPoints }),
+                ...(minPointsToAccess !== undefined && { minPointsToAccess }),
+                ...(enrollmentCost !== undefined && { enrollmentCost }),
                 ...(isPublished !== undefined && { isPublished }),
                 ...(onChainTxHash && { onChainSynced: true, onChainTxHash }),
             },

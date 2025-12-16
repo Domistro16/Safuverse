@@ -12,6 +12,9 @@ async function main() {
   const course = await contract.getAddress()
 
   console.log('Level3 Course Contract deployed to address:', course)
+
+  const hash = await contract.setRelayer('0xf0748f74c20f1214a184ed49e28ad7cc7b0a403e');
+  console.log(hash)
 }
 main()
   .then(() => process.exit(0))

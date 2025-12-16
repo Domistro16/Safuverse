@@ -23,28 +23,18 @@ export async function POST(
             return NextResponse.json({ error: 'Invalid course ID' }, { status: 400 });
         }
 
-        const result = await courseService.enrollUser(
-            auth.userId,
-            auth.walletAddress,
-            courseId
-        );
+        const result = await courseService.enrollInCourse(auth.userId, courseId);
 
         if (!result.success) {
             return NextResponse.json({ error: result.error }, { status: 400 });
         }
 
-        const enrollment = await prisma.userCourse.findUnique({
-            where: {
-                userId_courseId: {
-                    userId: auth.userId,
-                    courseId,
-                },
-            },
-        });
-
         return NextResponse.json({
-            message: 'Successfully enrolled',
-            enrollment,
+            success: true,
+            enrolled: result.enrolled,
+            pointsSpent: result.pointsSpent,
+            newTotalPoints: result.newTotalPoints,
+            txHash: result.txHash,
         });
     } catch (error) {
         console.error('Enrollment error:', error);

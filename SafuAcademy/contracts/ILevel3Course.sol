@@ -21,11 +21,12 @@ interface ILevel3Course {
         string[] objectives;
         string[] prerequisites;
         string category;
-        string level;           // "BEGINNER" or "INTERMEDIATE"
-        string thumbnailUrl;    // Course thumbnail (public, OK to be on-chain)
-        string duration;        // Estimated total duration
-        uint256 totalLessons;   // Number of lessons (for display)
-        uint256 requiredPoints; // Points required to enroll (0 = free course)
+        string level;             // "BEGINNER", "INTERMEDIATE", or "ADVANCED"
+        string thumbnailUrl;      // Course thumbnail (public, OK to be on-chain)
+        string duration;          // Estimated total duration
+        uint256 totalLessons;     // Number of lessons (for display)
+        uint256 minPointsToAccess; // Min points user must HAVE to enroll (NOT deducted) - for ADVANCED courses
+        uint256 enrollmentCost;    // Points DEDUCTED on enrollment (for PREMIUM courses)
         // Removed: Lesson[] lessons (lesson content is off-chain)
     }
 }

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { LessonService, CourseService, RelayerService } from '@/lib/services';
+import { LessonService, RelayerService } from '@/lib/services';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth';
 
 const relayerService = new RelayerService(prisma);
-const courseService = new CourseService(prisma, relayerService);
-const lessonService = new LessonService(prisma, courseService);
+const lessonService = new LessonService(prisma, relayerService);
 
 const progressUpdateSchema = z.object({
-    timeSpent: z.number().min(0).optional(),
-    videoProgress: z.number().min(0).max(100).optional(),
+    progressPercent: z.number().min(0).max(100),
 });
 
 export async function POST(
@@ -23,40 +21,23 @@ export async function POST(
             return unauthorizedResponse();
         }
 
-        const { id } = await params;
-        const lessonId = parseInt(id, 10);
-
-        if (isNaN(lessonId)) {
-            return NextResponse.json({ error: 'Invalid lesson ID' }, { status: 400 });
-        }
+        const { id: lessonId } = await params;
 
         const body = await request.json();
         const data = progressUpdateSchema.parse(body);
 
-        // If video progress is provided, use the new watch progress method
-        if (data.videoProgress !== undefined) {
-            const result = await lessonService.updateWatchProgress(
-                auth.userId,
-                lessonId,
-                data.videoProgress
-            );
-
-            return NextResponse.json({
-                userLesson: result.userLesson,
-                pointsAwarded: result.pointsAwarded,
-                isNewlyWatched: result.isNewlyWatched,
-                courseProgress: result.courseProgress,
-            });
-        }
-
-        // Otherwise just update time spent
-        const userLesson = await lessonService.updateLessonProgress(
+        const result = await lessonService.updateWatchProgress(
             auth.userId,
             lessonId,
-            data
+            data.progressPercent
         );
 
-        return NextResponse.json({ userLesson });
+        return NextResponse.json({
+            saved: true,
+            pointsAwarded: result.pointsAwarded > 0,
+            newTotalPoints: undefined, // Could fetch from user if needed
+            courseProgress: result.courseProgress,
+        });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(

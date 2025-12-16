@@ -18,8 +18,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     try {
-        const { id } = await context.params;
-        const lessonId = parseInt(id, 10);
+        const { id: lessonId } = await context.params;
         const userId = authResult.user!.userId;
 
         // Get lesson with course info

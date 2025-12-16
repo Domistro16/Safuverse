@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
                 isPublished: true,
                 _count: {
                     select: {
-                        userCourses: true,
+                        enrollments: true,
                         lessons: true,
                     },
                 },
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
             title: course.title,
             isPublished: course.isPublished,
             lessons: course._count.lessons,
-            enrollments: course._count.userCourses,
+            enrollments: course._count.enrollments,
             completions: completionMap.get(course.id) || 0,
         }));
 

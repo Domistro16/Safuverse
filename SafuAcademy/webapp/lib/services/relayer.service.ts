@@ -14,32 +14,50 @@ const TxType = {
     PROGRESS_UPDATE: 'PROGRESS_UPDATE',
 } as const;
 
-// Updated ABI to match new smart contract with point-gating
+// Updated ABI to match Level3Course.sol contract
 const LEVEL3_COURSE_ABI = [
+    // Relayer Functions
     'function enroll(uint256 _courseId, address _user) external',
     'function completeCourse(uint256 _courseId, address _user, uint256 _totalPoints) external',
+    // Owner Functions
+    'function createCourse(string _title, string _description, string _longDescription, string _instructor, string[] _objectives, string[] _prerequisites, string _category, string _level, string _thumbnailUrl, string _duration, uint256 _totalLessons, uint256 _minPointsToAccess, uint256 _enrollmentCost) external returns (uint256)',
+    'function updateCourse(uint256 _courseId, string _title, string _description, string _longDescription, string _instructor, string[] _objectives, string[] _prerequisites, string _category, string _level, string _thumbnailUrl, string _duration, uint256 _totalLessons, uint256 _minPointsToAccess, uint256 _enrollmentCost) external',
+    'function deleteCourse(uint256 _courseId) external',
+    // View Functions
     'function isUserEnrolled(address _user, uint256 _courseId) external view returns (bool)',
     'function hasCompletedCourse(address _user, uint256 _courseId) external view returns (bool)',
     'function getUserPoints(address _user) external view returns (uint256)',
     'function getRelayer() external view returns (address)',
-    'function getCourseRequiredPoints(uint256 _courseId) external view returns (uint256)',
-    'function canUserEnroll(address _user, uint256 _courseId) external view returns (bool canEnroll, uint256 userPoints, uint256 requiredPoints, bool hasEnoughPoints, bool alreadyEnrolled, bool alreadyCompleted)',
+    'function getCourseRequirements(uint256 _courseId) external view returns (uint256 minPointsToAccess, uint256 enrollmentCost)',
+    'function canUserEnroll(address _user, uint256 _courseId) external view returns (bool canEnroll, uint256 userPoints, uint256 minPointsToAccess, uint256 enrollmentCost, bool meetsAccessRequirement, bool meetsCostRequirement, bool alreadyEnrolled, bool alreadyCompleted)',
+    // Events
+    'event CourseCreated(uint256 indexed courseId, string title, string level, uint256 minPointsToAccess, uint256 enrollmentCost)',
 ];
 
 export class RelayerService {
     private provider: JsonRpcProvider;
     private wallet: Wallet;
+    private ownerWallet: Wallet;
     private contract: Contract;
+    private ownerContract: Contract;
     private prisma: PrismaClient;
 
     constructor(prisma: PrismaClient) {
         this.prisma = prisma;
         this.provider = new JsonRpcProvider(config.rpcUrl, config.chainId);
         this.wallet = new Wallet(config.relayerPrivateKey, this.provider);
+        this.ownerWallet = new Wallet(config.ownerPrivateKey, this.provider);
+
         this.contract = new Contract(
             config.level3CourseAddress,
             LEVEL3_COURSE_ABI,
             this.wallet
+        );
+
+        this.ownerContract = new Contract(
+            config.level3CourseAddress,
+            LEVEL3_COURSE_ABI,
+            this.ownerWallet
         );
     }
 
@@ -109,15 +127,6 @@ export class RelayerService {
         }
     }
 
-    async getCourseRequiredPoints(courseId: number): Promise<bigint> {
-        try {
-            return await this.contract.getCourseRequiredPoints(courseId);
-        } catch (error) {
-            console.error('Error getting required points:', error);
-            return BigInt(0);
-        }
-    }
-
     async canUserEnroll(userAddress: string, courseId: number): Promise<{
         canEnroll: boolean;
         userPoints: bigint;
@@ -131,8 +140,8 @@ export class RelayerService {
             return {
                 canEnroll: result.canEnroll,
                 userPoints: result.userPoints,
-                requiredPoints: result.requiredPoints,
-                hasEnoughPoints: result.hasEnoughPoints,
+                requiredPoints: result.minPointsToAccess,
+                hasEnoughPoints: result.meetsAccessRequirement && result.meetsCostRequirement,
                 alreadyEnrolled: result.alreadyEnrolled,
                 alreadyCompleted: result.alreadyCompleted,
             };
@@ -149,22 +158,21 @@ export class RelayerService {
         }
     }
 
+    // ============ RELAYER ACTIONS ============
+
     async enrollUser(
         userId: string,
         userAddress: string,
         courseId: number
     ): Promise<{ success: boolean; txHash?: string; error?: string }> {
         try {
-            // Check if already enrolled on-chain
             const isEnrolled = await this.isUserEnrolled(userAddress, courseId);
             if (isEnrolled) {
                 return { success: true, txHash: 'already-enrolled' };
             }
 
-            // Send transaction
             const tx = await this.contract.enroll(courseId, userAddress);
 
-            // Record transaction as pending
             await this.prisma.blockchainTx.create({
                 data: {
                     txHash: tx.hash,
@@ -175,10 +183,8 @@ export class RelayerService {
                 },
             });
 
-            // Wait for confirmation
             const receipt = await tx.wait();
 
-            // Update transaction status
             await this.prisma.blockchainTx.update({
                 where: { txHash: tx.hash },
                 data: {
@@ -191,15 +197,10 @@ export class RelayerService {
         } catch (error) {
             const errorMessage = (error as Error).message;
             console.error('Enrollment transaction failed:', errorMessage);
-
             return { success: false, error: errorMessage };
         }
     }
 
-    /**
-     * Complete a course on-chain (called when progress = 100%)
-     * Uses new completeCourse() function instead of updateCourseProgress()
-     */
     async completeCourse(
         userId: string,
         userAddress: string,
@@ -207,20 +208,13 @@ export class RelayerService {
         totalPoints: number
     ): Promise<{ success: boolean; txHash?: string; error?: string }> {
         try {
-            // Check if already completed on-chain
             const hasCompleted = await this.hasCompletedCourse(userAddress, courseId);
             if (hasCompleted) {
                 return { success: true, txHash: 'already-completed' };
             }
 
-            // Send transaction
-            const tx = await this.contract.completeCourse(
-                courseId,
-                userAddress,
-                totalPoints
-            );
+            const tx = await this.contract.completeCourse(courseId, userAddress, totalPoints);
 
-            // Record transaction as pending
             await this.prisma.blockchainTx.create({
                 data: {
                     txHash: tx.hash,
@@ -231,10 +225,8 @@ export class RelayerService {
                 },
             });
 
-            // Wait for confirmation
             const receipt = await tx.wait();
 
-            // Update transaction status
             await this.prisma.blockchainTx.update({
                 where: { txHash: tx.hash },
                 data: {
@@ -247,60 +239,122 @@ export class RelayerService {
         } catch (error) {
             const errorMessage = (error as Error).message;
             console.error('Complete course transaction failed:', errorMessage);
-
             return { success: false, error: errorMessage };
         }
     }
 
-    /**
-     * @deprecated Use completeCourse() instead
-     * Kept for backwards compatibility with existing code
-     */
-    async updateCourseProgress(
-        userId: string,
-        userAddress: string,
-        courseId: number,
-        progress: number,
-        points: number
-    ): Promise<{ success: boolean; txHash?: string; error?: string }> {
-        if (progress !== 100) {
-            return { success: false, error: 'Progress must be 100 to sync on-chain' };
-        }
-        return this.completeCourse(userId, userAddress, courseId, points);
-    }
+    // ============ OWNER ACTIONS ============
 
-    async retryFailedTransactions(): Promise<void> {
-        const failedTxs = await this.prisma.blockchainTx.findMany({
-            where: { status: TxStatus.FAILED },
-            include: { user: true },
-            take: 10,
-        });
+    async createCourseOnChain(data: {
+        title: string;
+        description: string;
+        longDescription: string;
+        instructor: string;
+        objectives: string[];
+        prerequisites: string[];
+        category: string;
+        level: string;
+        thumbnailUrl: string;
+        duration: string;
+        totalLessons: number;
+        minPointsToAccess: number;
+        enrollmentCost: number;
+    }): Promise<{ success: boolean; courseId?: number; txHash?: string; error?: string }> {
+        try {
+            const tx = await this.ownerContract.createCourse(
+                data.title,
+                data.description,
+                data.longDescription,
+                data.instructor,
+                data.objectives,
+                data.prerequisites,
+                data.category,
+                data.level,
+                data.thumbnailUrl,
+                data.duration,
+                data.totalLessons,
+                data.minPointsToAccess,
+                data.enrollmentCost
+            );
 
-        for (const tx of failedTxs) {
-            console.log(`Retrying transaction ${tx.id} for user ${tx.userId}`);
+            const receipt = await tx.wait();
 
-            if (tx.type === TxType.ENROLL) {
-                await this.enrollUser(tx.userId, tx.user.walletAddress, tx.courseId);
-            } else if (tx.type === TxType.PROGRESS_UPDATE) {
-                const userCourse = await this.prisma.userCourse.findUnique({
-                    where: {
-                        userId_courseId: {
-                            userId: tx.userId,
-                            courseId: tx.courseId,
-                        },
-                    },
-                });
+            // Parse CourseCreated event to get courseId
+            let courseId: number | undefined;
 
-                if (userCourse && userCourse.progress === 100) {
-                    await this.updateCourseProgress(
-                        tx.userId,
-                        tx.user.walletAddress,
-                        tx.courseId,
-                        100,
-                        userCourse.pointsEarned
-                    );
+            for (const log of receipt.logs) {
+                try {
+                    const parsed = this.ownerContract.interface.parseLog(log);
+                    if (parsed && parsed.name === 'CourseCreated') {
+                        courseId = Number(parsed.args.courseId);
+                        break;
+                    }
+                } catch {
+                    // Not our event
                 }
             }
+
+            if (courseId === undefined) {
+                throw new Error('CourseCreated event not found in transaction receipt');
+            }
+
+            return { success: true, courseId, txHash: tx.hash };
+        } catch (error) {
+            console.error('Create course transaction failed:', error);
+            return { success: false, error: (error as Error).message };
+        }
+    }
+
+    async updateCourseOnChain(
+        courseId: number,
+        data: {
+            title: string;
+            description: string;
+            longDescription: string;
+            instructor: string;
+            objectives: string[];
+            prerequisites: string[];
+            category: string;
+            level: string;
+            thumbnailUrl: string;
+            duration: string;
+            totalLessons: number;
+            minPointsToAccess: number;
+            enrollmentCost: number;
+        }
+    ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+        try {
+            const tx = await this.ownerContract.updateCourse(
+                courseId,
+                data.title,
+                data.description,
+                data.longDescription,
+                data.instructor,
+                data.objectives,
+                data.prerequisites,
+                data.category,
+                data.level,
+                data.thumbnailUrl,
+                data.duration,
+                data.totalLessons,
+                data.minPointsToAccess,
+                data.enrollmentCost
+            );
+
+            await tx.wait();
+            return { success: true, txHash: tx.hash };
+        } catch (error) {
+            return { success: false, error: (error as Error).message };
+        }
+    }
+
+    async deleteCourseOnChain(courseId: number): Promise<{ success: boolean; txHash?: string; error?: string }> {
+        try {
+            const tx = await this.ownerContract.deleteCourse(courseId);
+            await tx.wait();
+            return { success: true, txHash: tx.hash };
+        } catch (error) {
+            return { success: false, error: (error as Error).message };
         }
     }
 }

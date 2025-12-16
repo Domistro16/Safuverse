@@ -11,11 +11,11 @@ interface Course {
     isPublished: boolean;
     isActive: boolean;
     totalLessons: number;
-    requiredPoints: number;
+    minPointsToAccess: number;
     onChainSynced: boolean;
     _count: {
         lessons: number;
-        userCourses: number;
+        enrollments: number;
     };
 }
 
@@ -130,22 +130,22 @@ export default function AdminCoursesPage() {
                                 <td className="px-6 py-4 text-white font-medium">{course.title}</td>
                                 <td className="px-6 py-4 text-gray-300">{course.level || 'N/A'}</td>
                                 <td className="px-6 py-4 text-gray-300 text-center">{course._count.lessons}</td>
-                                <td className="px-6 py-4 text-gray-300 text-center">{course._count.userCourses}</td>
+                                <td className="px-6 py-4 text-gray-300 text-center">{course._count.enrollments}</td>
                                 <td className="px-6 py-4 text-gray-300 text-center">
-                                    {course.requiredPoints > 0 ? course.requiredPoints : 'Free'}
+                                    {course.minPointsToAccess > 0 ? course.minPointsToAccess : 'Free'}
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`px-2 py-1 rounded text-xs ${course.isPublished
-                                            ? 'bg-green-500/20 text-green-400'
-                                            : 'bg-yellow-500/20 text-yellow-400'
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : 'bg-yellow-500/20 text-yellow-400'
                                         }`}>
                                         {course.isPublished ? 'Published' : 'Draft'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`px-2 py-1 rounded text-xs ${course.onChainSynced
-                                            ? 'bg-blue-500/20 text-blue-400'
-                                            : 'bg-gray-500/20 text-gray-400'
+                                        ? 'bg-blue-500/20 text-blue-400'
+                                        : 'bg-gray-500/20 text-gray-400'
                                         }`}>
                                         {course.onChainSynced ? 'Synced' : 'Not Synced'}
                                     </span>
@@ -161,8 +161,8 @@ export default function AdminCoursesPage() {
                                         <button
                                             onClick={() => togglePublish(course.id, course.isPublished)}
                                             className={`px-3 py-1 text-sm rounded transition-colors ${course.isPublished
-                                                    ? 'bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400'
-                                                    : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
+                                                ? 'bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400'
+                                                : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
                                                 }`}
                                         >
                                             {course.isPublished ? 'Unpublish' : 'Publish'}

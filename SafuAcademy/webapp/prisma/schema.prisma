@@ -10,164 +10,147 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum LessonType {
-  VIDEO
-  READING
-  QUIZ
-}
-
-enum TxStatus {
-  PENDING
-  SUCCESS
-  FAILED
-}
-
-enum TxType {
-  ENROLL
-  PROGRESS_UPDATE
-}
+// ============ USERS ============
 
 model User {
-  id            String         @id @default(uuid())
-  walletAddress String         @unique
-  nonce         String
-  points        Int            @default(0)
-  isAdmin       Boolean        @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  userCourses   UserCourse[]
-  userLessons   UserLesson[]
-  quizAttempts  QuizAttempt[]
-  transactions  BlockchainTx[]
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  nonce         String   // For wallet auth
+  totalPoints   Int      @default(0)
+  isAdmin       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@index([walletAddress])
+  enrollments   UserCourse[]
+  lessonProgress UserLesson[]
+  quizAttempts  QuizAttempt[]
+  transactions  BlockchainTx[] // Keeping for now, though not explicitly in new prompt schema, it's useful
 }
+
+// ============ COURSES ============
 
 model Course {
-  id               Int          @id
-  title            String
-  description      String
-  longDescription  String?      @db.Text
-  instructor       String?
-  totalLessons     Int
-  imageUrl         String?
-  thumbnailUrl     String?
-  category         String?
-  level            String?
-  duration         String?
-  objectives       String[]     @default([])
-  prerequisites    String[]     @default([])
-  completionPoints Int          @default(50)
-  requiredPoints   Int          @default(0)  // Points required to enroll (0 = free course)
-  isActive         Boolean      @default(true)
-  isPublished      Boolean      @default(false)
-  onChainSynced    Boolean      @default(false)
-  onChainTxHash    String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  lessons          Lesson[]
-  userCourses      UserCourse[]
+  id                 Int      @id // Matches on-chain course ID
+  title              String
+  description        String
+  longDescription    String   @db.Text
+  instructor         String
+  category           String
+  level              CourseLevel
+  thumbnailUrl       String?
+  duration           String   // e.g., "2 hours"
+  objectives         String[] // Array of learning objectives
+  prerequisites      String[] // Array of prerequisites
+  completionPoints   Int      // Bonus points for completing (50, 100, or 150)
+  minPointsToAccess  Int      @default(0) // Min points to ACCESS (NOT deducted) - for ADVANCED
+  enrollmentCost     Int      @default(0) // Points DEDUCTED on enrollment - for PREMIUM
+  isPublished        Boolean  @default(false)
+  onChainSynced      Boolean  @default(false)
+  onChainTxHash      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  @@index([isActive])
-  @@index([isPublished])
+  lessons     Lesson[]
+  enrollments UserCourse[]
 }
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+// ============ LESSONS ============
 
 model Lesson {
-  id                 Int          @id @default(autoincrement())
-  courseId           Int
-  course             Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title              String
-  description        String?
-  order              Int
-  type               LessonType
-  contentUrl         String?
-  videoStorageKey    String?      // S3/R2 key for private video storage
-  videoDuration      Int          @default(0) // Duration in seconds
-  estimatedMinutes   Int          @default(10)
-  pointsValue        Int          @default(10)
-  watchPoints        Int          @default(10) // Points for watching (50%+ threshold)
-  minimumTimeSeconds Int          @default(60)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  quiz               Quiz?
-  userLessons        UserLesson[]
+  id              String   @id @default(cuid())
+  courseId        Int
+  title           String
+  description     String?
+  orderIndex      Int      // Order within course (0, 1, 2...)
+  videoStorageKey String   // S3/R2 key, e.g., "videos/course_1/lesson_1.mp4"
+  videoDuration   Int      // Duration in seconds
+  watchPoints     Int      @default(10) // Points for watching
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@unique([courseId, order])
-  @@index([courseId])
+  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  quiz           Quiz?
+  userProgress   UserLesson[]
+
+  @@unique([courseId, orderIndex])
 }
 
+// ============ QUIZZES ============
+
+model Quiz {
+  id           String   @id @default(cuid())
+  lessonId     String   @unique
+  questions    Json     // Array of { question, options, correctIndex }
+  passingScore Int      @default(70) // Percentage needed to pass
+  passPoints   Int      @default(20) // Points for passing
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lesson   Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts QuizAttempt[]
+}
+
+// ============ USER PROGRESS ============
+
 model UserCourse {
-  id                       String    @id @default(uuid())
-  userId                   String
-  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId                 Int
-  course                   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  progress                 Int       @default(0)
-  pointsEarned             Int       @default(0)
-  pointsSpent              Int       @default(0) // Points deducted on enrollment
-  onChainSynced            Boolean   @default(false) // For enrollment tx
-  txHash                   String?
-  completionPointsAwarded  Boolean   @default(false)
-  onChainCompletionSynced  Boolean   @default(false) // For completion tx
-  completionTxHash         String?
-  enrolledAt               DateTime  @default(now())
-  completedAt              DateTime?
-  updatedAt                DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  userId                  String
+  courseId                Int
+  enrolledAt              DateTime  @default(now())
+  pointsSpent             Int       @default(0) // Points deducted on enrollment
+  progressPercent         Int       @default(0)
+  isCompleted             Boolean   @default(false)
+  completedAt             DateTime?
+  completionPointsAwarded Boolean   @default(false)
+  onChainSynced           Boolean   @default(false) // For enrollment
+  onChainCompletionSynced Boolean   @default(false) // For completion
+  enrollTxHash            String?
+  completionTxHash        String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
-  @@index([userId])
-  @@index([courseId])
-  @@index([onChainSynced])
 }
 
 model UserLesson {
-  id                  String    @id @default(uuid())
+  id                  String    @id @default(cuid())
   userId              String
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId            Int
-  lesson              Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  startedAt           DateTime?
-  completedAt         DateTime?
-  timeSpent           Int       @default(0)
-  videoProgress       Int       @default(0)
-  isWatched           Boolean   @default(false)  // true when 50%+ reached
-  watchPointsAwarded  Boolean   @default(false)  // prevent double points for watching
-  quizPointsAwarded   Boolean   @default(false)  // prevent double points for quiz
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  lessonId            String
+  watchProgressPercent Int      @default(0)
+  isWatched           Boolean   @default(false) // True when >= 50%
+  watchPointsAwarded  Boolean   @default(false)
+  watchedAt           DateTime?
+  lastWatchedAt       DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
-  @@index([userId])
-  @@index([lessonId])
-}
-
-model Quiz {
-  id           Int           @id @default(autoincrement())
-  lessonId     Int           @unique
-  lesson       Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  questions    Json
-  passingScore Int           @default(70)
-  bonusPoints  Int           @default(20)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  attempts     QuizAttempt[]
 }
 
 model QuizAttempt {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quizId    Int
-  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  score     Int
-  passed    Boolean
-  answers   Json
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  quizId          String
+  answers         Json     // Array of selected indices
+  scorePercent    Int
+  isPassed        Boolean
+  passPointsAwarded Boolean @default(false)
+  attemptNumber   Int
+  createdAt       DateTime @default(now())
 
-  @@index([userId])
-  @@index([quizId])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
+// Keeping BlockchainTx for transaction tracking as it is useful, adapted to fit new schema references
 model BlockchainTx {
   id        String   @id @default(uuid())
   txHash    String   @unique
@@ -184,4 +167,15 @@ model BlockchainTx {
   @@index([userId])
   @@index([courseId])
   @@index([status])
+}
+
+enum TxStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum TxType {
+  ENROLL
+  PROGRESS_UPDATE
 }
