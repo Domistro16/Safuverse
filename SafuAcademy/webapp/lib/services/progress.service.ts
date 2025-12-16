@@ -37,8 +37,8 @@ export class ProgressService {
 
         // Get quiz IDs for this course
         const quizIds = course.lessons
-            .filter(l => l.quiz)
-            .map(l => l.quiz!.id);
+            .filter((l: { quiz: { id: string } | null }) => l.quiz)
+            .map((l: { quiz: { id: string } | null }) => l.quiz!.id);
 
         // Count passed quizzes (distinct quizzes passed)
         const passedQuizCount = await this.prisma.quizAttempt.findMany({
@@ -86,7 +86,7 @@ export class ProgressService {
         let newTotalPoints: number | undefined;
 
         // Transaction to update progress and potentially award points
-        await this.prisma.$transaction(async (tx) => {
+        await this.prisma.$transaction(async (tx: PrismaClient) => {
             // First, try to get existing userLesson
             const existingUserLesson = await tx.userLesson.findUnique({
                 where: { userId_lessonId: { userId, lessonId } }

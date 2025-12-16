@@ -13,10 +13,21 @@ const nextConfig = {
       },
     ],
   },
-  // Turbopack configuration - set root to silence warning
+  // Externalize problematic server-side packages
+  serverExternalPackages: [
+    'pino',
+    'thread-stream',
+    '@reown/appkit',
+    '@reown/appkit-controllers',
+    '@reown/appkit-utils',
+    '@walletconnect/universal-provider',
+  ],
+  // Turbopack configuration
   turbopack: {
-    root: '..',
-    resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
+    resolveAlias: {
+      // Resolve pino transport issues
+      'pino': 'pino/browser',
+    },
   },
   webpack: (config, { isServer }) => {
     config.resolve.fallback = {
@@ -25,6 +36,20 @@ const nextConfig = {
       net: false,
       tls: false,
     };
+    // Ignore test files in node_modules
+    config.module = config.module || {};
+    config.module.rules = config.module.rules || [];
+    config.module.rules.push({
+      test: /\.test\.(js|ts)$/,
+      use: 'ignore-loader',
+    });
+    // Externalize pino to avoid thread-stream issues
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'pino': 'pino/browser',
+      };
+    }
     return config;
   },
   // Transpile @reown packages
