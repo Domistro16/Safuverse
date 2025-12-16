@@ -176,7 +176,7 @@ export class CourseService {
 
         // 3. Perform Enrollment (Transaction)
         try {
-            const result = await this.prisma.$transaction(async (tx) => {
+            const result = await this.prisma.$transaction(async (tx: PrismaClient) => {
                 // Check if already enrolled (double check inside tx)
                 const existing = await tx.userCourse.findUnique({
                     where: { userId_courseId: { userId, courseId } }

@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
       });
 
       const enrollmentMap = new Map(
-        enrollments.map(e => [e.courseId, e.progressPercent])
+        enrollments.map((e: { courseId: number; progressPercent: number }) => [e.courseId, e.progressPercent])
       );
 
-      const coursesWithProgress = courses.map(course => ({
+      const coursesWithProgress = courses.map((course: { id: number; [key: string]: unknown }) => ({
         ...course,
         enrolled: enrollmentMap.has(course.id),
         progress: enrollmentMap.get(course.id) || 0,
