@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { RelayerService } from './relayer.service';
 
 export class ProgressService {
@@ -86,7 +86,7 @@ export class ProgressService {
         let newTotalPoints: number | undefined;
 
         // Transaction to update progress and potentially award points
-        await this.prisma.$transaction(async (tx: PrismaClient) => {
+        await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // First, try to get existing userLesson
             const existingUserLesson = await tx.userLesson.findUnique({
                 where: { userId_lessonId: { userId, lessonId } }
