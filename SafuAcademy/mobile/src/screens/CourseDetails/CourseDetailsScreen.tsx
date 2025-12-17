@@ -1,19 +1,25 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@theme/ThemeContext';
 import { Text, Card, Button } from '@components/ui';
-import { useCourse } from '@hooks/useCourses';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useCourse, useEnrollInCourse } from '@hooks/useCourses';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '@navigation/types';
+import { Ionicons } from '@expo/vector-icons';
 
 type CourseDetailsRouteProp = RouteProp<HomeStackParamList, 'CourseDetails'>;
+type CourseDetailsNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'CourseDetails'>;
 
 export const CourseDetailsScreen: React.FC = () => {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, borderRadius } = useTheme();
   const route = useRoute<CourseDetailsRouteProp>();
+  const navigation = useNavigation<CourseDetailsNavigationProp>();
   const { courseId } = route.params;
   const { data: course, isLoading } = useCourse(courseId);
+  const enrollMutation = useEnrollInCourse();
+  const [isEnrolling, setIsEnrolling] = useState(false);
 
   if (isLoading) {
     return (
@@ -80,12 +86,89 @@ export const CourseDetailsScreen: React.FC = () => {
           </View>
         </Card>
 
+        {/* Lessons List */}
+        {course.isEnrolled && course.lessons && course.lessons.length > 0 && (
+          <Card style={{ marginBottom: spacing.md }}>
+            <Text variant="h6" style={{ marginBottom: spacing.md }}>
+              Lessons ({course.lessons.length})
+            </Text>
+            {course.lessons.map((lesson, index) => (
+              <TouchableOpacity
+                key={lesson.id}
+                onPress={() => navigation.navigate('LessonView', { lessonId: lesson.id, courseId })}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: spacing.sm,
+                  marginBottom: spacing.xs,
+                  backgroundColor: colors.backgroundSecondary,
+                  borderRadius: borderRadius.md,
+                }}
+              >
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: lesson.isWatched ? colors.success : colors.primary,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginRight: spacing.sm,
+                  }}
+                >
+                  {lesson.isWatched ? (
+                    <Ionicons name="checkmark" size={20} color="#fff" />
+                  ) : (
+                    <Text variant="bodySmall" style={{ color: '#000', fontWeight: '600' }}>
+                      {index + 1}
+                    </Text>
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="body" numberOfLines={1}>
+                    {lesson.title}
+                  </Text>
+                  <Text variant="caption" color={colors.textSecondary}>
+                    {Math.floor(lesson.videoDuration / 60)} min
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ))}
+          </Card>
+        )}
+
+        {/* Enroll Button */}
         {course.isEnrolled ? (
-          <Button title="Continue Learning" onPress={() => {}} fullWidth />
+          course.lessons && course.lessons.length > 0 && (
+            <Button
+              title="Start First Lesson"
+              onPress={() =>
+                navigation.navigate('LessonView', {
+                  lessonId: course.lessons[0].id,
+                  courseId,
+                })
+              }
+              fullWidth
+            />
+          )
         ) : (
           <Button
             title={`Enroll (${course.enrollmentCost} points)`}
-            onPress={() => {}}
+            onPress={async () => {
+              try {
+                setIsEnrolling(true);
+                await enrollMutation.mutateAsync(courseId);
+                Alert.alert('Success', 'You have successfully enrolled in this course!');
+              } catch (error) {
+                console.error('Enrollment error:', error);
+                Alert.alert('Error', 'Failed to enroll in course. Please try again.');
+              } finally {
+                setIsEnrolling(false);
+              }
+            }}
+            loading={isEnrolling}
+            disabled={isEnrolling}
             fullWidth
           />
         )}

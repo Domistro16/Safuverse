@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@theme/ThemeContext';
 import { Text, Card, Button } from '@components/ui';
 import { useAuth } from '@hooks/useAuth';
+import { useWeb3 } from '@/contexts/Web3Context';
 
 export const ProfileScreen: React.FC = () => {
   const { colors, spacing } = useTheme();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { disconnect, address } = useWeb3();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -21,8 +23,8 @@ export const ProfileScreen: React.FC = () => {
           <Text variant="label" color={colors.textSecondary} style={{ marginBottom: spacing.xs }}>
             Wallet Address
           </Text>
-          <Text variant="body" numberOfLines={1}>
-            {user?.walletAddress || 'Not connected'}
+          <Text variant="body" numberOfLines={1} style={{ fontFamily: 'monospace' }}>
+            {address || user?.walletAddress || 'Not connected'}
           </Text>
         </Card>
 
@@ -62,7 +64,7 @@ export const ProfileScreen: React.FC = () => {
         </Card>
 
         {/* Logout */}
-        <Button title="Disconnect Wallet" onPress={logout} variant="outline" fullWidth />
+        <Button title="Disconnect Wallet" onPress={disconnect} variant="outline" fullWidth />
       </ScrollView>
     </SafeAreaView>
   );

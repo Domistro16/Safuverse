@@ -136,27 +136,37 @@ For local development:
 - TypeScript and path aliases
 - Theme system (dark/light mode)
 - API client with React Query integration
-- Core UI components (Button, Card, Input, Text)
+- Core UI components (Button, Card, Input, Text, CourseCard)
 - Navigation structure (Tab + Stack navigators)
-- Authentication flow (placeholder)
+- **Wallet Authentication with WalletConnect** - Full Web3 wallet connection and signature-based auth
 - Home screen with featured courses
-- Courses screen with search
-- Course details screen
-- Profile screen
-- Points dashboard screen
+- Courses screen with search and filtering
+- Course details screen with lessons list and enrollment
+- **Video Player with Progress Tracking** - Custom Expo AV player with auto-save progress
+- **Interactive Quiz System** - Multiple choice quizzes with scoring and explanations
+- Profile screen with wallet info and stats
+- Points dashboard screen with earning methods
+- **Certificates Screen** - View earned certificates with on-chain verification badges
+- **Web3 Blockchain Integration** - Smart contract interactions for courses, enrollment, and points
 
-### 🚧 In Progress
-- Wallet connection with WalletConnect
-- Video player integration
-- Quiz functionality
-- Certificates screen
-- Complete Web3 integration
+### 🎯 Fully Functional
+All core features are implemented and ready to use:
+- ✅ Wallet connection (WalletConnect v2)
+- ✅ Course enrollment with points system
+- ✅ Video lessons with watch progress tracking
+- ✅ Quiz taking with pass/fail results
+- ✅ Certificate viewing
+- ✅ Blockchain verification
+- ✅ Dark/Light theme toggle
+- ✅ Complete navigation flow
 
-### 📋 Planned
+### 📋 Future Enhancements
 - Offline course downloads
-- Push notifications
-- AI Chat tutor integration
+- Push notifications for new courses
+- AI Chat tutor integration (backend support needed)
 - Social sharing features
+- Certificate PDF download
+- Advanced search filters
 
 ## Architecture
 

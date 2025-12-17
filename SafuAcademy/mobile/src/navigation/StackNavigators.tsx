@@ -4,6 +4,8 @@ import { HomeStackParamList, CoursesStackParamList } from './types';
 import { HomeScreen } from '@screens/Home/HomeScreen';
 import { CoursesScreen } from '@screens/Courses/CoursesScreen';
 import { CourseDetailsScreen } from '@screens/CourseDetails/CourseDetailsScreen';
+import { LessonViewScreen } from '@screens/Lesson/LessonViewScreen';
+import { QuizScreen } from '@screens/Quiz/QuizScreen';
 import { useTheme } from '@theme/ThemeContext';
 
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -32,6 +34,16 @@ export const HomeStackNavigator: React.FC = () => {
         component={CourseDetailsScreen}
         options={{ title: 'Course Details' }}
       />
+      <HomeStack.Screen
+        name="LessonView"
+        component={LessonViewScreen}
+        options={{ title: 'Lesson' }}
+      />
+      <HomeStack.Screen
+        name="Quiz"
+        component={QuizScreen}
+        options={{ title: 'Quiz' }}
+      />
     </HomeStack.Navigator>
   );
 };
@@ -58,6 +70,16 @@ export const CoursesStackNavigator: React.FC = () => {
         name="CourseDetails"
         component={CourseDetailsScreen}
         options={{ title: 'Course Details' }}
+      />
+      <CoursesStack.Screen
+        name="LessonView"
+        component={LessonViewScreen}
+        options={{ title: 'Lesson' }}
+      />
+      <CoursesStack.Screen
+        name="Quiz"
+        component={QuizScreen}
+        options={{ title: 'Quiz' }}
       />
     </CoursesStack.Navigator>
   );
