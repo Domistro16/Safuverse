@@ -10,6 +10,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList>;
   CoursesTab: NavigatorScreenParams<CoursesStackParamList>;
+  DomainsTab: NavigatorScreenParams<DomainsStackParamList>;
   PointsTab: undefined;
   ProfileTab: undefined;
 };
@@ -28,4 +29,12 @@ export type CoursesStackParamList = {
   CourseDetails: { courseId: string };
   LessonView: { lessonId: string; courseId: string };
   Quiz: { lessonId: string; courseId: string };
+};
+
+// Domains Stack Navigator
+export type DomainsStackParamList = {
+  DomainSearch: undefined;
+  DomainRegistration: { label: string };
+  MyDomains: undefined;
+  DomainDetails: { label: string };
 };

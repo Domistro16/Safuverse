@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from './types';
-import { HomeStackNavigator, CoursesStackNavigator } from './StackNavigators';
+import { HomeStackNavigator, CoursesStackNavigator, DomainsStackNavigator } from './StackNavigators';
 import { ProfileScreen } from '@screens/Profile/ProfileScreen';
 import { PointsScreen } from '@screens/Points/PointsScreen';
 import { useTheme } from '@theme/ThemeContext';
@@ -41,6 +41,14 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Courses',
           tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="DomainsTab"
+        component={DomainsStackNavigator}
+        options={{
+          tabBarLabel: 'Domains',
+          tabBarIcon: ({ color, size }) => <Ionicons name="globe" size={size} color={color} />,
         }}
       />
       <Tab.Screen
