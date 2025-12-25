@@ -7,7 +7,7 @@ import {
   padHex,
   zeroAddress,
   type Address,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { DAY, FUSES } from '../../fixtures/constants.js'
 import { dnsEncodeName } from '../../fixtures/dnsEncodeName.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
@@ -260,9 +260,9 @@ export const runForContract = ({
   onEnsRegistry,
 }: {
   contract:
-    | Fixture['nameWrapper']
-    | Fixture['ensRegistry']
-    | Fixture['baseRegistrar']
+  | Fixture['nameWrapper']
+  | Fixture['ensRegistry']
+  | Fixture['baseRegistrar']
   onNameWrapper?: (nameWrapper: Fixture['nameWrapper']) => Promise<void>
   onEnsRegistry?: (ensRegistry: Fixture['ensRegistry']) => Promise<void>
   onBaseRegistrar?: (baseRegistrar: Fixture['baseRegistrar']) => Promise<void>

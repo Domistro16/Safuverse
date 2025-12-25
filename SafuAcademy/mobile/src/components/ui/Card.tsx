@@ -16,13 +16,15 @@ export const Card: React.FC<CardProps> = ({ children, style, padding }) => {
       style={[
         {
           backgroundColor: colors.card,
-          borderRadius: borderRadius.lg,
-          padding: padding !== undefined ? padding : spacing.md,
-          shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 3,
+          borderRadius: borderRadius.xl, // Premium 26px radius
+          padding: padding !== undefined ? padding : spacing.lg,
+          borderWidth: 1,
+          borderColor: colors.border,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.08,
+          shadowRadius: 24,
+          elevation: 6,
         },
         style,
       ]}

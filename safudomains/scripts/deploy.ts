@@ -5,10 +5,10 @@ import {
   encodeDeployData,
   formatUnits,
   http,
-} from '../node_modules/viem/_types'
-import { namehash } from '../node_modules/viem/_types/ens'
+} from 'viem'
+import { namehash } from 'viem/ens'
 import ENSRegistryArtifact from '../artifacts/contracts/registry/ENSRegistry.sol/ENSRegistry.json'
-import { defineChain } from '../node_modules/viem/_types'
+import { defineChain } from 'viem'
 
 export const plasmaTestnet = /*#__PURE__*/ defineChain({
   id: 9746,

@@ -4,12 +4,12 @@ import React from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Clock, Star } from "lucide-react";
-import { Course } from "@/lib/constants";
+import { OnChainCourse } from "@/lib/constants";
 import { useTheme } from "@/app/providers";
 
 // Props interface that matches how the component is used across the codebase
 interface CourseCardProps {
-  course: Course;
+  course: OnChainCourse;
   animationDelay?: number;
 }
 
@@ -30,8 +30,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       <Link
         href={`/courses/${course.id}`}
         className={`group relative block rounded-[28px] border overflow-hidden transition duration-500 hover:-translate-y-3 ${isDark
-            ? 'bg-[#12121a] border-[#2a2a3a] shadow-[0_18px_55px_rgba(0,0,0,0.4)] hover:shadow-[0_40px_110px_rgba(255,251,0,0.15)] hover:border-[#fffb00]/50'
-            : 'bg-white/70 border-black/5 shadow-[0_18px_55px_rgba(15,23,42,0.10)] hover:shadow-[0_40px_110px_rgba(15,23,42,0.32)] hover:border-[#fcd34d]'
+          ? 'bg-[#12121a] border-[#2a2a3a] shadow-[0_18px_55px_rgba(0,0,0,0.4)] hover:shadow-[0_40px_110px_rgba(255,251,0,0.15)] hover:border-[#fffb00]/50'
+          : 'bg-white/70 border-black/5 shadow-[0_18px_55px_rgba(15,23,42,0.10)] hover:shadow-[0_40px_110px_rgba(15,23,42,0.32)] hover:border-[#fcd34d]'
           }`}
         style={{ perspective: "900px" }}
       >
@@ -44,8 +44,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             style={{ transformStyle: "preserve-3d" }}
           >
             <div className={`w-full h-full flex items-center justify-center flex-col gap-2 text-center px-4 ${isDark
-                ? 'bg-gradient-to-br from-[#1a1a2e] via-[#252540] to-[#1a1a3e]'
-                : 'bg-[radial-gradient(circle_at_0%_0%,#fff3cd,transparent_55%),radial-gradient(circle_at_100%_120%,#ffe1a3,transparent_55%)]'
+              ? 'bg-gradient-to-br from-[#1a1a2e] via-[#252540] to-[#1a1a3e]'
+              : 'bg-[radial-gradient(circle_at_0%_0%,#fff3cd,transparent_55%),radial-gradient(circle_at_100%_120%,#ffe1a3,transparent_55%)]'
               }`}>
               <span className="text-3xl">📚</span>
               <span className={`text-sm font-semibold line-clamp-2 ${isDark ? 'text-[#fffb00]' : 'text-[#aa7a09]'
@@ -84,11 +84,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             }`}>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {course.lessons.length} lessons
+              {Number(course.totalLessons)} lessons
             </span>
             <span className="flex items-center gap-1">
               <Star className={`w-3 h-3 ${isDark ? 'text-[#fffb00]' : 'text-[#f5a623]'}`} />
-              {course.rating ?? "New"}
+              New
             </span>
           </div>
 

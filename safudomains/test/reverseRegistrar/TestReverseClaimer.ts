@@ -5,7 +5,7 @@ import {
   labelhash,
   namehash,
   zeroHash,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { getReverseNode } from '../fixtures/getReverseNode.js'
 
 async function fixture() {

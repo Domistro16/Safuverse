@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CourseCard } from "../components/CourseCard";
 import { ChatWidget } from "../components/ChatWidget";
 import { useReadContract } from "wagmi";
-import { abi, Course, Deploy } from "@/lib/constants";
+import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 import { useTheme } from "@/app/providers";
 import { CustomConnect } from "@/components/connectButton";
 
@@ -16,10 +16,10 @@ function FeaturedCourses() {
 
   const { data: courses, isPending } = useReadContract({
     abi: abi,
-    functionName: "getCourses",
+    functionName: "getAllCourses",
     address: Deploy,
   }) as {
-    data: Course[];
+    data: OnChainCourse[];
     isPending: boolean;
   };
 

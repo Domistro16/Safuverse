@@ -4,7 +4,7 @@ import {
   namehash,
   zeroAddress,
   zeroHash,
-} from '../../../node_modules/viem/_types'
+} from '../viem'
 
 export async function deployNameWrapperFixture() {
   const accounts = await hre.viem

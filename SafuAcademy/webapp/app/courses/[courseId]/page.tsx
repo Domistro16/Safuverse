@@ -5,21 +5,45 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { useReadContract, useAccount } from "wagmi";
-import { abi, Course, Deploy, Lesson } from "@/lib/constants";
-import { PinataSDK } from "pinata";
+import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 import VideoPlayer from "@/components/VideoPlayer";
 import { getProgress, updateProgress } from "@/hooks/progress";
 import { useTheme } from "@/app/providers";
-
-const pinata = new PinataSDK({
-  pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT,
-  pinataGateway: process.env.NEXT_PUBLIC_PINATA_GATEWAY,
-});
 
 interface VideoSource {
   url: string;
   language: string;
   label: string;
+}
+
+// Backend lesson type (from database)
+interface BackendLesson {
+  id: string;
+  title: string;
+  description: string | null;
+  orderIndex: number;
+  watchPoints: number;
+  quiz?: { id: string; passingScore: number; passPoints: number } | null;
+}
+
+// Backend course type (from database)
+interface BackendCourse {
+  id: number;
+  title: string;
+  description: string;
+  longDescription: string;
+  instructor: string;
+  category: string;
+  level: string;
+  thumbnailUrl: string | null;
+  duration: string;
+  objectives: string[];
+  prerequisites: string[];
+  completionPoints: number;
+  minPointsToAccess: number;
+  enrollmentCost: number;
+  isPublished: boolean;
+  lessons: BackendLesson[];
 }
 
 export default function CourseDetailPage() {
@@ -42,20 +66,92 @@ export default function CourseDetailPage() {
   const [_watchedPercentage, setWatchedPercentage] = useState(0);
   const [isWatched, setIsWatched] = useState(false);
 
-  // Fetch course data from smart contract
-  const { data: courseData, isPending } = useReadContract({
+  // Enrollment state
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollError, setEnrollError] = useState<string | null>(null);
+
+  // Backend course data
+  const [backendCourse, setBackendCourse] = useState<BackendCourse | null>(null);
+  const [backendLoading, setBackendLoading] = useState(true);
+  const [backendError, setBackendError] = useState<string | null>(null);
+
+  // Fetch course from backend API (primary source)
+  useEffect(() => {
+    async function fetchFromBackend() {
+      try {
+        setBackendLoading(true);
+        const token = localStorage.getItem('auth_token');
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`/api/courses/${courseId}`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setBackendCourse(data.course);
+          setBackendError(null);
+        } else {
+          setBackendError('Course not found in database');
+        }
+      } catch (err) {
+        console.error('Backend fetch failed:', err);
+        setBackendError('Failed to fetch from backend');
+      } finally {
+        setBackendLoading(false);
+      }
+    }
+
+    if (courseId) {
+      fetchFromBackend();
+    }
+  }, [courseId]);
+
+  // Fetch user enrollment status from smart contract
+  const { data: contractData, isPending: contractLoading } = useReadContract({
     abi: abi,
-    functionName: "getCourse",
+    functionName: "getCourseWithUserStatus",
     address: Deploy,
     args: [BigInt(courseId), address || "0x0000000000000000000000000000000000000000"],
   }) as {
-    data: [Course, boolean, number, bigint] | undefined;
+    data: [OnChainCourse, boolean, boolean, boolean] | undefined; // [course, enrolled, completed, canEnroll]
     isPending: boolean;
   };
 
-  const course = courseData?.[0];
-  const isEnrolled = courseData?.[1] ?? false;
-  // attendees = courseData?.[3] - available if needed
+  const isEnrolled = contractData?.[1] ?? false;
+  const isCompleted = contractData?.[2] ?? false;
+  const canEnroll = contractData?.[3] ?? false;
+
+  // Determine which course data to use (backend preferred, contract as fallback)
+  const isLoading = backendLoading && contractLoading;
+
+  // Build course object from backend data
+  // Note: Lessons are stored off-chain in PostgreSQL, not on the contract
+  const course = React.useMemo(() => {
+    if (backendCourse) {
+      return {
+        ...backendCourse,
+        id: BigInt(backendCourse.id),
+        longDescription: backendCourse.longDescription || backendCourse.description,
+      };
+    }
+    return null;
+  }, [backendCourse]);
+
+  // Lessons are always from backend - no contract fallback
+  const displayLessons = React.useMemo(() => {
+    if (!backendCourse || backendCourse.lessons.length === 0) {
+      return [];
+    }
+    return backendCourse.lessons.map((bl, index) => ({
+      id: bl.id,
+      title: bl.title,
+      lessontitle: bl.title,
+      description: bl.description,
+      orderIndex: bl.orderIndex ?? index,
+      hasQuiz: !!bl.quiz,
+    }));
+  }, [backendCourse]);
 
   // Load progress from localStorage
   useEffect(() => {
@@ -72,8 +168,8 @@ export default function CourseDetailPage() {
 
   // Load notes from localStorage per lesson
   useEffect(() => {
-    if (courseId && course?.lessons[selectedLessonIndex]) {
-      const lessonId = course.lessons[selectedLessonIndex].id;
+    if (courseId && displayLessons[selectedLessonIndex]) {
+      const lessonId = displayLessons[selectedLessonIndex].id;
       const saved = window.localStorage.getItem("safu_notes_" + lessonId);
       if (saved) {
         setNotesHtml(saved);
@@ -81,7 +177,7 @@ export default function CourseDetailPage() {
         setNotesHtml("");
       }
     }
-  }, [courseId, selectedLessonIndex, course]);
+  }, [courseId, selectedLessonIndex, displayLessons]);
 
   // Keep contentEditable in sync
   useEffect(() => {
@@ -91,17 +187,18 @@ export default function CourseDetailPage() {
   }, [notesHtml]);
 
   // Fetch video for selected lesson (only when enrolled)
+  // Videos are always fetched from backend API
   useEffect(() => {
     let cancelled = false;
 
     async function getVideo() {
-      if (!course || !isEnrolled) {
+      if (!isEnrolled) {
         setVideos([]);
         return;
       }
 
-      const lesson = course.lessons[selectedLessonIndex];
-      if (!lesson || !lesson.url || lesson.url.length === 0) {
+      const lesson = displayLessons[selectedLessonIndex];
+      if (!lesson) {
         setVideos([]);
         return;
       }
@@ -112,40 +209,31 @@ export default function CourseDetailPage() {
       setWatchedPercentage(0);
 
       try {
-        const userLang = navigator.language;
-
-        // Fetch English video (first URL)
-        const res1 = await pinata.gateways.private.createAccessLink({
-          cid: lesson.url[0] as string,
-          expires: 800,
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch(`/api/lessons/${lesson.id}/video`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        const url1 = typeof res1 === "string" ? res1 : (res1 as any).accessLink ?? (res1 as any).url ?? "";
 
-        // Fetch Chinese video if exists (second URL)
-        let url2: string | null = null;
-        if (lesson.url.length > 1 && lesson.url[1]) {
-          const res2 = await pinata.gateways.private.createAccessLink({
-            cid: lesson.url[1] as string,
-            expires: 800,
-          });
-          url2 = typeof res2 === "string" ? res2 : (res2 as any).accessLink ?? (res2 as any).url ?? null;
-        }
-
-        // Determine order based on user language
-        let newVideos: VideoSource[] = [];
-        if (userLang.startsWith("zh") && url2) {
-          newVideos = [
-            { url: url2, language: "zh", label: "中文" },
-            { url: url1, language: "en", label: "English" },
-          ];
+        if (res.ok) {
+          const data = await res.json();
+          if (data.videos && data.videos.length > 0) {
+            const newVideos: VideoSource[] = data.videos.map((v: { signedUrl: string; language: string; label: string }) => ({
+              url: v.signedUrl,
+              language: v.language,
+              label: v.label,
+            }));
+            if (!cancelled) setVideos(newVideos);
+          } else if (data.signedUrl) {
+            // Legacy single video support
+            if (!cancelled) setVideos([{ url: data.signedUrl, language: 'en', label: 'English' }]);
+          } else {
+            if (!cancelled) setVideos([]);
+          }
         } else {
-          newVideos = [{ url: url1, language: "en", label: "English" }];
-          if (url2) newVideos.push({ url: url2, language: "zh", label: "中文" });
+          if (!cancelled) setVideoError("Video unavailable");
         }
-
-        if (!cancelled) setVideos(newVideos);
-      } catch (err: any) {
-        console.error("Failed to fetch video:", err);
+      } catch (err) {
+        console.error("Failed to fetch video from backend:", err);
         if (!cancelled) setVideoError("Video unavailable");
       } finally {
         if (!cancelled) setVideoLoading(false);
@@ -156,7 +244,7 @@ export default function CourseDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [course, isEnrolled, selectedLessonIndex]);
+  }, [isEnrolled, selectedLessonIndex, displayLessons]);
 
   // Handle video watch progress
   const handleWatchedChange = (watched: boolean, percentage: number) => {
@@ -178,8 +266,8 @@ export default function CourseDetailPage() {
   const handleNotesInput = (e: React.FormEvent<HTMLDivElement>) => {
     const value = e.currentTarget.innerHTML;
     setNotesHtml(value);
-    if (course?.lessons[selectedLessonIndex]) {
-      const lessonId = course.lessons[selectedLessonIndex].id;
+    if (displayLessons[selectedLessonIndex]) {
+      const lessonId = displayLessons[selectedLessonIndex].id;
       window.localStorage.setItem("safu_notes_" + lessonId, value);
     }
   };
@@ -191,7 +279,50 @@ export default function CourseDetailPage() {
     }
   };
 
-  if (isPending) {
+  // Enrollment handler
+  const handleEnroll = async () => {
+    if (!address) {
+      setEnrollError('Please connect your wallet first');
+      return;
+    }
+
+    setEnrolling(true);
+    setEnrollError(null);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setEnrollError('Please sign in first');
+        setEnrolling(false);
+        return;
+      }
+
+      const res = await fetch(`/api/courses/${courseId}/enroll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEnrollError(data.error || 'Failed to enroll');
+        setEnrolling(false);
+        return;
+      }
+
+      // Enrollment successful - refresh the page to get updated status
+      window.location.reload();
+    } catch (err) {
+      console.error('Enrollment error:', err);
+      setEnrollError('Failed to enroll. Please try again.');
+      setEnrolling(false);
+    }
+  };
+
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -202,7 +333,7 @@ export default function CourseDetailPage() {
     );
   }
 
-  if (!course) {
+  if (!course && !backendCourse) {
     return (
       <Layout>
         <div className="text-center py-12">
@@ -216,7 +347,12 @@ export default function CourseDetailPage() {
     );
   }
 
-  const currentLesson = course.lessons[selectedLessonIndex];
+  const currentLesson = displayLessons[selectedLessonIndex];
+  const courseTitle = backendCourse?.title || course?.title || 'Untitled Course';
+  const courseDescription = backendCourse?.description || course?.description || '';
+  const courseLongDescription = backendCourse?.longDescription || course?.longDescription || courseDescription;
+  const courseDuration = backendCourse?.duration || course?.duration || '';
+  const courseObjectives = backendCourse?.objectives || course?.objectives || [];
 
   return (
     <Layout>
@@ -227,7 +363,7 @@ export default function CourseDetailPage() {
             All courses
           </Link>
           <span>/</span>
-          <span className={`font-medium ${isDark ? 'text-white' : 'text-safuDeep'}`}>{currentLesson?.lessontitle || course.title}</span>
+          <span className={`font-medium ${isDark ? 'text-white' : 'text-safuDeep'}`}>{courseTitle}</span>
         </div>
 
         {/* Top layout */}
@@ -256,7 +392,7 @@ export default function CourseDetailPage() {
                   Safu Academy · On‑chain Education
                 </div>
                 <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7]">
-                  {course.duration}
+                  {courseDuration}
                 </div>
               </div>
             )}
@@ -264,10 +400,10 @@ export default function CourseDetailPage() {
             <div>
               <h1 className={`text-[22px] sm:text-[26px] font-bold tracking-[-0.05em] ${isDark ? 'text-white' : 'text-safuDeep'
                 }`}>
-                {currentLesson?.lessontitle || course.title}
+                {currentLesson?.title || courseTitle}
               </h1>
               <p className={`text-[13px] mt-1 max-w-xl ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                {course.description}
+                {courseDescription}
               </p>
             </div>
           </div>
@@ -281,10 +417,10 @@ export default function CourseDetailPage() {
               <div className={`text-[11px] uppercase tracking-[0.16em] mb-1 ${isDark ? 'text-[#fffb00]' : 'text-[#a16207]'
                 }`}>Course track</div>
               <div className={`text-[13px] font-semibold mb-3 ${isDark ? 'text-white' : 'text-safuDeep'}`}>
-                {course.lessons.length} lessons · {course.duration}
+                {displayLessons.length} lessons · {courseDuration}
               </div>
               <div className="space-y-2 max-h-48 overflow-auto pr-1">
-                {course.lessons.map((lesson: Lesson, index: number) => {
+                {displayLessons.map((lesson, index) => {
                   const isActive = selectedLessonIndex === index;
                   const isCompleted = completedLessons.includes(index);
 
@@ -308,19 +444,45 @@ export default function CourseDetailPage() {
                     >
                       <span className="truncate flex items-center gap-2">
                         {isCompleted && <span className={isDark ? 'text-[#fffb00]' : 'text-green-400'}>✓</span>}
-                        {lesson.lessontitle}
+                        {lesson.title}
                       </span>
                       <span className="text-[11px] opacity-80">
-                        {lesson.quizzes ? "📝" : ""}
+                        {lesson.hasQuiz ? "📝" : ""}
                       </span>
                     </button>
                   );
                 })}
               </div>
               {!isEnrolled && (
-                <p className={`text-[11px] mt-2 text-center ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
-                  Connect wallet & enroll to access lessons
-                </p>
+                <div className="mt-3 space-y-2">
+                  {!address ? (
+                    <p className={`text-[11px] text-center ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
+                      Connect wallet to enroll
+                    </p>
+                  ) : canEnroll ? (
+                    <button
+                      onClick={handleEnroll}
+                      disabled={enrolling}
+                      className={`w-full py-2.5 rounded-2xl font-semibold text-[13px] transition ${enrolling
+                        ? 'bg-gray-500 cursor-not-allowed'
+                        : isDark
+                          ? 'bg-[#fffb00] text-black hover:bg-[#e6e200]'
+                          : 'bg-[#111] text-white hover:bg-[#333]'
+                        }`}
+                    >
+                      {enrolling ? '⏳ Enrolling...' : '🎓 Enroll Now'}
+                    </button>
+                  ) : (
+                    <p className={`text-[11px] text-center ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                      Insufficient points to enroll
+                    </p>
+                  )}
+                  {enrollError && (
+                    <p className="text-[11px] text-center text-red-500">
+                      {enrollError}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -349,13 +511,13 @@ export default function CourseDetailPage() {
               <div className={`text-[13px] space-y-3 ${isDark ? 'text-gray-300' : 'text-[#444]'}`}>
                 {activeTab === "Transcript" && (
                   <p>
-                    {course.longDescription || course.description}
+                    {courseLongDescription}
                   </p>
                 )}
                 {activeTab === "Resources" && (
                   <ul className="list-disc list-inside space-y-1">
-                    {course.objectives && course.objectives.length > 0 ? (
-                      course.objectives.map((obj, i) => <li key={i}>{obj}</li>)
+                    {courseObjectives && courseObjectives.length > 0 ? (
+                      courseObjectives.map((obj, i) => <li key={i}>{obj}</li>)
                     ) : (
                       <>
                         <li>Course materials and dashboards</li>

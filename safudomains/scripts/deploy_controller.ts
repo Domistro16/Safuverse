@@ -1,4 +1,4 @@
-import { namehash, zeroAddress } from '../node_modules/viem/_types/index.js'
+import { namehash, zeroAddress } from 'viem'
 import { createInterfaceId } from '../test/fixtures/createInterfaceId.js'
 import hre from 'hardhat'
 const main = async () => {

@@ -1,6 +1,6 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers.js'
 import { expect } from 'chai'
-import { zeroAddress } from '../../../node_modules/viem/_types/index.js'
+import { zeroAddress } from '../viem'
 import { toNameId } from '../../fixtures/utils.js'
 import {
   CAN_DO_EVERYTHING,

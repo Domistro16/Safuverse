@@ -1,5 +1,5 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
-import { labelhash } from '../../node_modules/viem/_types'
+import { labelhash } from 'viem'
 
 const func: DeployFunction = async function (hre) {
   const { network, viem } = hre

@@ -13,6 +13,29 @@ module.exports = async function (env, argv) {
         }),
     ];
 
+    // Add fallbacks for node modules not available in browser
+    config.resolve = {
+        ...config.resolve,
+        fallback: {
+            ...config.resolve?.fallback,
+            crypto: false,
+            stream: false,
+            buffer: false,
+        },
+        alias: {
+            ...config.resolve?.alias,
+            // Replace WalletConnect native module with web stub
+            '@walletconnect/modal-react-native': path.resolve(
+                __dirname,
+                'src/stubs/walletconnect-web.js'
+            ),
+            '@walletconnect/react-native-compat': path.resolve(
+                __dirname,
+                'src/stubs/walletconnect-web.js'
+            ),
+        },
+    };
+
     // Enable import.meta for ESM packages
     config.module.rules.push({
         test: /\.m?js$/,
@@ -31,11 +54,14 @@ module.exports = async function (env, argv) {
                     oneOfRule.use.loader &&
                     oneOfRule.use.loader.includes('babel-loader')
                 ) {
-                    // Extend to include @walletconnect/react-native-compat
+                    // Extend to include @walletconnect packages
                     const originalExclude = oneOfRule.exclude;
                     oneOfRule.exclude = (modulePath) => {
-                        // Don't exclude @walletconnect packages
-                        if (modulePath.includes('@walletconnect')) {
+                        // Don't exclude @walletconnect packages (except native compat)
+                        if (
+                            modulePath.includes('@walletconnect') &&
+                            !modulePath.includes('react-native-compat')
+                        ) {
                             return false;
                         }
                         if (typeof originalExclude === 'function') {
@@ -59,20 +85,6 @@ module.exports = async function (env, argv) {
             };
         }
         return rule;
-    });
-
-    // Add explicit TypeScript handling for @walletconnect packages
-    config.module.rules.unshift({
-        test: /\.tsx?$/,
-        include: [
-            path.resolve(__dirname, 'node_modules/@walletconnect'),
-        ],
-        use: {
-            loader: 'babel-loader',
-            options: {
-                presets: ['babel-preset-expo'],
-            },
-        },
     });
 
     return config;

@@ -1,5 +1,5 @@
 import hre from 'hardhat'
-import { keccak256, namehash, toHex } from '../node_modules/viem/_types'
+import { keccak256, namehash, toHex } from 'viem'
 const main = async () => {
   const { viem } = hre
   const { owner } = await viem.getNamedClients()

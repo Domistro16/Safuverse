@@ -13,7 +13,7 @@ import {
   padHex,
   zeroAddress,
   zeroHash,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { createInterfaceId } from '../fixtures/createInterfaceId.js'
 import { dnsEncodeName } from '../fixtures/dnsEncodeName.js'
 

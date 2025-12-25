@@ -6,7 +6,7 @@ import {
   namehash,
   zeroAddress,
   zeroHash,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { getInterfaceId } from '../fixtures/createInterfaceId.js'
 import { toLabelId } from '../fixtures/utils.js'
 

@@ -4,6 +4,15 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+interface LessonVideo {
+    id: string;
+    language: string;
+    label: string;
+    storageKey: string;
+    orderIndex: number;
+    signedUrl?: string | null;
+}
+
 interface Quiz {
     id: string;
     questions: { id?: string; question: string; options: string[]; correctIndex: number }[];
@@ -22,6 +31,7 @@ interface Lesson {
     watchPoints: number;
     quiz: Quiz | null;
     course: { id: number; title: string };
+    videos: LessonVideo[];
 }
 
 export default function EditLessonPage() {
@@ -40,6 +50,10 @@ export default function EditLessonPage() {
 
     // Quiz state
     const [quiz, setQuiz] = useState<Quiz | null>(null);
+
+    // Multi-language video state
+    const [newVideoLanguage, setNewVideoLanguage] = useState<string>('en');
+    const [newVideoLabel, setNewVideoLabel] = useState<string>('');
     const [savingQuiz, setSavingQuiz] = useState(false);
 
     useEffect(() => {
@@ -95,7 +109,7 @@ export default function EditLessonPage() {
 
     async function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (!file || !newVideoLabel) return;
 
         setUploadingVideo(true);
 
@@ -103,21 +117,48 @@ export default function EditLessonPage() {
             const token = localStorage.getItem('auth_token');
             const formData = new FormData();
             formData.append('video', file);
+            formData.append('language', newVideoLanguage);
+            formData.append('label', newVideoLabel);
 
-            const res = await fetch(`/api/admin/lessons/${lessonId}`, {
-                method: 'PUT',
+            const res = await fetch(`/api/admin/lessons/${lessonId}/videos`, {
+                method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
             });
 
-            if (!res.ok) throw new Error('Failed to upload video');
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to upload video');
+            }
 
-            alert('Video uploaded successfully!');
+            alert(`Video uploaded successfully for ${newVideoLabel}!`);
+            setNewVideoLabel('');
             fetchLesson();
         } catch (err) {
             alert((err as Error).message);
         } finally {
             setUploadingVideo(false);
+            // Reset file input
+            if (videoInputRef.current) videoInputRef.current.value = '';
+        }
+    }
+
+    async function handleDeleteVideo(videoId: string, language: string) {
+        if (!confirm(`Delete the ${language.toUpperCase()} video?`)) return;
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/admin/lessons/${lessonId}/videos?videoId=${videoId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!res.ok) throw new Error('Failed to delete video');
+
+            alert('Video deleted successfully!');
+            fetchLesson();
+        } catch (err) {
+            alert((err as Error).message);
         }
     }
 
@@ -302,36 +343,107 @@ export default function EditLessonPage() {
                         </div>
                     </div>
 
-                    {/* Video */}
+                    {/* Multi-Language Videos */}
                     <div className="bg-gray-800 rounded-xl p-6">
-                        <h2 className="text-xl font-semibold text-white mb-4">Video</h2>
+                        <h2 className="text-xl font-semibold text-white mb-4">Videos (Multi-Language)</h2>
+                        <p className="text-gray-400 text-sm mb-4">
+                            Upload videos in different languages. Users will be able to switch between language versions.
+                        </p>
 
-                        {signedVideoUrl ? (
-                            <div className="mb-4">
-                                <video
-                                    src={signedVideoUrl}
-                                    controls
-                                    className="w-full max-w-2xl rounded-lg"
-                                />
+                        {/* Existing videos list */}
+                        {lesson.videos && lesson.videos.length > 0 ? (
+                            <div className="space-y-4 mb-6">
+                                {lesson.videos.map((video) => (
+                                    <div key={video.id} className="bg-gray-700 rounded-lg p-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">
+                                                    {video.language.toUpperCase()}
+                                                </span>
+                                                <span className="text-white font-medium">{video.label}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteVideo(video.id, video.language)}
+                                                className="px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded transition-colors text-sm"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                        {video.signedUrl && (
+                                            <video
+                                                src={video.signedUrl}
+                                                controls
+                                                className="w-full max-w-xl rounded-lg mt-2"
+                                            />
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         ) : (
-                            <p className="text-gray-400 mb-4">No video uploaded yet.</p>
+                            <p className="text-gray-400 mb-4">No videos uploaded yet. Add videos below.</p>
                         )}
 
-                        <input
-                            ref={videoInputRef}
-                            type="file"
-                            accept="video/*"
-                            onChange={handleVideoUpload}
-                            className="hidden"
-                        />
-                        <button
-                            onClick={() => videoInputRef.current?.click()}
-                            disabled={uploadingVideo}
-                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-600 text-white rounded-lg transition-colors"
-                        >
-                            {uploadingVideo ? 'Uploading...' : lesson.videoStorageKey ? 'Replace Video' : 'Upload Video'}
-                        </button>
+                        {/* Add new video form */}
+                        <div className="border-t border-gray-600 pt-4">
+                            <h3 className="text-white font-medium mb-3">Add New Video</h3>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-gray-400 text-sm mb-1">Language Code</label>
+                                    <select
+                                        value={newVideoLanguage}
+                                        onChange={(e) => setNewVideoLanguage(e.target.value)}
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    >
+                                        <option value="en">en - English</option>
+                                        <option value="zh">zh - Chinese (中文)</option>
+                                        <option value="es">es - Spanish</option>
+                                        <option value="fr">fr - French</option>
+                                        <option value="de">de - German</option>
+                                        <option value="ja">ja - Japanese</option>
+                                        <option value="ko">ko - Korean</option>
+                                        <option value="pt">pt - Portuguese</option>
+                                        <option value="ru">ru - Russian</option>
+                                        <option value="ar">ar - Arabic</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-gray-400 text-sm mb-1">Display Label</label>
+                                    <input
+                                        type="text"
+                                        value={newVideoLabel}
+                                        onChange={(e) => setNewVideoLabel(e.target.value)}
+                                        placeholder="e.g., English, 中文"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
+                            <input
+                                ref={videoInputRef}
+                                type="file"
+                                accept="video/*"
+                                onChange={handleVideoUpload}
+                                className="hidden"
+                            />
+                            <button
+                                onClick={() => videoInputRef.current?.click()}
+                                disabled={uploadingVideo || !newVideoLabel}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+                            >
+                                {uploadingVideo ? 'Uploading...' : 'Select & Upload Video'}
+                            </button>
+                            {!newVideoLabel && (
+                                <p className="text-yellow-400 text-xs mt-2">Please enter a display label before uploading.</p>
+                            )}
+                        </div>
+
+                        {/* Legacy video notice */}
+                        {signedVideoUrl && !lesson.videos?.length && (
+                            <div className="mt-4 p-3 bg-yellow-600/20 border border-yellow-600/30 rounded-lg">
+                                <p className="text-yellow-400 text-sm">
+                                    ⚠️ This lesson has a legacy single video. Consider re-uploading it using the multi-language system above.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

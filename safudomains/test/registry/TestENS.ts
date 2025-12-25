@@ -6,7 +6,7 @@ import {
   namehash,
   padHex,
   zeroHash,
-} from '../../node_modules/viem/_types'
+} from 'viem'
 
 const placeholderAddr = padHex('0x1234', { size: 20 })
 

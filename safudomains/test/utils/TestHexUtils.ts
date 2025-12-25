@@ -5,7 +5,7 @@ import {
   stringToHex,
   zeroAddress,
   zeroHash,
-} from '../../node_modules/viem/_types'
+} from 'viem'
 
 async function fixture() {
   const hexUtils = await hre.viem.deployContract('TestHexUtils', [])

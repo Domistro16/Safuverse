@@ -6,7 +6,7 @@ import {
   getAddress,
   namehash,
   type Hex,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { DAY } from '../../fixtures/constants.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
 import {
@@ -324,10 +324,10 @@ export const setFusesTests = () => {
       const [, fuses] = await nameWrapper.read.getData([toNameId(name)])
       expect(fuses).toEqual(
         CANNOT_UNWRAP |
-          PARENT_CANNOT_CONTROL |
-          IS_DOT_ETH |
-          64 |
-          CANNOT_TRANSFER,
+        PARENT_CANNOT_CONTROL |
+        IS_DOT_ETH |
+        64 |
+        CANNOT_TRANSFER,
       )
     })
 

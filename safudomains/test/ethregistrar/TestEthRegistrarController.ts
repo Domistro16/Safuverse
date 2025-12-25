@@ -9,7 +9,7 @@ import {
   namehash,
   zeroAddress,
   zeroHash,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { DAY, FUSES } from '../fixtures/constants.js'
 import { getReverseNode } from '../fixtures/getReverseNode.js'
 import {

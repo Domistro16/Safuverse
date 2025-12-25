@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Allow larger file uploads for video lessons (500MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '500mb',
+    },
+    middlewareClientMaxBodySize: '500mb',
+  },
   images: {
     remotePatterns: [
       {

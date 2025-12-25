@@ -36,11 +36,11 @@ export const Input: React.FC<InputProps> = ({
       <TextInput
         style={[
           {
-            backgroundColor: colors.backgroundSecondary,
-            borderWidth: 1,
+            backgroundColor: '#FFFFFF', // Clean white background for inputs
+            borderWidth: 1.2,
             borderColor: error ? colors.error : colors.border,
-            borderRadius: borderRadius.md,
-            paddingHorizontal: spacing.md,
+            borderRadius: 14, // Specific radius from SafuDomains
+            paddingHorizontal: spacing.lg,
             paddingVertical: spacing.md,
             color: colors.text,
             ...typography.body,

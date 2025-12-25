@@ -45,27 +45,37 @@ export class RelayerService {
     constructor(prisma: PrismaClient) {
         this.prisma = prisma;
         this.provider = new JsonRpcProvider(config.rpcUrl, config.chainId);
-        this.wallet = new Wallet(config.relayerPrivateKey, this.provider);
-        this.ownerWallet = new Wallet(config.ownerPrivateKey, this.provider);
 
-        this.contract = new Contract(
-            config.level3CourseAddress,
-            LEVEL3_COURSE_ABI,
-            this.wallet
-        );
+        try {
+            const hasAddress = config.level3CourseAddress && config.level3CourseAddress.startsWith('0x');
+            if (config.relayerPrivateKey && hasAddress) {
+                this.wallet = new Wallet(config.relayerPrivateKey, this.provider);
+                this.contract = new Contract(
+                    config.level3CourseAddress,
+                    LEVEL3_COURSE_ABI,
+                    this.wallet
+                );
+            }
 
-        this.ownerContract = new Contract(
-            config.level3CourseAddress,
-            LEVEL3_COURSE_ABI,
-            this.ownerWallet
-        );
+            if (config.ownerPrivateKey && hasAddress) {
+                this.ownerWallet = new Wallet(config.ownerPrivateKey, this.provider);
+                this.ownerContract = new Contract(
+                    config.level3CourseAddress,
+                    LEVEL3_COURSE_ABI,
+                    this.ownerWallet
+                );
+            }
+        } catch (error) {
+            console.error('Error initializing RelayerService wallets:', error);
+        }
     }
 
     async getRelayerAddress(): Promise<string> {
         return this.wallet.address;
     }
 
-    async getContractRelayer(): Promise<string> {
+    async getContractRelayer(): Promise<string | null> {
+        if (!this.contract) return null;
         return await this.contract.getRelayer();
     }
 
@@ -101,6 +111,7 @@ export class RelayerService {
     }
 
     async isUserEnrolled(userAddress: string, courseId: number): Promise<boolean> {
+        if (!this.contract) return false;
         try {
             return await this.contract.isUserEnrolled(userAddress, courseId);
         } catch (error) {
@@ -119,6 +130,7 @@ export class RelayerService {
     }
 
     async getUserPoints(userAddress: string): Promise<bigint> {
+        if (!this.contract) return BigInt(0);
         try {
             return await this.contract.getUserPoints(userAddress);
         } catch (error) {
@@ -135,6 +147,16 @@ export class RelayerService {
         alreadyEnrolled: boolean;
         alreadyCompleted: boolean;
     }> {
+        if (!this.contract) {
+            return {
+                canEnroll: false,
+                userPoints: BigInt(0),
+                requiredPoints: BigInt(0),
+                hasEnoughPoints: false,
+                alreadyEnrolled: false,
+                alreadyCompleted: false,
+            };
+        }
         try {
             const result = await this.contract.canUserEnroll(userAddress, courseId);
             return {
@@ -165,6 +187,9 @@ export class RelayerService {
         userAddress: string,
         courseId: number
     ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+        if (!this.contract) {
+            return { success: false, error: 'Relayer contract not initialized' };
+        }
         try {
             const isEnrolled = await this.isUserEnrolled(userAddress, courseId);
             if (isEnrolled) {

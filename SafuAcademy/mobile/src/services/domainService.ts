@@ -282,11 +282,21 @@ export class DomainService {
    */
   async getReferralStats(userAddress: string): Promise<ReferralStats> {
     try {
+      // Run calls individually to handle partial failures (reverts)
+      const fetchCall = async <T>(call: Promise<T>, defaultValue: T): Promise<T> => {
+        try {
+          return await call;
+        } catch (error) {
+          console.warn('Individual referral call failed:', error);
+          return defaultValue;
+        }
+      };
+
       const [count, earnings, percentage, code] = await Promise.all([
-        this.referral.referralCount(userAddress),
-        this.referral.totalEarnings(userAddress),
-        this.referral.getReferralPct(userAddress),
-        this.referral.getReferralCode(userAddress),
+        fetchCall(this.referral.referralCount(userAddress), BigInt(0)),
+        fetchCall(this.referral.totalEarnings(userAddress), BigInt(0)),
+        fetchCall(this.referral.getReferralPct(userAddress), BigInt(25)),
+        fetchCall(this.referral.getReferralCode(userAddress), ''),
       ]);
 
       let tier: 'default' | 'silver' | 'gold' = 'default';
@@ -302,7 +312,13 @@ export class DomainService {
       };
     } catch (error) {
       console.error('Error getting referral stats:', error);
-      throw error;
+      // Return default empty stats if everything fails
+      return {
+        referralCount: 0,
+        totalEarnings: '0',
+        tier: 'default',
+        percentage: 25,
+      };
     }
   }
 

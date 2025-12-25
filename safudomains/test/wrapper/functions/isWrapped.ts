@@ -4,7 +4,7 @@ import {
   labelhash,
   namehash,
   zeroHash,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { DAY } from '../../fixtures/constants.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
 import {

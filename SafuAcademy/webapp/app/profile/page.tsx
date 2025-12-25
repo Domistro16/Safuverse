@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { useReadContract, useAccount } from "wagmi";
-import { abi, Course, Deploy } from "@/lib/constants";
+import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 import { useENSName } from "@/hooks/getPrimaryName";
 
 export default function Profile() {
@@ -26,10 +26,10 @@ export default function Profile() {
     // Fetch all courses to count completed ones
     const { data: courses, isPending: coursesLoading } = useReadContract({
         abi: abi,
-        functionName: "getCourses",
+        functionName: "getAllCourses",
         address: Deploy,
     }) as {
-        data: Course[];
+        data: OnChainCourse[];
         isPending: boolean;
     };
 

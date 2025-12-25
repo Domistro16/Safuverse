@@ -4,7 +4,7 @@ import {
   getAddress,
   namehash,
   zeroAddress,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { dnsEncodeName } from '../../fixtures/dnsEncodeName.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
 import {
@@ -185,9 +185,9 @@ export const upgradeTests = () =>
             dnsEncodeName(name),
             accounts[0].address,
             PARENT_CANNOT_CONTROL |
-              CANNOT_UNWRAP |
-              CANNOT_SET_RESOLVER |
-              IS_DOT_ETH,
+            CANNOT_UNWRAP |
+            CANNOT_SET_RESOLVER |
+            IS_DOT_ETH,
             expectedExpiry,
             zeroAddress,
             '0x00',
@@ -284,9 +284,9 @@ export const upgradeTests = () =>
             dnsEncodeName(name),
             accounts[0].address,
             PARENT_CANNOT_CONTROL |
-              CANNOT_UNWRAP |
-              CANNOT_SET_RESOLVER |
-              IS_DOT_ETH,
+            CANNOT_UNWRAP |
+            CANNOT_SET_RESOLVER |
+            IS_DOT_ETH,
             expectedExpiry,
             zeroAddress,
             '0x01',

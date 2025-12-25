@@ -24,6 +24,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
             include: {
                 course: { select: { id: true, title: true } },
                 quiz: true,
+                videos: {
+                    orderBy: { orderIndex: 'asc' },
+                },
             },
         });
 
@@ -31,16 +34,32 @@ export async function GET(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
         }
 
-        // For admin, include signed URL if video exists
+        const storageService = getStorageService();
+
+        // Generate signed URLs for all videos
+        const videosWithUrls = await Promise.all(
+            lesson.videos.map(async (video) => {
+                let signedUrl: string | null = null;
+                if (storageService.isAvailable()) {
+                    signedUrl = await storageService.getSignedVideoUrl(video.storageKey);
+                }
+                return {
+                    ...video,
+                    signedUrl,
+                };
+            })
+        );
+
+        // Legacy: include signed URL for old videoStorageKey if exists
         let signedVideoUrl: string | null = null;
-        if (lesson.videoStorageKey) {
-            const storageService = getStorageService();
-            if (storageService.isAvailable()) {
-                signedVideoUrl = await storageService.getSignedVideoUrl(lesson.videoStorageKey);
-            }
+        if (lesson.videoStorageKey && storageService.isAvailable()) {
+            signedVideoUrl = await storageService.getSignedVideoUrl(lesson.videoStorageKey);
         }
 
-        return NextResponse.json({ lesson, signedVideoUrl });
+        return NextResponse.json({
+            lesson: { ...lesson, videos: videosWithUrls },
+            signedVideoUrl, // Legacy support
+        });
     } catch (error) {
         console.error('Error fetching lesson:', error);
         return NextResponse.json({ error: 'Failed to fetch lesson' }, { status: 500 });

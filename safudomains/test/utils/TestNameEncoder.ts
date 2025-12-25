@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers.js'
 import { expect } from 'chai'
 import hre from 'hardhat'
-import { namehash } from '../../node_modules/viem/_types/index.js'
+import { namehash } from 'viem'
 import { dnsEncodeName } from '../fixtures/dnsEncodeName.js'
 
 async function fixture() {

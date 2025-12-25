@@ -6,7 +6,7 @@ import {
   namehash,
   zeroAddress,
   type Hex,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { dnsEncodeName } from '../../fixtures/dnsEncodeName.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
 import {

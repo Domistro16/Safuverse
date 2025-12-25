@@ -3,7 +3,7 @@ import {
   Address,
   Hex,
   zeroAddress,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { EnsStack } from './deployEnsFixture.js'
 
 export type Mutable<T> = {

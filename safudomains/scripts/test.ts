@@ -1,5 +1,5 @@
 import hre from 'hardhat'
-import { defineChain } from '../node_modules/viem/_types'
+import { defineChain } from 'viem'
 
 export const plasmaTestnet = /*#__PURE__*/ defineChain({
   id: 9746,

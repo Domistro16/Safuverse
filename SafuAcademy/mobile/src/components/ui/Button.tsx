@@ -33,26 +33,27 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   fullWidth = false,
 }) => {
-  const { colors, typography, spacing, borderRadius } = useTheme();
+  const { mode, colors, typography, spacing, borderRadius } = useTheme();
 
   const sizeStyles = {
-    small: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-    medium: { paddingVertical: spacing.md, paddingHorizontal: spacing.lg },
-    large: { paddingVertical: spacing.lg, paddingHorizontal: spacing.xl },
+    small: { height: 36, paddingHorizontal: spacing.md },
+    medium: { height: 48, paddingHorizontal: spacing.lg },
+    large: { height: 56, paddingHorizontal: spacing.xl },
   };
 
   const textSizes = {
-    small: { fontSize: 14 },
-    medium: { fontSize: 16 },
-    large: { fontSize: 18 },
+    small: { fontSize: 13 },
+    medium: { fontSize: 15 },
+    large: { fontSize: 17 },
   };
 
   const isDisabled = disabled || loading;
 
   const buttonStyle: ViewStyle = {
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full, // Premium pill style
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     ...sizeStyles[size],
     opacity: isDisabled ? 0.6 : 1,
     ...(fullWidth && { width: '100%' }),
@@ -62,6 +63,7 @@ export const Button: React.FC<ButtonProps> = ({
     ...typography.button,
     ...textSizes[size],
     fontWeight: '600',
+    letterSpacing: -0.2,
   };
 
   if (variant === 'primary') {
@@ -69,19 +71,24 @@ export const Button: React.FC<ButtonProps> = ({
       <TouchableOpacity
         onPress={onPress}
         disabled={isDisabled}
-        activeOpacity={0.8}
-        style={[buttonStyle, style]}
+        activeOpacity={0.85}
+        style={[
+          buttonStyle,
+          {
+            backgroundColor: mode === 'light' ? '#111111' : colors.primary,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            elevation: 8,
+          },
+          style
+        ]}
       >
-        <LinearGradient
-          colors={[colors.primary, '#ffaa00']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: borderRadius.md }]}
-        />
         {loading ? (
-          <ActivityIndicator color="#000" />
+          <ActivityIndicator color={mode === 'light' ? '#fff' : '#000'} />
         ) : (
-          <Text style={[baseTextStyle, { color: '#000' }, textStyle]}>{title}</Text>
+          <Text style={[baseTextStyle, { color: mode === 'light' ? '#fff' : '#000' }, textStyle]}>{title}</Text>
         )}
       </TouchableOpacity>
     );
@@ -93,7 +100,20 @@ export const Button: React.FC<ButtonProps> = ({
         onPress={onPress}
         disabled={isDisabled}
         activeOpacity={0.8}
-        style={[buttonStyle, { backgroundColor: colors.backgroundSecondary }, style]}
+        style={[
+          buttonStyle,
+          {
+            backgroundColor: colors.backgroundSecondary,
+            borderWidth: 1.5,
+            borderColor: colors.text,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
+            elevation: 2,
+          },
+          style
+        ]}
       >
         {loading ? (
           <ActivityIndicator color={colors.text} />
@@ -112,14 +132,18 @@ export const Button: React.FC<ButtonProps> = ({
         activeOpacity={0.8}
         style={[
           buttonStyle,
-          { borderWidth: 1, borderColor: colors.primary, backgroundColor: 'transparent' },
+          {
+            borderWidth: 1.2,
+            borderColor: colors.border,
+            backgroundColor: 'transparent'
+          },
           style,
         ]}
       >
         {loading ? (
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.text} />
         ) : (
-          <Text style={[baseTextStyle, { color: colors.primary }, textStyle]}>{title}</Text>
+          <Text style={[baseTextStyle, { color: colors.text }, textStyle]}>{title}</Text>
         )}
       </TouchableOpacity>
     );

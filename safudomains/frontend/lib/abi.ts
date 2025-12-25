@@ -20,11 +20,23 @@ export const registrarAbi = [
                     { name: 'referrer', type: 'address' },
                     { name: 'registrant', type: 'address' },
                     { name: 'nameHash', type: 'bytes32' },
+                    { name: 'referrerCodeHash', type: 'bytes32' },  // NEW
                     { name: 'deadline', type: 'uint256' },
                     { name: 'nonce', type: 'bytes32' }
                 ]
             },
             { name: 'referralSignature', type: 'bytes' }
+        ],
+        outputs: []
+    },
+    {
+        name: 'renew',
+        type: 'function',
+        stateMutability: 'payable',
+        inputs: [
+            { name: 'name', type: 'string' },
+            { name: 'duration', type: 'uint256' },
+            { name: 'lifetime', type: 'bool' }
         ],
         outputs: []
     },

@@ -3,7 +3,7 @@
 import React from "react";
 import { Layout } from "@/components/Layout";
 import { useReadContract, useAccount } from "wagmi";
-import { abi, Course, Deploy } from "@/lib/constants";
+import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 
 export const Certificates: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -11,10 +11,10 @@ export const Certificates: React.FC = () => {
   // Fetch all courses
   const { data: courses, isPending: coursesLoading } = useReadContract({
     abi: abi,
-    functionName: "getCourses",
+    functionName: "getAllCourses",
     address: Deploy,
   }) as {
-    data: Course[];
+    data: OnChainCourse[];
     isPending: boolean;
   };
 
@@ -78,20 +78,20 @@ export const Certificates: React.FC = () => {
 };
 
 // Individual certificate card that checks completion status
-function CertificateCard({ course, userAddress }: { course: Course; userAddress: `0x${string}` }) {
+function CertificateCard({ course, userAddress }: { course: OnChainCourse; userAddress: `0x${string}` }) {
+  // Use getCourseWithUserStatus which returns [course, enrolled, completed, canEnroll]
   const { data: completionData, isPending } = useReadContract({
     abi: abi,
-    functionName: "getCourse",
+    functionName: "getCourseWithUserStatus",
     address: Deploy,
-    args: [BigInt(course.id), userAddress],
+    args: [course.id, userAddress],
   }) as {
-    data: [Course, boolean, number, bigint] | undefined;
+    data: [OnChainCourse, boolean, boolean, boolean] | undefined;
     isPending: boolean;
   };
 
   const isEnrolled = completionData?.[1] ?? false;
-  const score = completionData?.[2] ?? 0;
-  const hasCompleted = score >= 100; // 100% completion
+  const hasCompleted = completionData?.[2] ?? false;
 
   if (isPending) {
     return (
@@ -113,7 +113,7 @@ function CertificateCard({ course, userAddress }: { course: Course; userAddress:
           </div>
           <h2 className="font-semibold text-lg text-[#555] mb-1">{course.title}</h2>
           <p className="text-[11px] text-[#999]">
-            {isEnrolled ? `Progress: ${score}%` : "Not enrolled"}
+            {isEnrolled ? "In progress" : "Not enrolled"}
           </p>
         </div>
         <button

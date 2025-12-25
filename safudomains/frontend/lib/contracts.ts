@@ -1,5 +1,5 @@
 // Contract addresses from environment variables
-export const CONTROLLER_ADDRESS = (process.env.NEXT_PUBLIC_CONTROLLER_ADDRESS || '0xBC6932F08f07f47F78285249d1A4937C99b4A955') as `0x${string}`;
+export const CONTROLLER_ADDRESS = (process.env.NEXT_PUBLIC_CONTROLLER_ADDRESS || '0xC902396A4E49914d1266cc80e22Aa182dcF23138') as `0x${string}`;
 export const RESOLVER_ADDRESS = (process.env.NEXT_PUBLIC_RESOLVER_ADDRESS || '0x50143d9f7e496fF58049dE0db6FaDfB43FfE18e7') as `0x${string}`;
 export const CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '56');
 
@@ -12,6 +12,6 @@ export const constants = {
     NameWrapper: '0xbf4B53F867dfE5A78Cf268AfBfC1f334044e61ae' as `0x${string}`,
     BulkRenewal: '0x2156C655d4668E7DB7584CA9B2a8Bc18A9125254' as `0x${string}`,
     PublicResolver: RESOLVER_ADDRESS,
-    Referral: '0x9fd7Bb7d8A6B3EF32C5435896aE5478aF80F6F2D' as `0x${string}`,
+    Referral: '0x92149696fDDC858A76253F71268D34147e662410' as `0x${string}`,
     Course: '0x2967A3EDA537630Fb4eb144Fa02f5081457506BE' as `0x${string}`,
 };

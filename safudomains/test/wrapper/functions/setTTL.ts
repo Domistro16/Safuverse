@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import {
   getAddress,
   namehash,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import {
   CANNOT_SET_TTL,
   CANNOT_UNWRAP,

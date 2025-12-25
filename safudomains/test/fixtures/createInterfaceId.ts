@@ -6,7 +6,7 @@ import {
   toFunctionHash,
   type Abi,
   type AbiFunction,
-} from '../../node_modules/viem/_types'
+} from 'viem'
 
 /**
  * @description Matches a function signature string to an exact ABI function.
