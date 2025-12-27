@@ -632,22 +632,37 @@ export default function CourseDetailPage() {
                 <VideoPlayer videos={videos} onWatchedChange={handleWatchedChange} />
               </div>
             ) : (
-              <div className={`aspect-video rounded-3xl relative overflow-hidden flex items-center justify-center ${isDark
-                ? 'bg-gradient-to-br from-[#1a1a2e] via-[#252540] to-[#1a1a3e]'
-                : 'bg-gradient-to-br from-[#fed7aa] via-[#facc15] to-[#f97316]'
-                }`}>
+              <div
+                className={`aspect-video rounded-3xl relative overflow-hidden flex items-center justify-center ${
+                  !isEnrolled && backendCourse?.thumbnailUrl
+                    ? 'bg-cover bg-center'
+                    : isDark
+                    ? 'bg-gradient-to-br from-[#1a1a2e] via-[#252540] to-[#1a1a3e]'
+                    : 'bg-gradient-to-br from-[#fed7aa] via-[#facc15] to-[#f97316]'
+                }`}
+                style={
+                  !isEnrolled && backendCourse?.thumbnailUrl
+                    ? { backgroundImage: `url(${backendCourse.thumbnailUrl})` }
+                    : undefined
+                }
+              >
+                {/* Overlay for better visibility of content on thumbnail */}
+                {!isEnrolled && backendCourse?.thumbnailUrl && (
+                  <div className="absolute inset-0 bg-black/40" />
+                )}
+
                 {videoLoading ? (
-                  <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin relative z-10" />
                 ) : (
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-xl ${isDark ? 'bg-[#ffb000] text-black' : 'bg-safuDeep/90'
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-xl relative z-10 ${isDark ? 'bg-[#ffb000] text-black' : 'bg-safuDeep/90'
                     }`}>
                     {isEnrolled ? "▶" : "🔒"}
                   </div>
                 )}
-                <div className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7]">
+                <div className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7] z-10">
                   Safu Academy · On‑chain Education
                 </div>
-                <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7]">
+                <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7] z-10">
                   {courseDuration}
                 </div>
               </div>
