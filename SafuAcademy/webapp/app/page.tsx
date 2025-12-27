@@ -87,7 +87,7 @@ function FeaturedCourses() {
       level: c.level,
       thumbnailUrl: c.thumbnailUrl || '',
       duration: c.duration,
-      totalLessons: 0n,
+      totalLessons: BigInt(0),
       minPointsToAccess: BigInt(c.minPointsToAccess),
       enrollmentCost: BigInt(c.enrollmentCost),
       objectives: [],
