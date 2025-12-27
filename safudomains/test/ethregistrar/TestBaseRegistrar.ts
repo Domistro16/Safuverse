@@ -6,7 +6,7 @@ import {
   namehash,
   zeroAddress,
   zeroHash,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { toLabelId } from '../fixtures/utils.js'
 
 const getAccounts = async () => {

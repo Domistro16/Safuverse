@@ -15,7 +15,7 @@ import {
   encodeFunctionData,
   namehash,
   stringToHex,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { packetToBytes } from '../fixtures/dnsEncodeName.js'
 
 type GetNodeFunctions<
@@ -25,20 +25,20 @@ type GetNodeFunctions<
     'view' | 'pure'
   > = ExtractAbiFunctionNames<publicResolverAbi, 'view' | 'pure'>,
 > = {
-  [name in functionNames as ExtractAbiFunction<
-    publicResolverAbi,
-    name
-  >['inputs'][0] extends { name: 'node'; type: 'bytes32' }
+    [name in functionNames as ExtractAbiFunction<
+      publicResolverAbi,
+      name
+    >['inputs'][0] extends { name: 'node'; type: 'bytes32' }
     ? name
     : never]: ExtractAbiFunction<publicResolverAbi, name>['inputs'] extends [
-    any,
-    ...infer rest,
-  ]
+      any,
+      ...infer rest,
+    ]
     ? rest extends AbiParameter[]
-      ? AbiParametersToPrimitiveTypes<rest>
-      : never
+    ? AbiParametersToPrimitiveTypes<rest>
     : never
-}
+    : never
+  }
 
 async function fixture() {
   const resolver = await hre.viem.deployContract('ExtendedDNSResolver', [])

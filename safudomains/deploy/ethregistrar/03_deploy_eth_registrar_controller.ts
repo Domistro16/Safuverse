@@ -1,5 +1,5 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
-import { namehash, zeroAddress } from '../../node_modules/viem/_types/index.js'
+import { namehash, zeroAddress } from 'viem'
 import { createInterfaceId } from '../../test/fixtures/createInterfaceId.js'
 
 const func: DeployFunction = async function (hre) {
@@ -24,7 +24,11 @@ const func: DeployFunction = async function (hre) {
   const reverseRegistrar = await viem.getContract('ReverseRegistrar', owner)
   const nameWrapper = await viem.getContract('NameWrapper', owner)
 
-  const referralDeployment = await viem.deploy('ReferralController', [])
+  const referralDeployment = await viem.deploy('ReferralVerifier', [
+    owner.address,
+    registrar.address,
+    nameWrapper.address,
+  ])
 
   const controllerDeployment = await viem.deploy('ETHRegistrarController', [
     registrar.address,
@@ -40,7 +44,7 @@ const func: DeployFunction = async function (hre) {
 
   const controller = await viem.getContract('ETHRegistrarController')
 
-  const refferal = await viem.getContract('ReferralController')
+  const refferal = await viem.getContract('ReferralVerifier')
 
   if (owner.address !== deployer.address) {
     const hash = await controller.write.transferOwnership([owner.address])
@@ -58,14 +62,6 @@ const func: DeployFunction = async function (hre) {
 
   // Only attempt to make controller etc changes directly on testnets
   if (network.name === 'mainnet') return
-
-  const referralControllerHash = await refferal.write.addController([
-    controller.address,
-  ])
-  console.log(
-    `Adding controller as a controller of Referral (tx: ${referralControllerHash})...`,
-  )
-  await viem.waitForTransactionSuccess(referralControllerHash)
   const backendHash = await controller.write.setBackend([owner.address])
   console.log(`Adding backend (tx: ${backendHash})...`)
   await viem.waitForTransactionSuccess(backendHash)

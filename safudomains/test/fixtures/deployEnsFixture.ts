@@ -5,7 +5,7 @@ import {
   labelhash,
   namehash,
   type Address,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { createInterfaceId } from './createInterfaceId.js'
 
 export const ZERO_HASH =

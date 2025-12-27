@@ -36,6 +36,7 @@ function emptyReferral(registrant: string, name: string) {
             referrer: ethers.ZeroAddress,
             registrant,
             nameHash: ethers.keccak256(ethers.toUtf8Bytes(name)),
+            referrerCodeHash: ethers.ZeroHash,  // Added
             deadline: 0,
             nonce: ethers.ZeroHash
         },
@@ -54,10 +55,16 @@ async function getDomainInfo(name: string) {
         return {
             exists: owner !== ethers.ZeroAddress,
             owner,
-            expiry: Number(expiry)
+            expiry: Number(expiry),
+            labelhash  // Return this for use as referrerCodeHash
         };
     } catch {
-        return { exists: false, owner: ethers.ZeroAddress, expiry: 0 };
+        return {
+            exists: false,
+            owner: ethers.ZeroAddress,
+            expiry: 0,
+            labelhash
+        };
     }
 }
 
@@ -105,13 +112,16 @@ export async function POST(request: NextRequest) {
         const deadline = now + 3600;
         const nonce = ethers.hexlify(ethers.randomBytes(32));
         const nameHash = ethers.keccak256(ethers.toUtf8Bytes(name));
+        const referrerCodeHash = ethers.keccak256(ethers.toUtf8Bytes(referralCode));  // Hash of referral code domain
 
+        // Updated message hash - now includes referrerCodeHash
         const messageHash = ethers.solidityPackedKeccak256(
-            ['address', 'address', 'bytes32', 'uint256', 'bytes32', 'uint256', 'address'],
+            ['address', 'address', 'bytes32', 'bytes32', 'uint256', 'bytes32', 'uint256', 'address'],
             [
-                domainInfo.owner,
-                registrantAddress,
-                nameHash,
+                domainInfo.owner,      // referrer
+                registrantAddress,     // registrant
+                nameHash,              // hash of domain being registered
+                referrerCodeHash,      // hash of referral code domain (NEW)
                 deadline,
                 nonce,
                 parseInt(process.env.NEXT_PUBLIC_CHAIN_ID!),
@@ -128,6 +138,7 @@ export async function POST(request: NextRequest) {
                 referrer: domainInfo.owner,
                 registrant: registrantAddress,
                 nameHash,
+                referrerCodeHash,  // Added to response
                 deadline,
                 nonce
             },

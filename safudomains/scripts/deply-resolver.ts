@@ -1,4 +1,4 @@
-import { namehash } from '../node_modules/viem/_types'
+import { namehash } from 'viem'
 import hre from 'hardhat'
 async function main() {
   const { viem } = hre

@@ -1,4 +1,4 @@
-import { labelhash } from '../node_modules/viem/_types/ens'
+import { labelhash } from 'viem/ens'
 import hre from 'hardhat'
 async function main() {
   const { viem } = hre

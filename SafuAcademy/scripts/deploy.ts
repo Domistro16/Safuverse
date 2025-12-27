@@ -3,7 +3,7 @@ import 'dotenv/config'
 
 async function main() {
   const owner =
-    process.env.OWNER_ADDRESS || ''
+    process.env.OWNER_ADDRESS || '0xD83deFbA240568040b39bb2C8B4DB7dB02d40593'
 
   const Contract = await ethers.getContractFactory('Level3Course')
   const reverseAddress = '0x1D0831eA9486Fada3887a737E8d6f8C6Ad72a125'

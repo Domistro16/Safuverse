@@ -27,11 +27,13 @@ export const useAuth = () => {
     mutationFn: async ({
       walletAddress,
       signature,
+      message,
     }: {
       walletAddress: string;
       signature: string;
+      message: string;
     }) => {
-      return await authService.verifySignature(walletAddress, signature);
+      return await authService.verifySignature(walletAddress, signature, message);
     },
     onSuccess: (data) => {
       queryClient.setQueryData(AUTH_KEYS.me, data.user);

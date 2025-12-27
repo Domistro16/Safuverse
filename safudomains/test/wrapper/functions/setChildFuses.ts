@@ -6,7 +6,7 @@ import {
   namehash,
   zeroAddress,
   zeroHash,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { DAY } from '../../fixtures/constants.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
 import {
@@ -564,9 +564,9 @@ export const setChildFusesTests = () => {
           namehash(name),
           labelhash(sublabel),
           PARENT_CANNOT_CONTROL |
-            CANNOT_UNWRAP |
-            CANNOT_SET_RESOLVER |
-            CANNOT_BURN_FUSES,
+          CANNOT_UNWRAP |
+          CANNOT_SET_RESOLVER |
+          CANNOT_BURN_FUSES,
           MAX_EXPIRY,
         ])
         .toBeRevertedWithCustomError('OperationProhibited')

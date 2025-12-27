@@ -1,6 +1,6 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
-import { formatEther } from '../../node_modules/viem/_types'
-import { namehash } from '../../node_modules/viem/_types/ens'
+import { formatEther } from 'viem'
+import { namehash } from 'viem/ens'
 
 const func: DeployFunction = async function (hre) {
   const { network, viem } = hre

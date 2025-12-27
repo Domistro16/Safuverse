@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
 import { expect } from 'chai'
 import hre from 'hardhat'
-import { labelhash, namehash, zeroHash } from '../../node_modules/viem/_types'
+import { labelhash, namehash, zeroHash } from 'viem'
 
 async function fixture() {
   const accounts = await hre.viem

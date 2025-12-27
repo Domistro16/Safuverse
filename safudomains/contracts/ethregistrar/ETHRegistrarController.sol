@@ -43,7 +43,7 @@ contract ETHRegistrarController is
     // ============ Constants ============
     uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
     uint256 private constant LIFETIME_DURATION = 31536000000;
-    uint256 private constant MAX_REFERRAL_PCT = 30; // Max we might send to referral contract
+    uint256 private constant MAX_REFERRAL_PCT = 30;
     bytes32 private constant ETH_NODE =
         0xf92e9539a836c60f519caef3f817b823139813f56a7a19c9621f7b47f35b340d;
 
@@ -67,6 +67,7 @@ contract ETHRegistrarController is
     mapping(bytes32 => uint256) public commitments;
     mapping(address => Token) public verifiedTokens;
 
+    // ============ Structs ============
     struct Token {
         string token;
         address tokenAddress;
@@ -142,7 +143,10 @@ contract ETHRegistrarController is
         referralVerifier = ReferralVerifier(payable(_verifier));
     }
 
-    function setToken(Token memory token, address tokenAddress) external onlyOwner {
+    function setToken(
+        Token memory token,
+        address tokenAddress
+    ) external onlyOwner {
         verifiedTokens[tokenAddress] = token;
     }
 
@@ -160,18 +164,18 @@ contract ETHRegistrarController is
         string memory name,
         uint256 duration,
         bool lifetime
-    ) public view returns (IPriceOracle.Price memory price) {
+    ) public view returns (IPriceOracle.Price memory) {
         require(
             duration == 0 || duration >= MIN_REGISTRATION_DURATION,
             "Invalid duration"
         );
-        bytes32 label = keccak256(bytes(name));
-        price = prices.price(
-            name,
-            base.nameExpires(uint256(label)),
-            duration,
-            lifetime
-        );
+        return
+            prices.price(
+                name,
+                base.nameExpires(uint256(keccak256(bytes(name)))),
+                duration,
+                lifetime
+            );
     }
 
     function rentPriceToken(
@@ -179,19 +183,19 @@ contract ETHRegistrarController is
         uint256 duration,
         string memory token,
         bool lifetime
-    ) public view returns (IPriceOracle.Price memory price) {
+    ) public view returns (IPriceOracle.Price memory) {
         require(
             duration == 0 || duration >= MIN_REGISTRATION_DURATION,
             "Invalid duration"
         );
-        bytes32 label = keccak256(bytes(name));
-        price = prices.priceToken(
-            name,
-            base.nameExpires(uint256(label)),
-            duration,
-            token,
-            lifetime
-        );
+        return
+            prices.priceToken(
+                name,
+                base.nameExpires(uint256(keccak256(bytes(name)))),
+                duration,
+                token,
+                lifetime
+            );
     }
 
     function valid(string memory name) public pure returns (bool) {
@@ -204,33 +208,25 @@ contract ETHRegistrarController is
     }
 
     function makeCommitment(
-        string memory name,
-        address owner,
-        uint256 duration,
-        bytes32 secret,
-        address resolver,
-        bytes[] memory data,
-        bool reverseRecord,
-        uint16 ownerControlledFuses,
-        bool lifetime
+        IETHRegistrarController.RegisterRequest calldata req
     ) public pure returns (bytes32) {
-        bytes32 label = keccak256(bytes(name));
-        if (data.length > 0 && resolver == address(0)) {
+        if (req.data.length > 0 && req.resolver == address(0)) {
             revert ResolverRequiredWhenDataSupplied();
         }
-        return keccak256(
-            abi.encode(
-                label,
-                owner,
-                duration,
-                secret,
-                resolver,
-                data,
-                reverseRecord,
-                ownerControlledFuses,
-                lifetime
-            )
-        );
+        return
+            keccak256(
+                abi.encode(
+                    keccak256(bytes(req.name)),
+                    req.owner,
+                    req.duration,
+                    req.secret,
+                    req.resolver,
+                    req.data,
+                    req.reverseRecord,
+                    req.ownerControlledFuses,
+                    req.lifetime
+                )
+            );
     }
 
     function commit(bytes32 commitment) public {
@@ -240,169 +236,36 @@ contract ETHRegistrarController is
         commitments[commitment] = block.timestamp;
     }
 
-    // ============ Registration Functions ============
+    // ============ Registration ============
 
     function register(
-        string memory name,
-        address owner,
-        uint256 duration,
-        bytes32 secret,
-        address resolver,
-        bytes[] memory data,
-        bool reverseRecord,
-        uint16 ownerControlledFuses,
-        bool lifetime,
+        IETHRegistrarController.RegisterRequest calldata req,
         ReferralVerifier.ReferralData calldata referralData,
         bytes calldata referralSignature
     ) external payable {
-        if (lifetime) {
-            duration = LIFETIME_DURATION;
-        }
+        (uint256 totalPrice, uint256 expires) = _executeRegistration(req);
 
-        IPriceOracle.Price memory price = rentPrice(name, duration, lifetime);
-        uint256 totalPrice = price.base + price.premium;
-        
-        if (msg.value < totalPrice) {
-            revert InsufficientValue();
-        }
-
-        _consumeCommitment(
-            name,
-            duration,
-            makeCommitment(
-                name,
-                owner,
-                duration,
-                secret,
-                resolver,
-                data,
-                reverseRecord,
-                ownerControlledFuses,
-                lifetime
-            )
-        );
-
-        uint256 expires = nameWrapper.registerAndWrapETH2LD(
-            name,
-            owner,
-            duration,
-            resolver,
-            ownerControlledFuses
-        );
-
-        if (data.length > 0) {
-            _setRecords(resolver, keccak256(bytes(name)), data);
-        }
-
-        if (reverseRecord) {
-            _setReverseRecord(name, resolver, msg.sender);
-        }
-
-        _updatePoints(name, duration, owner, lifetime);
-
-        emit NameRegistered(
-            name,
-            keccak256(bytes(name)),
-            owner,
-            price.base,
-            price.premium,
-            expires
-        );
-
-        // Handle referral
-        _processReferral(referralData, referralSignature, totalPrice, address(0), false);
-
-        // Refund excess
-        if (msg.value > totalPrice) {
-            (bool success, ) = payable(msg.sender).call{value: msg.value - totalPrice}("");
-            require(success, "Refund failed");
-        }
-
+        _handleReferral(referralData, referralSignature, totalPrice, false);
+        _refundExcess(totalPrice);
         mints++;
     }
 
     function registerWithCard(
-        string memory name,
-        address owner,
-        uint256 duration,
-        bytes32 secret,
-        address resolver,
-        bytes[] memory data,
-        bool reverseRecord,
-        uint16 ownerControlledFuses,
-        bool lifetime,
+        IETHRegistrarController.RegisterRequest calldata req,
         ReferralVerifier.ReferralData calldata referralData,
         bytes calldata referralSignature
     ) external onlyBackend {
-        if (lifetime) {
-            duration = LIFETIME_DURATION;
-        }
+        (uint256 totalPrice, ) = _executeRegistration(req);
 
-        IPriceOracle.Price memory price = rentPrice(name, duration, lifetime);
-        uint256 totalPrice = price.base + price.premium;
-
-        _consumeCommitment(
-            name,
-            duration,
-            makeCommitment(
-                name,
-                owner,
-                duration,
-                secret,
-                resolver,
-                data,
-                reverseRecord,
-                ownerControlledFuses,
-                lifetime
-            )
-        );
-
-        uint256 expires = nameWrapper.registerAndWrapETH2LD(
-            name,
-            owner,
-            duration,
-            resolver,
-            ownerControlledFuses
-        );
-
-        if (data.length > 0) {
-            _setRecords(resolver, keccak256(bytes(name)), data);
-        }
-
-        if (reverseRecord) {
-            _setReverseRecord(name, resolver, owner);
-        }
-
-        _updatePoints(name, duration, owner, lifetime);
-
-        emit NameRegistered(
-            name,
-            keccak256(bytes(name)),
-            owner,
-            price.base,
-            price.premium,
-            expires
-        );
-
-        // Handle referral (fiat = tracked separately)
         if (mints > 1000) {
-            _processReferral(referralData, referralSignature, totalPrice, address(0), true);
+            _handleReferral(referralData, referralSignature, totalPrice, true);
         }
-
         untrackedInfoFi += (totalPrice * 35) / 100;
         mints++;
     }
 
     function registerWithToken(
-        string memory name,
-        address owner,
-        uint256 duration,
-        bytes32 secret,
-        address resolver,
-        bytes[] memory data,
-        bool reverseRecord,
-        uint16 ownerControlledFuses,
-        bool lifetime,
+        IETHRegistrarController.RegisterRequest calldata req,
         address tokenAddress,
         ReferralVerifier.ReferralData calldata referralData,
         bytes calldata referralSignature
@@ -412,130 +275,160 @@ contract ETHRegistrarController is
             "Unaccepted Token"
         );
 
+        (uint256 totalPrice, ) = _executeTokenRegistration(req, tokenAddress);
+
+        _handleTokenReferral(
+            referralData,
+            referralSignature,
+            totalPrice,
+            tokenAddress
+        );
+        mints++;
+    }
+
+    // ============ Internal Registration Logic ============
+
+    function _executeRegistration(
+        IETHRegistrarController.RegisterRequest calldata req
+    ) internal returns (uint256 totalPrice, uint256 expires) {
+        uint256 duration = req.lifetime ? LIFETIME_DURATION : req.duration;
+
+        IPriceOracle.Price memory price = rentPrice(
+            req.name,
+            duration,
+            req.lifetime
+        );
+        totalPrice = price.base + price.premium;
+
+        if (msg.value < totalPrice) revert InsufficientValue();
+
+        _consumeCommitment(req.name, duration, makeCommitment(req));
+
+        expires = nameWrapper.registerAndWrapETH2LD(
+            req.name,
+            req.owner,
+            duration,
+            req.resolver,
+            req.ownerControlledFuses
+        );
+
+        _finalizeRegistration(req, price, expires);
+    }
+
+    function _executeTokenRegistration(
+        IETHRegistrarController.RegisterRequest calldata req,
+        address tokenAddress
+    ) internal returns (uint256 totalPrice, uint256 expires) {
+        uint256 duration = req.lifetime ? LIFETIME_DURATION : req.duration;
         Token memory t = verifiedTokens[tokenAddress];
-        
-        if (lifetime) {
-            duration = LIFETIME_DURATION;
-        }
 
-        IPriceOracle.Price memory price = rentPriceToken(name, duration, t.token, lifetime);
-        uint256 totalPrice = price.base + price.premium;
+        IPriceOracle.Price memory price = rentPriceToken(
+            req.name,
+            duration,
+            t.token,
+            req.lifetime
+        );
+        totalPrice = price.base + price.premium;
 
-        if (IERC20(tokenAddress).balanceOf(msg.sender) < totalPrice) {
+        if (IERC20(tokenAddress).balanceOf(msg.sender) < totalPrice)
             revert InsufficientValue();
-        }
 
-        _consumeCommitment(
-            name,
-            duration,
-            makeCommitment(
-                name,
-                owner,
-                duration,
-                secret,
-                resolver,
-                data,
-                reverseRecord,
-                ownerControlledFuses,
-                lifetime
-            )
+        _consumeCommitment(req.name, duration, makeCommitment(req));
+
+        IERC20(tokenAddress).safeTransferFrom(
+            msg.sender,
+            address(this),
+            totalPrice
         );
 
-        // Transfer tokens first
-        IERC20(tokenAddress).safeTransferFrom(msg.sender, address(this), totalPrice);
-
-        uint256 expires = nameWrapper.registerAndWrapETH2LD(
-            name,
-            owner,
+        expires = nameWrapper.registerAndWrapETH2LD(
+            req.name,
+            req.owner,
             duration,
-            resolver,
-            ownerControlledFuses
+            req.resolver,
+            req.ownerControlledFuses
         );
 
-        if (data.length > 0) {
-            _setRecords(resolver, keccak256(bytes(name)), data);
+        _finalizeRegistration(req, price, expires);
+    }
+
+    function _finalizeRegistration(
+        IETHRegistrarController.RegisterRequest calldata req,
+        IPriceOracle.Price memory price,
+        uint256 expires
+    ) internal {
+        bytes32 label = keccak256(bytes(req.name));
+
+        if (req.data.length > 0) {
+            _setRecords(req.resolver, label, req.data);
         }
 
-        if (reverseRecord) {
-            _setReverseRecord(name, resolver, msg.sender);
+        if (req.reverseRecord) {
+            _setReverseRecord(req.name, req.resolver, msg.sender);
         }
 
-        _updatePoints(name, duration, owner, lifetime);
+        _updatePoints(
+            req.name,
+            req.lifetime ? LIFETIME_DURATION : req.duration,
+            req.owner,
+            req.lifetime
+        );
 
         emit NameRegistered(
-            name,
-            keccak256(bytes(name)),
-            owner,
+            req.name,
+            label,
+            req.owner,
             price.base,
             price.premium,
             expires
         );
-
-        // Handle token referral
-        _processTokenReferral(referralData, referralSignature, totalPrice, tokenAddress);
-
-        mints++;
     }
 
-    // ============ Renewal Functions ============
+    // ============ Renewal ============
 
     function renew(
         string calldata name,
         uint256 duration,
-        bool lifetime,
-        ReferralVerifier.ReferralData calldata referralData,
-        bytes calldata referralSignature
+        bool lifetime
     ) external payable {
-        if (lifetime) {
-            duration = LIFETIME_DURATION;
-        }
-
+        uint256 actualDuration = lifetime ? LIFETIME_DURATION : duration;
         bytes32 labelhash = keccak256(bytes(name));
-        uint256 tokenId = uint256(labelhash);
-        IPriceOracle.Price memory price = rentPrice(name, duration, lifetime);
+
+        IPriceOracle.Price memory price = rentPrice(
+            name,
+            actualDuration,
+            lifetime
+        );
         uint256 totalPrice = price.base + price.premium;
 
-        if (msg.value < totalPrice) {
-            revert InsufficientValue();
-        }
+        if (msg.value < totalPrice) revert InsufficientValue();
 
-        uint256 expires = nameWrapper.renew(tokenId, duration);
-
+        uint256 expires = nameWrapper.renew(uint256(labelhash), actualDuration);
         emit NameRenewed(name, labelhash, totalPrice, expires);
 
-        // Handle referral
-        _processReferral(referralData, referralSignature, totalPrice, address(0), false);
-
-        // Refund excess
-        if (msg.value > totalPrice) {
-            (bool success, ) = payable(msg.sender).call{value: msg.value - totalPrice}("");
-            require(success, "Refund Failed");
-        }
+        _handleRenewalReferral(labelhash, totalPrice, false);
+        _refundExcess(totalPrice);
     }
 
     function renewCard(
         string calldata name,
         uint256 duration,
-        bool lifetime,
-        ReferralVerifier.ReferralData calldata referralData,
-        bytes calldata referralSignature
+        bool lifetime
     ) external onlyBackend {
-        if (lifetime) {
-            duration = LIFETIME_DURATION;
-        }
-
+        uint256 actualDuration = lifetime ? LIFETIME_DURATION : duration;
         bytes32 labelhash = keccak256(bytes(name));
-        uint256 tokenId = uint256(labelhash);
-        IPriceOracle.Price memory price = rentPrice(name, duration, lifetime);
+
+        IPriceOracle.Price memory price = rentPrice(
+            name,
+            actualDuration,
+            lifetime
+        );
         uint256 totalPrice = price.base + price.premium;
 
-        uint256 expires = nameWrapper.renew(tokenId, duration);
-
+        uint256 expires = nameWrapper.renew(uint256(labelhash), actualDuration);
         emit NameRenewed(name, labelhash, totalPrice, expires);
 
-        // Handle referral (fiat)
-        _processReferral(referralData, referralSignature, totalPrice, address(0), true);
-
+        _handleRenewalReferral(labelhash, totalPrice, true);
         untrackedInfoFi += (totalPrice * 35) / 100;
     }
 
@@ -543,59 +436,56 @@ contract ETHRegistrarController is
         string calldata name,
         uint256 duration,
         address tokenAddress,
-        bool lifetime,
-        ReferralVerifier.ReferralData calldata referralData,
-        bytes calldata referralSignature
+        bool lifetime
     ) external {
         require(
             verifiedTokens[tokenAddress].tokenAddress != address(0),
             "Unaccepted Token"
         );
 
+        uint256 actualDuration = lifetime ? LIFETIME_DURATION : duration;
+        bytes32 labelhash = keccak256(bytes(name));
         Token memory t = verifiedTokens[tokenAddress];
 
-        if (lifetime) {
-            duration = LIFETIME_DURATION;
-        }
-
-        bytes32 labelhash = keccak256(bytes(name));
-        uint256 tokenId = uint256(labelhash);
-        IPriceOracle.Price memory price = rentPriceToken(name, duration, t.token, lifetime);
+        IPriceOracle.Price memory price = rentPriceToken(
+            name,
+            actualDuration,
+            t.token,
+            lifetime
+        );
         uint256 totalPrice = price.base + price.premium;
 
-        if (IERC20(tokenAddress).balanceOf(msg.sender) < totalPrice) {
+        if (IERC20(tokenAddress).balanceOf(msg.sender) < totalPrice)
             revert InsufficientValue();
-        }
 
-        IERC20(tokenAddress).safeTransferFrom(msg.sender, address(this), totalPrice);
+        IERC20(tokenAddress).safeTransferFrom(
+            msg.sender,
+            address(this),
+            totalPrice
+        );
 
-        uint256 expires = nameWrapper.renew(tokenId, duration);
-
+        uint256 expires = nameWrapper.renew(uint256(labelhash), actualDuration);
         emit NameRenewed(name, labelhash, totalPrice, expires);
 
-        // Handle token referral
-        _processTokenReferral(referralData, referralSignature, totalPrice, tokenAddress);
+        _handleRenewalTokenReferral(labelhash, totalPrice, tokenAddress);
     }
 
-    // ============ Internal Functions ============
+    // ============ Referral Handlers ============
 
-    function _processReferral(
+    function _handleReferral(
         ReferralVerifier.ReferralData calldata referralData,
         bytes calldata referralSignature,
         uint256 totalPrice,
-        address token,
         bool isFiat
     ) internal {
-        // Skip if no referrer
-        if (referralData.referrer == address(0)) return;
-        if (referralSignature.length == 0) return;
+        if (
+            referralData.referrer == address(0) || referralSignature.length == 0
+        ) return;
 
-        // Calculate max possible referral amount
-        uint256 maxReferralAmount = (totalPrice * MAX_REFERRAL_PCT) / 100;
+        uint256 amount = (totalPrice * MAX_REFERRAL_PCT) / 100;
 
-        if (token == address(0) && !isFiat) {
-            // Send ETH to verifier for processing
-            referralVerifier.processReferral{value: maxReferralAmount}(
+        if (!isFiat) {
+            referralVerifier.processReferral{value: amount}(
                 referralData,
                 referralSignature,
                 totalPrice,
@@ -603,7 +493,6 @@ contract ETHRegistrarController is
                 false
             );
         } else {
-            // Fiat - no ETH sent, just track
             referralVerifier.processReferral(
                 referralData,
                 referralSignature,
@@ -614,19 +503,18 @@ contract ETHRegistrarController is
         }
     }
 
-    function _processTokenReferral(
+    function _handleTokenReferral(
         ReferralVerifier.ReferralData calldata referralData,
         bytes calldata referralSignature,
         uint256 totalPrice,
         address tokenAddress
     ) internal {
-        if (referralData.referrer == address(0)) return;
-        if (referralSignature.length == 0) return;
+        if (
+            referralData.referrer == address(0) || referralSignature.length == 0
+        ) return;
 
-        uint256 maxReferralAmount = (totalPrice * MAX_REFERRAL_PCT) / 100;
-
-        // Transfer tokens to verifier first
-        IERC20(tokenAddress).safeTransfer(address(referralVerifier), maxReferralAmount);
+        uint256 amount = (totalPrice * MAX_REFERRAL_PCT) / 100;
+        IERC20(tokenAddress).safeTransfer(address(referralVerifier), amount);
 
         referralVerifier.processReferral(
             referralData,
@@ -637,6 +525,65 @@ contract ETHRegistrarController is
         );
     }
 
+    function _handleRenewalReferral(
+        bytes32 nameHash,
+        uint256 totalPrice,
+        bool isFiat
+    ) internal {
+        (, address originalReferrer, bool isValid, , ) = referralVerifier
+            .getDomainReferralInfo(nameHash);
+        if (originalReferrer == address(0) || !isValid) return;
+
+        uint256 amount = (totalPrice * MAX_REFERRAL_PCT) / 100;
+
+        if (!isFiat) {
+            referralVerifier.processRenewalReferral{value: amount}(
+                nameHash,
+                totalPrice,
+                address(0),
+                false
+            );
+        } else {
+            referralVerifier.processRenewalReferral(
+                nameHash,
+                totalPrice,
+                address(0),
+                true
+            );
+        }
+    }
+
+    function _handleRenewalTokenReferral(
+        bytes32 nameHash,
+        uint256 totalPrice,
+        address tokenAddress
+    ) internal {
+        (, address originalReferrer, bool isValid, , ) = referralVerifier
+            .getDomainReferralInfo(nameHash);
+        if (originalReferrer == address(0) || !isValid) return;
+
+        uint256 amount = (totalPrice * MAX_REFERRAL_PCT) / 100;
+        IERC20(tokenAddress).safeTransfer(address(referralVerifier), amount);
+
+        referralVerifier.processRenewalReferral(
+            nameHash,
+            totalPrice,
+            tokenAddress,
+            false
+        );
+    }
+
+    // ============ Internal Utilities ============
+
+    function _refundExcess(uint256 totalPrice) internal {
+        if (msg.value > totalPrice) {
+            (bool success, ) = payable(msg.sender).call{
+                value: msg.value - totalPrice
+            }("");
+            require(success, "Refund failed");
+        }
+    }
+
     function _updatePoints(
         string memory name,
         uint256 duration,
@@ -645,15 +592,10 @@ contract ETHRegistrarController is
     ) internal {
         if (!useAirdrop) return;
 
-        uint256 point;
         uint256 len = name.strlen();
-        
-        if (len == 2) point = 100;
-        else if (len == 3) point = 50;
-        else if (len == 4) point = 20;
-        else point = 10;
-
+        uint256 point = len == 2 ? 100 : len == 3 ? 50 : len == 4 ? 20 : 10;
         uint256 points = point * (lifetime ? 3 : duration / 31536000);
+
         airdrop.updatePoints(owner, points);
     }
 
@@ -685,8 +627,7 @@ contract ETHRegistrarController is
         bytes[] memory data
     ) internal {
         bytes32 nodehash = keccak256(abi.encodePacked(ETH_NODE, label));
-        Resolver resolver = Resolver(resolverAddress);
-        resolver.multicallWithNodeCheck(nodehash, data);
+        Resolver(resolverAddress).multicallWithNodeCheck(nodehash, data);
     }
 
     function _setReverseRecord(
@@ -702,10 +643,12 @@ contract ETHRegistrarController is
         );
     }
 
-    // ============ Withdraw Functions ============
+    // ============ Withdraw ============
 
     function withdraw() external onlyOwner {
-        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
+        (bool success, ) = payable(owner()).call{value: address(this).balance}(
+            ""
+        );
         require(success, "Transfer failed");
     }
 
@@ -723,13 +666,15 @@ contract ETHRegistrarController is
         untrackedInfoFi = 0;
     }
 
-    // ============ View Functions ============
+    // ============ View ============
 
     function getMints() external view returns (uint256) {
         return mints;
     }
 
-    function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceID
+    ) external pure returns (bool) {
         return
             interfaceID == type(IERC165).interfaceId ||
             interfaceID == type(IETHRegistrarController).interfaceId;

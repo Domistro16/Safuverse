@@ -10,20 +10,29 @@ import { Ionicons } from '@expo/vector-icons';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const TabNavigator: React.FC = () => {
-  const { colors } = useTheme();
+  const { mode, colors } = useTheme();
+
+  const activeColor = mode === 'light' ? '#111111' : colors.primary;
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: activeColor,
         tabBarInactiveTintColor: colors.textSecondary,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginBottom: 4,
+        },
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
-          paddingBottom: 8,
+          height: 65,
           paddingTop: 8,
-          height: 60,
+          borderTopWidth: 1,
+          elevation: 0,
+          shadowOpacity: 0,
         },
       }}
     >
@@ -32,15 +41,19 @@ export const TabNavigator: React.FC = () => {
         component={HomeStackNavigator}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+          ),
         }}
       />
       <Tab.Screen
         name="CoursesTab"
         component={CoursesStackNavigator}
         options={{
-          tabBarLabel: 'Courses',
-          tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
+          tabBarLabel: 'Academy',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "school" : "school-outline"} size={24} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -48,15 +61,19 @@ export const TabNavigator: React.FC = () => {
         component={DomainsStackNavigator}
         options={{
           tabBarLabel: 'Domains',
-          tabBarIcon: ({ color, size }) => <Ionicons name="globe" size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "finger-print" : "finger-print-outline"} size={24} color={color} />
+          ),
         }}
       />
       <Tab.Screen
         name="PointsTab"
         component={PointsScreen}
         options={{
-          tabBarLabel: 'Points',
-          tabBarIcon: ({ color, size }) => <Ionicons name="star" size={size} color={color} />,
+          tabBarLabel: 'Alpha',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "flash" : "flash-outline"} size={24} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -64,7 +81,9 @@ export const TabNavigator: React.FC = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>

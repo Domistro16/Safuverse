@@ -51,39 +51,31 @@ export async function POST(
             return NextResponse.json({ error: 'Not enrolled in this course' }, { status: 403 });
         }
 
-        // Mark lesson as watched if video progress is sufficient
-        if (data.videoProgressPercent && data.videoProgressPercent >= 50) {
-            await prisma.userLesson.upsert({
-                where: {
-                    userId_lessonId: {
-                        userId: auth.userId,
-                        lessonId,
-                    },
-                },
-                update: {
-                    isWatched: true,
-                    watchProgressPercent: data.videoProgressPercent,
-                    watchedAt: new Date(),
-                },
-                create: {
-                    userId: auth.userId,
-                    lessonId,
-                    isWatched: true,
-                    watchProgressPercent: data.videoProgressPercent,
-                    watchedAt: new Date(),
-                },
-            });
-        }
+        // Use progressService to update watch progress and award points
+        let watchResult = { saved: false, pointsAwarded: false, newTotalPoints: undefined as number | undefined, completed: false, txHash: undefined as string | undefined };
 
-        // Check if course is complete
-        const courseCompletion = await progressService.checkAndAwardCourseCompletion(
-            auth.userId,
-            lesson.courseId
-        );
+        if (data.videoProgressPercent && data.videoProgressPercent >= 50) {
+            watchResult = await progressService.updateLessonWatchProgress(
+                auth.userId,
+                lessonId,
+                data.videoProgressPercent
+            );
+        } else {
+            // Still check for course completion even if just tracking progress
+            const courseCompletion = await progressService.checkAndAwardCourseCompletion(
+                auth.userId,
+                lesson.courseId
+            );
+            watchResult.completed = courseCompletion.completed;
+            watchResult.txHash = courseCompletion.txHash;
+        }
 
         return NextResponse.json({
             message: 'Lesson completed',
-            courseCompleted: courseCompletion.completed,
+            pointsAwarded: watchResult.pointsAwarded,
+            newTotalPoints: watchResult.newTotalPoints,
+            courseCompleted: watchResult.completed,
+            txHash: watchResult.txHash,
         });
     } catch (error) {
         if (error instanceof z.ZodError) {

@@ -1,15 +1,12 @@
-//SPDX-License-Identifier: MIT
-pragma solidity ~0.8.17;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
 
-import "./IPriceOracle.sol";
+import {IPriceOracle} from "./IPriceOracle.sol";
+import {ReferralVerifier} from "./ReferralVerifier.sol";
 
 interface IETHRegistrarController {
-
-    struct TokenParams{
-        string token;
-        address tokenAddress;
-    }
-    struct RegisterParams {
+    // ============ Structs ============
+    struct RegisterRequest {
         string name;
         address owner;
         uint256 duration;
@@ -18,57 +15,46 @@ interface IETHRegistrarController {
         bytes[] data;
         bool reverseRecord;
         uint16 ownerControlledFuses;
+        bool lifetime;
     }
-    function rentPrice(
-        string memory,
-        uint256,
-        bool
-    ) external view returns (IPriceOracle.Price memory);
 
-    function rentPriceToken(
+    // ============ View Functions ============
+    function rentPrice(
         string memory name,
         uint256 duration,
-        string memory token,
         bool lifetime
-    ) external view returns (IPriceOracle.Price memory price);
+    ) external view returns (IPriceOracle.Price memory);
 
-    function available(string memory) external returns (bool);
+    function available(string memory name) external view returns (bool);
 
     function makeCommitment(
-        string memory,
-        address,
-        uint256,
-        bytes32,
-        address,
-        bytes[] calldata,
-        bool,
-        uint16,
-        bool
+        RegisterRequest calldata req
     ) external pure returns (bytes32);
 
-    function commit(bytes32) external;
+    function commit(bytes32 commitment) external;
+
+    // ============ Registration (requires referral signature) ============
 
     function register(
-        string memory,
-        address,
-        uint256,
-        bytes32,
-        address,
-        bytes[] calldata,
-        bool,
-        uint16,
-        bool,
-        string memory
+        RegisterRequest calldata req,
+        ReferralVerifier.ReferralData calldata referralData,
+        bytes calldata referralSignature
     ) external payable;
 
     function registerWithToken(
-        RegisterParams memory registerParams,
+        RegisterRequest calldata req,
         address tokenAddress,
-        bool lifetime,
-        string memory referree
+        ReferralVerifier.ReferralData calldata referralData,
+        bytes calldata referralSignature
     ) external;
 
-    function renew(string calldata, uint256, bool) external payable;
+    // ============ Renewal (NO referral params - auto-pays stored referrer) ============
+
+    function renew(
+        string calldata name,
+        uint256 duration,
+        bool lifetime
+    ) external payable;
 
     function renewTokens(
         string calldata name,

@@ -24,6 +24,7 @@ model User {
   enrollments   UserCourse[]
   lessonProgress UserLesson[]
   quizAttempts  QuizAttempt[]
+  notes         UserNote[]
   transactions  BlockchainTx[] // Keeping for now, though not explicitly in new prompt schema, it's useful
 }
 
@@ -68,17 +69,53 @@ model Lesson {
   title           String
   description     String?
   orderIndex      Int      // Order within course (0, 1, 2...)
-  videoStorageKey String   // S3/R2 key, e.g., "videos/course_1/lesson_1.mp4"
+  videoStorageKey String?  // Legacy field - deprecated, use videos relation
   videoDuration   Int      // Duration in seconds
   watchPoints     Int      @default(10) // Points for watching
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course         Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   quiz           Quiz?
   userProgress   UserLesson[]
+  videos         LessonVideo[] // Multiple videos for different languages
+  notes          UserNote[]
 
   @@unique([courseId, orderIndex])
+}
+
+// Lesson videos for multi-language support
+model LessonVideo {
+  id           String   @id @default(cuid())
+  lessonId     String
+  language     String   // e.g., "en", "zh", "es"
+  label        String   // Display label, e.g., "English", "中文", "Español"
+  storageKey   String   // S3/R2/Pinata CID for the video
+  duration     Int?     // Optional duration in seconds
+  orderIndex   Int      @default(0) // Order for display (primary language first)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, language]) // Only one video per language per lesson
+}
+
+
+// ============ USER NOTES ============
+
+model UserNote {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  content   String   @db.Text  // HTML content from contentEditable
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])  // One note per user per lesson
 }
 
 // ============ QUIZZES ============
@@ -126,6 +163,7 @@ model UserLesson {
   watchProgressPercent Int      @default(0)
   isWatched           Boolean   @default(false) // True when >= 50%
   watchPointsAwarded  Boolean   @default(false)
+  quizPassed          Boolean   @default(false) // True when user passed quiz (if lesson has one)
   watchedAt           DateTime?
   lastWatchedAt       DateTime?
 

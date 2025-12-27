@@ -17,6 +17,7 @@ import {
 } from '@rainbow-me/rainbowkit/wallets';
 import { ApolloClient, HttpLink, InMemoryCache, ApolloProvider } from '@apollo/client';
 import { ReactNode, useState, useEffect } from 'react';
+import NextTopLoader from 'nextjs-toploader';
 
 import '@rainbow-me/rainbowkit/styles.css';
 
@@ -50,7 +51,7 @@ const config = createConfig({
 function createApolloClient() {
     return new ApolloClient({
         link: new HttpLink({
-            uri: 'https://api.studio.thegraph.com/query/112443/safunames/version/latest',
+            uri: 'https://api.studio.thegraph.com/query/112443/safunames/v0.9.2',
         }),
         cache: new InMemoryCache(),
     });
@@ -72,6 +73,13 @@ export function Providers({ children }: { children: ReactNode }) {
 
     return (
         <QueryClientProvider client={queryClient}>
+            <NextTopLoader
+                color="#f59e0b"
+                height={3}
+                showSpinner={false}
+                speed={200}
+                shadow="0 0 10px #f59e0b, 0 0 5px #fbbf24"
+            />
             <WagmiProvider config={config}>
                 <RainbowKitProvider
                     theme={darkTheme({
@@ -90,3 +98,4 @@ export function Providers({ children }: { children: ReactNode }) {
         </QueryClientProvider>
     );
 }
+

@@ -4,7 +4,7 @@ import {
   getAddress,
   namehash,
   zeroAddress,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import {
   CANNOT_SET_RESOLVER,
   CANNOT_SET_TTL,

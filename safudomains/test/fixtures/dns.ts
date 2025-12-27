@@ -1,6 +1,6 @@
 import { SignedSet } from '@ensdomains/dnsprovejs'
 import type { Answer, Rrsig } from 'dns-packet'
-import { bytesToHex, type Address } from '../../node_modules/viem/_types'
+import { bytesToHex, type Address } from 'viem'
 
 export const hexEncodeSignedSet = ({
   rrs,
@@ -26,38 +26,38 @@ export const rrsetWithTexts = ({
   name: string
   texts: (string | { name: string; value: string })[]
 }) =>
-  ({
-    sig: {
-      name,
-      type: 'RRSIG',
-      ttl: 0,
-      class: 'IN',
-      flush: false,
-      data: {
-        typeCovered: 'TXT',
-        algorithm: 253,
-        labels: name.split('.').length,
-        originalTTL: 3600,
-        expiration,
-        inception,
-        keyTag: 1278,
-        signersName: '.',
-        signature: new Buffer([]),
-      },
+({
+  sig: {
+    name,
+    type: 'RRSIG',
+    ttl: 0,
+    class: 'IN',
+    flush: false,
+    data: {
+      typeCovered: 'TXT',
+      algorithm: 253,
+      labels: name.split('.').length,
+      originalTTL: 3600,
+      expiration,
+      inception,
+      keyTag: 1278,
+      signersName: '.',
+      signature: new Buffer([]),
     },
-    rrs: texts.map(
-      (text) =>
-        ({
-          name: typeof text === 'string' ? name : text.name,
-          type: 'TXT',
-          class: 'IN',
-          ttl: 3600,
-          data: [
-            Buffer.from(typeof text === 'string' ? text : text.value, 'ascii'),
-          ] as Buffer[],
-        } as const),
-    ),
-  } as const)
+  },
+  rrs: texts.map(
+    (text) =>
+    ({
+      name: typeof text === 'string' ? name : text.name,
+      type: 'TXT',
+      class: 'IN',
+      ttl: 3600,
+      data: [
+        Buffer.from(typeof text === 'string' ? text : text.value, 'ascii'),
+      ] as Buffer[],
+    } as const),
+  ),
+} as const)
 export const testRrset = ({
   name,
   address,
@@ -65,35 +65,35 @@ export const testRrset = ({
   name: string
   address: Address
 }) =>
-  ({
-    sig: {
-      name: 'test',
-      type: 'RRSIG',
-      ttl: 0,
-      class: 'IN',
-      flush: false,
-      data: {
-        typeCovered: 'TXT',
-        algorithm: 253,
-        labels: name.split('.').length + 1,
-        originalTTL: 3600,
-        expiration,
-        inception,
-        keyTag: 1278,
-        signersName: '.',
-        signature: new Buffer([]),
-      },
+({
+  sig: {
+    name: 'test',
+    type: 'RRSIG',
+    ttl: 0,
+    class: 'IN',
+    flush: false,
+    data: {
+      typeCovered: 'TXT',
+      algorithm: 253,
+      labels: name.split('.').length + 1,
+      originalTTL: 3600,
+      expiration,
+      inception,
+      keyTag: 1278,
+      signersName: '.',
+      signature: new Buffer([]),
     },
-    rrs: [
-      {
-        name: `_ens.${name}`,
-        type: 'TXT',
-        class: 'IN',
-        ttl: 3600,
-        data: [Buffer.from(`a=${address}`, 'ascii')] as Buffer[],
-      },
-    ],
-  } as const)
+  },
+  rrs: [
+    {
+      name: `_ens.${name}`,
+      type: 'TXT',
+      class: 'IN',
+      ttl: 3600,
+      data: [Buffer.from(`a=${address}`, 'ascii')] as Buffer[],
+    },
+  ],
+} as const)
 
 export const rootKeys = ({
   expiration,

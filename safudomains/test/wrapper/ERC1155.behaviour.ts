@@ -10,7 +10,7 @@ import {
   type Address,
   type Hash,
   type Hex,
-} from '../../node_modules/viem/_types/index.js'
+} from 'viem'
 import { shouldSupportInterfaces } from './SupportsInterface.behaviour.js'
 
 const RECEIVER_SINGLE_MAGIC_VALUE = '0xf23a6e61'

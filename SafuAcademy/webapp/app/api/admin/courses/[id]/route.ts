@@ -26,7 +26,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
                     orderBy: { orderIndex: 'asc' },
                     include: {
                         quiz: {
-                            select: { id: true, passingScore: true, passPoints: true },
+                            select: { id: true, passingScore: true, passPoints: true, questions: true },
+                        },
+                        videos: {
+                            orderBy: { orderIndex: 'asc' },
                         },
                     },
                 },

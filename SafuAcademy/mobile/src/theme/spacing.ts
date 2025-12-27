@@ -8,10 +8,11 @@ export const Spacing = {
 } as const;
 
 export const BorderRadius = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
+  sm: 8,
+  md: 12,
+  lg: 18,
+  xl: 26, // Primary card radius from SafuDomains
+  xxl: 32,
   full: 9999,
 } as const;
 

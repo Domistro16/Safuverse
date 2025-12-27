@@ -1,31 +1,102 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { CourseCard } from "../components/CourseCard";
 import { ChatWidget } from "../components/ChatWidget";
 import { useReadContract } from "wagmi";
-import { abi, Course, Deploy } from "@/lib/constants";
+import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 import { useTheme } from "@/app/providers";
 import { CustomConnect } from "@/components/connectButton";
 
-// Component to fetch and display featured courses from smart contract
+// Backend course type for featured courses API
+interface FeaturedCourse {
+  id: number;
+  title: string;
+  description: string;
+  instructor: string;
+  category: string;
+  level: string;
+  thumbnailUrl: string | null;
+  duration: string;
+  completionPoints: number;
+  minPointsToAccess: number;
+  enrollmentCost: number;
+}
+
+// Component to fetch and display featured courses with personalization
 function FeaturedCourses() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const { data: courses, isPending } = useReadContract({
+  // State for API-based featured courses
+  const [apiCourses, setApiCourses] = useState<FeaturedCourse[] | null>(null);
+  const [apiLoading, setApiLoading] = useState(true);
+  const [isPersonalized, setIsPersonalized] = useState(false);
+
+  // Fallback: contract-based courses
+  const { data: contractCourses, isPending: contractLoading } = useReadContract({
     abi: abi,
-    functionName: "getCourses",
+    functionName: "getAllCourses",
     address: Deploy,
   }) as {
-    data: Course[];
+    data: OnChainCourse[];
     isPending: boolean;
   };
 
-  const featuredCourses = courses?.slice(0, 3) ?? [];
+  // Try to fetch personalized featured courses from API
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
 
-  if (isPending) {
+        const res = await fetch('/api/courses/featured?limit=3', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.courses && data.courses.length > 0) {
+            setApiCourses(data.courses);
+            setIsPersonalized(data.personalized);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch featured courses:', err);
+      } finally {
+        setApiLoading(false);
+      }
+    };
+
+    fetchFeatured();
+  }, []);
+
+  // Use API courses if available, otherwise fall back to contract
+  const useApiData = apiCourses && apiCourses.length > 0;
+  const isLoading = useApiData ? apiLoading : (apiLoading && contractLoading);
+
+  // Convert API courses to match CourseCard format
+  const featuredCourses = useApiData
+    ? apiCourses.map(c => ({
+      id: BigInt(c.id),
+      title: c.title,
+      description: c.description,
+      instructor: c.instructor,
+      category: c.category,
+      level: c.level,
+      thumbnailUrl: c.thumbnailUrl || '',
+      duration: c.duration,
+      totalLessons: 0n,
+      minPointsToAccess: BigInt(c.minPointsToAccess),
+      enrollmentCost: BigInt(c.enrollmentCost),
+      objectives: [],
+      prerequisites: [],
+      longDescription: c.description,
+    } as OnChainCourse))
+    : (contractCourses?.slice(0, 3) ?? []);
+
+  if (isLoading) {
     return (
       <div className="grid md:grid-cols-3 gap-6 md:gap-8">
         {[1, 2, 3].map((i) => (
@@ -56,6 +127,7 @@ function FeaturedCourses() {
   );
 }
 
+
 export const Home: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
@@ -64,19 +136,19 @@ export const Home: React.FC = () => {
     {
       name: "Ada",
       role: "Web3 Designer",
-      quote: "The courses are clear, modern and not overloaded. Safu Academy helped me become job-ready fast.",
+      quote: "The courses are clear, modern and not overloaded. Safu Academy helped me become job-ready fast",
       color: "from-[#ffbdf2] to-[#cbb8ff]",
     },
     {
       name: "Leo",
       role: "Protocol Founder",
-      quote: "I onboard all new team members with Safu Academy. It saves me weeks of explaining.",
+      quote: "The content goes straight to what matters. I felt job-ready sooner than expected",
       color: "from-[#c6e7ff] to-[#ffb8cb]",
     },
     {
       name: "Sakura",
       role: "Community Lead",
-      quote: "This is the first Web3 academy that feels like it was designed in 2025.",
+      quote: "Everything feels modern and well structured. I became confident in my skills much faster",
       color: "from-[#ffd7b8] to-[#b8e2ff]",
     },
   ];
@@ -101,12 +173,12 @@ export const Home: React.FC = () => {
   ];
 
   const faqItems = [
-    { q: "What is Safu Academy?", a: "Safu Academy is an on-chain learning platform inside the SafuVerse offering modern micro-courses, agents, and EduFi-powered skill paths." },
-    { q: "Who can enroll?", a: "Anyone and everyone! Simply choose a .safu name of your choice to get started." },
-    { q: "What's the cost to mint a .safu domain?", a: "Prices vary depending on domain name length and registration period. $10 gets you started." },
-    { q: "What can be done with a .safu domain?", a: "You can enroll in any course, earn referral fees, and share in platform revenue using your .safu domain." },
-    { q: "Will there be a future airdrop?", a: "Yes. When 1 million points from Season 1 are reached. See our docs for details." },
-    { q: "Can someone take my domain after I mint it?", a: "No — once you mint a domain, it belongs to you for as long as you keep it registered." },
+    { q: "What is Safu Academy?", a: "Safu Academy is a next-generation learning platform offering interactive, skill-based courses designed for real-world application." },
+    { q: "Who is SafuAcademy for?", a: "Safu Academy is built for learners at any level who want practical skills, clear learning paths, and modern education experiences." },
+    { q: "What kind of courses does SafuAcademy offer?", a: "Safu Academy offers micro-courses and deeper learning tracks focused on building practical, job-ready skills." },
+    { q: "How is Safu Academy different from traditional learning platforms?", a: "Safu Academy focuses on interactive, skill-first learning instead of passive videos and static content." },
+    { q: "Do I need technical knowledge to use Safu Academy?", a: "No. The learning experience is designed to feel simple and familiar, without technical barriers." },
+    { q: "How do I access Safu Academy?", a: "Safu Academy is accessible through the SafuVerse ecosystem, with learning unlocked through digital identity." },
   ];
 
   const [openFAQ, setOpenFAQ] = React.useState<number | null>(0);
@@ -176,39 +248,37 @@ export const Home: React.FC = () => {
             <div className="text-left">
               <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.08)] border text-xs sm:text-sm mb-6 ${isDark ? 'bg-white/10 border-white/10 text-gray-300' : 'bg-white/50 border-black/5 text-[#444]'
                 }`}>
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
                   }`}>
                   SA
                 </span>
-                <span className="tracking-[-0.01em]">On-chain Education · Safu Academy</span>
+                <span className="tracking-[-0.01em]">Next Generation EduFi</span>
               </div>
 
               <h1 className={`text-[34px] sm:text-[42px] lg:text-[56px] xl:text-[64px] font-bold leading-[1.02] tracking-[-0.05em] ${isDark ? 'text-white' : 'text-[#050509]'
                 }`}>
-                Learn Web3
+                AI-Powered
                 <br />
-                <span className="inline-block mt-1 bg-clip-text text-transparent bg-[linear-gradient(120deg,#fffb00,#ffd700,#fff0b3)]">
-                  inside the SafuVerse.
+                <span className="inline-block mt-1 bg-clip-text text-transparent bg-[linear-gradient(120deg,#ffb000,#ffd700,#fff0b3)]">
+                  Skill-based Education.
                 </span>
               </h1>
 
               <p className={`mt-5 text-sm sm:text-base lg:text-[15px] max-w-xl leading-relaxed ${isDark ? 'text-gray-300' : 'text-[#333]'
                 }`}>
-                Bite-sized, project-based crypto lessons that move you from confused to
-                confident — with on-chain examples, Safu domains and agents you can use
-                immediately.
+                Multilingual, interactive AI learning that turns practice into real skills, and learning into earning, powered by .safu - a unique digital identity across the Web
               </p>
 
               <div className="flex flex-wrap gap-3 sm:gap-4 mt-7">
                 <Link href="/courses">
-                  <button className={`px-7 sm:px-8 py-3 rounded-full text-[13px] sm:text-[14px] font-semibold shadow-[0_20px_50px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#fffb00] text-black hover:bg-[#fff000]' : 'bg-[#111] text-white hover:bg-[#222]'
+                  <button className={`px-7 sm:px-8 py-3 rounded-full text-[13px] sm:text-[14px] font-semibold shadow-[0_20px_50px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#ffb000] text-black hover:bg-[#ffa000]' : 'bg-[#111] text-white hover:bg-[#222]'
                     }`}>
                     Start Learning
                   </button>
                 </Link>
                 <button className={`px-7 sm:px-8 py-3 rounded-full border text-[13px] sm:text-[14px] font-semibold transition flex items-center gap-2 shadow-[0_10px_30px_rgba(15,23,42,0.10)] ${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-white/50 border-black/10 text-[#111] hover:bg-white'
                   }`}>
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
                     }`}>
                     ▶
                   </span>
@@ -228,7 +298,7 @@ export const Home: React.FC = () => {
                     20,000+ Safu learners
                   </div>
                   <div className={`text-[10px] sm:text-[11px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
-                    From BNB, Plasma, Monad and Solana ecosystems
+                    From Growing, learning and earning in the SafuVerse
                   </div>
                 </div>
               </div>
@@ -240,7 +310,7 @@ export const Home: React.FC = () => {
                 }`}>
                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-[11px] mb-4 ${isDark ? 'bg-white/10 text-gray-300' : 'bg-[#f5f2ff] text-[#555]'
                   }`}>
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
                     }`}>
                     ▶
                   </span>
@@ -265,14 +335,14 @@ export const Home: React.FC = () => {
                   </div>
                   <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-[#ecebff]'
                     }`}>
-                    <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-[#fffb00] via-[#ffd700] to-[#fff0b3]" />
+                    <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-[#ffb000] via-[#ffd700] to-[#fff0b3]" />
                   </div>
                 </div>
 
                 <div className={`flex items-center justify-between text-[10px] sm:text-[11px] ${isDark ? 'text-gray-400' : 'text-[#555]'
                   }`}>
                   <div className="flex items-center gap-2">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#fffb00] text-black' : 'bg-[#111] text-white'
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
                       }`}>
                       ◎
                     </span>
@@ -287,7 +357,7 @@ export const Home: React.FC = () => {
 
               {/* Floating XP card */}
               <div className="absolute -top-4 -right-4 w-28 rounded-2xl bg-[#111] text-white text-[10px] sm:text-[11px] shadow-[0_22px_60px_rgba(15,23,42,0.55)] p-3 flex flex-col gap-1">
-                <span className="text-[9px] uppercase tracking-[0.18em] text-[#fffb00]">XP EARNED</span>
+                <span className="text-[9px] uppercase tracking-[0.18em] text-[#ffb000]">XP EARNED</span>
                 <span className="text-sm font-semibold">+320 Safu Points</span>
                 <span className="text-[9px] text-[#ccccff]">This week</span>
               </div>
@@ -318,14 +388,14 @@ export const Home: React.FC = () => {
               <div className={`inline-flex items-center gap-2 px-4 py-1 mb-5 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-xs sm:text-sm ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#555]'
                 }`}>
                 <span className="w-5 h-5 rounded-full bg-[#f4e8ff] flex items-center justify-center text-[10px]">🎓</span>
-                <span>Safu Academy · We Offer</span>
+                <span>Safu Academy · What We Offer</span>
               </div>
 
               <h2 className={`text-3xl md:text-4xl font-bold mb-3 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                Boost Your Skills
+                Build Real Skills
               </h2>
               <p className={`max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                From foundational concepts to advanced Web3 mastery, Safu Academy gives you the tools to grow and succeed.
+                From guided learning to hands-on mastery, Safu Academy helps you grow, practice, and progress with confidence.
               </p>
             </div>
 
@@ -352,9 +422,9 @@ export const Home: React.FC = () => {
             </div>
 
             <div className={`mt-12 text-center text-[11px] ${isDark ? 'text-gray-600' : 'text-[#999]'}`}>
-              Adopted by builders across
+              Built on BNB Chain.
               <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                {" "}BNB Chain · Plasma · Monad · Solana
+                On-chain experience that feels like Web2
               </span>
             </div>
           </section>
@@ -371,7 +441,8 @@ export const Home: React.FC = () => {
                 Featured Courses
               </h2>
               <p className={`max-w-2xl mx-auto mt-3 text-sm sm:text-base leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                From core skills to advanced on-chain topics, pick a path that matches where you are right now.
+                From essential skills to advanced mastery, choose a learning path that fits where you are today.
+
               </p>
             </div>
 
@@ -404,11 +475,12 @@ export const Home: React.FC = () => {
                   What Safu Learners Are Saying
                 </h2>
                 <p className={`mt-3 text-sm sm:text-base max-w-md leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                  Real learners from different chains using Safu Academy to level up.
+                  Real learners from around the world using Safu Academy to build real skills.
+
                 </p>
               </div>
               <Link href="/courses">
-                <button className={`self-start sm:self-auto px-6 py-3 rounded-full text-sm font-semibold shadow-[0_20px_55px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#fffb00] text-black hover:bg-[#fff000]' : 'bg-[#111] text-white hover:bg-[#222]'
+                <button className={`self-start sm:self-auto px-6 py-3 rounded-full text-sm font-semibold shadow-[0_20px_55px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#ffb000] text-black hover:bg-[#ffa000]' : 'bg-[#111] text-white hover:bg-[#222]'
                   }`}>
                   Start Learning Now
                 </button>
@@ -454,8 +526,7 @@ export const Home: React.FC = () => {
                 Explore Topics
               </h2>
               <p className={`mt-3 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                Discover micro-courses and deep dives across the SafuVerse ecosystem.
-              </p>
+                Discover micro-courses and deep dives designed to build real skills.              </p>
             </div>
 
             <div className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
@@ -522,38 +593,45 @@ export const Home: React.FC = () => {
         <footer className={`w-full pt-28 pb-10 text-center border-t ${isDark ? 'bg-[#0a0a0f] border-white/10' : 'bg-[#fafafa] border-black/5'
           }`}>
           <h2 className={`text-3xl md:text-4xl font-bold mb-4 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-            Boost your Learning & Knowledge
+            Level Up Your Skills & Knowledge
             <br />
-            with Safu Academy Now
-          </h2>
+            with Safu Academy Today          </h2>
 
           <Link href="/courses">
-            <button className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark ? 'bg-[#fffb00] text-black hover:bg-[#fff000]' : 'bg-[#111] text-white hover:bg-[#222]'
+            <button className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark ? 'bg-[#ffb000] text-black hover:bg-[#ffa000]' : 'bg-[#111] text-white hover:bg-[#222]'
               }`}>
               Start Learning Now
             </button>
           </Link>
 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10">
-            <button className={`px-8 py-3 rounded-full border font-medium transition text-sm ${isDark ? 'border-white/20 text-white bg-white/5 hover:bg-white/10' : 'border-black/80 text-[#111] bg-white hover:bg-[#f5f5f5]'
-              }`}>
-              Notify Me
-            </button>
+            <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer">
+              <button className={`px-8 py-3 rounded-full border font-medium transition text-sm ${isDark ? 'border-white/20 text-white bg-white/5 hover:bg-white/10' : 'border-black/80 text-[#111] bg-white hover:bg-[#f5f5f5]'
+                }`}>
+                Read Docs
+              </button>
+            </a>
 
-            <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
-              }`}>
-              ⭐ Try Demo
-            </button>
+            <a href="https://names.safuverse.com" target="_blank" rel="noopener noreferrer">
+              <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
+                }`}>
+                Mint .safu
+              </button>
+            </a>
 
-            <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
-              }`}>
-              📄 Get Template
-            </button>
+            <a href="https://safupad.app" target="_blank" rel="noopener noreferrer">
+              <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
+                }`}>
+                Try SafuPad
+              </button>
+            </a>
 
-            <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
-              }`}>
-              ⌗ Made in Framer
-            </button>
+            <a href="https://safuverse.gitbook.io/safuverse-docs/security/audits" target="_blank" rel="noopener noreferrer">
+              <button className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark ? 'bg-white/5 border-white/10 text-white hover:bg-white/10' : 'bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]'
+                }`}>
+                Audit Report
+              </button>
+            </a>
           </div>
 
           <p className={`mt-12 text-[11px] tracking-[0.18em] uppercase ${isDark ? 'text-gray-600' : 'text-[#777]'}`}>

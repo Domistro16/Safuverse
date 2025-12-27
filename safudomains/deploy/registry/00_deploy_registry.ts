@@ -1,5 +1,5 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
-import { zeroAddress, zeroHash } from '../../node_modules/viem/_types'
+import { zeroAddress, zeroHash } from 'viem'
 
 const func: DeployFunction = async function (hre) {
   const { deployments, network, viem } = hre

@@ -71,6 +71,7 @@ const faqItems = [
 export default function Home() {
   const router = useRouter()
   const [theme, setTheme] = useState('light')
+  const isDark = theme === 'dark'
   const [available, setAvailable] = useState('')
   const [search, setSearch] = useState('')
   const [recents, setRecents] = useState<string[]>([])
@@ -103,26 +104,34 @@ export default function Home() {
   useEffect(() => {
     const initial = getPreferredTheme()
     setTheme(initial)
-  }, [])
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const isDark = theme === 'dark'
-    document.body.classList.toggle('dark-mode', isDark)
-  }, [theme])
+    // Apply dark mode class based on initial theme
+    document.body.classList.toggle('dark-mode', initial === 'dark')
 
-  useEffect(() => {
-    const stored = typeof window !== 'undefined' ? window.localStorage.getItem(THEME_KEY) : null
-    if (stored || !window.matchMedia) return
+    // Listen for body class changes (when nav toggles dark mode)
+    const observer = new MutationObserver(() => {
+      const isDarkMode = document.body.classList.contains('dark-mode')
+      setTheme(isDarkMode ? 'dark' : 'light')
+    })
 
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = (event: MediaQueryListEvent) => {
-      if (!window.localStorage.getItem(THEME_KEY)) {
-        setTheme(event.matches ? 'dark' : 'light')
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+
+    // Media query listener for system preference
+    if (window.matchMedia) {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      const handler = (event: MediaQueryListEvent) => {
+        if (!window.localStorage.getItem(THEME_KEY)) {
+          setTheme(event.matches ? 'dark' : 'light')
+        }
+      }
+      mq.addEventListener('change', handler)
+      return () => {
+        mq.removeEventListener('change', handler)
+        observer.disconnect()
       }
     }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+
+    return () => observer.disconnect()
   }, [])
 
   const [showBox, setShowBox] = useState(false)
@@ -240,7 +249,7 @@ export default function Home() {
 
           <div className="hero-pill">
             <span className="hero-pill-dot" />
-            <span style={{ color: 'white', fontWeight: 500 }}>Live on BSC</span>
+            <span style={{ color: isDark ? '#fff' : '#111', fontWeight: 500 }}>Live on BSC</span>
           </div>
 
           <h1>
@@ -368,30 +377,30 @@ export default function Home() {
       <section className="features">
         <div className="feature-card">
           <div className="feature-icon">🪪</div>
-          <h3 style={{ fontSize: '18px', color: '#111', fontWeight: 600, marginTop: '22px' }}>
+          <h3 style={{ fontSize: '18px', color: isDark ? '#f8f8f8' : '#111', fontWeight: 600, marginTop: '22px' }}>
             Web3 Identity
           </h3>
-          <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.55, marginTop: '10px' }}>
+          <p style={{ fontSize: '14px', color: isDark ? '#ccc' : '#555', lineHeight: 1.55, marginTop: '10px' }}>
             Your .safu name becomes your universal on-chain username across the safuverse ecosystem.
           </p>
         </div>
 
         <div className="feature-card">
           <div className="feature-icon">🎓</div>
-          <h3 style={{ fontSize: '18px', color: '#111', fontWeight: 600, marginTop: '22px' }}>
+          <h3 style={{ fontSize: '18px', color: isDark ? '#f8f8f8' : '#111', fontWeight: 600, marginTop: '22px' }}>
             Academy Access
           </h3>
-          <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.55, marginTop: '10px' }}>
+          <p style={{ fontSize: '14px', color: isDark ? '#ccc' : '#555', lineHeight: 1.55, marginTop: '10px' }}>
             Use your domain to access courses, AI tutors, and learning tools inside the safuverse Academy.
           </p>
         </div>
 
         <div className="feature-card">
           <div className="feature-icon">💰</div>
-          <h3 style={{ fontSize: '18px', color: '#111', fontWeight: 600, marginTop: '22px' }}>
+          <h3 style={{ fontSize: '18px', color: isDark ? '#f8f8f8' : '#111', fontWeight: 600, marginTop: '22px' }}>
             Referral Rewards
           </h3>
-          <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.55, marginTop: '10px' }}>
+          <p style={{ fontSize: '14px', color: isDark ? '#ccc' : '#555', lineHeight: 1.55, marginTop: '10px' }}>
             Earn rewards when others register domains using your referral link.
           </p>
         </div>
@@ -412,7 +421,7 @@ export default function Home() {
               Own your identity, receive payments easily, and unlock exclusive features across the safuverse platforms.
             </p>
 
-            <div style={{ marginTop: '22px', fontSize: '14px', color: '#222' }}>
+            <div style={{ marginTop: '22px', fontSize: '14px', color: isDark ? '#ddd' : '#222' }}>
               <p><strong>Network:</strong> BSC</p>
               <p><strong>Extension:</strong> .safu</p>
               <p><strong>Features:</strong> Lifetime registration available</p>

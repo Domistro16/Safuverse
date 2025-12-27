@@ -4,7 +4,7 @@ import {
   labelhash as labelhashBytes32,
   stringToBytes,
   type ByteArray,
-} from '../../node_modules/viem/_types'
+} from 'viem'
 
 export function packetToBytes(packet: string): ByteArray {
   // strip leading and trailing `.`

@@ -1,6 +1,6 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers.js'
 import { expect } from 'chai'
-import { zeroAddress } from '../../../node_modules/viem/_types/index.js'
+import { zeroAddress } from '../viem'
 import { DAY } from '../../fixtures/constants.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
 import {
@@ -109,9 +109,9 @@ export const renewTests = () => {
       // fuses remain the same
       expect(fusesAfter).toEqual(
         CANNOT_UNWRAP |
-          CANNOT_SET_RESOLVER |
-          IS_DOT_ETH |
-          PARENT_CANNOT_CONTROL,
+        CANNOT_SET_RESOLVER |
+        IS_DOT_ETH |
+        PARENT_CANNOT_CONTROL,
       )
       // still expired
       expect(expiryAfter).toBeLessThanOrEqual(timestamp + GRACE_PERIOD)

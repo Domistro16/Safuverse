@@ -6,7 +6,7 @@ import {
   labelhash,
   namehash,
   zeroAddress,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { DAY } from '../../fixtures/constants.js'
 import { dnsEncodeName } from '../../fixtures/dnsEncodeName.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'
@@ -246,9 +246,9 @@ export const setSubnodeOwnerTests = () =>
           sublabel,
           accounts[0].address,
           CANNOT_UNWRAP |
-            PARENT_CANNOT_CONTROL |
-            CANNOT_SET_RESOLVER |
-            IS_DOT_ETH,
+          PARENT_CANNOT_CONTROL |
+          CANNOT_SET_RESOLVER |
+          IS_DOT_ETH,
           MAX_EXPIRY,
         ])
         .toBeRevertedWithCustomError('OperationProhibited')

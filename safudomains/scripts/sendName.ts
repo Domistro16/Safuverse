@@ -1,6 +1,6 @@
 import hre from 'hardhat'
-import { namehash } from '../node_modules/viem/_types/ens'
-import { normalize } from '../node_modules/viem/_types/ens'
+import { namehash } from 'viem/ens'
+import { normalize } from 'viem/ens'
 async function main() {
   const { viem } = hre
   const { deployer } = await hre.viem.getNamedClients()

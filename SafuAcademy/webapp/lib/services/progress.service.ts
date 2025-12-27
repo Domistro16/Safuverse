@@ -226,4 +226,64 @@ export class ProgressService {
     async checkAndAwardCourseCompletion(userId: string, courseId: number): Promise<{ completed: boolean; txHash?: string }> {
         return this.checkAndCompleteCourse(userId, courseId);
     }
+
+    /**
+     * Retry syncing a completed course to blockchain.
+     * Use this for courses that were marked complete in DB but failed to sync on-chain.
+     */
+    async retrySyncCompletion(userId: string, courseId: number): Promise<{
+        success: boolean;
+        txHash?: string;
+        error?: string;
+        alreadySynced?: boolean;
+    }> {
+        const userCourse = await this.prisma.userCourse.findUnique({
+            where: { userId_courseId: { userId, courseId } }
+        });
+
+        if (!userCourse) {
+            return { success: false, error: 'Not enrolled in this course' };
+        }
+
+        if (!userCourse.isCompleted) {
+            return { success: false, error: 'Course is not completed yet' };
+        }
+
+        if (userCourse.onChainCompletionSynced) {
+            return {
+                success: true,
+                alreadySynced: true,
+                txHash: userCourse.completionTxHash ?? undefined
+            };
+        }
+
+        // Get user for wallet address and points
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+
+        // Attempt to sync to blockchain
+        const txResult = await this.relayerService.completeCourse(
+            userId,
+            user.walletAddress,
+            courseId,
+            user.totalPoints
+        );
+
+        if (txResult.success && txResult.txHash) {
+            await this.prisma.userCourse.update({
+                where: { userId_courseId: { userId, courseId } },
+                data: {
+                    onChainCompletionSynced: true,
+                    completionTxHash: txResult.txHash
+                }
+            });
+            console.log(`Retry sync successful: Course ${courseId} for user ${userId}, txHash: ${txResult.txHash}`);
+            return { success: true, txHash: txResult.txHash };
+        }
+
+        return { success: false, error: txResult.error || 'Blockchain sync failed' };
+    }
 }
+

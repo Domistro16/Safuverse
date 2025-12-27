@@ -8,12 +8,12 @@ import {
   keccak256,
   toBytes,
   encodeFunctionData,
-} from '../node_modules/viem/_types'
+} from 'viem'
 import crypto from 'crypto'
-import { createPublicClient, http } from '../node_modules/viem/_types'
-import { bscTestnet, plasma } from '../node_modules/viem/_types/chains'
+import { createPublicClient, http } from 'viem'
+import { bscTestnet, plasma } from 'viem/chains'
 import ETHRegistrarController from '../artifacts/contracts/ethregistrar/ETHRegistrarController.sol/ETHRegistrarController.json'
-import { normalize } from '../node_modules/viem/_types/ens'
+import { normalize } from 'viem/ens'
 
 async function main() {
   const { viem } = hre

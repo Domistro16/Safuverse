@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getPointsConfig } from '../points';
+import { RelayerService } from './relayer.service';
+import { ProgressService } from './progress.service';
 
 interface QuizQuestion {
     id?: string;
@@ -10,9 +12,13 @@ interface QuizQuestion {
 
 export class QuizService {
     private prisma: PrismaClient;
+    private relayerService: RelayerService;
+    private progressService: ProgressService;
 
-    constructor(prisma: PrismaClient) {
+    constructor(prisma: PrismaClient, relayerService: RelayerService) {
         this.prisma = prisma;
+        this.relayerService = relayerService;
+        this.progressService = new ProgressService(prisma, relayerService);
     }
 
     async getQuizByLessonId(lessonId: string) {
@@ -48,6 +54,7 @@ export class QuizService {
         quizId: string;
         lessonId: string;
         passingScore: number;
+        passPoints: number;
         questions: Array<{
             question: string;
             options: string[];
@@ -63,6 +70,7 @@ export class QuizService {
             quizId: quiz.id,
             lessonId: quiz.lessonId,
             passingScore: quiz.passingScore,
+            passPoints: quiz.passPoints,
             questions: questions.map(q => ({
                 question: q.question,
                 options: q.options,
@@ -138,6 +146,15 @@ export class QuizService {
             },
         });
 
+        // Check if user already passed this quiz BEFORE creating new attempt
+        const hadPreviousPass = await this.prisma.quizAttempt.findFirst({
+            where: {
+                userId,
+                quizId: quizWithLesson.id,
+                isPassed: true,
+            },
+        });
+
         // Record the attempt
         await this.prisma.quizAttempt.create({
             data: {
@@ -155,19 +172,21 @@ export class QuizService {
         let pointsAwarded = 0;
 
         if (passed) {
-            // Check if user already passed this quiz before
-            const previousPass = await this.prisma.quizAttempt.findFirst({
+            // Mark the lesson's quiz as passed
+            await this.prisma.userLesson.upsert({
                 where: {
-                    userId,
-                    quizId: quizWithLesson.id,
-                    isPassed: true,
-                    id: { not: undefined }, // exclude the one we just created
+                    userId_lessonId: { userId, lessonId },
                 },
-                orderBy: { createdAt: 'asc' },
+                update: { quizPassed: true },
+                create: {
+                    userId,
+                    lessonId,
+                    quizPassed: true,
+                },
             });
 
-            // Only award points on first pass
-            if (!previousPass) {
+            // Only award points on first pass (hadPreviousPass is checked BEFORE creating new attempt)
+            if (!hadPreviousPass) {
                 // Award quiz points based on passPoints
                 pointsAwarded = quizWithLesson.passPoints;
 
@@ -176,6 +195,13 @@ export class QuizService {
                     where: { id: userId },
                     data: { totalPoints: { increment: pointsAwarded } },
                 });
+            }
+
+            // Recalculate progress and check for course completion
+            // ProgressService.recalculateProgress will trigger checkAndCompleteCourse if 100%
+            const progress = await this.progressService.recalculateProgress(userId, quizWithLesson.lesson!.courseId);
+            if (progress === 100) {
+                await this.progressService.checkAndCompleteCourse(userId, quizWithLesson.lesson!.courseId);
             }
         }
 

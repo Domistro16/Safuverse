@@ -5,7 +5,7 @@ import {
   getAddress,
   namehash,
   zeroAddress,
-} from '../../../node_modules/viem/_types/index.js'
+} from '../viem'
 import { DAY } from '../../fixtures/constants.js'
 import { dnsEncodeName } from '../../fixtures/dnsEncodeName.js'
 import { toLabelId, toNameId } from '../../fixtures/utils.js'

@@ -15,9 +15,9 @@ export const config = {
     // Blockchain
     rpcUrl: process.env.RPC_URL || 'https://bsc-dataseed.binance.org/',
     chainId: parseInt(process.env.CHAIN_ID || '56', 10),
-    level3CourseAddress: process.env.LEVEL3_COURSE_ADDRESS!,
-    relayerPrivateKey: process.env.RELAYER_PRIVATE_KEY!,
-    ownerPrivateKey: process.env.OWNER_PRIVATE_KEY!, // For Admin course management
+    level3CourseAddress: process.env.LEVEL3_COURSE_ADDRESS || '',
+    relayerPrivateKey: process.env.RELAYER_PRIVATE_KEY,
+    ownerPrivateKey: process.env.OWNER_PRIVATE_KEY, // For Admin course management
 
     // S3/R2 Storage
     s3Region: process.env.S3_REGION || 'auto',

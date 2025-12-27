@@ -8,7 +8,7 @@ import {
   stringToHex,
   zeroAddress,
   zeroHash,
-} from '../../node_modules/viem/_types'
+} from 'viem'
 
 const getAccounts = async () => {
   const [ownerClient, registrantClient, otherClient] =

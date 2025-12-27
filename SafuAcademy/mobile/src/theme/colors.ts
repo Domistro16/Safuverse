@@ -1,35 +1,37 @@
 export const Colors = {
   light: {
-    primary: '#fffb00',
-    primaryDark: '#e6e200',
-    primaryLight: '#ffff33',
-    background: '#ffffff',
-    backgroundSecondary: '#f8f9fa',
-    card: '#ffffff',
-    text: '#1a1a1a',
-    textSecondary: '#6c757d',
-    border: '#e9ecef',
-    error: '#dc3545',
-    success: '#10B981',
+    primary: '#111111', // Black primary for SafuDomains style
+    primaryDark: '#000000',
+    primaryLight: '#333333',
+    background: '#F8F8F7', // Off-white/beige background from SafuDomains
+    backgroundSecondary: '#FFFFFF',
+    card: 'rgba(255, 255, 255, 0.92)', // Glass-like card
+    text: '#111111',
+    textSecondary: '#666666',
+    border: 'rgba(0, 0, 0, 0.06)',
+    error: '#EF4444',
+    success: '#14D46B',
     warning: '#F59E0B',
     info: '#3B82F6',
-    shadow: 'rgba(0, 0, 0, 0.1)',
+    shadow: 'rgba(0, 0, 0, 0.08)',
+    accent: '#F4F4F4',
   },
   dark: {
-    primary: '#fffb00',
-    primaryDark: '#e6e200',
-    primaryLight: '#ffff33',
-    background: '#0a0a0f',
-    backgroundSecondary: '#1a1a24',
-    card: '#1e1e2e',
-    text: '#ffffff',
-    textSecondary: '#a0a0b0',
-    border: '#2a2a3a',
-    error: '#ff5252',
+    primary: '#FFFB00', // Yellow accent for SafuAcademy dark style
+    primaryDark: '#E6E200',
+    primaryLight: '#FFFF33',
+    background: '#040409', // Deeper dark for Academy
+    backgroundSecondary: '#0A0A0F',
+    card: '#12121A', // Elevated dark card
+    text: '#FFFFFF',
+    textSecondary: '#A0A0B0',
+    border: 'rgba(255, 255, 255, 0.12)',
+    error: '#FF5252',
     success: '#10B981',
     warning: '#F59E0B',
     info: '#3B82F6',
-    shadow: 'rgba(0, 0, 0, 0.3)',
+    shadow: 'rgba(0, 0, 0, 0.4)',
+    accent: '#1E1E2E',
   },
 } as const;
 
