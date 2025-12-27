@@ -128,7 +128,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <WagmiProvider config={config}>
             <RainbowKitProvider
               theme={darkTheme({
-                accentColor: "#fffb00",
+                accentColor: "#ffb000",
                 accentColorForeground: "black",
                 borderRadius: "large",
                 fontStack: "system",

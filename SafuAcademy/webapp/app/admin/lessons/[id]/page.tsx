@@ -523,7 +523,23 @@ export default function EditLessonPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="block text-gray-400">Options (select correct answer)</label>
+                                <div className="flex justify-between items-center">
+                                    <label className="block text-gray-400">Options (select correct answer)</label>
+                                    <button
+                                        onClick={() => {
+                                            if (!quiz) return;
+                                            const newQuestions = [...quiz.questions];
+                                            newQuestions[qIndex] = {
+                                                ...q,
+                                                options: [...q.options, `Option ${q.options.length + 1}`]
+                                            };
+                                            setQuiz({ ...quiz, questions: newQuestions });
+                                        }}
+                                        className="px-2 py-1 bg-gray-600 hover:bg-gray-500 text-gray-300 rounded text-xs"
+                                    >
+                                        + Add Option
+                                    </button>
+                                </div>
                                 {q.options.map((opt, oIndex) => (
                                     <div key={oIndex} className="flex items-center gap-2">
                                         <input
@@ -540,6 +556,23 @@ export default function EditLessonPage() {
                                             placeholder={`Option ${oIndex + 1}`}
                                             className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                                         />
+                                        {q.options.length > 2 && (
+                                            <button
+                                                onClick={() => {
+                                                    if (!quiz) return;
+                                                    const newQuestions = [...quiz.questions];
+                                                    const newOptions = q.options.filter((_, i) => i !== oIndex);
+                                                    let newCorrectIndex = q.correctIndex;
+                                                    if (oIndex < q.correctIndex) newCorrectIndex--;
+                                                    else if (oIndex === q.correctIndex) newCorrectIndex = 0;
+                                                    newQuestions[qIndex] = { ...q, options: newOptions, correctIndex: newCorrectIndex };
+                                                    setQuiz({ ...quiz, questions: newQuestions });
+                                                }}
+                                                className="px-2 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded transition-colors"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>

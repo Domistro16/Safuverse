@@ -4,7 +4,7 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Safu Academy - Web3 Learning Platform",
-  description: "Learn Web3 development, blockchain, and cryptocurrency with Safu Academy",
+  description: "AI-Powered development, blockchain, and cryptocurrency with Safu Academy",
 };
 
 export default function RootLayout({

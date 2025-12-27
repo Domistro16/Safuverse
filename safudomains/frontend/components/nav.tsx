@@ -6,8 +6,8 @@ import { useReadContract } from 'wagmi'
 import { IdentificationIcon } from '@heroicons/react/outline'
 import { CustomConnect } from '@/components/connectButton'
 import { constants } from '../constant'
-import { motion } from 'framer-motion'
-import { BookOpen, X, Menu } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { BookOpen, X, Menu, Search } from 'lucide-react'
 
 const THEME_KEY = 'safudomains-theme'
 
@@ -48,18 +48,27 @@ export default function Nav() {
     args: [search],
   })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
 
   const [showBox, setShowBox] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const mobileInputRef = useRef<HTMLInputElement | null>(null)
   const boxRef = useRef<HTMLDivElement | null>(null)
+  const mobileBoxRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const stored = window.localStorage.getItem(THEME_KEY)
+    let initialTheme = 'light'
+
     if (stored === 'light' || stored === 'dark') {
-      setTheme(stored)
+      initialTheme = stored
     } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark')
+      initialTheme = 'dark'
     }
+
+    setTheme(initialTheme)
+    // Apply the body class immediately
+    document.body.classList.toggle('dark-mode', initialTheme === 'dark')
   }, [])
 
   useEffect(() => {
@@ -86,6 +95,16 @@ export default function Nav() {
         boxRef.current &&
         !inputRef.current.contains(event.target as Node) &&
         !boxRef.current.contains(event.target as Node)
+      ) {
+        setShowBox(false)
+      }
+      // Handle mobile search box
+      if (
+        showBox &&
+        mobileInputRef.current &&
+        mobileBoxRef.current &&
+        !mobileInputRef.current.contains(event.target as Node) &&
+        !mobileBoxRef.current.contains(event.target as Node)
       ) {
         setShowBox(false)
       }
@@ -121,8 +140,12 @@ export default function Nav() {
   const route = () => {
     if (available == 'Available') {
       router.push(`/register/${search}`)
+      setMobileSearchOpen(false)
+      setMobileMenuOpen(false)
     } else if (available == 'Registered') {
       router.push(`/resolve/${search}`)
+      setMobileSearchOpen(false)
+      setMobileMenuOpen(false)
     }
   }
 
@@ -134,6 +157,12 @@ export default function Nav() {
   }
 
   const isDark = theme === 'dark'
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false)
+    setMobileSearchOpen(false)
+  }, [pathname])
 
   return (
     <motion.nav
@@ -162,30 +191,31 @@ export default function Nav() {
         boxShadow: isScrolled ? '0 10px 40px rgba(0,0,0,0.1)' : 'none',
       }}
     >
-      <div className="flex justify-between items-center h-[70px] w-full max-w-[1400px] mx-auto px-4 md:px-8">
-        <div onClick={() => router.push('/')} className="flex items-center gap-1.5 cursor-pointer">
+      <div className="flex justify-between items-center h-[60px] sm:h-[70px] w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-8">
+        {/* Logo */}
+        <div onClick={() => router.push('/')} className="flex items-center gap-1.5 cursor-pointer flex-shrink-0">
           <img
             src="/safuverse.png"
-            className="h-10 hidden lg:block"
+            className="h-8 sm:h-10 hidden sm:block"
             alt="safuverse"
           />
           <img
             src="/small.png"
-            className="h-12 lg:hidden block"
+            className="h-10 sm:hidden block"
             alt="safuverse"
           />
         </div>
 
-        {/* Search Bar - Hidden on Homepage */}
+        {/* Search Bar - Desktop/Tablet (Hidden on Homepage & Mobile) */}
         <div
-          className={`ml-5 relative ${pathname == '/' ? 'hidden' : 'block'}`}
+          className={`ml-3 sm:ml-5 relative flex-1 max-w-[400px] ${pathname == '/' ? 'hidden' : 'hidden sm:block'}`}
         >
           <input
             ref={inputRef}
             type="text"
             placeholder="Search for a name"
             onChange={handleChange}
-            className="w-60 md:w-70 lg:w-96 px-6 py-2 rounded-full text-[15px] hidden md:flex transition-all"
+            className="w-full px-4 sm:px-6 py-2 rounded-full text-[14px] sm:text-[15px] transition-all"
             style={{
               background: isDark ? 'rgba(255,255,255,0.07)' : '#fff',
               border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)',
@@ -197,7 +227,7 @@ export default function Nav() {
           {/* Search Results Popup */}
           <div
             ref={boxRef}
-            className={`absolute left-1/2 transform -translate-x-1/2 mt-2 w-60 md:w-70 lg:w-96 rounded-2xl shadow-lg text-left z-10 origin-top
+            className={`absolute left-0 right-0 mt-2 rounded-2xl shadow-lg text-left z-10 origin-top
               transition-transform duration-300 ease-out
               overflow-hidden ${showBox ? 'scale-y-100' : 'scale-y-0'}`}
             style={{
@@ -207,15 +237,15 @@ export default function Nav() {
           >
             <ul className="divide-y" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}>
               <li
-                className="px-6 py-3 cursor-pointer flex items-center justify-between transition-all hover:opacity-80"
+                className="px-4 sm:px-6 py-3 cursor-pointer flex items-center justify-between transition-all hover:opacity-80"
                 onClick={route}
               >
-                <div className="text-[15px] font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
+                <div className="text-[14px] sm:text-[15px] font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
                   {search != '' ? search + '.safu' : ''}
                 </div>
                 {available != '' && search != '' && (
                   <div
-                    className="text-[11px] px-3 py-1 rounded-full"
+                    className="text-[10px] sm:text-[11px] px-2 sm:px-3 py-1 rounded-full"
                     style={{
                       background: available === 'Available' ? '#14d46b' : available === 'Registered' ? '#f59e0b' : '#888',
                       color: '#fff',
@@ -229,22 +259,22 @@ export default function Nav() {
           </div>
         </div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6">
+        {/* Desktop Navigation - Hidden on smaller screens */}
+        <div className="hidden lg:flex items-center gap-4 xl:gap-6 flex-shrink-0">
           <div
-            className="flex items-center gap-1 cursor-pointer font-semibold transition-all hover:opacity-70"
+            className="flex items-center gap-1 cursor-pointer font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
             style={{ color: isDark ? '#f5f5f5' : '#111' }}
             onClick={() => router.push(`/mynames`)}
           >
-            <IdentificationIcon className="w-5 h-5 flex-shrink-0" />
-            <span>My Names</span>
+            <IdentificationIcon className="w-4 h-4 xl:w-5 xl:h-5 flex-shrink-0" />
+            <span className="whitespace-nowrap">My Names</span>
           </div>
 
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="font-semibold transition-all hover:opacity-70"
+              className="font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
               style={{ color: isDark ? '#f5f5f5' : '#111' }}
               target="_blank"
               rel="noopener noreferrer"
@@ -255,22 +285,22 @@ export default function Nav() {
 
           <a
             href="https://academy.safuverse.com/courses/all"
-            className="flex items-center font-semibold transition-all hover:opacity-70"
+            className="flex items-center font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
             style={{ color: isDark ? '#f5f5f5' : '#111' }}
             target="_blank"
             rel="noopener noreferrer"
           >
             <BookOpen className="w-4 h-4 mr-1" />
-            Academy
+            <span className="whitespace-nowrap">Academy</span>
           </a>
 
           <button
-            className="dark-toggle-btn"
+            className="dark-toggle-btn flex-shrink-0"
             type="button"
             onClick={toggleTheme}
             style={{
-              width: '40px',
-              height: '40px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               background: isDark ? '#222' : '#eee',
               border: 'none',
@@ -278,7 +308,7 @@ export default function Nav() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '16px',
+              fontSize: '14px',
             }}
           >
             {isDark ? '☀️' : '🌙'}
@@ -287,8 +317,71 @@ export default function Nav() {
           <CustomConnect />
         </div>
 
-        {/* Mobile Menu Button */}
-        <div className="md:hidden flex items-center gap-3">
+        {/* Tablet Navigation (md to lg) */}
+        <div className="hidden sm:flex lg:hidden items-center gap-3 flex-shrink-0">
+          <button
+            className="dark-toggle-btn"
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#eee',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+          <CustomConnect />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#f4f4f4',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {mobileMenuOpen ? (
+              <X size={20} style={{ color: isDark ? '#fff' : '#111' }} />
+            ) : (
+              <Menu size={20} style={{ color: isDark ? '#fff' : '#111' }} />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Navigation (< sm) */}
+        <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
+          {/* Mobile Search Button - Only show on non-homepage */}
+          {pathname !== '/' && (
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: isDark ? '#222' : '#f4f4f4',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Search size={18} style={{ color: isDark ? '#fff' : '#111' }} />
+            </button>
+          )}
           <button
             className="dark-toggle-btn"
             type="button"
@@ -311,8 +404,8 @@ export default function Nav() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{
-              width: '40px',
-              height: '40px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               background: isDark ? '#222' : '#f4f4f4',
               border: 'none',
@@ -323,71 +416,202 @@ export default function Nav() {
             }}
           >
             {mobileMenuOpen ? (
-              <X size={20} style={{ color: isDark ? '#fff' : '#111' }} />
+              <X size={18} style={{ color: isDark ? '#fff' : '#111' }} />
             ) : (
-              <Menu size={20} style={{ color: isDark ? '#fff' : '#111' }} />
+              <Menu size={18} style={{ color: isDark ? '#fff' : '#111' }} />
             )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="md:hidden py-4"
-          style={{
-            background: isDark ? 'rgba(10,10,10,0.98)' : 'rgba(255,255,255,0.98)',
-            borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
-          }}
-        >
-          <div className="flex flex-col items-center space-y-4 px-4">
-            <div
-              className="flex items-center gap-2 cursor-pointer font-semibold"
-              style={{ color: isDark ? '#f5f5f5' : '#111' }}
-              onClick={() => {
-                router.push(`/mynames`)
-                setMobileMenuOpen(false)
-              }}
-            >
-              <IdentificationIcon className="w-5 h-5 flex-shrink-0" />
-              <span>My Names</span>
+      {/* Mobile Search Bar */}
+      <AnimatePresence>
+        {mobileSearchOpen && pathname !== '/' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="sm:hidden"
+            style={{
+              position: 'relative',
+              width: '100%',
+              padding: '0 12px 12px 12px',
+              background: isDark ? 'rgba(10,10,10,0.98)' : 'rgba(255,255,255,0.98)',
+              borderTop: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.03)',
+            }}
+          >
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                ref={mobileInputRef}
+                type="text"
+                placeholder="Search for a name"
+                onChange={handleChange}
+                value={search}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  fontSize: '15px',
+                  background: isDark ? 'rgba(255,255,255,0.08)' : '#f5f5f5',
+                  border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.06)',
+                  color: isDark ? '#fff' : '#111',
+                  outline: 'none',
+                }}
+              />
+              {/* Mobile Search Results */}
+              {showBox && search && (
+                <div
+                  ref={mobileBoxRef}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: '100%',
+                    marginTop: '8px',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    zIndex: 1000,
+                    background: isDark ? 'rgba(25,25,25,0.98)' : '#fff',
+                    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <div
+                    onClick={route}
+                    style={{
+                      padding: '14px 16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span style={{ fontSize: '15px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
+                      {search}.safu
+                    </span>
+                    {available && (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          padding: '4px 10px',
+                          borderRadius: '20px',
+                          background: available === 'Available' ? '#14d46b' : available === 'Registered' ? '#f59e0b' : '#888',
+                          color: '#fff',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {available}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            {navLinks.map((link) => (
+      {/* Mobile/Tablet Menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden"
+            style={{
+              width: '100%',
+              padding: '20px 16px',
+              background: isDark ? 'rgba(10,10,10,0.98)' : 'rgba(255,255,255,0.98)',
+              borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+              <div
+                onClick={() => {
+                  router.push(`/mynames`)
+                  setMobileMenuOpen(false)
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  color: isDark ? '#f5f5f5' : '#111',
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  width: '100%',
+                  maxWidth: '280px',
+                  justifyContent: 'center',
+                }}
+              >
+                <IdentificationIcon style={{ width: '20px', height: '20px' }} />
+                <span>My Names</span>
+              </div>
+
+              {navLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: isDark ? '#f5f5f5' : '#111',
+                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                    width: '100%',
+                    maxWidth: '280px',
+                    justifyContent: 'center',
+                    textDecoration: 'none',
+                  }}
+                >
+                  {link.label}
+                </a>
+              ))}
+
               <a
-                key={link.label}
-                href={link.href}
-                className="font-semibold"
-                style={{ color: isDark ? '#f5f5f5' : '#111' }}
+                href="https://academy.safuverse.com/courses/all"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  color: isDark ? '#f5f5f5' : '#111',
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  width: '100%',
+                  maxWidth: '280px',
+                  justifyContent: 'center',
+                  textDecoration: 'none',
+                }}
               >
-                {link.label}
+                <BookOpen style={{ width: '16px', height: '16px' }} />
+                Academy
               </a>
-            ))}
 
-            <a
-              href="https://academy.safuverse.com/courses/all"
-              className="flex items-center font-semibold"
-              style={{ color: isDark ? '#f5f5f5' : '#111' }}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Academy
-            </a>
-
-            <div className="pt-2">
-              <CustomConnect />
+              {/* Show Connect button only on mobile */}
+              <div className="sm:hidden" style={{ paddingTop: '8px', width: '100%', maxWidth: '280px' }}>
+                <CustomConnect />
+              </div>
             </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.nav>
   )
 }

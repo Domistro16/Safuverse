@@ -24,6 +24,7 @@ model User {
   enrollments   UserCourse[]
   lessonProgress UserLesson[]
   quizAttempts  QuizAttempt[]
+  notes         UserNote[]
   transactions  BlockchainTx[] // Keeping for now, though not explicitly in new prompt schema, it's useful
 }
 
@@ -78,6 +79,7 @@ model Lesson {
   quiz           Quiz?
   userProgress   UserLesson[]
   videos         LessonVideo[] // Multiple videos for different languages
+  notes          UserNote[]
 
   @@unique([courseId, orderIndex])
 }
@@ -97,6 +99,23 @@ model LessonVideo {
   lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([lessonId, language]) // Only one video per language per lesson
+}
+
+
+// ============ USER NOTES ============
+
+model UserNote {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  content   String   @db.Text  // HTML content from contentEditable
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])  // One note per user per lesson
 }
 
 // ============ QUIZZES ============
@@ -144,6 +163,7 @@ model UserLesson {
   watchProgressPercent Int      @default(0)
   isWatched           Boolean   @default(false) // True when >= 50%
   watchPointsAwarded  Boolean   @default(false)
+  quizPassed          Boolean   @default(false) // True when user passed quiz (if lesson has one)
   watchedAt           DateTime?
   lastWatchedAt       DateTime?
 

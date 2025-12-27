@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import { useWriteContract, useReadContract } from 'wagmi'
 import { intervalToDuration, startOfDay } from 'date-fns'
 import Modal from 'react-modal'
-import Controller from '../deployments/testnet/ETHRegistrarController.json'
+import { Controller } from '../constants/registerAbis'
 import DatePicker from 'react-datepicker'
 import { useEstimateENSFees } from '../hooks/gasEstimation'
 import { zeroAddress } from 'viem'
@@ -29,6 +29,11 @@ const renewAbi = [
         internalType: 'uint256',
         name: 'duration',
         type: 'uint256',
+      },
+      {
+        internalType: 'bool',
+        name: 'lifetime',
+        type: 'bool',
       },
     ],
     name: 'renew',
@@ -118,16 +123,17 @@ const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
   const [seconds, setSeconds] = useState(0)
   const [currency, setCurrency] = useState<'BNB' | 'USD'>('BNB')
   const [bnb, setBnb] = useState(true)
+  const [lifetime, setLifetime] = useState(false)
 
   const { data: latest, isPending: loading } = useReadContract({
-    address: constants.Controller, // Replace with actual contract address
-    abi: Controller.abi as any, // Replace with actual ABI
+    address: constants.Controller,
+    abi: Controller as any,
     functionName: 'rentPrice',
-    args: [label as string, seconds],
+    args: [label as string, seconds, lifetime],
   })
   const { data: priceData } = useReadContract({
-    address: '0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526', // Replace with actual contract address
-    abi: PriceAbi as any, // Replace with actual ABI
+    address: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE', // BSC Mainnet Chainlink BNB/USD
+    abi: PriceAbi as any,
     functionName: 'latestRoundData',
   })
 
@@ -244,7 +250,7 @@ const Renew = ({ expires, label, setIsOpen, isOpen, number }: RenewProps) => {
         abi: renewAbi,
         address: constants.Controller,
         functionName: 'renew',
-        args: [label, seconds],
+        args: [label, seconds, lifetime],
         value: base + premium,
       })
     } catch (error) {

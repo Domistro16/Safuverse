@@ -106,7 +106,7 @@ export default function CreateCoursePage() {
         description: '',
         longDescription: '',
         instructor: '',
-        category: 'DeFi',
+        category: 'Blockchain Basics',
         level: 'BEGINNER' as keyof typeof LEVEL_DEFAULTS,
         thumbnailUrl: '',
         duration: '',
@@ -633,11 +633,68 @@ export default function CreateCoursePage() {
                             <label className="block text-gray-400 mb-2">Category</label>
                             <select name="category" value={formData.category} onChange={handleChange}
                                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
-                                <option value="DeFi">DeFi</option>
-                                <option value="NFTs">NFTs</option>
-                                <option value="Security">Security</option>
-                                <option value="Trading">Trading</option>
-                                <option value="Development">Development</option>
+                                <optgroup label="Blockchain Fundamentals">
+                                    <option value="Blockchain Basics">Blockchain Basics</option>
+                                    <option value="Cryptocurrency">Cryptocurrency</option>
+                                    <option value="Web3 Fundamentals">Web3 Fundamentals</option>
+                                    <option value="Wallets & Keys">Wallets & Keys</option>
+                                </optgroup>
+                                <optgroup label="DeFi & Finance">
+                                    <option value="DeFi">DeFi</option>
+                                    <option value="Yield Farming">Yield Farming</option>
+                                    <option value="Lending & Borrowing">Lending & Borrowing</option>
+                                    <option value="DEXs & AMMs">DEXs & AMMs</option>
+                                    <option value="Stablecoins">Stablecoins</option>
+                                    <option value="Tokenomics">Tokenomics</option>
+                                </optgroup>
+                                <optgroup label="NFTs & Digital Assets">
+                                    <option value="NFTs">NFTs</option>
+                                    <option value="NFT Art">NFT Art</option>
+                                    <option value="Gaming & GameFi">Gaming & GameFi</option>
+                                    <option value="Metaverse">Metaverse</option>
+                                    <option value="Digital Collectibles">Digital Collectibles</option>
+                                </optgroup>
+                                <optgroup label="Development">
+                                    <option value="Smart Contracts">Smart Contracts</option>
+                                    <option value="Solidity">Solidity</option>
+                                    <option value="Web3 Development">Web3 Development</option>
+                                    <option value="dApp Development">dApp Development</option>
+                                    <option value="Frontend Integration">Frontend Integration</option>
+                                    <option value="Testing & Auditing">Testing & Auditing</option>
+                                </optgroup>
+                                <optgroup label="Trading & Analysis">
+                                    <option value="Trading">Trading</option>
+                                    <option value="Technical Analysis">Technical Analysis</option>
+                                    <option value="Fundamental Analysis">Fundamental Analysis</option>
+                                    <option value="Market Psychology">Market Psychology</option>
+                                    <option value="Risk Management">Risk Management</option>
+                                </optgroup>
+                                <optgroup label="Security">
+                                    <option value="Security">Security</option>
+                                    <option value="Scam Prevention">Scam Prevention</option>
+                                    <option value="Smart Contract Security">Smart Contract Security</option>
+                                    <option value="Wallet Security">Wallet Security</option>
+                                    <option value="Privacy">Privacy</option>
+                                </optgroup>
+                                <optgroup label="Governance & DAOs">
+                                    <option value="DAOs">DAOs</option>
+                                    <option value="Governance">Governance</option>
+                                    <option value="Voting Systems">Voting Systems</option>
+                                    <option value="Treasury Management">Treasury Management</option>
+                                </optgroup>
+                                <optgroup label="Layer 2 & Scaling">
+                                    <option value="Layer 2">Layer 2</option>
+                                    <option value="Rollups">Rollups</option>
+                                    <option value="Bridges">Bridges</option>
+                                    <option value="Cross-chain">Cross-chain</option>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <option value="Regulation & Compliance">Regulation & Compliance</option>
+                                    <option value="Taxation">Taxation</option>
+                                    <option value="Research & Analysis">Research & Analysis</option>
+                                    <option value="Career & Professional">Career & Professional</option>
+                                    <option value="Other">Other</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div>

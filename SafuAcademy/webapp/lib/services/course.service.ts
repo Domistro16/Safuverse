@@ -61,71 +61,89 @@ export class CourseService {
             return null;
         }
 
-        // Get watched lessons count
-        const watchedLessons = await this.prisma.userLesson.count({
-            where: {
-                userId,
-                lesson: { courseId },
-                isWatched: true,
-            },
-        });
-
-        // Get passed quizzes count
-        const passedQuizzes = await this.prisma.quizAttempt.groupBy({
-            by: ['quizId'],
-            where: {
-                userId,
-                isPassed: true,
-                quiz: {
-                    lesson: { courseId },
-                },
-            },
-        });
-
+        // Get course with lessons and quizzes
         const course = await this.prisma.course.findUnique({
             where: { id: courseId },
             include: {
                 lessons: {
                     orderBy: { orderIndex: 'asc' },
-                    select: {
-                        id: true,
-                        title: true,
-                        orderIndex: true,
-                        // type: true,
-                    },
+                    include: { quiz: true },
                 },
             },
         });
 
-        // Get user lesson details
+        if (!course) return null;
+
+        // Get user lesson progress
         const userLessons = await this.prisma.userLesson.findMany({
             where: {
                 userId,
-                lesson: { courseId },
-            },
-            include: {
-                lesson: {
-                    select: {
-                        id: true,
-                        title: true,
-                        orderIndex: true,
-                    },
-                },
+                lessonId: { in: course.lessons.map(l => l.id) },
             },
         });
 
-        // Calculate stats
-        // Note: totalLessons usually refers to VIDEO lessons, but prompt implies total items?
-        // Let's stick to what we have.
-        // Schema has `lessons Lesson[]`.
+        const userLessonMap = new Map(userLessons.map(ul => [ul.lessonId, ul]));
+
+        // Calculate progress with quiz-based logic:
+        // - Lessons without quiz: 100% when watched
+        // - Lessons with quiz: 50% watched + 50% quiz passed
+        let totalParts = 0;  // Total progress parts for all lessons
+        let completedParts = 0;  // Completed progress parts
+
+        const lessonProgress = course.lessons.map(lesson => {
+            const userLesson = userLessonMap.get(lesson.id);
+            const hasQuiz = !!lesson.quiz;
+            const isWatched = userLesson?.isWatched ?? false;
+            const quizPassed = userLesson?.quizPassed ?? false;
+
+            // Each lesson contributes:
+            // - Without quiz: 1 part (video only)
+            // - With quiz: 2 parts (video + quiz, each 0.5)
+            const lessonParts = hasQuiz ? 2 : 1;
+            totalParts += lessonParts;
+
+            let lessonCompleted = 0;
+            if (isWatched) {
+                lessonCompleted += 1; // Video watched = 1 part
+            }
+            if (hasQuiz && quizPassed) {
+                lessonCompleted += 1; // Quiz passed = 1 part
+            }
+            completedParts += lessonCompleted;
+
+            // Calculate lesson percentage
+            const lessonPercent = (lessonCompleted / lessonParts) * 100;
+
+            return {
+                lessonId: lesson.id,
+                title: lesson.title,
+                orderIndex: lesson.orderIndex,
+                hasQuiz,
+                isWatched,
+                quizPassed: hasQuiz ? quizPassed : null,
+                progressPercent: Math.round(lessonPercent),
+                isComplete: lessonCompleted === lessonParts,
+            };
+        });
+
+        // Calculate overall progress percentage
+        const overallProgress = totalParts > 0
+            ? Math.round((completedParts / totalParts) * 100)
+            : 0;
+
+        const watchedCount = lessonProgress.filter(l => l.isWatched).length;
+        const quizPassedCount = lessonProgress.filter(l => l.quizPassed === true).length;
+        const isComplete = completedParts === totalParts && totalParts > 0;
 
         return {
             ...userCourse,
-            watchedCount: watchedLessons,
-            passedQuizzesCount: passedQuizzes.length,
-            totalLessons: course?.lessons?.length || 0,
-            lessons: course?.lessons || [],
-            userLessons,
+            progressPercent: overallProgress,
+            watchedCount,
+            quizPassedCount,
+            totalLessons: course.lessons.length,
+            lessonsWithQuiz: lessonProgress.filter(l => l.hasQuiz).length,
+            lessonProgress,
+            isComplete,
         };
     }
 

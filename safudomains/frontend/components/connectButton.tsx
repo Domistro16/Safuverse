@@ -84,9 +84,9 @@ export const CustomConnect = () => {
                       className="w-8 h-8"
                     />
                     {name ? (
-                      <div className="">{name as string}</div>
+                      <div className="text-white">{name as string}</div>
                     ) : (
-                      <div className="">{account.displayName}</div>
+                      <div className="text-white">{account.displayName}</div>
                     )}
                   </button>
 

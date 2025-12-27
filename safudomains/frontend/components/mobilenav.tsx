@@ -21,29 +21,21 @@ export const MobileNav = () => {
       setTheme('dark')
     }
 
-    // Listen for theme changes
-    const handleStorageChange = () => {
-      const newTheme = window.localStorage.getItem(THEME_KEY)
-      if (newTheme === 'light' || newTheme === 'dark') {
-        setTheme(newTheme)
-      }
+    // Listen for body class changes (when nav toggles dark mode)
+    const observer = new MutationObserver(() => {
+      const isDarkMode = document.body.classList.contains('dark-mode')
+      setTheme(isDarkMode ? 'dark' : 'light')
+    })
+
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+
+    // Check initial state from body class
+    if (document.body.classList.contains('dark-mode')) {
+      setTheme('dark')
     }
 
-    window.addEventListener('storage', handleStorageChange)
-
-    // Also check periodically for theme changes
-    const interval = setInterval(() => {
-      const currentTheme = window.localStorage.getItem(THEME_KEY)
-      if (currentTheme && currentTheme !== theme) {
-        setTheme(currentTheme)
-      }
-    }, 500)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      clearInterval(interval)
-    }
-  }, [theme])
+    return () => observer.disconnect()
+  }, [])
 
   const isDark = theme === 'dark'
 

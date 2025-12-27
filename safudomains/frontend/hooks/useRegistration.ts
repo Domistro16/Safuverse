@@ -4,16 +4,22 @@ import {
   bytesToHex,
   encodeFunctionData,
   namehash,
-  encodeAbiParameters,
+  parseEther,
   keccak256,
   toBytes,
-  parseEther,
+  encodeAbiParameters,
 } from 'viem'
-import { ethers } from 'ethers'
 import { buildTextRecords } from './setText'
-import { Controller, ERC20_ABI, addrResolver } from '../constants/registerAbis'
-import { constants, Params } from '../constant'
-import { useEthersSigner } from './gasEstimation'
+import {
+  Controller,
+  ERC20_ABI,
+  addrResolver,
+  RegisterRequest,
+  ReferralData,
+  EMPTY_REFERRAL_DATA,
+  EMPTY_REFERRAL_SIGNATURE,
+} from '../constants/registerAbis'
+import { constants } from '../constant'
 import { normalize } from 'viem/ens'
 
 export const useRegistration = () => {
@@ -21,7 +27,6 @@ export const useRegistration = () => {
   const [commitData, setCommitData] = useState<`0x${string}`[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const signer = useEthersSigner()
   const { data: commithash, writeContractAsync } = useWriteContract()
   const { writeContractAsync: approve } = useWriteContract()
   const {
@@ -55,6 +60,79 @@ export const useRegistration = () => {
     setCommitData(fullData)
   }
 
+  // Helper to compute commitment hash (matches contract's makeCommitment)
+  const computeCommitment = (req: RegisterRequest): `0x${string}` => {
+    const labelHash = keccak256(toBytes(req.name))
+    const encoded = encodeAbiParameters(
+      [
+        { type: 'bytes32' },
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'address' },
+        { type: 'bytes[]' },
+        { type: 'bool' },
+        { type: 'uint16' },
+        { type: 'bool' },
+      ],
+      [
+        labelHash,
+        req.owner,
+        req.duration,
+        req.secret,
+        req.resolver,
+        req.data,
+        req.reverseRecord,
+        req.ownerControlledFuses,
+        req.lifetime,
+      ],
+    )
+    return keccak256(encoded)
+  }
+
+  // Fetch referral data from API
+  const fetchReferralData = async (
+    referralCode: string,
+    registrantAddress: string,
+    name: string,
+  ): Promise<{ referralData: ReferralData; signature: `0x${string}` }> => {
+    try {
+      const response = await fetch('/api/referral/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referralCode,
+          registrantAddress,
+          name,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.referralData) {
+        return {
+          referralData: {
+            referrer: data.referralData.referrer as `0x${string}`,
+            registrant: data.referralData.registrant as `0x${string}`,
+            nameHash: data.referralData.nameHash as `0x${string}`,
+            referrerCodeHash: data.referralData.referrerCodeHash as `0x${string}`,
+            deadline: BigInt(data.referralData.deadline),
+            nonce: data.referralData.nonce as `0x${string}`,
+          },
+          signature: (data.signature || '0x') as `0x${string}`,
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching referral data:', error)
+    }
+
+    // Return empty referral if error or no valid referral
+    return {
+      referralData: EMPTY_REFERRAL_DATA,
+      signature: EMPTY_REFERRAL_SIGNATURE,
+    }
+  }
+
   const commit = async (
     label: string,
     address: `0x${string}`,
@@ -68,32 +146,22 @@ export const useRegistration = () => {
     const resolver = constants.PublicResolver
 
     try {
-      const labelHash = keccak256(toBytes(label))
-      const encoded = encodeAbiParameters(
-        [
-          { type: 'bytes32' },
-          { type: 'address' },
-          { type: 'uint256' },
-          { type: 'bytes32' },
-          { type: 'address' },
-          { type: 'bytes[]' },
-          { type: 'bool' },
-          { type: 'uint16' },
-          { type: 'bool' },
-        ],
-        [
-          labelHash,
-          address,
-          BigInt(seconds),
-          secretGenerated,
-          resolver,
-          commitData,
-          isPrimary,
-          0,
-          lifetime,
-        ],
-      )
-      const commitment = keccak256(encoded)
+      // Build the RegisterRequest struct for makeCommitment
+      const registerRequest: RegisterRequest = {
+        name: normalize(label),
+        owner: address,
+        duration: BigInt(seconds),
+        secret: secretGenerated,
+        resolver: resolver as `0x${string}`,
+        data: commitData,
+        reverseRecord: isPrimary,
+        ownerControlledFuses: 0,
+        lifetime: lifetime,
+      }
+
+      // Compute commitment hash matching the contract
+      const commitment = computeCommitment(registerRequest)
+
       await writeContractAsync({
         address: constants.Controller,
         account: address,
@@ -125,72 +193,62 @@ export const useRegistration = () => {
     const resolver = constants.PublicResolver
 
     try {
-      let value = 0n
-
-      if (token == '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82') {
-        const { base, premium } = (cakeTokenData as any) || {
-          base: 0n,
-          premium: 0n,
-        }
-        value = base + premium
-      } else {
-        const { base, premium } = (usd1TokenData as any) || {
-          base: 0n,
-          premium: 0n,
-        }
-        value = base + premium
+      // Build the RegisterRequest struct
+      const registerRequest: RegisterRequest = {
+        name: normalize(label),
+        owner: address,
+        duration: BigInt(seconds),
+        secret: secret,
+        resolver: resolver as `0x${string}`,
+        data: commitData,
+        reverseRecord: isPrimary,
+        ownerControlledFuses: 0,
+        lifetime: lifetime,
       }
 
-      const totalAmount = value
-      const controller = new ethers.Contract(
-        constants.Controller,
-        Controller,
-        signer,
+      // Fetch referral data from the API
+      const { referralData, signature } = await fetchReferralData(
+        referrer,
+        address,
+        normalize(label),
       )
 
       if (!useToken) {
+        // BNB payment
         const { base, premium } = (priceData as any) || {
           base: 0n,
           premium: 0n,
         }
-        try {
-          await controller.register.staticCall(
-            normalize(label as string),
-            address,
-            BigInt(seconds),
-            secret,
-            resolver,
-            commitData,
-            isPrimary,
-            0,
-            lifetime,
-            normalize(referrer) || '',
-            { value: base + premium },
-          )
-        } catch (e: any) {
-          console.error('Revert error name:', e.errorName)
-          console.error('Revert reason   :', e.data)
-        }
+        const value = base + premium
 
         await registerContract({
           address: constants.Controller,
           abi: Controller,
           functionName: 'register',
-          args: [
-            normalize(label as string),
-            address,
-            BigInt(seconds),
-            secret,
-            resolver,
-            commitData,
-            isPrimary,
-            0,
-            lifetime,
-            normalize(referrer) || '',
-          ],
-          value: base + premium,
+          args: [registerRequest, referralData, signature],
+          value: value,
         })
       } else {
+        // Token payment
+        let value = 0n
+
+        if (token == '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82') {
+          const { base, premium } = (cakeTokenData as any) || {
+            base: 0n,
+            premium: 0n,
+          }
+          value = base + premium
+        } else {
+          const { base, premium } = (usd1TokenData as any) || {
+            base: 0n,
+            premium: 0n,
+          }
+          value = base + premium
+        }
+
+        const totalAmount = value
+
+        // Approve token spending
         await approve({
           address: token,
           abi: ERC20_ABI,
@@ -198,36 +256,15 @@ export const useRegistration = () => {
           args: [constants.Controller, totalAmount + parseEther('1')],
         })
 
+        // Wait for approval to be mined
         await new Promise((r) => setTimeout(r, 2000))
 
-        const params: Params = {
-          name: label,
-          owner: address,
-          duration: BigInt(seconds),
-          secret,
-          resolver,
-          data: commitData,
-          reverseRecord: isPrimary,
-          ownerControlledFuses: 0,
-        }
-
-        try {
-          await controller.registerWithToken.staticCall(
-            params,
-            token,
-            lifetime,
-            referrer || '',
-          )
-        } catch (e: any) {
-          console.error('Revert error name:', e.errorName)
-          console.error('Revert reason   :', e.data)
-        }
-
+        // Register with token
         await registerContract({
           address: constants.Controller,
           abi: Controller,
           functionName: 'registerWithToken',
-          args: [params, token, lifetime, referrer || ''],
+          args: [registerRequest, token, referralData, signature],
         })
       }
     } catch (error) {

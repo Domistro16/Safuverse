@@ -52,6 +52,21 @@ const Register = () => {
     if (stored === 'light' || stored === 'dark') {
       setTheme(stored)
     }
+
+    // Listen for body class changes (when nav toggles dark mode)
+    const observer = new MutationObserver(() => {
+      const isDarkMode = document.body.classList.contains('dark-mode')
+      setTheme(isDarkMode ? 'dark' : 'light')
+    })
+
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+
+    // Check initial state from body class
+    if (document.body.classList.contains('dark-mode')) {
+      setTheme('dark')
+    }
+
+    return () => observer.disconnect()
   }, [])
 
   const isDark = theme === 'dark'
@@ -103,6 +118,9 @@ const Register = () => {
   const [wait, setWait] = useState(60)
   const [done, setDone] = useState(false)
   const [referrer, setReferrer] = useState('')
+  const [referralValid, setReferralValid] = useState<boolean | null>(null)
+  const [referralOwner, setReferralOwner] = useState<string | null>(null)
+  const [referralValidating, setReferralValidating] = useState(false)
   const [lifetime, setLifetime] = useState(false)
   const [newRecords, setNewRecords] = useState<
     { key: string; value: string }[]
@@ -144,6 +162,36 @@ const Register = () => {
       setReferrer(normalize(ref))
     }
   }, [label])
+
+  // Real-time referral code validation with debounce
+  useEffect(() => {
+    // Reset validation state when referrer changes
+    if (!referrer || referrer.trim() === '') {
+      setReferralValid(null)
+      setReferralOwner(null)
+      setReferralValidating(false)
+      return
+    }
+
+    setReferralValidating(true)
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/referral/validate/${encodeURIComponent(referrer)}`)
+        const data = await res.json()
+        setReferralValid(data.valid)
+        setReferralOwner(data.owner || null)
+      } catch (error) {
+        console.error('Referral validation error:', error)
+        setReferralValid(false)
+        setReferralOwner(null)
+      } finally {
+        setReferralValidating(false)
+      }
+    }, 500) // 500ms debounce
+
+    return () => clearTimeout(timer)
+  }, [referrer])
 
   useEffect(() => {
     const bnb = Number(fees?.fee.totalEth).toFixed(4)
@@ -688,27 +736,89 @@ const Register = () => {
 
                 <div style={{ marginTop: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>Referrer</h3>
-                  <Input
-                    value={referrer}
-                    placeholder="The primary name of the referrer (Optional)"
+                  <div style={{ position: 'relative', maxWidth: '70%' }}>
+                    <Input
+                      value={referrer}
+                      placeholder="Enter referral code (e.g., vitalik)"
+                      style={{
+                        marginTop: '8px',
+                        padding: '12px 16px',
+                        paddingRight: '40px',
+                        background: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
+                        border: referrer
+                          ? referralValidating
+                            ? (isDark ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.2)')
+                            : referralValid
+                              ? '1px solid #22c55e'
+                              : '1px solid #ef4444'
+                          : (isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)'),
+                        borderRadius: '14px',
+                        color: isDark ? '#fff' : '#111',
+                        width: '100%',
+                        transition: 'border-color 0.2s ease',
+                      }}
+                      type="text"
+                      onChange={(e) => {
+                        if (e.target.value.includes('.')) {
+                          setReferrer('')
+                        } else {
+                          setReferrer(e.target.value.toLowerCase())
+                        }
+                      }}
+                    />
+                    {/* Validation indicator */}
+                    {referrer && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          marginTop: '4px',
+                        }}
+                      >
+                        {referralValidating ? (
+                          <div
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              border: '2px solid transparent',
+                              borderTopColor: isDark ? '#fff' : '#666',
+                              borderRadius: '50%',
+                              animation: 'spin 0.8s linear infinite',
+                            }}
+                          />
+                        ) : referralValid ? (
+                          <Check style={{ width: '18px', height: '18px', color: '#22c55e' }} />
+                        ) : (
+                          <span style={{ color: '#ef4444', fontSize: '18px', fontWeight: 'bold' }}>✕</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* Validation message */}
+                  {referrer && !referralValidating && (
+                    <p
+                      style={{
+                        marginTop: '6px',
+                        fontSize: '13px',
+                        color: referralValid ? '#22c55e' : '#ef4444',
+                      }}
+                    >
+                      {referralValid
+                        ? `✓ Valid referral code - ${referrer}.safu`
+                        : `✕ Invalid referral code - domain doesn't exist or is expired`}
+                    </p>
+                  )}
+                  <p
                     style={{
-                      marginTop: '8px',
-                      padding: '12px 16px',
-                      background: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
-                      border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)',
-                      borderRadius: '14px',
-                      color: isDark ? '#fff' : '#111',
-                      maxWidth: '70%',
+                      marginTop: '4px',
+                      fontSize: '12px',
+                      color: isDark ? '#888' : '#666',
                     }}
-                    type="text"
-                    onChange={(e) => {
-                      if (e.target.value.includes('.')) {
-                        setReferrer('')
-                      } else {
-                        setReferrer(e.target.value.toLowerCase())
-                      }
-                    }}
-                  />
+                  >
+                    Enter a .safu domain name as your referral code (without .safu)
+                  </p>
                 </div>
 
                 <div style={{ display: 'flex', marginTop: '24px', alignItems: 'center' }}>

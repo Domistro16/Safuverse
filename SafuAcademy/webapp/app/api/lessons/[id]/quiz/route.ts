@@ -3,8 +3,8 @@ import prisma from '@/lib/prisma';
 import { QuizService, LessonService, RelayerService } from '@/lib/services';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth';
 
-const quizService = new QuizService(prisma);
 const relayerService = new RelayerService(prisma);
+const quizService = new QuizService(prisma, relayerService);
 const lessonService = new LessonService(prisma, relayerService);
 
 export async function GET(
@@ -47,7 +47,24 @@ export async function GET(
         // Get user's attempts
         const attempts = await quizService.getUserQuizAttempts(auth.userId, lessonId);
 
-        return NextResponse.json({ quiz, attempts });
+        // Get course info for back navigation
+        const course = await prisma.course.findUnique({
+            where: { id: lesson.courseId },
+            select: { id: true, title: true },
+        });
+
+        return NextResponse.json({
+            quiz: {
+                ...quiz,
+                lesson: {
+                    id: lesson.id,
+                    title: lesson.title,
+                    courseId: lesson.courseId,
+                    course: course || { id: lesson.courseId, title: 'Course' },
+                },
+            },
+            attempts,
+        });
     } catch (error) {
         console.error('Quiz fetch error:', error);
         return NextResponse.json(

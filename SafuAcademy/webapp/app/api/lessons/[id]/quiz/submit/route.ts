@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { QuizService } from '@/lib/services';
+import { QuizService, RelayerService } from '@/lib/services';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth';
 
-const quizService = new QuizService(prisma);
+const relayerService = new RelayerService(prisma);
+const quizService = new QuizService(prisma, relayerService);
 
 const quizSubmitSchema = z.object({
     answers: z.array(z.number()), // Array of selected indices

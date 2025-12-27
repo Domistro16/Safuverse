@@ -29,6 +29,21 @@ export default function Names() {
     if (stored === 'light' || stored === 'dark') {
       setTheme(stored)
     }
+
+    // Listen for body class changes (when nav toggles dark mode)
+    const observer = new MutationObserver(() => {
+      const isDarkMode = document.body.classList.contains('dark-mode')
+      setTheme(isDarkMode ? 'dark' : 'light')
+    })
+
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+
+    // Check initial state from body class
+    if (document.body.classList.contains('dark-mode')) {
+      setTheme('dark')
+    }
+
+    return () => observer.disconnect()
   }, [])
 
   const isDark = theme === 'dark'

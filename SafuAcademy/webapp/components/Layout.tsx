@@ -106,56 +106,65 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
           className={`text-3xl md:text-4xl font-bold mb-4 tracking-[-0.03em] ${isDark ? "text-white" : "text-[#111]"
             }`}
         >
-          Boost your Learning & Knowledge
+          Level Up Your Skills & Knowledge
           <br />
-          with Safu Academy Now
-        </h2>
+          with Safu Academy Today        </h2>
 
-        <button
-          className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark
-            ? "bg-[#fffb00] text-black hover:bg-[#fff000]"
-            : "bg-[#111] text-white hover:bg-[#222]"
-            }`}
-        >
-          Start Learning Now
-        </button>
+        <Link href="/courses">
+          <button
+            className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark
+              ? "bg-[#ffb000] text-black hover:bg-[#ffa000]"
+              : "bg-[#111] text-white hover:bg-[#222]"
+              }`}
+          >
+            Start Learning Now
+          </button>
+        </Link>
 
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10">
-          <button
-            className={`px-8 py-3 rounded-full border font-medium transition text-sm ${isDark
-              ? "border-white/20 text-white bg-white/5 hover:bg-white/10"
-              : "border-black/80 text-[#111] bg-white hover:bg-[#f5f5f5]"
-              }`}
-          >
-            Notify Me
-          </button>
+          <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer">
+            <button
+              className={`px-8 py-3 rounded-full border font-medium transition text-sm ${isDark
+                ? "border-white/20 text-white bg-white/5 hover:bg-white/10"
+                : "border-black/80 text-[#111] bg-white hover:bg-[#f5f5f5]"
+                }`}
+            >
+              Read Docs
+            </button>
+          </a>
 
-          <button
-            className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
-              ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
-              : "bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]"
-              }`}
-          >
-            ⭐ Try Demo
-          </button>
+          <a href="https://names.safuverse.com" target="_blank" rel="noopener noreferrer">
+            <button
+              className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
+                ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                : "bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]"
+                }`}
+            >
+              Mint .safu
+            </button>
+          </a>
 
-          <button
-            className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
-              ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
-              : "bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]"
-              }`}
-          >
-            📄 Get Template
-          </button>
+          <a href="https://safupad.app" target="_blank" rel="noopener noreferrer">
+            <button
+              className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
+                ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                : "bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]"
+                }`}
+            >
+              Try SafuPad
+            </button>
+          </a>
 
-          <button
-            className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
-              ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
-              : "bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]"
-              }`}
-          >
-            ⌗ Made in Framer
-          </button>
+          <a href="https://safuverse.gitbook.io/safuverse-docs/security/audits" target="_blank" rel="noopener noreferrer">
+            <button
+              className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
+                ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                : "bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]"
+                }`}
+            >
+              Audit Report
+            </button>
+          </a>
         </div>
 
         <p
