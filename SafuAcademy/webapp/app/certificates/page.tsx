@@ -6,7 +6,7 @@ import { useReadContract, useAccount } from "wagmi";
 import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 import { useTheme } from "@/app/providers";
 
-export const Certificates: React.FC = () => {
+const Certificates: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { theme } = useTheme();
   const isDark = theme === 'dark';

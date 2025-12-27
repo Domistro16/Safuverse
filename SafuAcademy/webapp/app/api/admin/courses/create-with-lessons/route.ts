@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/lib/middleware/admin.middleware';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getStorageService } from '@/lib/services/storage.service';
 
 // Route segment config to allow large video uploads (up to 500MB)
@@ -243,7 +244,7 @@ export async function POST(request: NextRequest) {
 
         // Step 2: Create course and lessons in a transaction
         try {
-            const result = await prisma.$transaction(async (tx) => {
+            const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
                 // Create course
                 const course = await tx.course.create({
                     data: {

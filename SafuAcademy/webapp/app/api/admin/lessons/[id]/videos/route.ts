@@ -7,6 +7,15 @@ interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
+interface LessonVideoType {
+    id: string;
+    storageKey: string;
+    language: string;
+    label: string;
+    duration: number | null;
+    orderIndex: number;
+}
+
 /**
  * GET /api/admin/lessons/[id]/videos - Get all videos for a lesson
  */
@@ -26,7 +35,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
         const storageService = getStorageService();
         const videosWithUrls = await Promise.all(
-            videos.map(async (video) => {
+            videos.map(async (video: LessonVideoType) => {
                 let signedUrl: string | null = null;
                 if (storageService.isAvailable()) {
                     signedUrl = await storageService.getSignedVideoUrl(video.storageKey);
@@ -76,7 +85,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         }
 
         // Check if language already exists for this lesson
-        const existingVideo = lesson.videos.find(v => v.language === language);
+        const existingVideo = lesson.videos.find((v: LessonVideoType) => v.language === language);
         if (existingVideo) {
             return NextResponse.json(
                 { error: `A video for language "${language}" already exists. Delete it first to replace.` },
@@ -102,7 +111,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         );
 
         // Get next order index
-        const maxOrderIndex = lesson.videos.reduce((max, v) => Math.max(max, v.orderIndex), -1);
+        const maxOrderIndex = lesson.videos.reduce((max: number, v: LessonVideoType) => Math.max(max, v.orderIndex), -1);
 
         // Create video record
         const video = await prisma.lessonVideo.create({

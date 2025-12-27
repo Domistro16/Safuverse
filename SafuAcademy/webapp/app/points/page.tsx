@@ -5,7 +5,7 @@ import { Layout } from "@/components/Layout";
 import { useReadContract, useAccount } from "wagmi";
 import { abi, Deploy } from "@/lib/constants";
 
-export const PointsHistory: React.FC = () => {
+const PointsHistory: React.FC = () => {
   const { address, isConnected } = useAccount();
 
   // Fetch user's total points from smart contract

@@ -7,6 +7,15 @@ interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
+interface LessonVideoType {
+    id: string;
+    storageKey: string;
+    language: string;
+    label: string;
+    duration: number | null;
+    orderIndex: number;
+}
+
 /**
  * GET /api/admin/lessons/[id] - Get lesson details
  */
@@ -38,7 +47,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
         // Generate signed URLs for all videos
         const videosWithUrls = await Promise.all(
-            lesson.videos.map(async (video) => {
+            lesson.videos.map(async (video: LessonVideoType) => {
                 let signedUrl: string | null = null;
                 if (storageService.isAvailable()) {
                     signedUrl = await storageService.getSignedVideoUrl(video.storageKey);

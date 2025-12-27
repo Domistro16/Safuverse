@@ -7,6 +7,15 @@ interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
+interface LessonVideoType {
+    id: string;
+    storageKey: string;
+    language: string;
+    label: string;
+    duration: number | null;
+    orderIndex: number;
+}
+
 /**
  * GET /api/lessons/[id]/video - Get signed video URL(s) for streaming
  * Requires user to be enrolled in the lesson's course
@@ -68,7 +77,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         // Check for multi-language videos first
         if (lesson.videos && lesson.videos.length > 0) {
             const videosWithUrls = await Promise.all(
-                lesson.videos.map(async (video) => {
+                lesson.videos.map(async (video: LessonVideoType) => {
                     const signedUrl = await storageService.getSignedVideoUrl(
                         video.storageKey,
                         expiresIn

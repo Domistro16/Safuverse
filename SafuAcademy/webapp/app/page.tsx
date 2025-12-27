@@ -128,7 +128,7 @@ function FeaturedCourses() {
 }
 
 
-export const Home: React.FC = () => {
+const Home: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
 

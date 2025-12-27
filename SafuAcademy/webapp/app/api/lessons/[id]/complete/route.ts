@@ -52,7 +52,7 @@ export async function POST(
         }
 
         // Use progressService to update watch progress and award points
-        let watchResult = { saved: false, pointsAwarded: false, newTotalPoints: undefined as number | undefined, completed: false, txHash: undefined as string | undefined };
+        let watchResult: { saved: boolean; pointsAwarded: boolean; newTotalPoints?: number; courseProgress?: number; completed?: boolean; txHash?: string } = { saved: false, pointsAwarded: false };
 
         if (data.videoProgressPercent && data.videoProgressPercent >= 50) {
             watchResult = await progressService.updateLessonWatchProgress(

@@ -1,4 +1,20 @@
-import { PrismaClient, Course } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+interface Course {
+    id: number;
+    title: string;
+    description: string;
+    category: string;
+    level: string;
+    isPublished: boolean;
+    createdAt: Date;
+}
+
+interface UserCourseWithCourse {
+    courseId: number;
+    isCompleted: boolean;
+    course: Course | null;
+}
 
 export class RecommendationService {
     private prisma: PrismaClient;
@@ -65,13 +81,13 @@ export class RecommendationService {
 
         // Get user's current skill level (based on completed course levels)
         const completedLevels = userCourses
-            .filter(uc => uc.isCompleted && uc.course)
-            .map(uc => uc.course!.level);
+            .filter((uc: UserCourseWithCourse) => uc.isCompleted && uc.course)
+            .map((uc: UserCourseWithCourse) => uc.course!.level);
 
         const levelPriority = this.getNextLevelPriority(completedLevels);
 
         // Find courses in preferred categories, excluding already enrolled/completed
-        const enrolledCourseIds = userCourses.map(uc => uc.courseId);
+        const enrolledCourseIds = userCourses.map((uc: UserCourseWithCourse) => uc.courseId);
 
         const recommendedCourses = await this.prisma.course.findMany({
             where: {
@@ -112,7 +128,7 @@ export class RecommendationService {
             take: popularLimit,
         });
 
-        const popularIds = popular.map(c => c.id);
+        const popularIds = popular.map((c: Course) => c.id);
         const allExcludeIds = [...excludeIds, ...popularIds];
 
         // Get newest courses

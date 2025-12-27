@@ -6,7 +6,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '500mb',
     },
-    middlewareClientMaxBodySize: '500mb',
   },
   images: {
     remotePatterns: [
@@ -20,25 +19,22 @@ const nextConfig = {
       },
     ],
   },
-  // Externalize problematic server-side packages (NOT the @reown packages since they're transpiled)
+  // Externalize problematic server-side packages
   serverExternalPackages: [
     'pino',
     'thread-stream',
     'pino-pretty',
+    '@prisma/client',
+    'prisma',
   ],
-  // Turbopack configuration
-  turbopack: {
-    resolveAlias: {
-      // Resolve pino transport issues
-      'pino': 'pino/browser',
-    },
-  },
+  // Webpack configuration (use webpack instead of Turbopack for production builds)
   webpack: (config, { isServer }) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       net: false,
       tls: false,
+      '@react-native-async-storage/async-storage': false,
     };
     // Externalize pino to avoid thread-stream issues on client
     if (!isServer) {
@@ -49,7 +45,7 @@ const nextConfig = {
     }
     return config;
   },
-  // Transpile @reown packages (keep these ONLY here, not in serverExternalPackages)
+  // Transpile @reown packages
   transpilePackages: ['@reown/appkit', '@reown/appkit-controllers', '@reown/appkit-utils'],
 };
 

@@ -1,6 +1,30 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { RelayerService } from './relayer.service';
 
+interface LessonWithQuiz {
+    id: string;
+    title: string;
+    orderIndex: number;
+    quiz: { id: string; passingScore: number; passPoints: number } | null;
+}
+
+interface UserLessonProgress {
+    lessonId: string;
+    isWatched: boolean;
+    quizPassed: boolean;
+}
+
+interface LessonProgressItem {
+    lessonId: string;
+    title: string;
+    orderIndex: number;
+    hasQuiz: boolean;
+    isWatched: boolean;
+    quizPassed: boolean | null;
+    progressPercent: number;
+    isComplete: boolean;
+}
+
 export class CourseService {
     private prisma: PrismaClient;
     private relayerService: RelayerService;
@@ -78,11 +102,11 @@ export class CourseService {
         const userLessons = await this.prisma.userLesson.findMany({
             where: {
                 userId,
-                lessonId: { in: course.lessons.map(l => l.id) },
+                lessonId: { in: course.lessons.map((l: LessonWithQuiz) => l.id) },
             },
         });
 
-        const userLessonMap = new Map(userLessons.map(ul => [ul.lessonId, ul]));
+        const userLessonMap = new Map<string, UserLessonProgress>(userLessons.map((ul: { lessonId: string; isWatched: boolean; quizPassed: boolean }) => [ul.lessonId, ul]));
 
         // Calculate progress with quiz-based logic:
         // - Lessons without quiz: 100% when watched
@@ -90,7 +114,7 @@ export class CourseService {
         let totalParts = 0;  // Total progress parts for all lessons
         let completedParts = 0;  // Completed progress parts
 
-        const lessonProgress = course.lessons.map(lesson => {
+        const lessonProgress = course.lessons.map((lesson: LessonWithQuiz) => {
             const userLesson = userLessonMap.get(lesson.id);
             const hasQuiz = !!lesson.quiz;
             const isWatched = userLesson?.isWatched ?? false;
@@ -131,8 +155,8 @@ export class CourseService {
             ? Math.round((completedParts / totalParts) * 100)
             : 0;
 
-        const watchedCount = lessonProgress.filter(l => l.isWatched).length;
-        const quizPassedCount = lessonProgress.filter(l => l.quizPassed === true).length;
+        const watchedCount = lessonProgress.filter((l: LessonProgressItem) => l.isWatched).length;
+        const quizPassedCount = lessonProgress.filter((l: LessonProgressItem) => l.quizPassed === true).length;
         const isComplete = completedParts === totalParts && totalParts > 0;
 
         return {
@@ -141,7 +165,7 @@ export class CourseService {
             watchedCount,
             quizPassedCount,
             totalLessons: course.lessons.length,
-            lessonsWithQuiz: lessonProgress.filter(l => l.hasQuiz).length,
+            lessonsWithQuiz: lessonProgress.filter((l: LessonProgressItem) => l.hasQuiz).length,
             lessonProgress,
             isComplete,
         };

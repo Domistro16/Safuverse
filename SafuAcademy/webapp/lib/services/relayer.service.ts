@@ -36,10 +36,10 @@ const LEVEL3_COURSE_ABI = [
 
 export class RelayerService {
     private provider: JsonRpcProvider;
-    private wallet: Wallet;
-    private ownerWallet: Wallet;
-    private contract: Contract;
-    private ownerContract: Contract;
+    private wallet!: Wallet;
+    private ownerWallet!: Wallet;
+    private contract!: Contract;
+    private ownerContract!: Contract;
     private prisma: PrismaClient;
 
     constructor(prisma: PrismaClient) {
@@ -83,6 +83,13 @@ export class RelayerService {
         try {
             const walletAddress = this.wallet.address;
             const contractRelayer = await this.getContractRelayer();
+
+            if (!contractRelayer) {
+                return {
+                    valid: false,
+                    error: 'Contract relayer not available',
+                };
+            }
 
             if (walletAddress.toLowerCase() !== contractRelayer.toLowerCase()) {
                 return {
