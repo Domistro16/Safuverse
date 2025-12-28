@@ -533,32 +533,32 @@ export default function EditCoursePage() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 md:mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Edit Course</h1>
-                    <p className="text-gray-400">ID: {course.id}</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">Edit Course</h1>
+                    <p className="text-gray-400 text-sm">ID: {course.id}</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-2 md:gap-4">
                     <button
                         onClick={syncToBlockchain}
                         disabled={isSyncing || !address}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+                        className="px-3 md:px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors text-sm md:text-base"
                         title={!address ? 'Connect wallet to sync' : 'Update course data on blockchain'}
                     >
-                        {isSyncing ? '⏳ Syncing...' : '🔗 Sync to Blockchain'}
+                        {isSyncing ? '⏳ Syncing...' : '🔗 Sync'}
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+                        className="px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors text-sm md:text-base"
                     >
-                        {saving ? 'Saving...' : 'Save Changes'}
+                        {saving ? 'Saving...' : 'Save'}
                     </button>
                     <Link
                         href="/admin/courses"
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                        className="px-3 md:px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm md:text-base"
                     >
-                        Back to List
+                        Back
                     </Link>
                 </div>
             </div>
@@ -617,23 +617,23 @@ export default function EditCoursePage() {
                                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-gray-400 mb-2">Instructor</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Instructor</label>
                                 <input
                                     type="text"
                                     value={course.instructor || ''}
                                     onChange={(e) => setCourse({ ...course, instructor: e.target.value })}
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-2">Duration</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Duration</label>
                                 <input
                                     type="text"
                                     value={course.duration || ''}
                                     onChange={(e) => setCourse({ ...course, duration: e.target.value })}
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
                                 />
                             </div>
                         </div>
@@ -650,13 +650,13 @@ export default function EditCoursePage() {
                                 <img src={course.thumbnailUrl} alt="Thumbnail preview" className="mt-2 h-20 rounded-lg object-cover" />
                             )}
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-gray-400 mb-2">Level</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Level</label>
                                 <select
                                     value={course.level || ''}
                                     onChange={(e) => setCourse({ ...course, level: e.target.value })}
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
                                 >
                                     <option value="BEGINNER">Beginner</option>
                                     <option value="INTERMEDIATE">Intermediate</option>
@@ -664,41 +664,41 @@ export default function EditCoursePage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-2">Category</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Category</label>
                                 <input
                                     type="text"
                                     value={course.category || ''}
                                     onChange={(e) => setCourse({ ...course, category: e.target.value })}
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-gray-400 mb-2">Completion Points</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Completion Points</label>
                                 <input
                                     type="number"
                                     value={course.completionPoints}
                                     onChange={(e) => setCourse({ ...course, completionPoints: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-2">Min Points to Access</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Min Points</label>
                                 <input
                                     type="number"
                                     value={course.minPointsToAccess}
                                     onChange={(e) => setCourse({ ...course, minPointsToAccess: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-2">Enrollment Cost</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Enrollment Cost</label>
                                 <input
                                     type="number"
                                     value={course.enrollmentCost}
                                     onChange={(e) => setCourse({ ...course, enrollmentCost: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
                                 />
                             </div>
                         </div>
@@ -1041,7 +1041,7 @@ export default function EditCoursePage() {
                                                     {lesson.quiz && (
                                                         <div className="bg-gray-700/30 rounded-lg p-4 space-y-4">
                                                             {/* Passing Score & Points */}
-                                                            <div className="grid grid-cols-2 gap-4">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                 <div>
                                                                     <label className="block text-gray-400 mb-1 text-xs">Passing Score (%)</label>
                                                                     <input

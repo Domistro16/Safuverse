@@ -56,7 +56,7 @@ export default function AdminDashboard() {
 
     return (
         <div>
-            <h1 className="text-3xl font-bold text-white mb-8">Dashboard</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8">Dashboard</h1>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -108,18 +108,18 @@ export default function AdminDashboard() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-gray-700">
-                                <th className="pb-3 text-gray-400 font-medium">Course</th>
-                                <th className="pb-3 text-gray-400 font-medium">Status</th>
-                                <th className="pb-3 text-gray-400 font-medium text-center">Lessons</th>
-                                <th className="pb-3 text-gray-400 font-medium text-center">Enrollments</th>
-                                <th className="pb-3 text-gray-400 font-medium text-center">Completions</th>
-                                <th className="pb-3 text-gray-400 font-medium text-center">Rate</th>
+                                <th className="pb-3 text-gray-400 font-medium text-sm md:text-base">Course</th>
+                                <th className="pb-3 text-gray-400 font-medium text-sm md:text-base">Status</th>
+                                <th className="pb-3 text-gray-400 font-medium text-center text-sm md:text-base hidden sm:table-cell">Lessons</th>
+                                <th className="pb-3 text-gray-400 font-medium text-center text-sm md:text-base">Enrolled</th>
+                                <th className="pb-3 text-gray-400 font-medium text-center text-sm md:text-base hidden md:table-cell">Completions</th>
+                                <th className="pb-3 text-gray-400 font-medium text-center text-sm md:text-base hidden sm:table-cell">Rate</th>
                             </tr>
                         </thead>
                         <tbody>
                             {stats?.courseStats.map((course) => (
                                 <tr key={course.courseId} className="border-b border-gray-700/50">
-                                    <td className="py-3 text-white">{course.title}</td>
+                                    <td className="py-3 text-white text-sm md:text-base max-w-[120px] md:max-w-none truncate">{course.title}</td>
                                     <td className="py-3">
                                         <span className={`px-2 py-1 rounded text-xs ${course.isPublished
                                                 ? 'bg-green-500/20 text-green-400'
@@ -128,10 +128,10 @@ export default function AdminDashboard() {
                                             {course.isPublished ? 'Published' : 'Draft'}
                                         </span>
                                     </td>
-                                    <td className="py-3 text-gray-300 text-center">{course.lessons}</td>
-                                    <td className="py-3 text-gray-300 text-center">{course.enrollments}</td>
-                                    <td className="py-3 text-gray-300 text-center">{course.completions}</td>
-                                    <td className="py-3 text-gray-300 text-center">
+                                    <td className="py-3 text-gray-300 text-center text-sm md:text-base hidden sm:table-cell">{course.lessons}</td>
+                                    <td className="py-3 text-gray-300 text-center text-sm md:text-base">{course.enrollments}</td>
+                                    <td className="py-3 text-gray-300 text-center text-sm md:text-base hidden md:table-cell">{course.completions}</td>
+                                    <td className="py-3 text-gray-300 text-center text-sm md:text-base hidden sm:table-cell">
                                         {course.enrollments > 0
                                             ? `${Math.round((course.completions / course.enrollments) * 100)}%`
                                             : '-'}
