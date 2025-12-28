@@ -22,6 +22,9 @@ interface FeaturedCourse {
   completionPoints: number;
   minPointsToAccess: number;
   enrollmentCost: number;
+  _count?: {
+    lessons: number;
+  };
 }
 
 // Component to fetch and display featured courses with personalization
@@ -87,7 +90,7 @@ function FeaturedCourses() {
       level: c.level,
       thumbnailUrl: c.thumbnailUrl || '',
       duration: c.duration,
-      totalLessons: 0n,
+      totalLessons: BigInt(c._count?.lessons ?? 0),
       minPointsToAccess: BigInt(c.minPointsToAccess),
       enrollmentCost: BigInt(c.enrollmentCost),
       objectives: [],

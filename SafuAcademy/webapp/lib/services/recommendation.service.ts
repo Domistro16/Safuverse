@@ -8,6 +8,15 @@ interface Course {
     level: CourseLevel;
     isPublished: boolean;
     createdAt: Date;
+    instructor: string | null;
+    thumbnailUrl: string | null;
+    duration: string | null;
+    completionPoints: number;
+    minPointsToAccess: number;
+    enrollmentCost: number;
+    _count?: {
+        lessons: number;
+    };
 }
 
 interface UserCourseWithCourse {
@@ -100,6 +109,11 @@ export class RecommendationService {
                     { level: { in: levelPriority } },
                 ],
             },
+            include: {
+                _count: {
+                    select: { lessons: true },
+                },
+            },
             orderBy: [
                 // Prioritize by enrollment count (popularity)
                 { enrollments: { _count: 'desc' } },
@@ -124,6 +138,11 @@ export class RecommendationService {
                 isPublished: true,
                 id: { notIn: excludeIds },
             },
+            include: {
+                _count: {
+                    select: { lessons: true },
+                },
+            },
             orderBy: { enrollments: { _count: 'desc' } },
             take: popularLimit,
         });
@@ -136,6 +155,11 @@ export class RecommendationService {
             where: {
                 isPublished: true,
                 id: { notIn: allExcludeIds },
+            },
+            include: {
+                _count: {
+                    select: { lessons: true },
+                },
             },
             orderBy: { createdAt: 'desc' },
             take: newestLimit,
