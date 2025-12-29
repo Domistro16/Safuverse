@@ -134,6 +134,7 @@ function FeaturedCourses() {
 const Home: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const testimonials = [
     {
@@ -201,7 +202,7 @@ const Home: React.FC = () => {
             ✦ Safu Academy
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Links - Desktop */}
           <div className="hidden md:flex items-center gap-6 text-sm">
             <Link href="/" className={`hover:opacity-100 transition ${isDark ? 'text-white font-semibold' : 'text-[#111] font-semibold'}`}>
               Home
@@ -218,6 +219,16 @@ const Home: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 lg:gap-5">
+            {/* Mobile Hamburger Button */}
+            <button
+              className={`md:hidden flex flex-col justify-center items-center w-8 h-8 gap-1.5 ${isDark ? 'text-white' : 'text-[#111]'}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <span className={`block w-5 h-0.5 transition-all duration-300 ${isDark ? 'bg-white' : 'bg-[#111]'} ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <span className={`block w-5 h-0.5 transition-all duration-300 ${isDark ? 'bg-white' : 'bg-[#111]'} ${mobileMenuOpen ? 'opacity-0' : ''}`} />
+              <span className={`block w-5 h-0.5 transition-all duration-300 ${isDark ? 'bg-white' : 'bg-[#111]'} ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            </button>
             <a href="#" className={`text-[18px] lg:text-[20px] opacity-80 hover:opacity-100 transition transform hover:scale-105 ${isDark ? 'text-white' : 'text-[#111]'
               }`}>
               𝕏
@@ -226,7 +237,7 @@ const Home: React.FC = () => {
               💬
             </a>
             <button
-              className={`hidden sm:flex w-[38px] h-[38px] lg:w-[42px] h-[42px] rounded-full items-center justify-center text-[16px] lg:text-[17px] transition cursor-pointer ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-[#f3f3f8] hover:bg-[#e7e7f3]'
+              className={`flex w-[34px] h-[34px] sm:w-[38px] sm:h-[38px] lg:w-[42px] lg:h-[42px] rounded-full items-center justify-center text-[14px] sm:text-[16px] lg:text-[17px] transition cursor-pointer ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-[#f3f3f8] hover:bg-[#e7e7f3]'
                 }`}
               type="button"
               onClick={toggleTheme}
@@ -234,6 +245,40 @@ const Home: React.FC = () => {
               {isDark ? '☀️' : '🌙'}
             </button>
             <CustomConnect />
+          </div>
+
+          {/* Mobile Navigation Menu */}
+          <div className={`absolute top-full left-0 right-0 md:hidden overflow-hidden transition-all duration-300 ${mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'} ${isDark ? 'bg-[#0a0a0f]/95 border-b border-white/10' : 'bg-white/95 border-b border-black/5'}`}>
+            <div className="flex flex-col py-4 px-6 gap-1">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`py-3 px-4 rounded-xl text-sm font-medium transition ${isDark ? 'text-white bg-white/5' : 'text-[#111] bg-[#fef3c7]'}`}
+              >
+                Home
+              </Link>
+              <Link
+                href="/courses"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-[#555]'}`}
+              >
+                All Courses
+              </Link>
+              <Link
+                href="/points"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-[#555]'}`}
+              >
+                Points
+              </Link>
+              <Link
+                href="/certificates"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-[#555]'}`}
+              >
+                Certificates
+              </Link>
+            </div>
           </div>
         </nav>
 
