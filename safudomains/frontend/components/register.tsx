@@ -387,11 +387,11 @@ const Register = () => {
 
   useEffect(() => {
     if (available === false) {
-      router.push('/')
+      router.push(`/resolve/${label}`)
     } else if (available === true) {
       setNext(0)
     }
-  }, [available, router])
+  }, [available, router, label])
 
   const registerParams: RegisterParams = {
     domain: label as string,

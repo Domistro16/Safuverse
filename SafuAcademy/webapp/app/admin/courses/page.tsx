@@ -98,43 +98,43 @@ export default function AdminCoursesPage() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-white">Courses</h1>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Courses</h1>
                 <Link
                     href="/admin/courses/new"
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm md:text-base"
                 >
                     + Create Course
                 </Link>
             </div>
 
-            <div className="bg-gray-800 rounded-xl overflow-hidden">
-                <table className="w-full text-left">
+            <div className="bg-gray-800 rounded-xl overflow-hidden overflow-x-auto">
+                <table className="w-full text-left min-w-[600px] lg:min-w-0">
                     <thead className="bg-gray-700">
                         <tr>
-                            <th className="px-6 py-4 text-gray-300 font-medium">ID</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium">Title</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium">Level</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium text-center">Lessons</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium text-center">Enrollments</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium text-center">Points Req.</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium text-center">Status</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium text-center">On-Chain</th>
-                            <th className="px-6 py-4 text-gray-300 font-medium">Actions</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-sm hidden lg:table-cell">ID</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-sm">Title</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-sm hidden md:table-cell">Level</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden sm:table-cell">Lessons</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden lg:table-cell">Enrolled</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden xl:table-cell">Points</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm">Status</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden xl:table-cell">Chain</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-sm">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {courses.map((course) => (
                             <tr key={course.id} className="border-t border-gray-700">
-                                <td className="px-6 py-4 text-gray-400">{course.id}</td>
-                                <td className="px-6 py-4 text-white font-medium">{course.title}</td>
-                                <td className="px-6 py-4 text-gray-300">{course.level || 'N/A'}</td>
-                                <td className="px-6 py-4 text-gray-300 text-center">{course._count.lessons}</td>
-                                <td className="px-6 py-4 text-gray-300 text-center">{course._count.enrollments}</td>
-                                <td className="px-6 py-4 text-gray-300 text-center">
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-gray-400 text-sm hidden lg:table-cell">{course.id}</td>
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-white font-medium text-sm max-w-[150px] truncate">{course.title}</td>
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-sm hidden md:table-cell">{course.level || 'N/A'}</td>
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-center text-sm hidden sm:table-cell">{course._count.lessons}</td>
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-center text-sm hidden lg:table-cell">{course._count.enrollments}</td>
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-center text-sm hidden xl:table-cell">
                                     {course.minPointsToAccess > 0 ? course.minPointsToAccess : 'Free'}
                                 </td>
-                                <td className="px-6 py-4 text-center">
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                                     <span className={`px-2 py-1 rounded text-xs ${course.isPublished
                                         ? 'bg-green-500/20 text-green-400'
                                         : 'bg-yellow-500/20 text-yellow-400'
@@ -142,36 +142,36 @@ export default function AdminCoursesPage() {
                                         {course.isPublished ? 'Published' : 'Draft'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-center">
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-center hidden xl:table-cell">
                                     <span className={`px-2 py-1 rounded text-xs ${course.onChainSynced
                                         ? 'bg-blue-500/20 text-blue-400'
                                         : 'bg-gray-500/20 text-gray-400'
                                         }`}>
-                                        {course.onChainSynced ? 'Synced' : 'Not Synced'}
+                                        {course.onChainSynced ? 'Synced' : 'No'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
+                                <td className="px-3 md:px-6 py-3 md:py-4">
+                                    <div className="flex items-center gap-1 md:gap-2 flex-wrap">
                                         <Link
                                             href={`/admin/courses/${course.id}`}
-                                            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+                                            className="px-2 md:px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs md:text-sm rounded transition-colors"
                                         >
                                             Edit
                                         </Link>
                                         <button
                                             onClick={() => togglePublish(course.id, course.isPublished)}
-                                            className={`px-3 py-1 text-sm rounded transition-colors ${course.isPublished
+                                            className={`px-2 md:px-3 py-1 text-xs md:text-sm rounded transition-colors hidden sm:inline-block ${course.isPublished
                                                 ? 'bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400'
                                                 : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
                                                 }`}
                                         >
-                                            {course.isPublished ? 'Unpublish' : 'Publish'}
+                                            {course.isPublished ? 'Unpub' : 'Pub'}
                                         </button>
                                         <button
                                             onClick={() => deleteCourse(course.id, course.title)}
-                                            className="px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm rounded transition-colors"
+                                            className="px-2 md:px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs md:text-sm rounded transition-colors"
                                         >
-                                            Delete
+                                            Del
                                         </button>
                                     </div>
                                 </td>

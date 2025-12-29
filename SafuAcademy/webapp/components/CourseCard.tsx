@@ -36,7 +36,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         style={{ perspective: "900px" }}
       >
         {/* Course Preview Image/Pattern */}
-        <div className={`w-full h-44 md:h-52 border-b overflow-hidden flex items-center justify-center p-4 ${isDark ? 'bg-[#1a1a24] border-[#2a2a3a]' : 'bg-white border-black/5'
+        <div className={`w-full h-[230px] md:h-[270px] border-b overflow-hidden flex items-center justify-center p-4 ${isDark ? 'bg-[#1a1a24] border-[#2a2a3a]' : 'bg-white border-black/5'
           }`}>
           <div
             className={`w-full h-full rounded-[16px] overflow-hidden transition-transform duration-500 group-hover:scale-[1.04] ${isDark ? 'border-2 border-[#2a2a3a]' : 'border-4 border-white shadow-[0_10px_40px_rgba(0,0,0,0.08)]'

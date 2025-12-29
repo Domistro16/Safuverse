@@ -580,7 +580,7 @@ export default function CreateCoursePage() {
 
     return (
         <div className="max-w-4xl">
-            <h1 className="text-3xl font-bold text-white mb-8">Create New Course</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8">Create New Course</h1>
 
             {step !== 'form' && (
                 <div className="bg-blue-500/20 border border-blue-500 rounded-lg p-4 mb-6">
@@ -615,20 +615,20 @@ export default function CreateCoursePage() {
                             className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-gray-400 mb-2">Instructor</label>
+                            <label className="block text-gray-400 mb-2 text-sm">Instructor</label>
                             <input type="text" name="instructor" value={formData.instructor} onChange={handleChange}
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
                         </div>
                         <div>
-                            <label className="block text-gray-400 mb-2">Duration</label>
+                            <label className="block text-gray-400 mb-2 text-sm">Duration</label>
                             <input type="text" name="duration" value={formData.duration} onChange={handleChange} placeholder="e.g. 2 hours"
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-gray-400 mb-2">Category</label>
                             <select name="category" value={formData.category} onChange={handleChange}
@@ -723,23 +723,23 @@ export default function CreateCoursePage() {
                             <p className="text-yellow-400 text-sm">⚡ Advanced courses require users to have minimum points and may deduct points on enrollment.</p>
                         </div>
                     )}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-gray-400 mb-2">Completion Points</label>
+                            <label className="block text-gray-400 mb-2 text-sm">Completion Points</label>
                             <input type="number" name="completionPoints" value={formData.completionPoints} onChange={handleChange} min="0"
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
                             <p className="text-gray-500 text-xs mt-1">Awarded on completion</p>
                         </div>
                         <div>
-                            <label className="block text-gray-400 mb-2">Min Points to Access</label>
+                            <label className="block text-gray-400 mb-2 text-sm">Min Points</label>
                             <input type="number" name="minPointsToAccess" value={formData.minPointsToAccess} onChange={handleChange} min="0"
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
                             <p className="text-gray-500 text-xs mt-1">Required to enroll</p>
                         </div>
                         <div>
-                            <label className="block text-gray-400 mb-2">Enrollment Cost</label>
+                            <label className="block text-gray-400 mb-2 text-sm">Enrollment Cost</label>
                             <input type="number" name="enrollmentCost" value={formData.enrollmentCost} onChange={handleChange} min="0"
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
                             <p className="text-gray-500 text-xs mt-1">Deducted on enrollment</p>
                         </div>
                     </div>
@@ -860,9 +860,9 @@ export default function CreateCoursePage() {
                                         </div>
 
                                         {lesson.quiz.enabled && (
-                                            <div className="space-y-4 bg-gray-600/30 rounded-lg p-4">
+                                            <div className="space-y-4 bg-gray-600/30 rounded-lg p-3 md:p-4">
                                                 {/* Quiz Settings */}
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-gray-400 mb-1 text-xs">Passing Score (%)</label>
                                                         <input type="number" min="1" max="100" value={lesson.quiz.passingScore}

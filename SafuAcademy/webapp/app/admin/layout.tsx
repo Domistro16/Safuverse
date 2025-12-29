@@ -14,6 +14,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const router = useRouter();
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         async function checkAdmin() {
@@ -81,48 +82,87 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     return (
         <div className="min-h-screen bg-gray-900">
-            {/* Admin Sidebar */}
-            <div className="flex">
-                <aside className="w-64 bg-gray-800 min-h-screen p-4 fixed left-0 top-0">
-                    <div className="mb-8">
-                        <h1 className="text-xl font-bold text-white">SafuAcademy</h1>
-                        <p className="text-sm text-gray-400">Admin Dashboard</p>
-                    </div>
-
-                    <nav className="space-y-2">
-                        <Link
-                            href="/admin"
-                            className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                        >
-                            📊 Dashboard
-                        </Link>
-                        <Link
-                            href="/admin/courses"
-                            className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                        >
-                            📚 Courses
-                        </Link>
-                        <Link
-                            href="/admin/courses/new"
-                            className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                        >
-                            ➕ Create Course
-                        </Link>
-                        <hr className="border-gray-700 my-4" />
-                        <Link
-                            href="/"
-                            className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                        >
-                            🏠 Back to Site
-                        </Link>
-                    </nav>
-                </aside>
-
-                {/* Main Content */}
-                <main className="ml-64 flex-1 p-8">
-                    {children}
-                </main>
+            {/* Mobile Header */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-gray-800 px-4 py-3 flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-bold text-white">SafuAcademy</h1>
+                    <p className="text-xs text-gray-400">Admin</p>
+                </div>
+                <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                >
+                    {sidebarOpen ? (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    ) : (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    )}
+                </button>
             </div>
+
+            {/* Overlay */}
+            {sidebarOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 z-40 bg-black/50"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
+            {/* Admin Sidebar */}
+            <aside className={`
+                fixed left-0 top-0 z-50 w-64 bg-gray-800 min-h-screen p-4 transition-transform duration-300 ease-in-out
+                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                lg:translate-x-0
+            `}>
+                <div className="mb-8 hidden lg:block">
+                    <h1 className="text-xl font-bold text-white">SafuAcademy</h1>
+                    <p className="text-sm text-gray-400">Admin Dashboard</p>
+                </div>
+                <div className="mb-8 lg:hidden mt-14">
+                    <p className="text-sm text-gray-400">Dashboard</p>
+                </div>
+
+                <nav className="space-y-2">
+                    <Link
+                        href="/admin"
+                        onClick={() => setSidebarOpen(false)}
+                        className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                    >
+                        📊 Dashboard
+                    </Link>
+                    <Link
+                        href="/admin/courses"
+                        onClick={() => setSidebarOpen(false)}
+                        className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                    >
+                        📚 Courses
+                    </Link>
+                    <Link
+                        href="/admin/courses/new"
+                        onClick={() => setSidebarOpen(false)}
+                        className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                    >
+                        ➕ Create Course
+                    </Link>
+                    <hr className="border-gray-700 my-4" />
+                    <Link
+                        href="/"
+                        onClick={() => setSidebarOpen(false)}
+                        className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                    >
+                        🏠 Back to Site
+                    </Link>
+                </nav>
+            </aside>
+
+            {/* Main Content */}
+            <main className="lg:ml-64 flex-1 p-4 pt-20 lg:pt-8 lg:p-8">
+                {children}
+            </main>
         </div>
     );
 }

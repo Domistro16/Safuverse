@@ -208,7 +208,7 @@ export default function Home() {
   const route = () => {
     if (available == 'Available') {
       setRecent(search)
-      router.push(`/register/${search}/`)
+      router.push(`/register/${search}`)
     } else if (available == 'Registered') {
       setRecent(search)
       router.push(`/resolve/${search}`)

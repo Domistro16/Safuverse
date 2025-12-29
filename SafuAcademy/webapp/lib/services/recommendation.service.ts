@@ -1,13 +1,22 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, CourseLevel } from '@prisma/client';
 
 interface Course {
     id: number;
     title: string;
     description: string;
     category: string;
-    level: string;
+    level: CourseLevel;
     isPublished: boolean;
     createdAt: Date;
+    instructor: string | null;
+    thumbnailUrl: string | null;
+    duration: string | null;
+    completionPoints: number;
+    minPointsToAccess: number;
+    enrollmentCost: number;
+    _count?: {
+        lessons: number;
+    };
 }
 
 interface UserCourseWithCourse {
@@ -80,7 +89,7 @@ export class RecommendationService {
             .map(([category]) => category);
 
         // Get user's current skill level (based on completed course levels)
-        const completedLevels = userCourses
+        const completedLevels: CourseLevel[] = userCourses
             .filter((uc: UserCourseWithCourse) => uc.isCompleted && uc.course)
             .map((uc: UserCourseWithCourse) => uc.course!.level);
 
@@ -99,6 +108,11 @@ export class RecommendationService {
                     // Next skill level
                     { level: { in: levelPriority } },
                 ],
+            },
+            include: {
+                _count: {
+                    select: { lessons: true },
+                },
             },
             orderBy: [
                 // Prioritize by enrollment count (popularity)
@@ -124,6 +138,11 @@ export class RecommendationService {
                 isPublished: true,
                 id: { notIn: excludeIds },
             },
+            include: {
+                _count: {
+                    select: { lessons: true },
+                },
+            },
             orderBy: { enrollments: { _count: 'desc' } },
             take: popularLimit,
         });
@@ -137,6 +156,11 @@ export class RecommendationService {
                 isPublished: true,
                 id: { notIn: allExcludeIds },
             },
+            include: {
+                _count: {
+                    select: { lessons: true },
+                },
+            },
             orderBy: { createdAt: 'desc' },
             take: newestLimit,
         });
@@ -147,11 +171,11 @@ export class RecommendationService {
     /**
      * Determine the next skill level priority based on completed levels.
      */
-    private getNextLevelPriority(completedLevels: string[]): string[] {
-        const levelOrder = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
+    private getNextLevelPriority(completedLevels: CourseLevel[]): CourseLevel[] {
+        const levelOrder: CourseLevel[] = [CourseLevel.BEGINNER, CourseLevel.INTERMEDIATE, CourseLevel.ADVANCED];
 
         if (completedLevels.length === 0) {
-            return ['BEGINNER', 'INTERMEDIATE'];
+            return [CourseLevel.BEGINNER, CourseLevel.INTERMEDIATE];
         }
 
         // Find highest completed level
@@ -164,7 +188,7 @@ export class RecommendationService {
         }
 
         // Recommend current level and next level
-        const priorities: string[] = [];
+        const priorities: CourseLevel[] = [];
         if (highestIndex >= 0 && highestIndex < levelOrder.length) {
             priorities.push(levelOrder[highestIndex]);
         }
@@ -172,6 +196,6 @@ export class RecommendationService {
             priorities.push(levelOrder[highestIndex + 1]);
         }
 
-        return priorities.length > 0 ? priorities : ['BEGINNER', 'INTERMEDIATE'];
+        return priorities.length > 0 ? priorities : [CourseLevel.BEGINNER, CourseLevel.INTERMEDIATE];
     }
 }

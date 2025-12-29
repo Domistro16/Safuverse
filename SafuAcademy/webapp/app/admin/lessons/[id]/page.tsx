@@ -255,19 +255,19 @@ export default function EditLessonPage() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
                 <div>
                     <Link href={`/admin/courses/${lesson.courseId}`} className="text-blue-400 hover:underline text-sm">
                         ← Back to {lesson.course.title}
                     </Link>
-                    <h1 className="text-3xl font-bold text-white mt-2">Edit Lesson</h1>
-                    <p className="text-gray-400">Order: {lesson.orderIndex + 1}</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white mt-2">Edit Lesson</h1>
+                    <p className="text-gray-400 text-sm">Order: {lesson.orderIndex + 1}</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-2 md:gap-4">
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+                        className="px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors text-sm md:text-base"
                     >
                         {saving ? 'Saving...' : 'Save Lesson'}
                     </button>
@@ -318,26 +318,26 @@ export default function EditLessonPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-gray-400 mb-2">Watch Points</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Watch Points</label>
                                 <input
                                     type="number"
                                     value={lesson.watchPoints}
                                     onChange={(e) => setLesson({ ...lesson, watchPoints: parseInt(e.target.value) || 0 })}
                                     min="0"
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                                 />
                                 <p className="text-gray-500 text-xs mt-1">Points for watching 50%+ of video</p>
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-2">Video Duration (seconds)</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Video Duration (sec)</label>
                                 <input
                                     type="number"
                                     value={lesson.videoDuration}
                                     onChange={(e) => setLesson({ ...lesson, videoDuration: parseInt(e.target.value) || 0 })}
                                     min="0"
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                                 />
                             </div>
                         </div>
@@ -386,13 +386,13 @@ export default function EditLessonPage() {
                         {/* Add new video form */}
                         <div className="border-t border-gray-600 pt-4">
                             <h3 className="text-white font-medium mb-3">Add New Video</h3>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className="block text-gray-400 text-sm mb-1">Language Code</label>
                                     <select
                                         value={newVideoLanguage}
                                         onChange={(e) => setNewVideoLanguage(e.target.value)}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                                     >
                                         <option value="en">en - English</option>
                                         <option value="zh">zh - Chinese (中文)</option>
@@ -413,7 +413,7 @@ export default function EditLessonPage() {
                                         value={newVideoLabel}
                                         onChange={(e) => setNewVideoLabel(e.target.value)}
                                         placeholder="e.g., English, 中文"
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
                             </div>
@@ -473,26 +473,26 @@ export default function EditLessonPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-gray-400 mb-2">Passing Score (%)</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Passing Score (%)</label>
                                 <input
                                     type="number"
                                     value={quiz?.passingScore || 70}
                                     onChange={(e) => setQuiz((prev) => ({ ...prev!, passingScore: parseInt(e.target.value) || 70 }))}
                                     min="0"
                                     max="100"
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-2">Pass Points</label>
+                                <label className="block text-gray-400 mb-2 text-sm">Pass Points</label>
                                 <input
                                     type="number"
                                     value={quiz?.passPoints || 20}
                                     onChange={(e) => setQuiz((prev) => ({ ...prev!, passPoints: parseInt(e.target.value) || 20 }))}
                                     min="0"
-                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                                 />
                                 <p className="text-gray-500 text-xs mt-1">Points awarded for passing the quiz</p>
                             </div>
