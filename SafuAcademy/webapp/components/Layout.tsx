@@ -120,6 +120,19 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
         {children}
       </main>
 
+      {/* Floating Profile Button - Bottom Left */}
+      <Link
+        href="/profile"
+        className={`fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex items-center justify-center text-2xl transition-all duration-300 hover:scale-110 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] ${
+          isDark
+            ? "bg-[#ffb000] text-black hover:bg-[#ffa000]"
+            : "bg-[#111] text-white hover:bg-[#222]"
+        }`}
+        aria-label="Profile"
+      >
+        👤
+      </Link>
+
       <footer
         className={`w-full pt-20 pb-10 text-center border-t mt-10 ${isDark
           ? "bg-[#0a0a0f] border-white/10"
