@@ -53,7 +53,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
       <nav
         className={`w-full flex items-center justify-between px-6 lg:px-10 py-4 lg:py-5 backdrop-blur border-b sticky top-0 z-50 ${isDark
           ? "bg-[#0a0a0f]/90 border-white/10"
-          : "bg-white/70 border-black/5"
+          : "bg-white/60 border-black/5"
           }`}
       >
         <Link
@@ -81,6 +81,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
+          {/* Social Links - Desktop only */}
+          <a href="#" className={`hidden md:block text-[18px] lg:text-[20px] opacity-80 hover:opacity-100 transition transform hover:scale-105 ${isDark ? 'text-white' : 'text-[#111]'
+            }`}>
+            𝕏
+          </a>
+          <a href="#" className="hidden md:block text-[20px] lg:text-[22px] text-[#5865F2]">
+            💬
+          </a>
+
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
@@ -138,6 +147,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
             >
               Certificates
             </Link>
+            {/* Social Links in Mobile Menu */}
+            <div className={`flex items-center gap-4 mt-2 pt-3 px-4 border-t ${isDark ? 'border-white/10' : 'border-black/5'}`}>
+              <a href="#" className={`text-lg opacity-80 hover:opacity-100 transition ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                𝕏
+              </a>
+              <a href="#" className="text-lg text-[#5865F2]">
+                💬
+              </a>
+            </div>
           </div>
         </div>
       </nav>
