@@ -387,7 +387,7 @@ const Register = () => {
 
   useEffect(() => {
     if (available === false) {
-      router.push(`/resolve/${label}`)
+      router.push(`/mynames`)
     } else if (available === true) {
       setNext(0)
     }
@@ -1166,10 +1166,10 @@ const Register = () => {
                         Register another
                       </button>
                       <button
-                        onClick={() => router.push(`/resolve/${label}`)}
+                        onClick={() => router.push(`/mynames`)}
                         style={buttonPrimaryStyle}
                       >
-                        View name
+                        View My Names
                       </button>
                     </div>
                   </div>
