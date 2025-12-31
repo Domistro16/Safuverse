@@ -11,6 +11,9 @@ import {
   TxResult,
   TxOptions,
   EventFilterOptions,
+  FounderInfo,
+  TeamMember,
+  LaunchTeamInfo,
 } from '../types';
 import { CONSTANTS, GAS_LIMITS } from '../constants';
 import { LaunchpadManagerABI } from '../abis';
@@ -68,6 +71,7 @@ export class LaunchpadManager extends BaseContract {
    * - Vesting duration is fixed at 180 days (contract overrides parameter)
    *
    * ✅ Uses BNB (BNBad) for all amounts
+   * ✅ Includes team information (founder + up to 2 team members)
    * ⚠️  NOTE: vanitySalt parameter is ignored - vanity addresses not supported in current contract version
    */
   async createLaunch(params: CreateLaunchParams, options?: TxOptions): Promise<TxResult> {
@@ -91,6 +95,32 @@ export class LaunchpadManager extends BaseContract {
       params.metadata.discord,
     ];
 
+    // Prepare team info struct for contract
+    const teamInfo = [
+      // FounderInfo
+      [
+        params.teamInfo.founder.name,
+        params.teamInfo.founder.walletAddress,
+        params.teamInfo.founder.bio,
+      ],
+      // TeamMember1
+      [
+        params.teamInfo.teamMember1.name,
+        params.teamInfo.teamMember1.role,
+        params.teamInfo.teamMember1.twitter,
+        params.teamInfo.teamMember1.linkedin,
+      ],
+      // TeamMember2
+      [
+        params.teamInfo.teamMember2.name,
+        params.teamInfo.teamMember2.role,
+        params.teamInfo.teamMember2.twitter,
+        params.teamInfo.teamMember2.linkedin,
+      ],
+      // teamMemberCount
+      params.teamInfo.teamMemberCount,
+    ];
+
     // ⚠️  Vanity salt is ignored - contract doesn't support createLaunchWithVanity
     // Only createLaunch() function exists in current contract version
     const tx: ethers.ContractTransactionResponse = await this.contract.createLaunch(
@@ -102,6 +132,7 @@ export class LaunchpadManager extends BaseContract {
       vestingDuration,
       metadata,
       params.burnLP,
+      teamInfo,
       this.buildTxOptions(options, GAS_LIMITS.CREATE_LAUNCH)
     );
 
@@ -1091,6 +1122,182 @@ export class LaunchpadManager extends BaseContract {
 
     const tx = await this.contract.updateInfoFiAddress(
       infoFiAddress,
+      this.buildTxOptions(options)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  // ==================== TEAM INFO METHODS ====================
+
+  /**
+   * ✅ NEW: Get founder information for a launch
+   *
+   * Returns the founder's name, wallet address, and bio.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @returns Founder information
+   */
+  async getFounderInfo(tokenAddress: string): Promise<FounderInfo> {
+    this.validateAddress(tokenAddress);
+
+    const info = await this.contract.getFounderInfo(tokenAddress);
+
+    return {
+      name: info[0],
+      walletAddress: info[1],
+      bio: info[2],
+    };
+  }
+
+  /**
+   * ✅ NEW: Get team members for a launch
+   *
+   * Returns up to 2 team members with their details.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @returns Team members and count
+   */
+  async getTeamMembers(tokenAddress: string): Promise<{
+    teamMember1: TeamMember;
+    teamMember2: TeamMember;
+    teamMemberCount: number;
+  }> {
+    this.validateAddress(tokenAddress);
+
+    const info = await this.contract.getTeamMembers(tokenAddress);
+
+    return {
+      teamMember1: {
+        name: info[0].name,
+        role: info[0].role,
+        twitter: info[0].twitter,
+        linkedin: info[0].linkedin,
+      },
+      teamMember2: {
+        name: info[1].name,
+        role: info[1].role,
+        twitter: info[1].twitter,
+        linkedin: info[1].linkedin,
+      },
+      teamMemberCount: Number(info[2]),
+    };
+  }
+
+  /**
+   * ✅ NEW: Get complete team info for a launch
+   *
+   * Returns founder info and all team members.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @returns Complete team information
+   */
+  async getLaunchTeamInfo(tokenAddress: string): Promise<LaunchTeamInfo> {
+    this.validateAddress(tokenAddress);
+
+    const info = await this.contract.getLaunchTeamInfo(tokenAddress);
+
+    return {
+      founder: {
+        name: info.founder.name,
+        walletAddress: info.founder.walletAddress,
+        bio: info.founder.bio,
+      },
+      teamMember1: {
+        name: info.teamMember1.name,
+        role: info.teamMember1.role,
+        twitter: info.teamMember1.twitter,
+        linkedin: info.teamMember1.linkedin,
+      },
+      teamMember2: {
+        name: info.teamMember2.name,
+        role: info.teamMember2.role,
+        twitter: info.teamMember2.twitter,
+        linkedin: info.teamMember2.linkedin,
+      },
+      teamMemberCount: Number(info.teamMemberCount),
+    };
+  }
+
+  /**
+   * ✅ NEW: Update founder info (only founder can update, only before graduation)
+   *
+   * Allows the founder to update their name and bio before the token graduates.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @param name - New founder name
+   * @param bio - New founder bio
+   * @param options - Transaction options
+   */
+  async updateFounderInfo(
+    tokenAddress: string,
+    name: string,
+    bio: string,
+    options?: TxOptions
+  ): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+
+    const tx = await this.contract.updateFounderInfo(
+      tokenAddress,
+      name,
+      bio,
+      this.buildTxOptions(options)
+    );
+
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  }
+
+  /**
+   * ✅ NEW: Update team members (only founder can update, only before graduation)
+   *
+   * Allows the founder to update team member information before the token graduates.
+   *
+   * @param tokenAddress - Address of the launched token
+   * @param teamMember1 - First team member info
+   * @param teamMember2 - Second team member info
+   * @param teamMemberCount - Number of team members (0, 1, or 2)
+   * @param options - Transaction options
+   */
+  async updateTeamMembers(
+    tokenAddress: string,
+    teamMember1: TeamMember,
+    teamMember2: TeamMember,
+    teamMemberCount: number,
+    options?: TxOptions
+  ): Promise<TxResult> {
+    this.requireSigner();
+    this.validateAddress(tokenAddress);
+
+    if (teamMemberCount > 2) {
+      throw new Error('Maximum 2 team members allowed');
+    }
+
+    // Prepare team member structs for contract
+    const member1 = [
+      teamMember1.name,
+      teamMember1.role,
+      teamMember1.twitter,
+      teamMember1.linkedin,
+    ];
+    const member2 = [
+      teamMember2.name,
+      teamMember2.role,
+      teamMember2.twitter,
+      teamMember2.linkedin,
+    ];
+
+    const tx = await this.contract.updateTeamMembers(
+      tokenAddress,
+      member1,
+      member2,
+      teamMemberCount,
       this.buildTxOptions(options)
     );
 
