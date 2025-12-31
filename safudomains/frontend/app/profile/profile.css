@@ -750,3 +750,48 @@ body.dark-mode .footer-copy {
     font-size: 24px;
   }
 }
+
+/* Responsive Table */
+.domains-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .domains-table {
+    min-width: 420px;
+  }
+
+  .domains-table th,
+  .domains-table td {
+    padding: 8px 4px;
+    font-size: 0.82rem;
+  }
+
+  .domains-table th:nth-child(3),
+  .domains-table td:nth-child(3) {
+    display: none;
+  }
+
+  .domain-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .status-pill {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .actions-trigger-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .primary-badge {
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+}

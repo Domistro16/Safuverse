@@ -133,11 +133,31 @@ function DomainImageModal({ isOpen, onClose, domain, isDark }: ActionModalProps)
   );
 }
 
+// ABI to read current addr
+const addrAbi = [
+  {
+    inputs: [{ internalType: 'bytes32', name: 'node', type: 'bytes32' }],
+    name: 'addr',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+];
+
 // Change BSC Record Modal - sets the BSC address the domain resolves to
 function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
   const [bscAddress, setBscAddress] = useState('');
   const [step, setStep] = useState(0);
   const { writeContractAsync, isPending, data: hash } = useWriteContract();
+
+  // Fetch current BSC address
+  const { data: currentAddr } = useReadContract({
+    abi: addrAbi,
+    address: constants.PublicResolver,
+    functionName: 'addr',
+    args: [namehash(domain)],
+  });
+  const currentBscAddress = currentAddr as string | undefined;
 
   const handleSetBSCRecord = async () => {
     try {
@@ -172,7 +192,7 @@ function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalPr
             <input
               value={bscAddress}
               onChange={(e) => setBscAddress(e.target.value)}
-              placeholder="0x..."
+              placeholder={currentBscAddress || '0x...'}
               className="modal-input"
               style={{ background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4', color: isDark ? '#fff' : '#111', border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)' }}
             />
@@ -668,42 +688,44 @@ export default function Profile() {
                 </div>
               ) : (
                 <>
-                  <table className="domains-table">
-                    <thead>
-                      <tr>
-                        <th>Domain</th>
-                        <th>Status</th>
-                        <th>Minted</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {domains.slice(0, 10).map((domain: any, index: number) => {
-                        const now = Math.floor(Date.now() / 1000);
-                        const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
-                        const isPrimaryDomain = primaryName === domain.name;
+                  <div className="domains-table-wrapper">
+                    <table className="domains-table">
+                      <thead>
+                        <tr>
+                          <th>Domain</th>
+                          <th>Status</th>
+                          <th>Minted</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {domains.slice(0, 10).map((domain: any, index: number) => {
+                          const now = Math.floor(Date.now() / 1000);
+                          const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
+                          const isPrimaryDomain = primaryName === domain.name;
 
-                        return (
-                          <tr key={index}>
-                            <td className="domain-name">
-                              {domain.name}
-                              {isPrimaryDomain && <span className="primary-badge">Primary</span>}
-                            </td>
-                            <td>
-                              <span className={`status-pill ${isExpired ? 'expired' : ''}`}>
-                                <span className={`status-dot ${isExpired ? 'expired' : ''}`} />
-                                {isExpired ? 'Expired' : 'Active'}
-                              </span>
-                            </td>
-                            <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
-                            <td>
-                              <ActionsDropdown domain={domain.name} isPrimary={isPrimaryDomain} isDark={isDark} />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          return (
+                            <tr key={index}>
+                              <td className="domain-name">
+                                {domain.name}
+                                {isPrimaryDomain && <span className="primary-badge">Primary</span>}
+                              </td>
+                              <td>
+                                <span className={`status-pill ${isExpired ? 'expired' : ''}`}>
+                                  <span className={`status-dot ${isExpired ? 'expired' : ''}`} />
+                                  {isExpired ? 'Expired' : 'Active'}
+                                </span>
+                              </td>
+                              <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
+                              <td>
+                                <ActionsDropdown domain={domain.name} isPrimary={isPrimaryDomain} isDark={isDark} />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                   {domains.length > 10 && (
                     <button className="view-all-btn" onClick={() => router.push('/profile')}>
                       View all {domains.length} domains
