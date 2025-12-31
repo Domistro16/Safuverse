@@ -192,7 +192,7 @@ export default function Nav() {
         {/* Logo */}
         <div onClick={() => router.push('/')} className="flex items-center gap-1.5 cursor-pointer flex-shrink-0">
           <img
-            src="/safuverse.png"
+            src="/Safuverse.png"
             className="h-8 sm:h-10 hidden sm:block"
             alt="safuverse"
           />
