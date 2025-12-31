@@ -52,7 +52,8 @@ export const NavBar: React.FC = () => {
         className={`flex items-center gap-2 text-[18px] lg:text-[20px] font-bold tracking-[-0.03em] ${isDark ? "text-white" : "text-[#111]"
           }`}
       >
-        ✦ Safu Academy
+        <img src="/Safuverse.png" className="h-10 hidden md:block"/>
+         <img src="/small.png" className="h-11 block md:hidden"/>
       </Link>
 
       {/* Desktop Navigation */}
