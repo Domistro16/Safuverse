@@ -32,13 +32,13 @@ const isWrappedAbi = [
   },
 ]
 
-const setResolverAbi = [
+const setAddrAbi = [
   {
     inputs: [
       { internalType: 'bytes32', name: 'node', type: 'bytes32' },
-      { internalType: 'address', name: 'resolver', type: 'address' },
+      { internalType: 'address', name: 'a', type: 'address' },
     ],
-    name: 'setResolver',
+    name: 'setAddr',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -164,31 +164,29 @@ function DomainImageModal({ isOpen, onClose, domain, isDark }: ActionModalProps)
   )
 }
 
-// Change Resolver Modal Component
-function ChangeResolverModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
-  const label = domain.replace(/\.safu$/, '')
-  const isWrapped = useIsWrapped(domain)
-  const [resolver, setResolver] = useState(constants.PublicResolver as string)
+// Change BSC Record Modal Component - sets the BSC address the domain resolves to
+function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
+  const [bscAddress, setBscAddress] = useState('')
   const [step, setStep] = useState(0)
   const { writeContractAsync, isPending, data: hash } = useWriteContract()
 
-  const handleSetResolver = async () => {
+  const handleSetBSCRecord = async () => {
     try {
       await writeContractAsync({
-        abi: setResolverAbi,
-        address: isWrapped ? constants.NameWrapper : constants.Registry,
-        functionName: 'setResolver',
-        args: [namehash(domain), resolver as `0x${string}`],
+        abi: setAddrAbi,
+        address: constants.PublicResolver,
+        functionName: 'setAddr',
+        args: [namehash(domain), bscAddress as `0x${string}`],
       })
       setStep(1)
     } catch (error) {
-      console.error('Set resolver error:', error)
+      console.error('Set BSC record error:', error)
     }
   }
 
   const handleClose = () => {
     setStep(0)
-    setResolver(constants.PublicResolver)
+    setBscAddress('')
     onClose()
   }
 
@@ -231,15 +229,15 @@ function ChangeResolverModal({ isOpen, onClose, domain, isDark }: ActionModalPro
               color: isDark ? '#fff' : '#111',
               marginBottom: '20px',
             }}>
-              Change Resolver for {domain}
+              Change BSC Record for {domain}
             </h2>
             <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '16px', fontSize: '14px' }}>
-              Enter the new resolver address
+              Enter the BSC address this domain should resolve to
             </p>
             <input
-              value={resolver}
-              onChange={(e) => setResolver(e.target.value)}
-              placeholder="Resolver address"
+              value={bscAddress}
+              onChange={(e) => setBscAddress(e.target.value)}
+              placeholder="0x..."
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -268,8 +266,8 @@ function ChangeResolverModal({ isOpen, onClose, domain, isDark }: ActionModalPro
                 Cancel
               </button>
               <button
-                onClick={handleSetResolver}
-                disabled={isPending}
+                onClick={handleSetBSCRecord}
+                disabled={isPending || !bscAddress}
                 style={{
                   flex: 1,
                   padding: '12px',
@@ -277,12 +275,12 @@ function ChangeResolverModal({ isOpen, onClose, domain, isDark }: ActionModalPro
                   color: isDark ? '#000' : '#fff',
                   border: 'none',
                   borderRadius: '12px',
-                  cursor: isPending ? 'not-allowed' : 'pointer',
+                  cursor: (isPending || !bscAddress) ? 'not-allowed' : 'pointer',
                   fontWeight: 500,
-                  opacity: isPending ? 0.6 : 1,
+                  opacity: (isPending || !bscAddress) ? 0.6 : 1,
                 }}
               >
-                {isPending ? 'Confirming...' : 'Change Resolver'}
+                {isPending ? 'Confirming...' : 'Update Record'}
               </button>
             </div>
           </>
@@ -295,10 +293,10 @@ function ChangeResolverModal({ isOpen, onClose, domain, isDark }: ActionModalPro
               marginBottom: '20px',
               textAlign: 'center',
             }}>
-              Transaction Submitted
+              BSC Record Updated!
             </h2>
             <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '16px', fontSize: '14px', textAlign: 'center' }}>
-              Your resolver change has been submitted.
+              {domain} now resolves to {bscAddress.slice(0, 6)}...{bscAddress.slice(-4)}
             </p>
             {hash && (
               <p style={{ color: isDark ? '#888' : '#999', fontSize: '12px', wordBreak: 'break-all', textAlign: 'center' }}>
@@ -1104,7 +1102,7 @@ function DomainCard({
         domain={domain.name}
         isDark={isDark}
       />
-      <ChangeResolverModal
+      <ChangeBSCRecordModal
         isOpen={showResolverModal}
         onClose={() => setShowResolverModal(false)}
         domain={domain.name}
