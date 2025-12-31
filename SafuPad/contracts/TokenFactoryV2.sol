@@ -19,6 +19,7 @@ contract LaunchpadTokenV2 is ERC20, Ownable {
         string twitter;
         string telegram;
         string discord;
+        string docs;
     }
 
     TokenMetadata public metadata;

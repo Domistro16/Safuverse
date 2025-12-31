@@ -23,7 +23,7 @@ interface ITokenFactoryV2 {
         string website;
         string twitter;
         string telegram;
-        string discord;
+        string docs;
     }
 
     function createToken(
@@ -221,6 +221,28 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         bool claimed;
     }
 
+    // Add these new structs after the existing struct definitions
+
+    struct FounderInfo {
+        string name;
+        address walletAddress;
+        string bio;
+    }
+
+    struct TeamMember {
+        string name;
+        string role;
+        string twitter;      // X handle
+        string linkedin;
+    }
+
+    struct LaunchTeamInfo {
+        FounderInfo founder;
+        TeamMember teamMember1;
+        TeamMember teamMember2;
+        uint8 teamMemberCount;  // 0, 1, or 2
+    }
+
     uint256 public constant MIN_RAISE_BNB = 100 ether; // 5M BNB
     uint256 public constant MAX_RAISE_BNB = 500 ether; // 20M BNB
     // REMOVED: MAX_LIQUIDITY_BNB - No longer capping liquidity
@@ -407,86 +429,96 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         fallbackBNBPrice = 1200 * 10 ** 8;
         useOraclePrice = true;
     }
-
-    function createLaunch(
-        string memory name,
-        string memory symbol,
-        uint256 totalSupply,
-        uint256 raiseTargetBNB,
-        uint256 raiseMaxBNB,
-        uint256 vestingDuration,
-        ITokenFactoryV2.TokenMetadata memory metadata,
-        bool burnLP
-    ) external nonReentrant returns (address) {
-        vestingDuration = 180 days;
-        return
-            _createLaunch(
-                name,
-                symbol,
-                totalSupply,
-                raiseTargetBNB,
-                raiseMaxBNB,
-                vestingDuration,
-                metadata,
-                false,
-                bytes32(0),
-                burnLP
-            );
-    }
-
- 
-
-    function _createLaunch(
-        string memory name,
-        string memory symbol,
-        uint256 totalSupply,
-        uint256 raiseTargetBNB,
-        uint256 raiseMaxBNB,
-        uint256 vestingDuration,
-        ITokenFactoryV2.TokenMetadata memory metadata,
-        bool useVanity,
-        bytes32 vanitySalt,
-        bool burnLP
-    ) private returns (address) {
-        _validateLaunchParams(raiseTargetBNB, raiseMaxBNB, vestingDuration);
-
-        address token = _deployToken(
+// Update the createLaunch function signature
+function createLaunch(
+    string memory name,
+    string memory symbol,
+    uint256 totalSupply,
+    uint256 raiseTargetBNB,
+    uint256 raiseMaxBNB,
+    uint256 vestingDuration,
+    ITokenFactoryV2.TokenMetadata memory metadata,
+    bool burnLP,
+    LaunchTeamInfo memory teamInfo  // NEW PARAMETER
+) external nonReentrant returns (address) {
+    vestingDuration = 180 days;
+    return
+        _createLaunch(
             name,
             symbol,
-            totalSupply,
-            metadata,
-            useVanity,
-            vanitySalt
-        );
-
-        ILaunchpadToken(token).setExemption(address(bondingCurveDEX), true);
-        ILaunchpadToken(token).setExemption(address(pancakeRouter), true);
-        ILaunchpadToken(token).setExemption(address(lpFeeHarvester), true);
-
-        _initializeLaunch(
-            token,
             totalSupply,
             raiseTargetBNB,
             raiseMaxBNB,
             vestingDuration,
-            LaunchType.PROJECT_RAISE,
-            burnLP
+            metadata,
+            false,
+            bytes32(0),
+            burnLP,
+            teamInfo  // Pass through
         );
+}
+ 
 
-        emit LaunchCreated(
-            token,
-            msg.sender,
-            totalSupply * 10 ** 18,
-            LaunchType.PROJECT_RAISE,
-            raiseTargetBNB,
-            raiseMaxBNB,
-            block.timestamp + RAISE_DURATION,
-            useVanity,
-            burnLP
-        );
+   // Update _createLaunch private function
+function _createLaunch(
+    string memory name,
+    string memory symbol,
+    uint256 totalSupply,
+    uint256 raiseTargetBNB,
+    uint256 raiseMaxBNB,
+    uint256 vestingDuration,
+    ITokenFactoryV2.TokenMetadata memory metadata,
+    bool useVanity,
+    bytes32 vanitySalt,
+    bool burnLP,
+    LaunchTeamInfo memory teamInfo  // NEW PARAMETER
+) private returns (address) {
+    _validateLaunchParams(raiseTargetBNB, raiseMaxBNB, vestingDuration);
+    
+    // Validate team info
+    require(teamInfo.teamMemberCount <= 2, "Max 2 team members");
+    require(teamInfo.founder.walletAddress != address(0), "Invalid founder wallet");
 
-        return token;
-    }
+    address token = _deployToken(
+        name,
+        symbol,
+        totalSupply,
+        metadata,
+        useVanity,
+        vanitySalt
+    );
+
+    ILaunchpadToken(token).setExemption(address(bondingCurveDEX), true);
+    ILaunchpadToken(token).setExemption(address(pancakeRouter), true);
+    ILaunchpadToken(token).setExemption(address(lpFeeHarvester), true);
+
+    _initializeLaunch(
+        token,
+        totalSupply,
+        raiseTargetBNB,
+        raiseMaxBNB,
+        vestingDuration,
+        LaunchType.PROJECT_RAISE,
+        burnLP
+    );
+
+    // Store team info
+    launchTeamInfo[token] = teamInfo;
+
+    emit LaunchCreated(
+        token,
+        msg.sender,
+        totalSupply * 10 ** 18,
+        LaunchType.PROJECT_RAISE,
+        raiseTargetBNB,
+        raiseMaxBNB,
+        block.timestamp + RAISE_DURATION,
+        useVanity,
+        burnLP
+    );
+
+    return token;
+}
 
     function createInstantLaunch(
         string memory name,
@@ -1678,4 +1710,75 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
     }
 
     receive() external payable {}
+}
+// Add getter functions
+
+/**
+ * @notice Get founder information for a launch
+ */
+function getFounderInfo(address token) external view returns (
+    string memory name,
+    address walletAddress,
+    string memory bio
+) {
+    FounderInfo storage founder = launchTeamInfo[token].founder;
+    return (founder.name, founder.walletAddress, founder.bio);
+}
+
+/**
+ * @notice Get team members for a launch
+ */
+function getTeamMembers(address token) external view returns (
+    TeamMember memory teamMember1,
+    TeamMember memory teamMember2,
+    uint8 teamMemberCount
+) {
+    LaunchTeamInfo storage info = launchTeamInfo[token];
+    return (info.teamMember1, info.teamMember2, info.teamMemberCount);
+}
+
+/**
+ * @notice Get complete team info for a launch
+ */
+function getLaunchTeamInfo(address token) external view returns (LaunchTeamInfo memory) {
+    return launchTeamInfo[token];
+}
+
+/**
+ * @notice Update founder info (only founder can update, only before graduation)
+ */
+function updateFounderInfo(
+    address token,
+    string memory name,
+    string memory bio
+) external {
+    LaunchBasics storage basics = launchBasics[token];
+    LaunchStatus storage status = launchStatus[token];
+    
+    require(msg.sender == basics.founder, "Not founder");
+    require(!status.graduatedToPancakeSwap, "Already graduated");
+    
+    launchTeamInfo[token].founder.name = name;
+    launchTeamInfo[token].founder.bio = bio;
+}
+
+/**
+ * @notice Update team members (only founder can update, only before graduation)
+ */
+function updateTeamMembers(
+    address token,
+    TeamMember memory teamMember1,
+    TeamMember memory teamMember2,
+    uint8 teamMemberCount
+) external {
+    LaunchBasics storage basics = launchBasics[token];
+    LaunchStatus storage status = launchStatus[token];
+    
+    require(msg.sender == basics.founder, "Not founder");
+    require(!status.graduatedToPancakeSwap, "Already graduated");
+    require(teamMemberCount <= 2, "Max 2 team members");
+    
+    launchTeamInfo[token].teamMember1 = teamMember1;
+    launchTeamInfo[token].teamMember2 = teamMember2;
+    launchTeamInfo[token].teamMemberCount = teamMemberCount;
 }
