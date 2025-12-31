@@ -236,17 +236,17 @@ const Register = () => {
   }, [picker])
 
   useEffect(() => {
-    if (dateText && !date) {
+    if (dateText && !date && !lifetime) {
       const d = new Date(dateText)
       setSeconds((startOfDay(d).getTime() - startOfDay(now).getTime()) / 1000)
     }
-  }, [dateText, date])
+  }, [dateText, date, lifetime])
 
   useEffect(() => {
-    if (date) {
+    if (date && !lifetime) {
       setSeconds(31536000 * years)
     }
-  }, [date, years])
+  }, [date, years, lifetime])
 
   useEffect(() => {
     if (lifetime) {
