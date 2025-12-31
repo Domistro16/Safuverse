@@ -164,11 +164,31 @@ function DomainImageModal({ isOpen, onClose, domain, isDark }: ActionModalProps)
   )
 }
 
+// ABI to read current addr
+const addrAbi = [
+  {
+    inputs: [{ internalType: 'bytes32', name: 'node', type: 'bytes32' }],
+    name: 'addr',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+]
+
 // Change BSC Record Modal Component - sets the BSC address the domain resolves to
 function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
   const [bscAddress, setBscAddress] = useState('')
   const [step, setStep] = useState(0)
   const { writeContractAsync, isPending, data: hash } = useWriteContract()
+
+  // Fetch current BSC address
+  const { data: currentAddr } = useReadContract({
+    abi: addrAbi,
+    address: constants.PublicResolver,
+    functionName: 'addr',
+    args: [namehash(domain)],
+  })
+  const currentBscAddress = currentAddr as string | undefined
 
   const handleSetBSCRecord = async () => {
     try {
@@ -237,7 +257,7 @@ function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalPr
             <input
               value={bscAddress}
               onChange={(e) => setBscAddress(e.target.value)}
-              placeholder="0x..."
+              placeholder={currentBscAddress || '0x...'}
               style={{
                 width: '100%',
                 padding: '12px 16px',
