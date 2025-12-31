@@ -475,6 +475,7 @@ export default function Profile() {
   const referralLinkRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState('light');
   const [copied, setCopied] = useState(false);
+  const [showAllDomains, setShowAllDomains] = useState(false);
 
   // Fetch domains
   const { domains, isLoading: domainsLoading } = useAllOwnedNames(address?.toLowerCase() || '');
@@ -699,7 +700,7 @@ export default function Profile() {
                         </tr>
                       </thead>
                       <tbody>
-                        {domains.slice(0, 10).map((domain: any, index: number) => {
+                        {(showAllDomains ? domains : domains.slice(0, 10)).map((domain: any, index: number) => {
                           const now = Math.floor(Date.now() / 1000);
                           const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
                           const isPrimaryDomain = primaryName === domain.name;
@@ -727,8 +728,8 @@ export default function Profile() {
                     </table>
                   </div>
                   {domains.length > 10 && (
-                    <button className="view-all-btn" onClick={() => router.push('/profile')}>
-                      View all {domains.length} domains
+                    <button className="view-all-btn" onClick={() => setShowAllDomains(!showAllDomains)}>
+                      {showAllDomains ? 'Show less' : `View all ${domains.length} domains`}
                     </button>
                   )}
                 </>
