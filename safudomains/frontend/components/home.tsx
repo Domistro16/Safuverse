@@ -209,10 +209,8 @@ export default function Home() {
     if (available == 'Available') {
       setRecent(search)
       router.push(`/register/${search}`)
-    } else if (available == 'Registered') {
-      setRecent(search)
-      router.push(`/resolve/${search}`)
     }
+    // Do nothing if domain is already registered
   }
 
   const handleClickOutside = (event: MouseEvent) => {

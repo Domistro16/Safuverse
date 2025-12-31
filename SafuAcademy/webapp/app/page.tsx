@@ -7,7 +7,8 @@ import { ChatWidget } from "../components/ChatWidget";
 import { useReadContract } from "wagmi";
 import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 import { useTheme } from "@/app/providers";
-import { CustomConnect } from "@/components/connectButton";
+import { NavBar } from "@/components/NavBar";
+import { User } from "lucide-react";
 
 // Backend course type for featured courses API
 interface FeaturedCourse {
@@ -132,9 +133,8 @@ function FeaturedCourses() {
 
 
 const Home: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const testimonials = [
     {
@@ -195,102 +195,19 @@ const Home: React.FC = () => {
         }`}>
 
         {/* NAVBAR */}
-        <nav className={`w-full flex items-center justify-between px-6 lg:px-10 py-4 lg:py-5 backdrop-blur border-b sticky top-0 z-50 ${isDark ? 'bg-[#0a0a0f]/90 border-white/10' : 'bg-white/60 border-black/5'
-          }`}>
-          <div className={`flex items-center gap-2 text-[18px] lg:text-[20px] font-bold tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'
-            }`}>
-            ✦ Safu Academy
-          </div>
+        <NavBar />
 
-          {/* Navigation Links - Desktop */}
-          <div className="hidden md:flex items-center gap-6 text-sm">
-            <Link href="/" className={`hover:opacity-100 transition ${isDark ? 'text-white font-semibold' : 'text-[#111] font-semibold'}`}>
-              Home
-            </Link>
-            <Link href="/courses" className={`hover:opacity-100 transition ${isDark ? 'text-gray-400 opacity-80' : 'text-[#555] opacity-80'}`}>
-              All Courses
-            </Link>
-            <Link href="/points" className={`hover:opacity-100 transition ${isDark ? 'text-gray-400 opacity-80' : 'text-[#555] opacity-80'}`}>
-              Points
-            </Link>
-            <Link href="/certificates" className={`hover:opacity-100 transition ${isDark ? 'text-gray-400 opacity-80' : 'text-[#555] opacity-80'}`}>
-              Certificates
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
-            {/* Social Links - Desktop only */}
-            <a href="#" className={`hidden md:block text-[18px] lg:text-[20px] opacity-80 hover:opacity-100 transition transform hover:scale-105 ${isDark ? 'text-white' : 'text-[#111]'
-              }`}>
-              𝕏
-            </a>
-            <a href="#" className="hidden md:block text-[20px] lg:text-[22px] text-[#5865F2]">
-              💬
-            </a>
-            <button
-              className={`flex w-[34px] h-[34px] sm:w-[38px] sm:h-[38px] lg:w-[42px] lg:h-[42px] rounded-full items-center justify-center text-[14px] sm:text-[16px] lg:text-[17px] transition cursor-pointer ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-[#f3f3f8] hover:bg-[#e7e7f3]'
-                }`}
-              type="button"
-              onClick={toggleTheme}
-            >
-              {isDark ? '☀️' : '🌙'}
-            </button>
-            <CustomConnect />
-            {/* Mobile Hamburger Button */}
-            <button
-              className={`md:hidden flex flex-col justify-center items-center w-8 h-8 gap-1.5 ${isDark ? 'text-white' : 'text-[#111]'}`}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              <span className={`block w-5 h-0.5 transition-all duration-300 ${isDark ? 'bg-white' : 'bg-[#111]'} ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-              <span className={`block w-5 h-0.5 transition-all duration-300 ${isDark ? 'bg-white' : 'bg-[#111]'} ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-              <span className={`block w-5 h-0.5 transition-all duration-300 ${isDark ? 'bg-white' : 'bg-[#111]'} ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
-            </button>
-          </div>
-
-          {/* Mobile Navigation Menu */}
-          <div className={`absolute top-full left-0 right-0 md:hidden overflow-hidden transition-all duration-300 ${mobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'} ${isDark ? 'bg-[#0a0a0f]/95 border-b border-white/10' : 'bg-white/95 border-b border-black/5'}`}>
-            <div className="flex flex-col py-4 px-6 gap-1">
-              <Link
-                href="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`py-3 px-4 rounded-xl text-sm font-medium transition ${isDark ? 'text-white bg-white/5' : 'text-[#111] bg-[#fef3c7]'}`}
-              >
-                Home
-              </Link>
-              <Link
-                href="/courses"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-[#555]'}`}
-              >
-                All Courses
-              </Link>
-              <Link
-                href="/points"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-[#555]'}`}
-              >
-                Points
-              </Link>
-              <Link
-                href="/certificates"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-[#555]'}`}
-              >
-                Certificates
-              </Link>
-              {/* Social Links in Mobile Menu */}
-              <div className={`flex items-center gap-4 mt-2 pt-3 px-4 border-t ${isDark ? 'border-white/10' : 'border-black/5'}`}>
-                <a href="#" className={`text-lg opacity-80 hover:opacity-100 transition ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                  𝕏
-                </a>
-                <a href="#" className="text-lg text-[#5865F2]">
-                  💬
-                </a>
-              </div>
-            </div>
-          </div>
-        </nav>
+        {/* Floating Profile Button - Bottom Left */}
+        <Link
+          href="/profile"
+          className={`fixed bottom-6 left-6 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl ${isDark
+            ? "bg-[#ffb000] text-black hover:bg-[#ffa000]"
+            : "bg-[#111] text-white hover:bg-[#333]"
+            }`}
+          aria-label="Go to Profile"
+        >
+          <User className="w-5 h-5" />
+        </Link>
 
         {/* HERO SECTION */}
         <section className="relative w-full pt-24 md:pt-28 lg:pt-32 pb-32 lg:pb-40 overflow-hidden">

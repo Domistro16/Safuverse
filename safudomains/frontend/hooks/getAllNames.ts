@@ -41,7 +41,7 @@ function usePaged(
   const skipRef = useRef(0)
   const { data, fetchMore, loading } = useQuery<any>(query, {
     variables: {owner , first: pageSize, skip: skipRef.current },
-    skip: !owner.toLocaleLowerCase(),
+    skip: !owner,
   })
 
   useEffect(() => {
@@ -62,11 +62,12 @@ function usePaged(
   return loading
 }
 
-export function useAllOwnedNames(owner: string) {
+export function useAllOwnedNames(owner: string | undefined) {
   const [unwrapped, setUnwrapped] = useState<any[]>([])
   const [wrapped, setWrapped] = useState<any[]>([])
-  const loadingWrapped = usePaged(WRAPPED_QUERY, owner.toLocaleLowerCase(), setWrapped, 'wrappedDomains')
-  const loadingUnwrapped = usePaged(UNWRAPPED_QUERY, owner.toLocaleLowerCase(), setUnwrapped, 'domains')
+  const safeOwner = owner?.toLowerCase() ?? ''
+  const loadingWrapped = usePaged(WRAPPED_QUERY, safeOwner, setWrapped, 'wrappedDomains')
+  const loadingUnwrapped = usePaged(UNWRAPPED_QUERY, safeOwner, setUnwrapped, 'domains')
 
   // merge and dedupe by name
   const all = [...unwrapped, ...wrapped]

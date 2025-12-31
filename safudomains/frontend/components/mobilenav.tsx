@@ -64,14 +64,14 @@ export const MobileNav = () => {
           />
         </button>
 
-        {/* My Names button */}
+        {/* Profile button */}
         {isConnected && (
           <button
             className="p-2 rounded-full transition-all hover:opacity-70"
             style={{
               background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4',
             }}
-            onClick={() => router.push(`/mynames`)}
+            onClick={() => router.push(`/profile`)}
           >
             <IdentificationIcon
               className="w-6 h-6"

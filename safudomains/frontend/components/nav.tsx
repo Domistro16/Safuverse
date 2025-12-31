@@ -142,11 +142,8 @@ export default function Nav() {
       router.push(`/register/${search}`)
       setMobileSearchOpen(false)
       setMobileMenuOpen(false)
-    } else if (available == 'Registered') {
-      router.push(`/resolve/${search}`)
-      setMobileSearchOpen(false)
-      setMobileMenuOpen(false)
     }
+    // Do nothing if domain is already registered
   }
 
   const toggleTheme = () => {
@@ -264,10 +261,10 @@ export default function Nav() {
           <div
             className="flex items-center gap-1 cursor-pointer font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
             style={{ color: isDark ? '#f5f5f5' : '#111' }}
-            onClick={() => router.push(`/mynames`)}
+            onClick={() => router.push(`/profile`)}
           >
             <IdentificationIcon className="w-4 h-4 xl:w-5 xl:h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">My Names</span>
+            <span className="whitespace-nowrap">Profile</span>
           </div>
 
           {navLinks.map((link) => (
@@ -529,7 +526,7 @@ export default function Nav() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
               <div
                 onClick={() => {
-                  router.push(`/mynames`)
+                  router.push(`/profile`)
                   setMobileMenuOpen(false)
                 }}
                 style={{
@@ -549,7 +546,7 @@ export default function Nav() {
                 }}
               >
                 <IdentificationIcon style={{ width: '20px', height: '20px' }} />
-                <span>My Names</span>
+                <span>Profile</span>
               </div>
 
               {navLinks.map((link) => (
