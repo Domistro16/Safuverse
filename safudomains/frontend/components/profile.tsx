@@ -2,16 +2,472 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
-import { formatEther } from 'viem';
+import { useAccount, useWriteContract, useReadContract } from 'wagmi';
+import { formatEther, namehash, keccak256, toBytes } from 'viem';
 import { useAllOwnedNames } from '../hooks/getAllNames';
 import { useReferralStats } from '../hooks/useReferralStats';
 import { useENSName } from '../hooks/getPrimaryName';
 import Nav from './nav';
 import { MobileNav } from './mobilenav';
+import { MoreVertical, Image, Package, Settings, Star, X } from 'lucide-react';
+import { constants } from '../constant';
+import Modal from 'react-modal';
+import DomainImage from './DomainImage';
 import '../app/profile/profile.css';
 
+// Set app element for react-modal on client side only
+if (typeof window !== 'undefined') {
+  Modal.setAppElement(document.body);
+}
+
 const THEME_KEY = 'safudomains-theme';
+
+// ABI definitions
+const isWrappedAbi = [
+  {
+    inputs: [{ internalType: 'bytes32', name: 'node', type: 'bytes32' }],
+    name: 'isWrapped',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+];
+
+const setAddrAbi = [
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'node', type: 'bytes32' },
+      { internalType: 'address', name: 'a', type: 'address' },
+    ],
+    name: 'setAddr',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+];
+
+const wrapETH2LDAbi = [
+  {
+    inputs: [
+      { internalType: 'string', name: 'label', type: 'string' },
+      { internalType: 'address', name: 'wrappedOwner', type: 'address' },
+      { internalType: 'uint16', name: 'ownerControlledFuses', type: 'uint16' },
+      { internalType: 'address', name: 'resolver', type: 'address' },
+    ],
+    name: 'wrapETH2LD',
+    outputs: [{ internalType: 'uint64', name: 'expiry', type: 'uint64' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+];
+
+const approveAbi = [
+  {
+    inputs: [
+      { internalType: 'address', name: 'to', type: 'address' },
+      { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+];
+
+const unwrapETH2LDAbi = [
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'labelhash', type: 'bytes32' },
+      { internalType: 'address', name: 'registrant', type: 'address' },
+      { internalType: 'address', name: 'controller', type: 'address' },
+    ],
+    name: 'unwrapETH2LD',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+];
+
+const setNameAbi = [
+  {
+    inputs: [{ internalType: 'string', name: 'name', type: 'string' }],
+    name: 'setName',
+    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+];
+
+// Hook to check if domain is wrapped
+function useIsWrapped(name: string) {
+  const { data: wrapped } = useReadContract({
+    abi: isWrappedAbi,
+    functionName: 'isWrapped',
+    address: constants.NameWrapper,
+    args: [namehash(name)],
+  });
+  return wrapped as boolean | undefined;
+}
+
+interface ActionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  domain: string;
+  isDark: boolean;
+}
+
+// Domain Image Modal
+function DomainImageModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
+  return (
+    <Modal isOpen={isOpen} onRequestClose={onClose} closeTimeoutMS={300} className="modal-content" overlayClassName="modal-overlay">
+      <div className="action-modal" style={{ background: isDark ? '#1a1a1a' : '#fff' }}>
+        <button onClick={onClose} className="modal-close-btn" style={{ color: isDark ? '#888' : '#666' }}>
+          <X size={24} />
+        </button>
+        <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111' }}>{domain}</h2>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <DomainImage domain={domain} className="w-full max-w-md rounded-lg" />
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ABI to read current addr
+const addrAbi = [
+  {
+    inputs: [{ internalType: 'bytes32', name: 'node', type: 'bytes32' }],
+    name: 'addr',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+];
+
+// Change BSC Record Modal - sets the BSC address the domain resolves to
+function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
+  const [bscAddress, setBscAddress] = useState('');
+  const [step, setStep] = useState(0);
+  const { writeContractAsync, isPending, data: hash } = useWriteContract();
+
+  // Fetch current BSC address
+  const { data: currentAddr } = useReadContract({
+    abi: addrAbi,
+    address: constants.PublicResolver,
+    functionName: 'addr',
+    args: [namehash(domain)],
+  });
+  const currentBscAddress = currentAddr as string | undefined;
+
+  const handleSetBSCRecord = async () => {
+    try {
+      await writeContractAsync({
+        abi: setAddrAbi,
+        address: constants.PublicResolver,
+        functionName: 'setAddr',
+        args: [namehash(domain), bscAddress as `0x${string}`],
+      });
+      setStep(1);
+    } catch (error) {
+      console.error('Set BSC record error:', error);
+    }
+  };
+
+  const handleClose = () => {
+    setStep(0);
+    setBscAddress('');
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onRequestClose={handleClose} closeTimeoutMS={300} className="modal-content" overlayClassName="modal-overlay">
+      <div className="action-modal" style={{ background: isDark ? '#1a1a1a' : '#fff' }}>
+        <button onClick={handleClose} className="modal-close-btn" style={{ color: isDark ? '#888' : '#666' }}>
+          <X size={24} />
+        </button>
+        {step === 0 ? (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111' }}>Change BSC Record for {domain}</h2>
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666' }}>Enter the BSC address this domain should resolve to</p>
+            <input
+              value={bscAddress}
+              onChange={(e) => setBscAddress(e.target.value)}
+              placeholder={currentBscAddress || '0x...'}
+              className="modal-input"
+              style={{ background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4', color: isDark ? '#fff' : '#111', border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)' }}
+            />
+            <div className="modal-buttons">
+              <button onClick={handleClose} className="modal-btn-secondary" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', color: isDark ? '#fff' : '#111' }}>Cancel</button>
+              <button onClick={handleSetBSCRecord} disabled={isPending || !bscAddress} className="modal-btn-primary" style={{ background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', opacity: (isPending || !bscAddress) ? 0.6 : 1 }}>
+                {isPending ? 'Confirming...' : 'Update Record'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111', textAlign: 'center' }}>BSC Record Updated!</h2>
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666', textAlign: 'center' }}>{domain} now resolves to {bscAddress.slice(0, 6)}...{bscAddress.slice(-4)}</p>
+            {hash && <p style={{ color: isDark ? '#888' : '#999', fontSize: '12px', wordBreak: 'break-all', textAlign: 'center' }}>TX: {hash}</p>}
+            <button onClick={handleClose} className="modal-btn-primary" style={{ width: '100%', background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', marginTop: '16px' }}>Done</button>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// Wrap Modal
+function WrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
+  const label = domain.replace(/\.safu$/, '');
+  const { address } = useAccount();
+  const [step, setStep] = useState(0);
+  const [info, setInfo] = useState('');
+  const { writeContractAsync: approveContract } = useWriteContract();
+  const { writeContractAsync: wrapContract, data: hash } = useWriteContract();
+
+  const handleWrap = async () => {
+    const labelhash = keccak256(toBytes(label));
+    try {
+      setStep(1);
+      setInfo('Approving wrapper contract...');
+      await approveContract({
+        abi: approveAbi,
+        address: constants.BaseRegistrar,
+        functionName: 'approve',
+        args: [constants.NameWrapper, labelhash],
+      });
+      setInfo('Wrapping name...');
+      await wrapContract({
+        abi: wrapETH2LDAbi,
+        address: constants.NameWrapper,
+        functionName: 'wrapETH2LD',
+        args: [label, address, 0, constants.PublicResolver],
+      });
+      setInfo('Wrap complete!');
+    } catch (error) {
+      console.error('Wrap error:', error);
+      setInfo('Error wrapping name');
+    }
+  };
+
+  const handleClose = () => {
+    setStep(0);
+    setInfo('');
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onRequestClose={handleClose} closeTimeoutMS={300} className="modal-content" overlayClassName="modal-overlay">
+      <div className="action-modal" style={{ background: isDark ? '#1a1a1a' : '#fff' }}>
+        <button onClick={handleClose} className="modal-close-btn" style={{ color: isDark ? '#888' : '#666' }}>
+          <X size={24} />
+        </button>
+        {step === 0 ? (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111' }}>Wrap {domain}</h2>
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666' }}>Wrapping your name gives you new features like permissions and subname control.</p>
+            <div className="modal-buttons">
+              <button onClick={handleClose} className="modal-btn-secondary" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', color: isDark ? '#fff' : '#111' }}>Cancel</button>
+              <button onClick={handleWrap} className="modal-btn-primary" style={{ background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff' }}>Wrap Name</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111', textAlign: 'center' }}>{info}</h2>
+            {hash && <p style={{ color: isDark ? '#888' : '#999', fontSize: '12px', wordBreak: 'break-all', textAlign: 'center' }}>TX: {hash}</p>}
+            {info === 'Wrap complete!' && (
+              <button onClick={handleClose} className="modal-btn-primary" style={{ width: '100%', background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', marginTop: '16px' }}>Done</button>
+            )}
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// Unwrap Modal
+function UnwrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
+  const label = domain.replace(/\.safu$/, '');
+  const { address } = useAccount();
+  const [step, setStep] = useState(0);
+  const [ownerAddress, setOwnerAddress] = useState(address || '');
+  const [managerAddress, setManagerAddress] = useState(address || '');
+  const { writeContractAsync, isPending, data: hash } = useWriteContract();
+
+  const handleUnwrap = async () => {
+    const labelhash = keccak256(toBytes(label));
+    try {
+      await writeContractAsync({
+        abi: unwrapETH2LDAbi,
+        address: constants.NameWrapper,
+        functionName: 'unwrapETH2LD',
+        args: [labelhash, ownerAddress as `0x${string}`, managerAddress as `0x${string}`],
+      });
+      setStep(1);
+    } catch (error) {
+      console.error('Unwrap error:', error);
+    }
+  };
+
+  const handleClose = () => {
+    setStep(0);
+    setOwnerAddress(address || '');
+    setManagerAddress(address || '');
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onRequestClose={handleClose} closeTimeoutMS={300} className="modal-content" overlayClassName="modal-overlay">
+      <div className="action-modal" style={{ background: isDark ? '#1a1a1a' : '#fff' }}>
+        <button onClick={handleClose} className="modal-close-btn" style={{ color: isDark ? '#888' : '#666' }}>
+          <X size={24} />
+        </button>
+        {step === 0 ? (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111' }}>Unwrap {domain}</h2>
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666' }}>Owner address (receives the NFT)</p>
+            <input value={ownerAddress} onChange={(e) => setOwnerAddress(e.target.value)} placeholder="Owner address" className="modal-input" style={{ background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4', color: isDark ? '#fff' : '#111', border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)' }} />
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666', marginTop: '12px' }}>Manager address</p>
+            <input value={managerAddress} onChange={(e) => setManagerAddress(e.target.value)} placeholder="Manager address" className="modal-input" style={{ background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4', color: isDark ? '#fff' : '#111', border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)' }} />
+            <div className="modal-buttons">
+              <button onClick={handleClose} className="modal-btn-secondary" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', color: isDark ? '#fff' : '#111' }}>Cancel</button>
+              <button onClick={handleUnwrap} disabled={isPending} className="modal-btn-primary" style={{ background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', opacity: isPending ? 0.6 : 1 }}>
+                {isPending ? 'Confirming...' : 'Unwrap'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111', textAlign: 'center' }}>Transaction Submitted</h2>
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666', textAlign: 'center' }}>Your unwrap transaction has been submitted.</p>
+            {hash && <p style={{ color: isDark ? '#888' : '#999', fontSize: '12px', wordBreak: 'break-all', textAlign: 'center' }}>TX: {hash}</p>}
+            <button onClick={handleClose} className="modal-btn-primary" style={{ width: '100%', background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', marginTop: '16px' }}>Done</button>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// Set Primary Name Modal
+function SetPrimaryModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
+  const [step, setStep] = useState(0);
+  const { writeContractAsync, isPending, data: hash } = useWriteContract();
+
+  const handleSetPrimary = async () => {
+    try {
+      await writeContractAsync({
+        abi: setNameAbi,
+        address: constants.ReverseRegistrar,
+        functionName: 'setName',
+        args: [domain],
+      });
+      setStep(1);
+    } catch (error) {
+      console.error('Set primary error:', error);
+    }
+  };
+
+  const handleClose = () => {
+    setStep(0);
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onRequestClose={handleClose} closeTimeoutMS={300} className="modal-content" overlayClassName="modal-overlay">
+      <div className="action-modal" style={{ background: isDark ? '#1a1a1a' : '#fff' }}>
+        <button onClick={handleClose} className="modal-close-btn" style={{ color: isDark ? '#888' : '#666' }}>
+          <X size={24} />
+        </button>
+        {step === 0 ? (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111' }}>Set as Primary Name</h2>
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666' }}>Setting <strong>{domain}</strong> as your primary name will display it across dApps when you connect your wallet.</p>
+            <div className="modal-buttons">
+              <button onClick={handleClose} className="modal-btn-secondary" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', color: isDark ? '#fff' : '#111' }}>Cancel</button>
+              <button onClick={handleSetPrimary} disabled={isPending} className="modal-btn-primary" style={{ background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', opacity: isPending ? 0.6 : 1 }}>
+                {isPending ? 'Confirming...' : 'Set Primary'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="modal-title" style={{ color: isDark ? '#fff' : '#111', textAlign: 'center' }}>Primary Name Set!</h2>
+            <p className="modal-desc" style={{ color: isDark ? '#aaa' : '#666', textAlign: 'center' }}>{domain} is now your primary name.</p>
+            {hash && <p style={{ color: isDark ? '#888' : '#999', fontSize: '12px', wordBreak: 'break-all', textAlign: 'center' }}>TX: {hash}</p>}
+            <button onClick={handleClose} className="modal-btn-primary" style={{ width: '100%', background: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', marginTop: '16px' }}>Done</button>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// Actions Dropdown Component
+function ActionsDropdown({ domain, isPrimary, isDark }: { domain: string; isPrimary: boolean; isDark: boolean }) {
+  const isWrapped = useIsWrapped(domain);
+  const [isOpen, setIsOpen] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [showResolverModal, setShowResolverModal] = useState(false);
+  const [showWrapModal, setShowWrapModal] = useState(false);
+  const [showUnwrapModal, setShowUnwrapModal] = useState(false);
+  const [showPrimaryModal, setShowPrimaryModal] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <>
+      <div ref={dropdownRef} className="actions-dropdown-container">
+        <button
+          onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+          className="actions-trigger-btn"
+        >
+          <MoreVertical size={16} />
+        </button>
+
+        {isOpen && (
+          <div className={`actions-menu ${isDark ? 'dark' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <button className="actions-menu-item" onClick={() => { setShowImageModal(true); setIsOpen(false); }}>
+              <Image size={14} /> View Image
+            </button>
+            <button className="actions-menu-item" onClick={() => { setShowResolverModal(true); setIsOpen(false); }}>
+              <Settings size={14} /> Change BSC Record
+            </button>
+            {isWrapped ? (
+              <button className="actions-menu-item" onClick={() => { setShowUnwrapModal(true); setIsOpen(false); }}>
+                <Package size={14} /> Unwrap
+              </button>
+            ) : (
+              <button className="actions-menu-item" onClick={() => { setShowWrapModal(true); setIsOpen(false); }}>
+                <Package size={14} /> Wrap
+              </button>
+            )}
+            {!isPrimary && (
+              <button className="actions-menu-item" onClick={() => { setShowPrimaryModal(true); setIsOpen(false); }}>
+                <Star size={14} /> Set as Primary
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <DomainImageModal isOpen={showImageModal} onClose={() => setShowImageModal(false)} domain={domain} isDark={isDark} />
+      <ChangeBSCRecordModal isOpen={showResolverModal} onClose={() => setShowResolverModal(false)} domain={domain} isDark={isDark} />
+      <WrapModal isOpen={showWrapModal} onClose={() => setShowWrapModal(false)} domain={domain} isDark={isDark} />
+      <UnwrapModal isOpen={showUnwrapModal} onClose={() => setShowUnwrapModal(false)} domain={domain} isDark={isDark} />
+      <SetPrimaryModal isOpen={showPrimaryModal} onClose={() => setShowPrimaryModal(false)} domain={domain} isDark={isDark} />
+    </>
+  );
+}
 
 export default function Profile() {
   const router = useRouter();
@@ -19,6 +475,7 @@ export default function Profile() {
   const referralLinkRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState('light');
   const [copied, setCopied] = useState(false);
+  const [showAllDomains, setShowAllDomains] = useState(false);
 
   // Fetch domains
   const { domains, isLoading: domainsLoading } = useAllOwnedNames(address?.toLowerCase() || '');
@@ -232,40 +689,47 @@ export default function Profile() {
                 </div>
               ) : (
                 <>
-                  <table className="domains-table">
-                    <thead>
-                      <tr>
-                        <th>Domain</th>
-                        <th>Status</th>
-                        <th>Minted</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {domains.slice(0, 10).map((domain: any, index: number) => {
-                        const now = Math.floor(Date.now() / 1000);
-                        const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
+                  <div className="domains-table-wrapper">
+                    <table className="domains-table">
+                      <thead>
+                        <tr>
+                          <th>Domain</th>
+                          <th>Status</th>
+                          <th>Minted</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(showAllDomains ? domains : domains.slice(0, 10)).map((domain: any, index: number) => {
+                          const now = Math.floor(Date.now() / 1000);
+                          const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
+                          const isPrimaryDomain = primaryName === domain.name;
 
-                        return (
-                          <tr
-                            key={index}
-                            onClick={() => router.push(`/resolve/${domain.name?.replace('.safu', '')}`)}
-                          >
-                            <td className="domain-name">{domain.name}</td>
-                            <td>
-                              <span className={`status-pill ${isExpired ? 'expired' : ''}`}>
-                                <span className={`status-dot ${isExpired ? 'expired' : ''}`} />
-                                {isExpired ? 'Expired' : 'Active'}
-                              </span>
-                            </td>
-                            <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          return (
+                            <tr key={index}>
+                              <td className="domain-name">
+                                {domain.name}
+                                {isPrimaryDomain && <span className="primary-badge">Primary</span>}
+                              </td>
+                              <td>
+                                <span className={`status-pill ${isExpired ? 'expired' : ''}`}>
+                                  <span className={`status-dot ${isExpired ? 'expired' : ''}`} />
+                                  {isExpired ? 'Expired' : 'Active'}
+                                </span>
+                              </td>
+                              <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
+                              <td>
+                                <ActionsDropdown domain={domain.name} isPrimary={isPrimaryDomain} isDark={isDark} />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                   {domains.length > 10 && (
-                    <button className="view-all-btn" onClick={() => router.push('/profile')}>
-                      View all {domains.length} domains
+                    <button className="view-all-btn" onClick={() => setShowAllDomains(!showAllDomains)}>
+                      {showAllDomains ? 'Show less' : `View all ${domains.length} domains`}
                     </button>
                   )}
                 </>
