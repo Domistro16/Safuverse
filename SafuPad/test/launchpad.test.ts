@@ -932,7 +932,10 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
     });
 
     it("Should allow founder to claim vested tokens over time", async function () {
-      // Fast forward 30 days (1 month)
+      // First, graduate to PancakeSwap (required for vested token claims)
+      await launchpadManager.graduateToPancakeSwap(tokenAddress);
+
+      // Fast forward 30 days (1 month of 12 months = 1/12 vesting)
       await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);
       await ethers.provider.send("evm_mine");
 
@@ -941,7 +944,8 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       );
       expect(claimable.claimableTokens).to.be.gt(0);
 
-      await launchpadManager.connect(founder).claimFounderTokens(tokenAddress);
+      // Claim vested tokens (not founder tokens - those were given at _completeRaise)
+      await launchpadManager.connect(founder).claimVestedTokens(tokenAddress);
 
       const token = await ethers.getContractAt(
         "LaunchpadTokenV2",
@@ -949,19 +953,24 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       );
       const founderBalance = await token.balanceOf(founder.address);
 
-      // Founder allocation: 20% of 1B = 200M total
-      // Initial release: 10% of 200M = 20M
-      // After 30 days (1/3 of 90-day vesting): 20M + ~60M (1/3 of 180M) = ~80M
-      expect(founderBalance > ethers.parseEther("60000000")).to.be.true; // More than initial 60M
-      expect(founderBalance <= ethers.parseEther("600000000")).to.be.true; // Less than total 600M
+      // Founder allocation with new logic:
+      // - Immediate: 20% of 1B = 200M (already transferred at _completeRaise)
+      // - Vested: 50% of 1B = 500M over 365 days (claiming portion here)
+      // After 30 days (1/12 of 365-day vesting): 200M + ~41.6M (1/12 of 500M) = ~241.6M
+      expect(founderBalance > ethers.parseEther("200000000")).to.be.true; // More than initial 200M
+      expect(founderBalance <= ethers.parseEther("700000000")).to.be.true; // Less than total 700M
     });
 
     it("Should allow founder to claim all tokens after full vesting", async function () {
-      // Fast forward 90 days (full vesting)
-      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60]);
+      // First, graduate to PancakeSwap (required for vested token claims)
+      await launchpadManager.graduateToPancakeSwap(tokenAddress);
+
+      // Fast forward 365 days (full vesting)
+      await ethers.provider.send("evm_increaseTime", [365 * 24 * 60 * 60]);
       await ethers.provider.send("evm_mine");
 
-      await launchpadManager.connect(founder).claimFounderTokens(tokenAddress);
+      // Claim vested tokens
+      await launchpadManager.connect(founder).claimVestedTokens(tokenAddress);
 
       const token = await ethers.getContractAt(
         "LaunchpadTokenV2",
@@ -969,8 +978,8 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       );
       const founderBalance = await token.balanceOf(founder.address);
 
-      // Should have all 600M tokens (60% of 1B)
-      const expected = ethers.parseEther("600000000");
+      // Should have all 700M tokens (20% immediate + 50% vested = 70% of 1B)
+      const expected = ethers.parseEther("700000000");
       expect(founderBalance).to.be.closeTo(expected, ethers.parseEther("1")); // 1 token tolerance
     });
   });
