@@ -77,6 +77,40 @@ interface IPancakeFactory {
     ) external view returns (address pair);
 }
 
+interface ILaunchpadStorageForHarvester {
+    struct LaunchVesting {
+        uint256 startMarketCap;
+        uint256 vestingDuration;
+        uint256 vestingStartTime;
+        uint256 founderTokens;
+        uint256 founderTokensClaimed;
+        uint256 vestedTokens;
+        uint256 vestedTokensClaimed;
+        uint256[] monthlyMarketCaps;
+        uint256 consecutiveMonthsBelowStart;
+        bool communityControlTriggered;
+    }
+
+    struct LaunchBasics {
+        address token;
+        address founder;
+        uint256 totalSupply;
+        uint256 raiseTarget;
+        uint256 raiseMax;
+        uint256 raiseDeadline;
+        uint256 totalRaised;
+        uint8 launchType;
+        bool burnLP;
+    }
+
+    function getLaunchVesting(
+        address token
+    ) external view returns (LaunchVesting memory);
+    function getLaunchBasics(
+        address token
+    ) external view returns (LaunchBasics memory);
+}
+
 contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
@@ -98,7 +132,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     uint256 public constant MAX_LOCK_DURATION = 1460 days;
 
     /// @notice Harvest constraints
-    uint256 public constant HARVEST_COOLDOWN = 24 hours;
+    uint256 public constant HARVEST_COOLDOWN = 30 days; // Monthly harvesting
     uint256 public constant MIN_HARVEST_AMOUNT = 0.01 ether; // Minimum BNB to harvest
     uint256 public constant HARVEST_LP_PERCENT = 5; // 5 basis points = 0.1% (fallback cap)
 
@@ -131,7 +165,9 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
 
     IPancakeRouter02 public pancakeRouter;
     IPancakeFactory public pancakeFactory;
+    ILaunchpadStorageForHarvester public launchpadStorage;
     address public platformFeeAddress;
+    address public academyAddress;
     address public wbnbAddress;
 
     mapping(address => LPLock) public lpLocks;
@@ -191,17 +227,23 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
     constructor(
         address _pancakeRouter,
         address _pancakeFactory,
+        address _launchpadStorage,
         address _platformFeeAddress,
+        address _academyAddress,
         address _admin
     ) {
         require(_pancakeRouter != address(0), "Invalid router");
         require(_pancakeFactory != address(0), "Invalid factory");
+        require(_launchpadStorage != address(0), "Invalid storage");
         require(_platformFeeAddress != address(0), "Invalid platform address");
+        require(_academyAddress != address(0), "Invalid academy address");
         require(_admin != address(0), "Invalid admin");
 
         pancakeRouter = IPancakeRouter02(_pancakeRouter);
         pancakeFactory = IPancakeFactory(_pancakeFactory);
+        launchpadStorage = ILaunchpadStorageForHarvester(_launchpadStorage);
         platformFeeAddress = _platformFeeAddress;
+        academyAddress = _academyAddress;
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(MANAGER_ROLE, _admin);
@@ -506,6 +548,7 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @notice Distribute fees according to 70/20/10 split
+     * @dev If token is below starting market cap, creator's 70% goes to academy
      */
     function _distributeFees(address projectToken, uint256 totalBNB) private {
         LPLock storage lock = lpLocks[projectToken];
@@ -525,8 +568,18 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
             creatorAmount += (totalBNB - distributed);
         }
 
+        // Check if token is above starting market cap
+        bool aboveStartingMarketCap = _isAboveStartingMarketCap(projectToken);
+
+        // Determine creator fee recipient: creator if above market cap, academy if below
+        address creatorFeeRecipient = aboveStartingMarketCap
+            ? lock.creator
+            : academyAddress;
+
         // Use call to transfer BNB and bubble revert if fails
-        (bool ok1, ) = payable(lock.creator).call{value: creatorAmount}("");
+        (bool ok1, ) = payable(creatorFeeRecipient).call{value: creatorAmount}(
+            ""
+        );
         require(ok1, "creator transfer failed");
         (bool ok2, ) = payable(lock.projectInfoFi).call{
             value: projectInfoFiAmount
@@ -539,11 +592,55 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
 
         emit FeesDistributed(
             projectToken,
-            lock.creator,
+            creatorFeeRecipient,
             creatorAmount,
             projectInfoFiAmount,
             platformAmount
         );
+    }
+
+    /**
+     * @notice Check if token is above starting market cap
+     */
+    function _isAboveStartingMarketCap(
+        address projectToken
+    ) private view returns (bool) {
+        // Get vesting info for starting market cap
+        ILaunchpadStorageForHarvester.LaunchVesting
+            memory vesting = launchpadStorage.getLaunchVesting(projectToken);
+        ILaunchpadStorageForHarvester.LaunchBasics
+            memory basics = launchpadStorage.getLaunchBasics(projectToken);
+
+        if (vesting.startMarketCap == 0) {
+            // For instant launches or unset, allow claiming
+            return true;
+        }
+
+        // Calculate current market cap from LP reserves
+        LPLock storage lock = lpLocks[projectToken];
+        IPancakePair pair = IPancakePair(lock.lpToken);
+        address token0 = pair.token0();
+
+        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
+
+        uint256 tokenReserve;
+        uint256 bnbReserve;
+
+        if (token0 == projectToken) {
+            tokenReserve = uint256(reserve0);
+            bnbReserve = uint256(reserve1);
+        } else {
+            tokenReserve = uint256(reserve1);
+            bnbReserve = uint256(reserve0);
+        }
+
+        if (tokenReserve == 0) return true;
+
+        // Market cap = total supply * (bnbReserve / tokenReserve)
+        uint256 currentMarketCap = (basics.totalSupply * bnbReserve) /
+            tokenReserve;
+
+        return currentMarketCap >= vesting.startMarketCap;
     }
 
     /**

@@ -85,11 +85,19 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
     const TokenFactoryV2 = await ethers.getContractFactory("TokenFactoryV2");
     tokenFactory = await TokenFactoryV2.deploy();
     await tokenFactory.waitForDeployment();
+
+    // Deploy LaunchpadStorage (needed for LPFeeHarvester)
+    const LaunchpadStorage = await ethers.getContractFactory("LaunchpadStorage");
+    const launchpadStorage = await LaunchpadStorage.deploy(owner.address);
+    await launchpadStorage.waitForDeployment();
+
     const LPFeeHarvester = await ethers.getContractFactory("LPFeeHarvester");
     lpFeeHarvester = await LPFeeHarvester.deploy(
       PANCAKE_ROUTER,
       PANCAKE_FACTORY,
+      await launchpadStorage.getAddress(),
       platformFee.address,
+      academyFee.address,
       owner.address
     );
     const BondingCurveDEX = await ethers.getContractFactory("BondingCurveDEX");

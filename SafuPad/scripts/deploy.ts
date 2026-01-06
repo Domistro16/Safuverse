@@ -136,7 +136,8 @@ async function main(): Promise<void> {
     config.pancakeRouter,
     config.pancakeFactory,
     config.platformFeeAddress,
-    config.adminAddress
+    config.adminAddress,
+    config.academyFeeAddress
   );
   if (typeof lpFeeHarvester.waitForDeployment === "function") {
     await lpFeeHarvester.waitForDeployment();

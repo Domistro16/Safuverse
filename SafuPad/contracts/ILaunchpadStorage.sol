@@ -157,10 +157,12 @@ interface ILaunchpadStorage {
     function MAX_CONTRIBUTION_PER_WALLET() external view returns (uint256);
     function RAISE_DURATION() external view returns (uint256);
     function FOUNDER_ALLOCATION() external view returns (uint256);
+    function FOUNDER_VESTED_ALLOCATION() external view returns (uint256);
     function CONTRIBUTOR_ALLOCATION() external view returns (uint256);
     function PANCAKESWAP_ALLOCATION() external view returns (uint256);
     function VESTED_ALLOCATION() external view returns (uint256);
     function LIQUIDITY_TOKEN_PERCENT() external view returns (uint256);
     function LIQUIDITY_BNB_PERCENT() external view returns (uint256);
+    function FOUNDER_BNB_IMMEDIATE_PERCENT() external view returns (uint256);
     function VESTING_RELEASE_INTERVAL() external view returns (uint256);
 }

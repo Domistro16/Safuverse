@@ -102,12 +102,20 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     tokenFactory = await TokenFactoryV2.deploy();
     await tokenFactory.waitForDeployment();
 
+    // 1️⃣ Deploy LaunchpadStorage FIRST (needed for LPFeeHarvester)
+    const LaunchpadStorage = await ethers.getContractFactory("LaunchpadStorage");
+    const launchpadStorage = await LaunchpadStorage.deploy(owner.address);
+    await launchpadStorage.waitForDeployment();
+    const storageAddress = await launchpadStorage.getAddress();
+
     // Deploy LPFeeHarvester
     const LPFeeHarvester = await ethers.getContractFactory("LPFeeHarvester");
     lpFeeHarvester = await LPFeeHarvester.deploy(
       PANCAKE_ROUTER,
       PANCAKE_FACTORY,
+      storageAddress,
       platformFee.address,
+      academyFee.address,
       owner.address
     );
     await lpFeeHarvester.waitForDeployment();
@@ -129,12 +137,6 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     const RaisedFundsTimelock = await ethers.getContractFactory("RaisedFundsTimelock")
     timelock = await RaisedFundsTimelock.deploy(platformFee.address); // 7 days lock
     await timelock.waitForDeployment();
-
-    // 1️⃣ Deploy LaunchpadStorage
-    const LaunchpadStorage = await ethers.getContractFactory("LaunchpadStorage");
-    const launchpadStorage = await LaunchpadStorage.deploy(owner.address);
-    await launchpadStorage.waitForDeployment();
-    const storageAddress = await launchpadStorage.getAddress();
 
     // 2️⃣ Deploy LaunchpadManagerV3
     const LaunchpadManagerV3 = await ethers.getContractFactory(
@@ -318,10 +320,10 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       console.log(
         `  👨‍💼 Founder received: ${ethers.formatEther(
           founderBalance
-        )} tokens (immediate 10%)`
+        )} tokens (immediate 20%)`
       );
 
-      expect(founderBalance).to.equal(ethers.parseEther("60000000"));
+      expect(founderBalance).to.equal(ethers.parseEther("200000000"));
     });
 
     it("Phase 4: Should graduate to PancakeSwap and lock LP", async function () {
@@ -413,10 +415,10 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
           founderBalance
         )} tokens`
       );
-      console.log(`     (Initial 60M + vested portion)`);
+      console.log(`     (Initial 200M + vested portion)`);
 
-      expect(founderBalance > ethers.parseEther("60000000")).to.be.true; // More than initial 60M
-      expect(founderBalance <= ethers.parseEther("600000000")).to.be.true; // Less than total 600Mx
+      expect(founderBalance > ethers.parseEther("200000000")).to.be.true; // More than initial 200M
+      expect(founderBalance <= ethers.parseEther("700000000")).to.be.true; // Less than total 700M (20% immediate + 50% vested)
     });
 
     it("Phase 7: Summary - PROJECT_RAISE lifecycle complete", async function () {

@@ -35,7 +35,7 @@ describe("LPFeeHarvester", function () {
     docs: "https://docs.test.com"
   };
 
-  const HARVEST_COOLDOWN = 24 * 60 * 60; // 24 hours
+  const HARVEST_COOLDOWN = 30 * 24 * 60 * 60; // 30 days (monthly)
   const DEFAULT_LOCK_DURATION = 365 * 24 * 60 * 60; // 365 days
 
   beforeEach(async function () {
@@ -60,11 +60,19 @@ describe("LPFeeHarvester", function () {
       to: await mockPancakeRouter.getAddress(),
       value: ethers.parseEther("10"), // Plenty of ETH for all tests
     });
+
+    // Deploy LaunchpadStorage (needed for LPFeeHarvester market cap check)
+    const LaunchpadStorage = await ethers.getContractFactory("LaunchpadStorage");
+    const launchpadStorage = await LaunchpadStorage.deploy(owner.address);
+    await launchpadStorage.waitForDeployment();
+
     const LPFeeHarvester = await ethers.getContractFactory("LPFeeHarvester");
     lpFeeHarvester = await LPFeeHarvester.deploy(
       await mockPancakeRouter.getAddress(),
       await mockPancakeFactory.getAddress(),
+      await launchpadStorage.getAddress(),
       platformFee.address,
+      projectInfoFi.address, // Use as academy address in tests
       owner.address // admin
     );
     await lpFeeHarvester.waitForDeployment();
@@ -365,7 +373,7 @@ describe("LPFeeHarvester", function () {
       );
     });
 
-    it("Should enforce 24-hour harvest cooldown", async function () {
+    it("Should enforce 30-day harvest cooldown", async function () {
       try {
         await lpFeeHarvester.harvestFees(await projectToken.getAddress());
         expect.fail("Should have reverted");

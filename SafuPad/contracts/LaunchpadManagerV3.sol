@@ -250,8 +250,8 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
 
     // ============ Constants ============
 
-    uint256 public constant MIN_VESTING_DURATION = 90 days;
-    uint256 public constant MAX_VESTING_DURATION = 180 days;
+    uint256 public constant MIN_VESTING_DURATION = 365 days;
+    uint256 public constant MAX_VESTING_DURATION = 365 days;
     uint256 public constant PLATFORM_FEE_BPS = 100;
     uint256 public constant BASIS_POINTS = 10000;
     address public constant LP_BURN_ADDRESS =
@@ -459,7 +459,7 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         bool burnLP,
         ILaunchpadStorage.LaunchTeamInfo memory teamInfo
     ) external nonReentrant returns (address) {
-        vestingDuration = 180 days; // Force 180 day vesting
+        vestingDuration = 365 days; // Force 1 year vesting
 
         return
             _createLaunch(
@@ -1210,15 +1210,24 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
             .getLaunchVesting(token);
         vesting.vestingStartTime = block.timestamp;
 
-        // Calculate liquidity BNB (20% of raised)
+        // Calculate liquidity BNB (20% of raised for PancakeSwap)
         uint256 liquidityBNB = (basics.totalRaised *
             storage_.LIQUIDITY_BNB_PERCENT()) / 100;
+
+        // Calculate founder's immediate BNB (20% of raised)
+        uint256 founderImmediateBNB = (basics.totalRaised *
+            storage_.FOUNDER_BNB_IMMEDIATE_PERCENT()) / 100;
+
+        // Remaining BNB goes to vesting (60% of raised)
+        uint256 vestedBNB = basics.totalRaised -
+            liquidityBNB -
+            founderImmediateBNB;
 
         // Update Liquidity info
         ILaunchpadStorage.LaunchLiquidity memory liquidity = storage_
             .getLaunchLiquidity(token);
         liquidity.liquidityBNB = liquidityBNB;
-        liquidity.raisedFundsVesting = basics.totalRaised - liquidityBNB;
+        liquidity.raisedFundsVesting = vestedBNB;
         storage_.setLaunchLiquidity(token, liquidity);
 
         // Calculate starting market cap
@@ -1230,10 +1239,12 @@ contract LaunchpadManagerV3 is ReentrancyGuard, Ownable {
         vesting.startMarketCap = startMarketCap;
         storage_.setLaunchVesting(token, vesting);
 
-        // Transfer founder tokens (10% immediately)
-        uint256 immediateRelease = (vesting.founderTokens * 10) / 100;
-        IERC20(token).safeTransfer(basics.founder, immediateRelease);
-        storage_.updateVestingClaimed(token, immediateRelease, 0);
+        // Transfer founder's immediate 20% tokens (founderTokens is already 20% of supply)
+        IERC20(token).safeTransfer(basics.founder, vesting.founderTokens);
+        storage_.updateVestingClaimed(token, vesting.founderTokens, 0);
+
+        // Transfer founder's immediate 20% BNB
+        payable(basics.founder).transfer(founderImmediateBNB);
 
         emit RaiseCompleted(token, basics.totalRaised);
     }

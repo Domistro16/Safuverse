@@ -210,7 +210,16 @@ contract VestingManager is ReentrancyGuard, Ownable {
             revert NotProjectRaise();
         if (founder != basics.founder) revert NotFounder();
         if (!status.raiseCompleted) revert RaiseNotCompleted();
+        if (!status.graduatedToPancakeSwap) revert NotGraduated();
         if (vesting.communityControlTriggered) revert CommunityControlActive();
+
+        // Check current market cap is above starting market cap
+        uint256 currentMarketCap = _getCurrentMarketCap(
+            token,
+            basics.totalSupply
+        );
+        if (currentMarketCap < vesting.startMarketCap)
+            revert BelowStartingMarketCap();
 
         claimable = _calculateClaimableRaisedFunds(token);
         if (claimable == 0) revert NoFundsToClaim();

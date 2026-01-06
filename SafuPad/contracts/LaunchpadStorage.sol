@@ -18,12 +18,14 @@ contract LaunchpadStorage is ILaunchpadStorage, AccessControl {
     uint256 public constant override MAX_RAISE_BNB = 500 ether;
     uint256 public constant override MAX_CONTRIBUTION_PER_WALLET = 50000 ether;
     uint256 public constant override RAISE_DURATION = 72 hours;
-    uint256 public constant override FOUNDER_ALLOCATION = 60;
+    uint256 public constant override FOUNDER_ALLOCATION = 20;
+    uint256 public constant override FOUNDER_VESTED_ALLOCATION = 50;
     uint256 public constant override CONTRIBUTOR_ALLOCATION = 20;
     uint256 public constant override PANCAKESWAP_ALLOCATION = 10;
-    uint256 public constant override VESTED_ALLOCATION = 10;
+    uint256 public constant override VESTED_ALLOCATION = 50;
     uint256 public constant override LIQUIDITY_TOKEN_PERCENT = 10;
     uint256 public constant override LIQUIDITY_BNB_PERCENT = 20;
+    uint256 public constant override FOUNDER_BNB_IMMEDIATE_PERCENT = 20;
     uint256 public constant override VESTING_RELEASE_INTERVAL = 30 days;
 
     // ============ Storage ============

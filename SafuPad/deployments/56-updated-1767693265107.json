@@ -1,0 +1,25 @@
+{
+  "network": "56",
+  "timestamp": "2026-01-06T09:54:25.106Z",
+  "deployed": {
+    "launchpadStorage": "0x7Bd469c4f326Ec780467902B3f8Aa6cc2EF551B7",
+    "lpFeeHarvester": "0xAd0edb8cf7Cd9BF8ca11Fc8A9593c15a922D8870",
+    "launchpadManager": "0x93f526689Ddccd35882b7Ec3C79F40e70fe3014d",
+    "contributionManager": "0x04D7712d51A0833Aa216be2C5BEec41Fd42893fb",
+    "vestingManager": "0x42Cd0c7994a9F33fd944AC42a81dE8A04144Decd",
+    "graduationManager": "0xCd2b4F01c3D21E1AE08435463D34f49e89d9A14b"
+  },
+  "existing": {
+    "priceOracle": "0x0f452bE1BE3cefE23Bfe2D1f1831b83073471699",
+    "tokenFactory": "0xFd66bB7a03F911302f807d0CEFdEfb7eE88b385a",
+    "bondingCurveDEX": "0x4647a56f1B1624443fC084aE4A54208889495874",
+    "raisedFundsTimelock": "0x87A3899B876B59Be4Bc7552904712FcA6e5eB796",
+    "pancakeRouter": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+    "pancakeFactory": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73",
+    "wbnbAddress": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    "platformFeeAddress": "0x235799785E387C2612d4A881919436B612ed391D",
+    "academyFeeAddress": "0x235799785E387C2612d4A881919436B612ed391D",
+    "infoFiAddress": "0x235799785E387C2612d4A881919436B612ed391D",
+    "adminAddress": "0xD83deFbA240568040b39bb2C8B4DB7dB02d40593"
+  }
+}

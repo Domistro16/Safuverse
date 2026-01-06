@@ -106,11 +106,19 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
     tokenFactory = await TokenFactoryV2.deploy();
     await tokenFactory.waitForDeployment();
 
+    // 1️⃣ Deploy LaunchpadStorage FIRST (needed for LPFeeHarvester)
+    const LaunchpadStorage = await ethers.getContractFactory("LaunchpadStorage");
+    const launchpadStorage = await LaunchpadStorage.deploy(owner.address);
+    await launchpadStorage.waitForDeployment();
+    const storageAddress = await launchpadStorage.getAddress();
+
     const LPFeeHarvester = await ethers.getContractFactory("LPFeeHarvester");
     lpFeeHarvester = await LPFeeHarvester.deploy(
       PANCAKE_ROUTER,
       PANCAKE_FACTORY,
+      storageAddress,
       platformFee.address,
+      academyFee.address,
       owner.address
     );
     await lpFeeHarvester.waitForDeployment();
@@ -133,12 +141,6 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
     );
     timelock = await RaisedFundsTimelock.deploy(platformFee.address);
     await timelock.waitForDeployment();
-
-    // 1️⃣ Deploy LaunchpadStorage
-    const LaunchpadStorage = await ethers.getContractFactory("LaunchpadStorage");
-    const launchpadStorage = await LaunchpadStorage.deploy(owner.address);
-    await launchpadStorage.waitForDeployment();
-    const storageAddress = await launchpadStorage.getAddress();
 
     // 2️⃣ Deploy LaunchpadManagerV3 (Facade)
     const LaunchpadManagerV3 = await ethers.getContractFactory(
@@ -483,9 +485,9 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       const contributorBalance = await token.balanceOf(firstContributor.address);
 
       // Contributor should receive tokens proportional to their contribution
-      // 70% of total supply goes to contributors
+      // 20% of total supply goes to contributors
       expect(contributorBalance > 0n).to.be.true;
-      expect(contributorBalance <= ethers.parseEther("700000000")).to.be.true;
+      expect(contributorBalance <= ethers.parseEther("200000000")).to.be.true;
     });
 
     it("Should prevent double claiming", async function () {
@@ -516,16 +518,15 @@ describe("LaunchpadManagerV3 - Updated for New PROJECT_RAISE Flow", function () 
       }
     });
 
-    it("Should give founder 10% of allocation immediately", async function () {
+    it("Should give founder 20% of allocation immediately", async function () {
       const token = await ethers.getContractAt(
         "LaunchpadTokenV2",
         tokenAddress
       );
       const founderBalance = await token.balanceOf(founder.address);
 
-      // Founder allocation: 60% of 1B = 600M tokens
-      // Immediate release: 10% of 600M = 60M tokens
-      const expectedImmediate = ethers.parseEther("60000000");
+      // Founder immediate allocation: 20% of 1B = 200M tokens
+      const expectedImmediate = ethers.parseEther("200000000");
 
       expect(founderBalance).to.equal(expectedImmediate);
     });
