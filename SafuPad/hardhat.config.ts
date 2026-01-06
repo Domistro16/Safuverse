@@ -5,6 +5,8 @@ import hardhatNetworkHelpers from "@nomicfoundation/hardhat-network-helpers";
 import hardhatNetworkHelpersPlugin from "@nomicfoundation/hardhat-network-helpers";
 import hardhatTypechain from "@nomicfoundation/hardhat-typechain";
 import hardhatVerify from "@nomicfoundation/hardhat-verify";
+import "@nomicfoundation/hardhat-ethers-chai-matchers";
+import "dotenv/config"
 const config: HardhatUserConfig = {
   plugins: [
     hardhatToolboxMochaEthersPlugin,
@@ -22,7 +24,7 @@ const config: HardhatUserConfig = {
           viaIR: true,
           optimizer: {
             enabled: true,
-            runs: 100000,
+            runs: 200,
           },
         },
       },
@@ -31,7 +33,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 100000,
+            runs: 200,
           },
           viaIR: true,
         },
@@ -60,19 +62,20 @@ const config: HardhatUserConfig = {
     bscTestnet: {
       type: "http",
       chainType: "l1",
-      url: configVariable("RPC_URL"),
-      accounts: [configVariable("PRIVATE_KEY")],
+      url: "https://bsc-testnet-rpc.publicnode.com",
+      accounts: [process.env.PRIVATE_KEY || ''],
+
     },
     bsc: {
       type: "http",
       chainType: "l1",
       url: "https://bsc-rpc.publicnode.com",
-      accounts: [configVariable("PRIVATE_KEY")],
+      accounts: [process.env.PRIVATE_KEY || ''],
     },
   },
   verify: {
     etherscan: {
-      apiKey: configVariable("ETHERSCAN_API_KEY"),
+      apiKey: process.env.ETHERSCAN_API_KEY || '',
     },
   },
   tasks: [

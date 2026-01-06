@@ -203,7 +203,7 @@ export class BondingCurveDEX extends BaseContract {
     return {
       marketCapBNB: info[0],
       marketCapUSD: info[1],
-      BNBReserve: info[2],
+      bnbReserve: info[2],
       tokenReserve: info[3],
       reservedTokens: info[4],
       currentPrice: info[5],
@@ -251,7 +251,7 @@ export class BondingCurveDEX extends BaseContract {
       lastClaimTime: info[1],
       graduationMarketCap: info[2],
       currentMarketCap: info[3],
-      BNBInPool: info[4],
+      bnbInPool: info[4],
       canClaim: info[5],
     };
   }
@@ -823,11 +823,11 @@ export class BondingCurveDEX extends BaseContract {
         };
 
         if (trade.isBuy) {
-          existing.buyVolumeBNB += BigInt(trade.BNBAmount);
+          existing.buyVolumeBNB += BigInt(trade.bnbAmount);
           existing.buyCount++;
           existing.netTokens += BigInt(trade.tokenAmount);
         } else {
-          existing.sellVolumeBNB += BigInt(trade.BNBAmount);
+          existing.sellVolumeBNB += BigInt(trade.bnbAmount);
           existing.sellCount++;
           existing.netTokens -= BigInt(trade.tokenAmount);
         }

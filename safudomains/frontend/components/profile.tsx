@@ -786,7 +786,7 @@ export default function Profile() {
               <br />
               Ecosystem
             </h2>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
               <a href="https://academy.safuverse.com/courses/all" target="_blank" rel="noopener noreferrer">
                 <button className="footer-btn" type="button">
                   Visit Academy

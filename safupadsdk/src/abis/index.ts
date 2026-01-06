@@ -13,10 +13,10 @@
 
 export const LaunchpadManagerABI = [
   // Create functions - ✅ UPDATED: Removed address parameter for projectInfoFiWallet
-  'function createLaunch(string,string,uint256,uint256,uint256,uint256,tuple(string,string,string,string,string,string),bool) returns (address)',
-  'function createLaunchWithVanity(string,string,uint256,uint256,uint256,uint256,tuple(string,string,string,string,string,string),bytes32,bool) returns (address)',
-  'function createInstantLaunch(string,string,uint256,tuple(string,string,string,string,string,string),uint256,bool) payable returns (address)',
-  'function createInstantLaunchWithVanity(string,string,uint256,tuple(string,string,string,string,string,string),uint256,bytes32,bool) payable returns (address)',
+  'function createLaunch(string,string,uint256,uint256,uint256,uint256,tuple(string,string,string,string,string,string,string),bool) returns (address)',
+  'function createLaunchWithVanity(string,string,uint256,uint256,uint256,uint256,tuple(string,string,string,string,string,string,string),bytes32,bool) returns (address)',
+  'function createInstantLaunch(string,string,uint256,tuple(string,string,string,string,string,string,string),uint256,bool) payable returns (address)',
+  'function createInstantLaunchWithVanity(string,string,uint256,tuple(string,string,string,string,string,string,string),uint256,bytes32,bool) payable returns (address)',
 
   // Core functions
   'function contribute(address) payable',
@@ -141,7 +141,7 @@ export const TokenFactoryABI = [
   'function getTotalTokens() view returns (uint256)',
   'function getTokenAtIndex(uint256) view returns (address)',
   'function getCreatorTokens(address) view returns (address[])',
-  'function computeAddress(string,string,uint256,uint8,address,tuple(string,string,string,string,string,string),bytes32) view returns (address)',
+  'function computeAddress(string,string,uint256,uint8,address,tuple(string,string,string,string,string,string,string),bytes32) view returns (address)',
 ];
 
 export const PriceOracleABI = [

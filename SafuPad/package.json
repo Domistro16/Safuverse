@@ -2,6 +2,12 @@
   "name": "safulaunchpad",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "compile": "hardhat compile",
+    "verify": "hardhat verify --network mainnet"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.2",
     "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.2",
@@ -14,7 +20,8 @@
     "@types/chai-as-promised": "^8.0.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.18.9",
-    "chai": "^5.3.3",
+    "chai": "^4.3.10",
+    "dotenv": "^17.2.3",
     "ethers": "^6.15.0",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.0.7",

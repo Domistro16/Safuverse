@@ -52,6 +52,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
     twitter: "@token",
     telegram: "https://t.me/token",
     discord: "https://discord.gg/token",
+    docs: "https://docs.example.com"
   };
 
   beforeEach(async function () {
@@ -228,15 +229,18 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
     });
 
     it("Should reject pool creation for existing token", async function () {
-      await expect(
-        bondingCurveDEX.createInstantLaunchPool(
+      try {
+        await bondingCurveDEX.createInstantLaunchPool(
           await token.getAddress(),
           INITIAL_LIQUIDITY_TOKENS,
           owner.address, // creator
           false, // burnLP
           { value: INITIAL_LIQUIDITY_BNB }
-        )
-      ).to.be.revertedWith("Pool already exists");
+        );
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Pool already exists");
+      }
     });
 
     it("Should track active tokens", async function () {
@@ -255,10 +259,13 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       const expectedMarketCapFromPrice =
         (poolInfo.currentPrice * poolInfo.tokenReserve) / 10n ** 18n;
 
-      expect(poolInfo.marketCapBNB).to.be.closeTo(
-        expectedMarketCapFromPrice,
-        expectedMarketCapFromPrice / 2n // 50% tolerance due to reserve vs total supply differences
-      );
+      const diff = poolInfo.marketCapBNB > expectedMarketCapFromPrice
+        ? poolInfo.marketCapBNB - expectedMarketCapFromPrice
+        : expectedMarketCapFromPrice - poolInfo.marketCapBNB;
+
+      // 50% tolerance due to reserve vs total supply differences
+      const tolerance = expectedMarketCapFromPrice / 2n;
+      expect(diff <= tolerance).to.be.true;
     });
   });
 
@@ -406,7 +413,7 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       const pool = await bondingCurveDEX.pools(await token.getAddress());
       console.log(pool.bnbReserve);
       const balance = await token.balanceOf(trader1.address);
-      expect(balance).to.be.gt(0);
+      expect(balance > 0n).to.be.true;
     });
 
     it("Should update reserves after buy", async function () {
@@ -454,13 +461,16 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
 
       const unrealisticMin = quote.tokensOut * 2n;
 
-      await expect(
-        bondingCurveDEX
+      try {
+        await bondingCurveDEX
           .connect(trader1)
           .buyTokens(await token.getAddress(), unrealisticMin, {
             value: ethers.parseEther("1"),
-          })
-      ).to.be.revertedWith("Slippage too high");
+          });
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Slippage too high");
+      }
     });
 
     it("Should provide accurate buy quotes", async function () {
@@ -509,12 +519,15 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       await bondingCurveDEX.graduatePool(await token.getAddress());
 
       // getBuyQuote should revert after graduation (pool becomes inactive)
-      await expect(
-        bondingCurveDEX.getBuyQuote(
+      try {
+        await bondingCurveDEX.getBuyQuote(
           await token.getAddress(),
           ethers.parseEther("1")
-        )
-      ).to.be.revertedWith("Pool not active");
+        );
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Pool not active");
+      }
     });
   });
 
@@ -612,11 +625,14 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
 
       const unrealisticMin = quote.bnbOut * 2n;
 
-      await expect(
-        bondingCurveDEX
+      try {
+        await bondingCurveDEX
           .connect(trader1)
-          .sellTokens(await token.getAddress(), sellAmount, unrealisticMin)
-      ).to.be.revertedWith("Slippage too high");
+          .sellTokens(await token.getAddress(), sellAmount, unrealisticMin);
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Slippage too high");
+      }
     });
 
     it("Should provide accurate sell quotes", async function () {
@@ -750,7 +766,9 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
           graduated = poolInfo.graduated;
 
           if (graduated) {
-            await expect(tx).to.emit(bondingCurveDEX, "PoolGraduated");
+            const receipt = await tx.wait();
+            const event = receipt?.logs.find((log: any) => log.fragment?.name === "PoolGraduated");
+            expect(event).to.not.be.undefined;
             break;
           }
 
@@ -821,11 +839,16 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       );
 
       if (feeInfo.accumulatedFees > 0) {
-        await expect(
-          bondingCurveDEX
-            .connect(owner)
-            .claimCreatorFees(await token.getAddress())
-        ).to.be.revertedWith("Claim cooldown active");
+        if (feeInfo.accumulatedFees > 0) {
+          try {
+            await bondingCurveDEX
+              .connect(owner)
+              .claimCreatorFees(await token.getAddress());
+            expect.fail("Should have reverted");
+          } catch (error: any) {
+            expect(error.message).to.include("Claim cooldown active");
+          }
+        }
       }
     });
   });
@@ -1019,18 +1042,18 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
     it("Should reject fee address updates from non-owner", async function () {
       const [newPlatform] = await ethers.getSigners();
 
-      await expect(
-        bondingCurveDEX
+      try {
+        await bondingCurveDEX
           .connect(trader1)
           .updateFeeAddresses(
             newPlatform.address,
             newPlatform.address,
             newPlatform.address
-          )
-      ).to.be.revertedWithCustomError(
-        bondingCurveDEX,
-        "AccessControlUnauthorizedAccount"
-      );
+          );
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("AccessControlUnauthorizedAccount");
+      }
     });
 
     it("Should allow owner to manually graduate pool", async function () {
@@ -1048,40 +1071,49 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
     });
 
     it("Should reject manual graduation from non-owner", async function () {
-      await expect(
-        bondingCurveDEX.connect(trader1).graduatePool(await token.getAddress())
-      ).to.be.revertedWithCustomError(
-        bondingCurveDEX,
-        "AccessControlUnauthorizedAccount"
-      );
+      try {
+        await bondingCurveDEX.connect(trader1).graduatePool(await token.getAddress());
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("AccessControlUnauthorizedAccount");
+      }
     });
   });
 
   describe("Edge Cases (INSTANT_LAUNCH)", function () {
     it("Should reject zero amount buys", async function () {
-      await expect(
-        bondingCurveDEX
+      try {
+        await bondingCurveDEX
           .connect(trader1)
-          .buyTokens(await token.getAddress(), 0, { value: 0 })
-      ).to.be.revertedWith("Must send BNB");
+          .buyTokens(await token.getAddress(), 0, { value: 0 });
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Must send BNB");
+      }
     });
 
     it("Should reject zero amount sells", async function () {
-      await expect(
-        bondingCurveDEX
+      try {
+        await bondingCurveDEX
           .connect(trader1)
-          .sellTokens(await token.getAddress(), 0, 0)
-      ).to.be.revertedWith("Must sell tokens");
+          .sellTokens(await token.getAddress(), 0, 0);
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Must sell tokens");
+      }
     });
 
     it("Should reject trades on non-existent pool", async function () {
       const fakeTokenAddress = ethers.Wallet.createRandom().address;
 
-      await expect(
-        bondingCurveDEX
+      try {
+        await bondingCurveDEX
           .connect(trader1)
-          .buyTokens(fakeTokenAddress, 0, { value: ethers.parseEther("1") })
-      ).to.be.revertedWith("Pool not active");
+          .buyTokens(fakeTokenAddress, 0, { value: ethers.parseEther("1") });
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Pool not active");
+      }
     });
 
     it("Should handle extreme price impact with slippage protection", async function () {
@@ -1092,13 +1124,16 @@ describe("BondingCurveDEX - INSTANT_LAUNCH Tests", function () {
       const hugeBuy = poolInfo.bnbReserve * 100n;
       const unrealisticMin = poolInfo.tokenReserve;
 
-      await expect(
-        bondingCurveDEX
+      try {
+        await bondingCurveDEX
           .connect(trader1)
           .buyTokens(await token.getAddress(), unrealisticMin, {
             value: hugeBuy,
-          })
-      ).to.be.revertedWith("Slippage too high");
+          });
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Slippage too high");
+      }
     });
 
     it("Should protect against buying more than real reserve", async function () {

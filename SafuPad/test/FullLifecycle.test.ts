@@ -40,8 +40,8 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
   let traders: any[];
 
   const BNB_PRICE_USD = ethers.parseEther("580");
-  const RAISE_TARGET_BNB = ethers.parseEther("50");
-  const RAISE_MAX_BNB = ethers.parseEther("100");
+  const RAISE_TARGET_BNB = ethers.parseEther("100");
+  const RAISE_MAX_BNB = ethers.parseEther("200");
   const VESTING_DURATION = 90 * 24 * 60 * 60; // 90 days
 
   const defaultMetadata = {
@@ -51,12 +51,26 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     twitter: "@lifecycle",
     telegram: "https://t.me/lifecycle",
     discord: "https://discord.gg/lifecycle",
+    docs: "https://docs.example.com",
   };
+
+  let defaultTeamInfo: any;
 
   before(async function () {
     const signers = await ethers.getSigners();
     [owner, founder, platformFee, academyFee, infoFiFee, ...contributors] =
       signers;
+
+    defaultTeamInfo = {
+      founder: {
+        name: "Founder",
+        walletAddress: founder.address,
+        bio: "Founder Bio"
+      },
+      teamMember1: { name: "", role: "", twitter: "", linkedin: "" },
+      teamMember2: { name: "", role: "", twitter: "", linkedin: "" },
+      teamMemberCount: 0
+    };
     traders = contributors.slice(10, 15); // Use separate signers for traders
 
     // Deploy MockPriceOracle
@@ -113,17 +127,22 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
     await bondingCurveDEX.waitForDeployment();
 
     const RaisedFundsTimelock = await ethers.getContractFactory("RaisedFundsTimelock")
-
     timelock = await RaisedFundsTimelock.deploy(platformFee.address); // 7 days lock
-
     await timelock.waitForDeployment();
 
-    // Deploy LaunchpadManagerV3
+    // 1️⃣ Deploy LaunchpadStorage
+    const LaunchpadStorage = await ethers.getContractFactory("LaunchpadStorage");
+    const launchpadStorage = await LaunchpadStorage.deploy(owner.address);
+    await launchpadStorage.waitForDeployment();
+    const storageAddress = await launchpadStorage.getAddress();
+
+    // 2️⃣ Deploy LaunchpadManagerV3
     const LaunchpadManagerV3 = await ethers.getContractFactory(
       "LaunchpadManagerV3"
     );
 
     launchpadManager = await LaunchpadManagerV3.deploy(
+      storageAddress,
       await tokenFactory.getAddress(),
       await bondingCurveDEX.getAddress(),
       PANCAKE_ROUTER,
@@ -131,20 +150,69 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       infoFiFee.address,
       platformFee.address,
       await lpFeeHarvester.getAddress(),
-      await timelock.getAddress(),
       PANCAKE_FACTORY
     );
     await launchpadManager.waitForDeployment();
+    const managerAddress = await launchpadManager.getAddress();
+
+    // 3️⃣ Deploy Modules
+    const ContributionManager = await ethers.getContractFactory(
+      "ContributionManager"
+    );
+    const contributionManager = await ContributionManager.deploy(storageAddress);
+    await contributionManager.waitForDeployment();
+
+    const VestingManager = await ethers.getContractFactory("VestingManager");
+    const vestingManager = await VestingManager.deploy(
+      storageAddress,
+      PANCAKE_FACTORY,
+      await mockPancakeRouter.WETH()
+    );
+    await vestingManager.waitForDeployment();
+
+    const GraduationManager = await ethers.getContractFactory(
+      "GraduationManager"
+    );
+    const graduationManager = await GraduationManager.deploy(
+      storageAddress,
+      PANCAKE_ROUTER,
+      PANCAKE_FACTORY,
+      await bondingCurveDEX.getAddress(),
+      await lpFeeHarvester.getAddress(),
+      infoFiFee.address,
+      platformFee.address
+    );
+    await graduationManager.waitForDeployment();
+
+    // 4️⃣ Wire everything together
+    await contributionManager.setLaunchpadManager(managerAddress);
+    await vestingManager.setLaunchpadManager(managerAddress);
+    await graduationManager.setLaunchpadManager(managerAddress);
+
+    await launchpadManager.setModules(
+      await contributionManager.getAddress(),
+      await vestingManager.getAddress(),
+      await graduationManager.getAddress()
+    );
+
+    await launchpadStorage.grantModuleRole(managerAddress);
+    await launchpadStorage.grantModuleRole(await contributionManager.getAddress());
+    await launchpadStorage.grantModuleRole(await vestingManager.getAddress());
+    await launchpadStorage.grantModuleRole(await graduationManager.getAddress());
 
     // Grant roles
     const MANAGER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("MANAGER_ROLE"));
     await bondingCurveDEX.grantRole(
       MANAGER_ROLE,
-      await launchpadManager.getAddress()
+      managerAddress
     );
     await lpFeeHarvester.grantRole(
       MANAGER_ROLE,
-      await launchpadManager.getAddress()
+      managerAddress
+    );
+    await lpFeeHarvester.grantRole(
+      MANAGER_ROLE,
+      await graduationManager.getAddress()
     );
   });
 
@@ -163,7 +231,8 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         RAISE_MAX_BNB,
         VESTING_DURATION,
         defaultMetadata,
-        false // Don't burn LP
+        false, // Don't burn LP
+        defaultTeamInfo
       );
 
       const receipt = await tx.wait();
@@ -190,13 +259,13 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       const launchInfo = await launchpadManager.getLaunchInfo(tokenAddress);
       expect(launchInfo.raiseTarget).to.equal(RAISE_TARGET_BNB);
-      expect(launchInfo.launchType).to.equal(0); // PROJECT_RAISE = 0
+      expect(launchInfo.launchType).to.equal(0n); // PROJECT_RAISE = 0
     });
 
     it("Phase 2: Should complete fundraising with multiple contributors", async function () {
       console.log("\n💰 PROJECT_RAISE LIFECYCLE - PHASE 2: Fundraising");
 
-      const maxContribution = ethers.parseEther("4.44");
+      const maxContribution = ethers.parseEther("20");
       const allContributors = contributors.slice(0, 15);
 
       for (let i = 0; i < allContributors.length; i++) {
@@ -226,7 +295,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       );
 
       expect(launchInfo.raiseCompleted).to.be.true;
-      expect(launchInfo.totalRaised).to.be.gte(RAISE_TARGET_BNB);
+      expect(launchInfo.totalRaised >= RAISE_TARGET_BNB).to.be.true;
     });
 
     it("Phase 3: Should allow contributors to claim tokens", async function () {
@@ -242,18 +311,17 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         `  ✅ Contributor claimed: ${ethers.formatEther(balance)} tokens`
       );
 
-      expect(balance).to.be.gt(0);
+      expect(balance > 0n).to.be.true;
 
       // Check founder got immediate allocation
       const founderBalance = await token.balanceOf(founder.address);
-      const expectedImmediate = ethers.parseEther("20000000"); // 10% of 200M
       console.log(
         `  👨‍💼 Founder received: ${ethers.formatEther(
           founderBalance
         )} tokens (immediate 10%)`
       );
 
-      expect(founderBalance).to.equal(expectedImmediate);
+      expect(founderBalance).to.equal(ethers.parseEther("60000000"));
     });
 
     it("Phase 4: Should graduate to PancakeSwap and lock LP", async function () {
@@ -275,7 +343,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
 
       expect(lockInfo.active).to.be.true;
       expect(lockInfo.creator).to.equal(founder.address);
-      expect(lockInfo.lpAmount).to.be.gt(0);
+      expect(lockInfo.lpAmount > 0n).to.be.true;
     });
 
     it("Phase 5: Should allow fee harvesting from LP (if fees sufficient)", async function () {
@@ -314,7 +382,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
           );
           // This is acceptable - mock environment doesn't generate real trading fees
           const lockInfo = await lpFeeHarvester.getLockInfo(tokenAddress);
-          expect(lockInfo.harvestCount).to.equal(0);
+          expect(lockInfo.harvestCount).to.equal(0n);
         } else {
           throw error;
         }
@@ -345,10 +413,10 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
           founderBalance
         )} tokens`
       );
-      console.log(`     (Initial 20M + vested portion)`);
+      console.log(`     (Initial 60M + vested portion)`);
 
-      expect(founderBalance).to.be.gt(ethers.parseEther("20000000")); // More than initial
-      expect(founderBalance).to.be.lte(ethers.parseEther("200000000")); // Less than max
+      expect(founderBalance > ethers.parseEther("60000000")).to.be.true; // More than initial 60M
+      expect(founderBalance <= ethers.parseEther("600000000")).to.be.true; // Less than total 600Mx
     });
 
     it("Phase 7: Summary - PROJECT_RAISE lifecycle complete", async function () {
@@ -463,8 +531,13 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
       );
       console.log(`  📊 Graduation Progress: ${poolInfo.graduationProgress}%`);
 
-      expect(balance1).to.be.gt(0);
-      expect(balance2).to.be.gt(0);
+      expect(balance1 > 0n).to.be.true;
+      expect(balance2 > 0n).to.be.true;
+      const feeInfo = await bondingCurveDEX.getCreatorFeeInfo(tokenAddress);
+      expect(feeInfo.accumulatedFees > 0n).to.be.true;
+
+      const platformBalance = await ethers.provider.getBalance(platformFee.address);
+      expect(platformBalance > 0n).to.be.true;
     });
 
     it("Phase 3: Should accumulate creator fees during trading", async function () {
@@ -479,7 +552,7 @@ describe("Full Lifecycle Tests - PROJECT_RAISE vs INSTANT_LAUNCH", function () {
         )} BNB`
       );
 
-      expect(feeInfo.accumulatedFees).to.be.gt(0);
+      expect(feeInfo.accumulatedFees > 0n).to.be.true;
     });
 
     it("Phase 4: Should graduate when BNB threshold is reached", async function () {

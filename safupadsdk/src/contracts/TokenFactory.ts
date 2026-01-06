@@ -112,6 +112,7 @@ export class TokenFactory extends BaseContract {
         twitter: metadata[3],
         telegram: metadata[4],
         discord: metadata[5],
+        docs: metadata[6],
       },
     };
   }

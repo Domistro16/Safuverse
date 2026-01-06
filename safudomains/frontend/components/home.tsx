@@ -423,7 +423,7 @@ export default function Home() {
               <p><strong>Network:</strong> BSC</p>
               <p><strong>Extension:</strong> .safu</p>
               <p><strong>Features:</strong> Utility beyond Identity</p>
-              
+
             </div>
           </div>
         </div>
@@ -469,7 +469,7 @@ export default function Home() {
               <br />
               Ecosystem
             </h2>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
               <a href="https://academy.safuverse.com/courses/all" target="_blank" rel="noopener noreferrer">
                 <button className="footer-btn" type="button">
                   Visit Academy

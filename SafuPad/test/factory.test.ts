@@ -19,6 +19,7 @@ describe("TokenFactoryV2", function () {
     twitter: "@testtoken",
     telegram: "https://t.me/testtoken",
     discord: "https://discord.gg/testtoken",
+    docs: "https://docs.test.com"
   };
 
   beforeEach(async function () {
@@ -113,6 +114,7 @@ describe("TokenFactoryV2", function () {
       expect(metadata.twitter).to.equal(defaultMetadata.twitter);
       expect(metadata.telegram).to.equal(defaultMetadata.telegram);
       expect(metadata.discord).to.equal(defaultMetadata.discord);
+      expect(metadata.docs).to.equal(defaultMetadata.docs);
     });
 
     it("Should update metadata (only by owner)", async function () {
@@ -152,6 +154,7 @@ describe("TokenFactoryV2", function () {
         twitter: "@newtoken",
         telegram: "https://t.me/newtoken",
         discord: "https://discord.gg/newtoken",
+        docs: "https://docs.newsite.com",
       };
 
       await token.connect(creator).updateMetadata(newMetadata);
@@ -198,35 +201,45 @@ describe("TokenFactoryV2", function () {
         twitter: "@hacker",
         telegram: "https://t.me/hacker",
         discord: "https://discord.gg/hacker",
+        docs: "https://docs.hacker.com",
       };
 
-      await expect(
-        token.connect(user1).updateMetadata(newMetadata)
-      ).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
+      try {
+        await token.connect(user1).updateMetadata(newMetadata);
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("OwnableUnauthorizedAccount");
+      }
     });
 
     it("Should reject invalid parameters", async function () {
-      await expect(
-        tokenFactory.connect(creator).createToken(
+      try {
+        await tokenFactory.connect(creator).createToken(
           "", // Empty name
           "TEST",
           1_000_000_000,
           18,
           creator.address,
           defaultMetadata
-        )
-      ).to.be.revertedWith("Name cannot be empty");
+        );
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Name cannot be empty");
+      }
 
-      await expect(
-        tokenFactory.connect(creator).createToken(
+      try {
+        await tokenFactory.connect(creator).createToken(
           "Test Token",
           "", // Empty symbol
           1_000_000_000,
           18,
           creator.address,
           defaultMetadata
-        )
-      ).to.be.revertedWith("Symbol cannot be empty");
+        );
+        expect.fail("Should have reverted");
+      } catch (error: any) {
+        expect(error.message).to.include("Symbol cannot be empty");
+      }
 
       await expect(
         tokenFactory.connect(creator).createToken(
@@ -563,6 +576,7 @@ describe("TokenFactoryV2", function () {
         twitter: "",
         telegram: "",
         discord: "",
+        docs: "",
       };
 
       const tx = await tokenFactory
@@ -588,7 +602,9 @@ describe("TokenFactoryV2", function () {
         twitter: "@" + "c".repeat(100),
         telegram: "https://t.me/" + "d".repeat(100),
         discord: "https://discord.gg/" + "e".repeat(100),
+        docs: "https://docs.example.com/" + "f".repeat(100),
       };
+
 
       const tx = await tokenFactory
         .connect(creator)

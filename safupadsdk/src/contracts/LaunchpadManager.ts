@@ -84,7 +84,6 @@ export class LaunchpadManager extends BaseContract {
     const raiseTargetBNB = ethers.parseEther(params.raiseTargetBNB);
     const raiseMaxBNB = ethers.parseEther(params.raiseMaxBNB);
     const vestingDuration = params.vestingDuration * 24 * 60 * 60; // days to seconds
-
     // Prepare metadata
     const metadata = [
       params.metadata.logoURI,
@@ -93,6 +92,7 @@ export class LaunchpadManager extends BaseContract {
       params.metadata.twitter,
       params.metadata.telegram,
       params.metadata.discord,
+      params.metadata.docs,
     ];
 
     // Prepare team info struct for contract
@@ -176,6 +176,7 @@ export class LaunchpadManager extends BaseContract {
       params.metadata.twitter,
       params.metadata.telegram,
       params.metadata.discord,
+      params.metadata.docs,
     ];
 
     // Must send BNB with transaction

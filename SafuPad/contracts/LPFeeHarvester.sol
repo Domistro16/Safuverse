@@ -202,12 +202,12 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         pancakeRouter = IPancakeRouter02(_pancakeRouter);
         pancakeFactory = IPancakeFactory(_pancakeFactory);
         platformFeeAddress = _platformFeeAddress;
-        wbnbAddress = pancakeRouter.WETH();
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(MANAGER_ROLE, _admin);
         _grantRole(HARVESTER_ROLE, _admin);
         _grantRole(EMERGENCY_ROLE, _admin);
+        wbnbAddress = pancakeRouter.WETH();
     }
 
     /**
@@ -457,7 +457,6 @@ contract LPFeeHarvester is AccessControl, ReentrancyGuard, Pausable {
         address nonWBNB = token0IsWBNB ? token1 : token0;
 
         if (tokenAmountOut > 0) {
-
             IERC20(nonWBNB).approve(address(pancakeRouter), 0);
             IERC20(nonWBNB).approve(address(pancakeRouter), tokenAmountOut);
 
