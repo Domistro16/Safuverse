@@ -1,0 +1,17 @@
+{
+  "name": "safuverse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Safuverse Monorepo - Start all frontends with a single command",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:academy\" \"npm run dev:domains\"",
+    "dev:academy": "cd SafuAcademy/webapp && npm run dev",
+    "dev:domains": "cd safudomains/frontend && npm run dev",
+    "install:all": "npm install && cd SafuAcademy/webapp && npm install && cd ../../safudomains/frontend && npm install",
+    "build:academy": "cd SafuAcademy/webapp && npm run build",
+    "build:domains": "cd safudomains/frontend && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
