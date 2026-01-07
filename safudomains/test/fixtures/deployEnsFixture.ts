@@ -28,7 +28,7 @@ export type EnsStack = {
   tokenPriceOracle: Contracts['TokenPriceOracle']
   staticMetadataService: Contracts['StaticMetadataService']
   nameWrapper: Contracts['NameWrapper']
-  referralController: Contracts['ReferralController']
+  referralVerifier: Contracts['ReferralVerifier']
   ethRegistrarController: Contracts['ETHRegistrarController']
   staticBulkRenewal: Contracts['StaticBulkRenewal']
   publicResolver: Contracts['PublicResolver']
@@ -206,9 +206,13 @@ export async function deployEnsStack(): Promise<EnsStack> {
     contract: nameWrapper,
   })
 
-  const referralController = await hre.viem.deployContract(
-    'ReferralController',
-    [],
+  const referralVerifier = await hre.viem.deployContract(
+    'ReferralVerifier',
+    [
+      walletClients[0].account.address, // signer
+      nameWrapper.address,
+      baseRegistrarImplementation.address,
+    ],
   )
   const ethRegistrarController = await hre.viem.deployContract(
     'ETHRegistrarController',
@@ -220,7 +224,7 @@ export async function deployEnsStack(): Promise<EnsStack> {
       reverseRegistrar.address,
       nameWrapper.address,
       ensRegistry.address,
-      referralController.address,
+      referralVerifier.address,
     ],
   )
 
@@ -239,6 +243,11 @@ export async function deployEnsStack(): Promise<EnsStack> {
       account: walletClients[1].account,
     },
   )
+  // Add ETHRegistrarController as controller on ReferralVerifier
+  await referralVerifier.write.setController([
+    ethRegistrarController.address,
+    true,
+  ])
   await setEthResolverInterface({
     ethOwnedResolver,
     interfaceName: 'IETHRegistrarController',
@@ -284,7 +293,7 @@ export async function deployEnsStack(): Promise<EnsStack> {
     tokenPriceOracle,
     staticMetadataService,
     nameWrapper,
-    referralController,
+    referralVerifier,
     ethRegistrarController,
     staticBulkRenewal,
     publicResolver,

@@ -3,6 +3,7 @@ import {
   Address,
   Hex,
   zeroAddress,
+  zeroHash,
 } from 'viem'
 import { EnsStack } from './deployEnsFixture.js'
 
@@ -20,8 +21,19 @@ type RegisterNameOptions = {
   shouldSetReverseRecord?: boolean
   ownerControlledFuses?: number
   lifetime?: boolean
-  referree?: string
 }
+
+// Empty referral data for tests without referrals
+const EMPTY_REFERRAL_DATA = {
+  referrer: zeroAddress,
+  registrant: zeroAddress,
+  nameHash: zeroHash,
+  referrerCodeHash: zeroHash,
+  deadline: 0n,
+  nonce: zeroHash,
+} as const
+
+const EMPTY_REFERRAL_SIGNATURE = '0x' as const
 
 export const getDefaultRegistrationOptions = async ({
   label,
@@ -33,7 +45,6 @@ export const getDefaultRegistrationOptions = async ({
   shouldSetReverseRecord,
   ownerControlledFuses,
   lifetime,
-  referree,
 }: RegisterNameOptions) => ({
   label,
   ownerAddress: await (async () => {
@@ -50,9 +61,42 @@ export const getDefaultRegistrationOptions = async ({
   shouldSetReverseRecord: shouldSetReverseRecord ?? false,
   ownerControlledFuses: ownerControlledFuses ?? 0,
   lifetime: lifetime ?? false,
-  referree: referree ?? '',
 })
 
+// Create the RegisterRequest struct for contract calls
+export const getRegisterRequest = ({
+  label,
+  ownerAddress,
+  duration,
+  secret,
+  resolverAddress,
+  data,
+  shouldSetReverseRecord,
+  ownerControlledFuses,
+  lifetime,
+}: {
+  label: string
+  ownerAddress: Address
+  duration: bigint
+  secret: Hex
+  resolverAddress: Address
+  data: Hex[]
+  shouldSetReverseRecord: boolean
+  ownerControlledFuses: number
+  lifetime: boolean
+}) => ({
+  name: label,
+  owner: ownerAddress,
+  duration,
+  secret,
+  resolver: resolverAddress,
+  data,
+  reverseRecord: shouldSetReverseRecord,
+  ownerControlledFuses,
+  lifetime,
+})
+
+// Legacy function for backward compatibility
 export const getRegisterNameParameterArray = ({
   label,
   ownerAddress,
@@ -63,8 +107,17 @@ export const getRegisterNameParameterArray = ({
   shouldSetReverseRecord,
   ownerControlledFuses,
   lifetime,
-  referree,
-}: Required<RegisterNameOptions>) => {
+}: {
+  label: string
+  ownerAddress: Address
+  duration: bigint
+  secret: Hex
+  resolverAddress: Address
+  data: Hex[]
+  shouldSetReverseRecord: boolean
+  ownerControlledFuses: number
+  lifetime: boolean
+}) => {
   const immutable = [
     label,
     ownerAddress,
@@ -75,7 +128,6 @@ export const getRegisterNameParameterArray = ({
     shouldSetReverseRecord,
     ownerControlledFuses,
     lifetime,
-    referree,
   ] as const
   return immutable as Mutable<typeof immutable>
 }
@@ -85,26 +137,24 @@ export const commitName = async (
   params_: RegisterNameOptions,
 ) => {
   const params = await getDefaultRegistrationOptions(params_)
-  const args = getRegisterNameParameterArray(params)
+  const request = getRegisterRequest({
+    label: params.label,
+    ownerAddress: params.ownerAddress,
+    duration: params.duration,
+    secret: params.secret as Hex,
+    resolverAddress: params.resolverAddress,
+    data: params.data,
+    shouldSetReverseRecord: params.shouldSetReverseRecord,
+    ownerControlledFuses: params.ownerControlledFuses,
+    lifetime: params.lifetime,
+  })
 
   const testClient = await hre.viem.getTestClient()
   const [deployer] = await hre.viem.getWalletClients()
 
-  // makeCommitment takes 9 params (without referree), while register takes 10 params
-  const commitmentArgs = args.slice(0, 9) as [
-    string,
-    `0x${string}`,
-    bigint,
-    `0x${string}`,
-    `0x${string}`,
-    readonly `0x${string}`[],
-    boolean,
-    number,
-    boolean,
-  ]
-  const commitmentHash = await ethRegistrarController.read.makeCommitment(
-    commitmentArgs,
-  )
+  const commitmentHash = await ethRegistrarController.read.makeCommitment([
+    request,
+  ])
   await ethRegistrarController.write.commit([commitmentHash], {
     account: deployer.account,
   })
@@ -114,7 +164,7 @@ export const commitName = async (
 
   return {
     params,
-    args,
+    request,
     hash: commitmentHash,
   }
 }
@@ -124,27 +174,25 @@ export const registerName = async (
   params_: RegisterNameOptions,
 ) => {
   const params = await getDefaultRegistrationOptions(params_)
-  const args = getRegisterNameParameterArray(params)
+  const request = getRegisterRequest({
+    label: params.label,
+    ownerAddress: params.ownerAddress,
+    duration: params.duration,
+    secret: params.secret as Hex,
+    resolverAddress: params.resolverAddress,
+    data: params.data,
+    shouldSetReverseRecord: params.shouldSetReverseRecord,
+    ownerControlledFuses: params.ownerControlledFuses,
+    lifetime: params.lifetime,
+  })
   const { label, duration, lifetime } = params
 
   const testClient = await hre.viem.getTestClient()
   const [deployer] = await hre.viem.getWalletClients()
 
-  // makeCommitment takes 9 params (without referree), while register takes 10 params
-  const commitmentArgs = args.slice(0, 9) as [
-    string,
-    `0x${string}`,
-    bigint,
-    `0x${string}`,
-    `0x${string}`,
-    readonly `0x${string}`[],
-    boolean,
-    number,
-    boolean,
-  ]
-  const commitmentHash = await ethRegistrarController.read.makeCommitment(
-    commitmentArgs,
-  )
+  const commitmentHash = await ethRegistrarController.read.makeCommitment([
+    request,
+  ])
   await ethRegistrarController.write.commit([commitmentHash], {
     account: deployer.account,
   })
@@ -156,8 +204,17 @@ export const registerName = async (
     .rentPrice([label, duration, lifetime])
     .then(({ base, premium }) => base + premium)
 
-  await ethRegistrarController.write.register(args, {
-    value,
-    account: deployer.account,
-  })
+  // Use empty referral data for test registrations
+  const referralData = {
+    ...EMPTY_REFERRAL_DATA,
+    registrant: params.ownerAddress,
+  }
+
+  await ethRegistrarController.write.register(
+    [request, referralData, EMPTY_REFERRAL_SIGNATURE],
+    {
+      value,
+      account: deployer.account,
+    },
+  )
 }

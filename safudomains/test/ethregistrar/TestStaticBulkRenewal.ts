@@ -67,9 +67,13 @@ async function fixture() {
     100000000000000000000000000n,
     21n,
   ])
-  const referralController = await hre.viem.deployContract(
-    'ReferralController',
-    [],
+  const referralVerifier = await hre.viem.deployContract(
+    'ReferralVerifier',
+    [
+      accounts[0].address, // signer
+      nameWrapper.address,
+      baseRegistrar.address,
+    ],
   )
   const controller = await hre.viem.deployContract('ETHRegistrarController', [
     baseRegistrar.address,
@@ -79,13 +83,15 @@ async function fixture() {
     zeroAddress,
     nameWrapper.address,
     ensRegistry.address,
-    referralController.address,
+    referralVerifier.address,
   ])
 
   await baseRegistrar.write.addController([controller.address])
   await baseRegistrar.write.addController([accounts[0].address])
   await baseRegistrar.write.addController([nameWrapper.address])
   await nameWrapper.write.setController([controller.address, true])
+  // Add ETHRegistrarController as controller on ReferralVerifier
+  await referralVerifier.write.setController([controller.address, true])
 
   // Create the bulk renewal contract
   const bulkRenewal = await hre.viem.deployContract('StaticBulkRenewal', [

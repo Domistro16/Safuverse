@@ -88,9 +88,13 @@ async function fixture() {
     100000000000000000000000000n,
     21n,
   ])
-  const referralController = await hre.viem.deployContract(
-    'ReferralController',
-    [],
+  const referralVerifier = await hre.viem.deployContract(
+    'ReferralVerifier',
+    [
+      accounts.ownerAccount.address, // signer
+      nameWrapper.address,
+      baseRegistrar.address,
+    ],
   )
   const ethRegistrarController = await hre.viem.deployContract(
     'ETHRegistrarController',
@@ -102,13 +106,18 @@ async function fixture() {
       reverseRegistrar.address,
       nameWrapper.address,
       ensRegistry.address,
-      referralController.address,
+      referralVerifier.address,
     ],
   )
 
   await nameWrapper.write.setController([ethRegistrarController.address, true])
   await baseRegistrar.write.addController([nameWrapper.address])
   await reverseRegistrar.write.setController([
+    ethRegistrarController.address,
+    true,
+  ])
+  // Add ETHRegistrarController as controller on ReferralVerifier
+  await referralVerifier.write.setController([
     ethRegistrarController.address,
     true,
   ])
@@ -145,7 +154,7 @@ async function fixture() {
     dummyCakeOracle,
     dummyUsd1Oracle,
     priceOracle,
-    referralController,
+    referralVerifier,
     ethRegistrarController,
     publicResolver,
     callData,
