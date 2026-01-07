@@ -810,26 +810,26 @@ RPC endpoints are configured in each project's `hardhat.config.ts` or frontend c
 
 ## Smart Contract Deployments
 
-All smart contracts are deployed and verified on BSCScan. Below are the deployed contract addresses for each component:
+All smart contracts are deployed and verified on BSCScan. Below are the deployed contract addresses for each component (sourced from frontend code):
 
 ### SafuAcademy - Education Platform
 
 **BSC Mainnet (Chain ID: 56)**:
 
-- **Course Factory**: `0xE796bc81c3F372237641998c24C755e710832bA9`
-- **Level3Course**: `0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13`
+- **Level3Course**: `0x1988Bc593015Fe29ED7562Ba672a8798b3B13e88`
 
 ### SafuDomains - Naming Service
 
 **BSC Mainnet (Chain ID: 56)**:
 
-- **Controller**: `0x48511b6c15fe1F89bAf6b30dBFA35bF0eAaEB751`
-- **Registry**: `0x6aEFc7ac590096c08187a9052030dA59dEd7E996`
-- **ReverseRegistrar**: `0xc070aAcE207ad5eb2A460D059785ffC9D4D2C536`
-- **BaseRegistrar**: `0xc85f95FCe09b582D546606f591CEEC88D88714f5`
-- **NameWrapper**: `0x86a930d1931C11e3Ec46b3A050E27F29bF94B612`
-- **PublicResolver**: `0xcAa73Cd19614523F9F3cfCa4A447120ceA8fd357`
-- **Referral**: `0x182690bD985ef02Ae44A6F8a2e71666bDe1196E2`
+- **Controller**: `0xC902396A4E49914d1266cc80e22Aa182dcF23138`
+- **Registry**: `0xa886B8897814193f99A88701d70b31b4a8E27a1E`
+- **ReverseRegistrar**: `0x1D0831eA9486Fada3887a737E8d6f8C6Ad72a125`
+- **BaseRegistrar**: `0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c`
+- **NameWrapper**: `0xbf4B53F867dfE5A78Cf268AfBfC1f334044e61ae`
+- **BulkRenewal**: `0x2156C655d4668E7DB7584CA9B2a8Bc18A9125254`
+- **PublicResolver**: `0x50143d9f7e496fF58049dE0db6FaDfB43FfE18e7`
+- **Referral**: `0x92149696fDDC858A76253F71268D34147e662410`
 
 ### SafuPad - Token Launchpad (In Development)
 
@@ -845,7 +845,8 @@ All smart contracts are deployed and verified on BSCScan. Below are the deployed
 
 **BSC Mainnet (Chain ID: 56)**:
 
-- **ScorecardNFT**: Deployed with Chainlink oracle integration
+- **ScorecardNFT**: `0x7Eb73a8dE1cf916A8a6eCA6C7Da218d2a4A72e65`
+- **Chainlink BNB/USD Oracle**: `0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE`
 - Dynamic USD-pegged pricing ($5 USD per mint)
 
 ## Development

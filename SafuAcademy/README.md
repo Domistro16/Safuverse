@@ -14,8 +14,7 @@ Decentralized educational platform **deployed on BNB Chain** with on-chain cours
 
 The following contracts are deployed on BNB Chain Mainnet (Chain ID: 56):
 
-- **Course Factory**: `0xE796bc81c3F372237641998c24C755e710832bA9`
-- **CourseContract/Level3Course**: `0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13`
+- **Level3Course**: `0x1988Bc593015Fe29ED7562Ba672a8798b3B13e88`
 
 ## Configuration
 
@@ -270,8 +269,8 @@ VITE_API_URL=your_backend_api_url_here
 VITE_PINATA_KEY=your_pinata_api_key_here
 ```
 
-**Note**: The contract addresses and network configuration are hardcoded in `src/constants.ts`:
-- **Level3Course Contract**: `0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13`
+**Note**: The contract addresses and network configuration are in `lib/constants.ts`:
+- **Level3Course Contract**: `0x1988Bc593015Fe29ED7562Ba672a8798b3B13e88`
 - **BNB Chain**: Chain ID 56 (BSC Mainnet)
 
 #### Development Commands
@@ -346,11 +345,11 @@ frontend/
 
 #### Contract Integration
 
-The frontend interacts with deployed contracts on BNB Chain through `src/constants.ts`:
+The frontend interacts with deployed contracts on BNB Chain through `lib/constants.ts`:
 
 ```typescript
-// Contract configuration (from src/constants.ts)
-export const Deploy = "0xD0cB04cB20Dff62E26b7069B95Fa9fF3D4694d13"; // Level3Course contract
+// Contract configuration (from lib/constants.ts)
+export const Deploy = "0x1988Bc593015Fe29ED7562Ba672a8798b3B13e88"; // Level3Course contract
 
 // Contract ABI is exported in the same file
 export const abi = [...]; // Full Level3Course ABI
