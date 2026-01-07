@@ -16,8 +16,21 @@ import {
   commitName,
   getDefaultRegistrationOptions,
   getRegisterNameParameterArray,
+  getRegisterRequest,
   registerName,
 } from '../fixtures/registerName.js'
+
+// Empty referral data for tests without referrals
+const EMPTY_REFERRAL_DATA = {
+  referrer: zeroAddress,
+  registrant: zeroAddress,
+  nameHash: zeroHash,
+  referrerCodeHash: zeroHash,
+  deadline: 0n,
+  nonce: zeroHash,
+} as const
+
+const EMPTY_REFERRAL_SIGNATURE = '0x' as `0x${string}`
 
 const REGISTRATION_TIME = 28n * DAY
 const BUFFERED_REGISTRATION_COST = REGISTRATION_TIME + 3n * DAY
@@ -213,7 +226,7 @@ describe('ETHRegistrarController', () => {
       address: ethRegistrarController.address,
     })
 
-    const { args, params } = await commitName(
+    const { request, params } = await commitName(
       { ethRegistrarController },
       {
         label: 'newname',
@@ -224,9 +237,22 @@ describe('ETHRegistrarController', () => {
 
     const timestamp = await publicClient.getBlock().then((b) => b.timestamp)
 
+    const referralData = {
+      ...EMPTY_REFERRAL_DATA,
+      registrant: registrantAccount.address,
+    }
+
+    // Get actual price from controller
+    const { base, premium } = await ethRegistrarController.read.rentPrice([
+      params.label,
+      params.duration,
+      params.lifetime,
+    ])
+    const value = base + premium
+
     await expect(ethRegistrarController)
-      .write('register', args as unknown as any, {
-        value: BUFFERED_REGISTRATION_COST,
+      .write('register', [request, referralData, EMPTY_REFERRAL_SIGNATURE], {
+        value,
       })
       .toEmitEvent('NameRegistered')
       .withArgs(
@@ -240,7 +266,7 @@ describe('ETHRegistrarController', () => {
 
     await expect(
       publicClient.getBalance({ address: ethRegistrarController.address }),
-    ).resolves.toEqual(REGISTRATION_TIME + balanceBefore)
+    ).resolves.toEqual(value + balanceBefore)
   })
 
   it('should revert when not enough ether is transferred', async () => {
