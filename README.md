@@ -46,7 +46,7 @@ ENS-inspired domain name system with custom .safu TLD deployed on BNB Chain.
 
 **Directory**: `SafuDomains/`
 
-### 3. SafuPad - Token Launchpad (In Development)
+### 3. SafuPad - Token Launchpad
 
 Fair launch platform with bonding curve mechanics and automatic PancakeSwap integration on BNB Chain.
 
@@ -831,15 +831,17 @@ All smart contracts are deployed and verified on BSCScan. Below are the deployed
 - **PublicResolver**: `0x50143d9f7e496fF58049dE0db6FaDfB43FfE18e7`
 - **Referral**: `0x92149696fDDC858A76253F71268D34147e662410`
 
-### SafuPad - Token Launchpad (In Development)
+### SafuPad - Token Launchpad
 
-**BSC Testnet (Chain ID: 97) - Unverified**:
+**BSC Mainnet (Chain ID: 56)**:
 
-- **LaunchpadManager**: `0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c`
-- **BondingCurveDEX**: `0x14eB3B6C297ff6fefc25c0E0d289Bf8348e864f6`
-- **TokenFactory**: `0xcb7526b9598240A737237C52f852705e6A449cD0`
-- **PriceOracle**: `0x56f0b1f80F8cc37f875Be42e2f4D09810514F346`
-- **LPFeeHarvester**: `0xa886B8897814193f99A88701d70b31b4a8E27a1E`
+- **LaunchpadManager**: `0x93f526689Ddccd35882b7Ec3C79F40e70fe3014d`
+- **BondingCurveDEX**: `0x4647a56f1B1624443fC084aE4A54208889495874`
+- **TokenFactory**: `0xFd66bB7a03F911302f807d0CEFdEfb7eE88b385a`
+- **PriceOracle**: `0x0f452bE1BE3cefE23Bfe2D1f1831b83073471699`
+- **LPFeeHarvester**: `0xAd0edb8cf7Cd9BF8ca11Fc8A9593c15a922D8870`
+- **PancakeSwap Router**: `0x10ED43C718714eb63d5aA57B78B54704E256024E`
+- **PancakeSwap Factory**: `0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73`
 
 ### Safucard - NFT Scorecard
 
