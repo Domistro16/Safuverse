@@ -175,7 +175,7 @@ describe('PublicResolver', () => {
       await expect(publicResolver)
         .transaction(hash)
         .toEmitEvent('AddressChanged')
-        .withArgs(targetNode, 60n, accounts[1].address)
+        .withArgs(targetNode, 714n, accounts[1].address)
 
       await expect(publicResolver)
         .transaction(hash)
@@ -271,7 +271,7 @@ describe('PublicResolver', () => {
       ).resolves.toEqual(accounts[1].address.toLowerCase() as Address)
     })
 
-    it('returns safu address for coin type 60', async () => {
+    it('returns safu address for coin type 714 (BSC)', async () => {
       const { publicResolver, accounts } = await loadFixture(fixture)
 
       const hash = await publicResolver.write.setAddr([
@@ -282,29 +282,29 @@ describe('PublicResolver', () => {
       await expect(publicResolver)
         .transaction(hash)
         .toEmitEvent('AddressChanged')
-        .withArgs(targetNode, 60n, accounts[1].address)
+        .withArgs(targetNode, 714n, accounts[1].address)
       await expect(publicResolver)
         .transaction(hash)
         .toEmitEvent('AddrChanged')
         .withArgs(targetNode, accounts[1].address)
       await expect(
-        publicResolver.read.addr([targetNode, 60n]) as Promise<Hex>,
+        publicResolver.read.addr([targetNode, 714n]) as Promise<Hex>,
       ).resolves.toEqual(accounts[1].address.toLowerCase() as Address)
     })
 
-    it('setting coin type 60 updates safu address', async () => {
+    it('setting coin type 714 (BSC) updates safu address', async () => {
       const { publicResolver, accounts } = await loadFixture(fixture)
 
       const hash = await publicResolver.write.setAddr([
         targetNode,
-        60n,
+        714n,
         accounts[2].address,
       ])
 
       await expect(publicResolver)
         .transaction(hash)
         .toEmitEvent('AddressChanged')
-        .withArgs(targetNode, 60n, accounts[2].address)
+        .withArgs(targetNode, 714n, accounts[2].address)
       await expect(publicResolver)
         .transaction(hash)
         .toEmitEvent('AddrChanged')
@@ -1494,7 +1494,7 @@ describe('PublicResolver', () => {
       await expect(publicResolver)
         .transaction(hash)
         .toEmitEvent('AddressChanged')
-        .withArgs(targetNode, 60n, accounts[1].address)
+        .withArgs(targetNode, 714n, accounts[1].address)
       await expect(publicResolver)
         .transaction(hash)
         .toEmitEvent('TextChanged')
