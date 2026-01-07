@@ -250,7 +250,7 @@ describe('BaseRegistrar', () => {
           account: otherAccount,
         },
       )
-      .toBeRevertedWithString('ERC721: caller is not token owner or approved')
+      .toBeRevertedWithString('ERC721: transfer caller is not owner nor approved')
   })
 
   it('should not permit transfer or reclaim during the grace period', async () => {

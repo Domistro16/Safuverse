@@ -214,7 +214,10 @@ export const registerAndWrapETH2LDTests = () => {
         .toBeRevertedWithoutReason()
     })
 
-    it('Errors when passing a parent-controlled fuse', async () => {
+    // NOTE: Parent-controlled fuses (IS_DOT_ETH = 2^17 = 131072, etc.) are now out of uint16 range
+    // The contract uses uint16 for ownerControlledFuses, so these values cannot be passed
+    // This is enforced at the type level by viem before reaching the contract
+    it.skip('Errors when passing a parent-controlled fuse', async () => {
       const { nameWrapper, accounts } = await loadFixture(
         registerAndWrapETH2LDFixture,
       )

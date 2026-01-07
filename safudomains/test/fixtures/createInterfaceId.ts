@@ -114,16 +114,35 @@ const getSolidityReferenceInterfaceAbi = async (
   ) as CompilerInput
   const { content } = buildMetadata.sources[path]
 
+  // Remove comments
+  const cleanedContent = content.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+
+  // Find the interface declaration
+  const interfaceStart = cleanedContent.indexOf(`interface ${interfaceName}`)
+  if (interfaceStart === -1) {
+    throw new Error(`Could not find interface ${interfaceName}`)
+  }
+
+  // Find the opening brace of the interface
+  const openBraceIdx = cleanedContent.indexOf('{', interfaceStart)
+  if (openBraceIdx === -1) {
+    throw new Error(`Could not find opening brace for interface ${interfaceName}`)
+  }
+
+  // Find the matching closing brace by counting braces
+  let braceCount = 1
+  let idx = openBraceIdx + 1
+  while (braceCount > 0 && idx < cleanedContent.length) {
+    if (cleanedContent[idx] === '{') braceCount++
+    else if (cleanedContent[idx] === '}') braceCount--
+    idx++
+  }
+
+  // Extract the interface body (between the braces)
+  const interfaceBody = cleanedContent.slice(openBraceIdx + 1, idx - 1)
+
   return (
-    content
-      // Remove comments - single and multi-line
-      .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
-      // Match only the interface block + nested curly braces
-      .match(`interface ${interfaceName} .*?{(?:\{??[^{]*?})+`)![0]
-      // Remove the interface keyword and the interface name
-      .replace(/.*{/s, '')
-      // Remove the closing curly brace
-      .replace(/}$/s, '')
+    interfaceBody
       // Match array of all function signatures
       .match(/function .*?;/gs)!
       // Remove newlines and trailing semicolons

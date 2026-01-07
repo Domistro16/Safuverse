@@ -128,20 +128,23 @@ async function fixture() {
   return { ensRegistry, baseRegistrar, bulkRenewal, accounts }
 }
 
+// Minimum registration duration is 28 days
+const MIN_DURATION = 28n * 24n * 60n * 60n // 2419200 seconds
+
 describe('BulkRenewal', () => {
   it('should return the cost of a bulk renewal', async () => {
     const { bulkRenewal } = await loadFixture(fixture)
 
     await expect(
-      bulkRenewal.read.rentPrice([['test1', 'test2'], 86400n, false]),
-    ).resolves.toEqual(86400n * 2n)
+      bulkRenewal.read.rentPrice([['test1', 'test2'], MIN_DURATION, false]),
+    ).resolves.toEqual(MIN_DURATION * 2n)
   })
 
   it('should raise an error trying to renew a nonexistent name', async () => {
     const { bulkRenewal } = await loadFixture(fixture)
 
     await expect(bulkRenewal)
-      .write('renewAll', [['foobar'], 86400n, false])
+      .write('renewAll', [['foobar'], MIN_DURATION, false])
       .toBeRevertedWithoutReason()
   })
 
@@ -151,13 +154,13 @@ describe('BulkRenewal', () => {
 
     const oldExpiry = await baseRegistrar.read.nameExpires([toLabelId('test2')])
 
-    await bulkRenewal.write.renewAll([['test1', 'test2'], 86400n, false], {
-      value: 86400n * 2n,
+    await bulkRenewal.write.renewAll([['test1', 'test2'], MIN_DURATION, false], {
+      value: MIN_DURATION * 2n,
     })
 
     const newExpiry = await baseRegistrar.read.nameExpires([toLabelId('test2')])
 
-    expect(newExpiry - oldExpiry).toBe(86400n)
+    expect(newExpiry - oldExpiry).toBe(MIN_DURATION)
 
     // Check any excess funds are returned
     await expect(

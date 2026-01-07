@@ -91,9 +91,10 @@ describe('LinearPremiumPriceOracle', () => {
 
   it('should specify the maximum premium at the moment of expiration', async () => {
     const { priceOracle, publicClient } = await loadFixture(fixture)
+    // LinearPremiumPriceOracle uses 30 days grace period
     const timestamp = await publicClient
       .getBlock()
-      .then((b) => b.timestamp - 90n * DAY)
+      .then((b) => b.timestamp - 30n * DAY)
     await expect(
       priceOracle.read.premium(['foobar', timestamp, 0n]),
     ).resolves.toEqual(50000000000000000000n)
@@ -104,9 +105,10 @@ describe('LinearPremiumPriceOracle', () => {
 
   it('should specify half the premium after half the interval', async () => {
     const { priceOracle, publicClient } = await loadFixture(fixture)
+    // LinearPremiumPriceOracle uses 30 days grace period
     const timestamp = await publicClient
       .getBlock()
-      .then((b) => b.timestamp - (90n * DAY + 50000n))
+      .then((b) => b.timestamp - (30n * DAY + 50000n))
     await expect(
       priceOracle.read.premium(['foobar', timestamp, 0n]),
     ).resolves.toEqual(25000000000000000000n)
@@ -117,12 +119,13 @@ describe('LinearPremiumPriceOracle', () => {
 
   it('should return correct times for price queries', async () => {
     const { priceOracle } = await loadFixture(fixture)
+    // LinearPremiumPriceOracle uses 30 days grace period
     const initialPremiumWei = 50000000000000000000n
     await expect(
       priceOracle.read.timeUntilPremium([0n, initialPremiumWei]),
-    ).resolves.toEqual(90n * DAY)
+    ).resolves.toEqual(30n * DAY)
     await expect(priceOracle.read.timeUntilPremium([0n, 0n])).resolves.toEqual(
-      90n * DAY + 100000n,
+      30n * DAY + 100000n,
     )
   })
 })

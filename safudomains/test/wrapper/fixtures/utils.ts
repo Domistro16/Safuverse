@@ -32,7 +32,7 @@ export const {
   CANNOT_APPROVE,
 } = FUSES
 export const MAX_EXPIRY = 2n ** 64n - 1n
-export const GRACE_PERIOD = 90n * DAY
+export const GRACE_PERIOD = 30n * DAY
 export const DUMMY_ADDRESS = padHex('0x01', { size: 20 })
 
 export async function deployNameWrapperWithUtils() {
