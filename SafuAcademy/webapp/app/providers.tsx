@@ -2,22 +2,10 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import "@rainbow-me/rainbowkit/styles.css";
-import {
-  connectorsForWallets,
-  darkTheme,
-  RainbowKitProvider,
-} from "@rainbow-me/rainbowkit";
+import { PrivyProvider } from "@privy-io/react-auth";
+import { WagmiProvider, createConfig } from "@privy-io/wagmi";
 import { bsc } from "viem/chains";
-import {
-  rainbowWallet,
-  walletConnectWallet,
-  metaMaskWallet,
-  coinbaseWallet,
-  binanceWallet,
-} from "@rainbow-me/rainbowkit/wallets";
 import { http } from "viem";
-import { createConfig, WagmiProvider } from "wagmi";
 
 // Theme Context
 type Theme = "light" | "dark";
@@ -41,31 +29,11 @@ export function useTheme() {
 }
 
 // Wagmi Config
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Recommended",
-      wallets: [
-        rainbowWallet,
-        binanceWallet,
-        metaMaskWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-      ],
-    },
-  ],
-  {
-    appName: "SafuAcademy",
-    projectId: "21fef48091f12692cad574a6f7753643",
-  }
-);
-
 const config = createConfig({
-  connectors,
+  chains: [bsc],
   transports: {
     [bsc.id]: http(),
   },
-  chains: [bsc],
 });
 
 // Query Client
@@ -124,21 +92,28 @@ export function Providers({ children }: { children: ReactNode }) {
         title="session-sync"
       />
       <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-        <QueryClientProvider client={queryClient}>
-          <WagmiProvider config={config}>
-            <RainbowKitProvider
-              theme={darkTheme({
-                accentColor: "#ffb000",
-                accentColorForeground: "black",
-                borderRadius: "large",
-                fontStack: "system",
-                overlayBlur: "small",
-              })}
-            >
+        <PrivyProvider
+          appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || "your-privy-app-id"}
+          config={{
+            appearance: {
+              theme: "dark",
+              accentColor: "#ffb000",
+            },
+            embeddedWallets: {
+              ethereum: {
+                createOnLogin: "users-without-wallets",
+              },
+            },
+            loginMethods: ["wallet", "email"],
+            supportedChains: [bsc],
+          }}
+        >
+          <QueryClientProvider client={queryClient}>
+            <WagmiProvider config={config}>
               {children}
-            </RainbowKitProvider>
-          </WagmiProvider>
-        </QueryClientProvider>
+            </WagmiProvider>
+          </QueryClientProvider>
+        </PrivyProvider>
       </ThemeContext.Provider>
     </>
   );

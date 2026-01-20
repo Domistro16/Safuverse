@@ -45,8 +45,8 @@ const nextConfig = {
     }
     return config;
   },
-  // Transpile @reown packages
-  transpilePackages: ['@reown/appkit', '@reown/appkit-controllers', '@reown/appkit-utils'],
+  // Transpile @reown and @privy packages
+  transpilePackages: ['@reown/appkit', '@reown/appkit-controllers', '@reown/appkit-utils', '@privy-io/react-auth', '@privy-io/wagmi'],
 };
 
 module.exports = nextConfig;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { usePrivy } from '@privy-io/react-auth';
 import { useAccount, useSignMessage } from 'wagmi';
 
 interface AuthState {
@@ -17,6 +17,7 @@ interface AuthState {
 }
 
 export function CustomConnect() {
+    const { login, logout, ready, authenticated } = usePrivy();
     const { address, isConnected } = useAccount();
     const { signMessageAsync } = useSignMessage();
     const [authState, setAuthState] = useState<AuthState>({
@@ -32,11 +33,11 @@ export function CustomConnect() {
 
     // Clear auth when wallet disconnects
     useEffect(() => {
-        if (!isConnected) {
+        if (!isConnected || !authenticated) {
             clearAuth();
             hasAttemptedAuth.current = false;
         }
-    }, [isConnected]);
+    }, [isConnected, authenticated]);
 
     const clearAuth = () => {
         localStorage.removeItem('auth_token');
@@ -134,7 +135,7 @@ export function CustomConnect() {
 
     // Auto-authenticate when wallet connects
     useEffect(() => {
-        if (isConnected && address && !authState.isAuthenticated && !isAuthenticating && !hasAttemptedAuth.current) {
+        if (isConnected && authenticated && address && !authState.isAuthenticated && !isAuthenticating && !hasAttemptedAuth.current) {
             // Check for existing token first
             const token = localStorage.getItem('auth_token');
             const user = localStorage.getItem('auth_user');
@@ -162,86 +163,55 @@ export function CustomConnect() {
             hasAttemptedAuth.current = true;
             authenticate();
         }
-    }, [isConnected, address, authState.isAuthenticated, isAuthenticating, authenticate]);
+    }, [isConnected, authenticated, address, authState.isAuthenticated, isAuthenticating, authenticate]);
+
+    // Not ready - show loading state
+    if (!ready) {
+        return (
+            <button
+                disabled
+                className="px-6 py-2 bg-black text-white font-semibold rounded-full opacity-50"
+            >
+                Loading...
+            </button>
+        );
+    }
+
+    // Not connected - show Login button
+    if (!authenticated || !isConnected) {
+        return (
+            <button
+                onClick={login}
+                className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
+            >
+                Login
+            </button>
+        );
+    }
+
+    // Authenticating - show loading state
+    if (isAuthenticating) {
+        return (
+            <button
+                disabled
+                className="px-6 py-2 bg-black text-white font-semibold rounded-full opacity-50"
+            >
+                Signing...
+            </button>
+        );
+    }
+
+    // Connected and authenticated - show name/address
+    const displayText = authState.domainName || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
 
     return (
         <>
-            <ConnectButton.Custom>
-                {({
-                    account,
-                    chain,
-                    openAccountModal,
-                    openChainModal,
-                    openConnectModal,
-                    mounted,
-                }) => {
-                    const ready = mounted;
-                    const connected = ready && account && chain;
-
-                    return (
-                        <div
-                            {...(!ready && {
-                                'aria-hidden': true,
-                                style: {
-                                    opacity: 0,
-                                    pointerEvents: 'none',
-                                    userSelect: 'none',
-                                },
-                            })}
-                        >
-                            {(() => {
-                                // Not connected - show Login button
-                                if (!connected) {
-                                    return (
-                                        <button
-                                            onClick={openConnectModal}
-                                            className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
-                                        >
-                                            Login
-                                        </button>
-                                    );
-                                }
-
-                                // Wrong network
-                                if (chain.unsupported) {
-                                    return (
-                                        <button
-                                            onClick={openChainModal}
-                                            className="px-6 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors"
-                                        >
-                                            Wrong Network
-                                        </button>
-                                    );
-                                }
-
-                                // Authenticating - show loading state
-                                if (isAuthenticating) {
-                                    return (
-                                        <button
-                                            disabled
-                                            className="px-6 py-2 bg-black text-white font-semibold rounded-full opacity-50"
-                                        >
-                                            Signing...
-                                        </button>
-                                    );
-                                }
-
-                                // Connected and authenticated - show name/address
-                                const displayText = authState.domainName || account.displayName;
-
-                                return (
-                                    <button
-                                        onClick={openAccountModal}
-                                        className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
-                                    >
-                                        {displayText}
-                                    </button>
-                                );
-                            })()}
-                        </div>
-                    );
-                }}
-            </ConnectButton.Custom>
+            <button
+                onClick={logout}
+                className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
+            >
+                {displayText}
+            </button>
 
             {/* Domain Required Modal */}
             {showDomainModal && (
