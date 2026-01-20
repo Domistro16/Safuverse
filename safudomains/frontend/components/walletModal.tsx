@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Avatar } from './useAvatar'
 import { useAccount } from 'wagmi'
 import { useDisconnect } from 'wagmi'
-import { ArrowUpRightFromSquare } from 'lucide-react'
+import { ArrowUpRightFromSquare, KeyRound } from 'lucide-react'
+import { usePrivy } from '@privy-io/react-auth'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -25,9 +26,22 @@ export function WalletModal({
   const router = useRouter()
   const { address: fullAddress } = useAccount()
   const { disconnect } = useDisconnect()
+  const { exportWallet, user, ready, authenticated } = usePrivy()
+
   const disconnectWithSession = () => {
     disconnect()
   }
+
+  // Check embedded wallet
+  const isAuthenticated = ready && authenticated
+  const hasEmbeddedWallet = !!user?.linkedAccounts.find(
+    (account) =>
+      account.type === 'wallet' &&
+      account.walletClientType === 'privy' &&
+      account.connectorType === 'embedded'
+  )
+  const canExport = isAuthenticated && hasEmbeddedWallet;
+
   return (
     <>
       <ReactModal
@@ -100,6 +114,15 @@ export function WalletModal({
             <ArrowUpRightFromSquare className=" h-5 w-5 text-gray-100" />
             <div>View Profile</div>
           </button>
+          {canExport && (
+            <button
+              onClick={exportWallet}
+              className="flex w-full flex-col items-center justify-center rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700 cursor-pointer hover:scale-105 duration-200"
+            >
+              <KeyRound className=" h-5 w-5 text-gray-100" />
+              <div>Export Key</div>
+            </button>
+          )}
           <button
             onClick={() => {
               disconnectWithSession()

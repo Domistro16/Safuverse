@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount, useSignMessage } from 'wagmi';
+import { WalletModal } from './WalletModal';
 
 interface AuthState {
     isAuthenticated: boolean;
@@ -203,15 +204,24 @@ export function CustomConnect() {
 
     // Connected and authenticated - show name/address
     const displayText = authState.domainName || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
+    const [showWalletModal, setShowWalletModal] = useState(false);
 
     return (
         <>
             <button
-                onClick={logout}
+                onClick={() => setShowWalletModal(true)}
                 className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
+                type="button"
             >
                 {displayText}
             </button>
+
+            <WalletModal
+                isOpen={showWalletModal}
+                onRequestClose={() => setShowWalletModal(false)}
+                address={address || ''}
+                name={authState.domainName || ''}
+            />
 
             {/* Domain Required Modal */}
             {showDomainModal && (
