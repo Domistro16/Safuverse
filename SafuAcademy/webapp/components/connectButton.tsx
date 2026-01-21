@@ -30,6 +30,7 @@ export function CustomConnect() {
     });
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [showDomainModal, setShowDomainModal] = useState(false);
+    const [showWalletModal, setShowWalletModal] = useState(false);
     const hasAttemptedAuth = useRef(false);
 
     // Clear auth when wallet disconnects
@@ -204,7 +205,6 @@ export function CustomConnect() {
 
     // Connected and authenticated - show name/address
     const displayText = authState.domainName || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
-    const [showWalletModal, setShowWalletModal] = useState(false);
 
     return (
         <>

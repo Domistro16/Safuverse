@@ -104,7 +104,7 @@ export function Providers({ children }: { children: ReactNode }) {
                 createOnLogin: "users-without-wallets",
               },
             },
-            loginMethods: ["wallet", "email"],
+            loginMethods: ["wallet", "email", "google", "twitter"],
             supportedChains: [bsc],
           }}
         >
