@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Avatar } from './Avatar';
 import { useAccount } from 'wagmi';
 import { usePrivy } from '@privy-io/react-auth';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface WalletModalProps {
     isOpen: boolean;
@@ -22,6 +23,12 @@ export function WalletModal({
     const router = useRouter();
     const { address: fullAddress } = useAccount();
     const { logout, exportWallet, user, ready, authenticated } = usePrivy();
+    const [mounted, setMounted] = useState(false);
+
+    // Handle SSR - only render portal after mount
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Close modal on escape key
     useEffect(() => {
@@ -32,7 +39,7 @@ export function WalletModal({
         return () => window.removeEventListener('keydown', handleEsc);
     }, [onRequestClose]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
     const short = (addr: string) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '';
 
@@ -54,7 +61,8 @@ export function WalletModal({
     const canExport = isAuthenticated && hasEmbeddedWallet;
     const displayAddress = fullAddress || '';
 
-    return (
+    // Use portal to render at document.body level - escapes stacking context issues
+    return createPortal(
         <div className="fixed inset-0 z-[9999]">
             {/* Backdrop */}
             <div
@@ -62,79 +70,78 @@ export function WalletModal({
                 onClick={onRequestClose}
             />
 
-            {/* Modal Container - centers content */}
-            <div className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
-                <div className="relative w-full max-w-md bg-[#1a1b1f] rounded-2xl p-6 shadow-2xl border border-gray-800 text-white pointer-events-auto">
-                    {/* Close Button */}
+            {/* Modal - absolutely centered using transform */}
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#1a1b1f] rounded-2xl p-6 shadow-2xl border border-gray-800 text-white mx-4">
+                {/* Close Button */}
+                <button
+                    onClick={onRequestClose}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors p-1"
+                >
+                    <X size={24} />
+                </button>
+
+                {/* Avatar & Info */}
+                <div className="flex flex-col items-center mb-6">
+                    <Avatar
+                        name={displayAddress}
+                        className="w-20 h-20 mb-4 ring-2 ring-[#ffb000] ring-offset-2 ring-offset-[#1a1b1f]"
+                    />
+                    <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                        {name || short(displayAddress)}
+                    </h3>
+                    <p className="text-sm text-gray-500 font-mono mt-1 bg-gray-900/50 px-3 py-1 rounded-full border border-gray-800">
+                        {displayAddress}
+                    </p>
+                </div>
+
+                {/* Actions Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                    {/* Copy Address */}
                     <button
-                        onClick={onRequestClose}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors p-1"
+                        onClick={() => {
+                            navigator.clipboard.writeText(displayAddress);
+                            // Could add toast here
+                        }}
+                        className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 transition-all hover:scale-105 group"
                     >
-                        <X size={24} />
+                        <Copy className="mb-2 text-[#ffb000] group-hover:text-white transition-colors" size={20} />
+                        <span className="text-sm font-medium">Copy Address</span>
                     </button>
 
-                    {/* Avatar & Info */}
-                    <div className="flex flex-col items-center mb-6">
-                        <Avatar
-                            name={displayAddress}
-                            className="w-20 h-20 mb-4 ring-2 ring-[#ffb000] ring-offset-2 ring-offset-[#1a1b1f]"
-                        />
-                        <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                            {name || short(displayAddress)}
-                        </h3>
-                        <p className="text-sm text-gray-500 font-mono mt-1 bg-gray-900/50 px-3 py-1 rounded-full border border-gray-800">
-                            {displayAddress}
-                        </p>
-                    </div>
+                    {/* View Profile */}
+                    <button
+                        onClick={() => {
+                            // If there's a profile page, navigate to it. Assuming /profile exists or similar
+                            router.push('/profile');
+                        }}
+                        className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 transition-all hover:scale-105 group"
+                    >
+                        <ExternalLink className="mb-2 text-[#ffb000] group-hover:text-white transition-colors" size={20} />
+                        <span className="text-sm font-medium">View Profile</span>
+                    </button>
 
-                    {/* Actions Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-2">
-                        {/* Copy Address */}
+                    {/* Export Wallet - Conditional */}
+                    {canExport && (
                         <button
-                            onClick={() => {
-                                navigator.clipboard.writeText(displayAddress);
-                                // Could add toast here
-                            }}
+                            onClick={exportWallet}
                             className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 transition-all hover:scale-105 group"
                         >
-                            <Copy className="mb-2 text-[#ffb000] group-hover:text-white transition-colors" size={20} />
-                            <span className="text-sm font-medium">Copy Address</span>
+                            <KeyRound className="mb-2 text-[#ffb000] group-hover:text-white transition-colors" size={20} />
+                            <span className="text-sm font-medium">Export Key</span>
                         </button>
+                    )}
 
-                        {/* View Profile */}
-                        <button
-                            onClick={() => {
-                                // If there's a profile page, navigate to it. Assuming /profile exists or similar
-                                router.push('/profile');
-                            }}
-                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 transition-all hover:scale-105 group"
-                        >
-                            <ExternalLink className="mb-2 text-[#ffb000] group-hover:text-white transition-colors" size={20} />
-                            <span className="text-sm font-medium">View Profile</span>
-                        </button>
-
-                        {/* Export Wallet - Conditional */}
-                        {canExport && (
-                            <button
-                                onClick={exportWallet}
-                                className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 transition-all hover:scale-105 group"
-                            >
-                                <KeyRound className="mb-2 text-[#ffb000] group-hover:text-white transition-colors" size={20} />
-                                <span className="text-sm font-medium">Export Key</span>
-                            </button>
-                        )}
-
-                        {/* Disconnect */}
-                        <button
-                            onClick={logout}
-                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-red-900/20 border border-gray-700 hover:border-red-900/50 transition-all hover:scale-105 group col-span-2 sm:col-span-1"
-                        >
-                            <LogOut className="mb-2 text-red-500 group-hover:text-red-400 transition-colors" size={20} />
-                            <span className="text-sm font-medium text-red-500 group-hover:text-red-400">Disconnect</span>
-                        </button>
-                    </div>
+                    {/* Disconnect */}
+                    <button
+                        onClick={logout}
+                        className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-red-900/20 border border-gray-700 hover:border-red-900/50 transition-all hover:scale-105 group col-span-2 sm:col-span-1"
+                    >
+                        <LogOut className="mb-2 text-red-500 group-hover:text-red-400 transition-colors" size={20} />
+                        <span className="text-sm font-medium text-red-500 group-hover:text-red-400">Disconnect</span>
+                    </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
