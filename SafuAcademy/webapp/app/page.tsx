@@ -591,7 +591,7 @@ const Home: React.FC = () => {
             </a>
 
             <a
-              href="https://safudomains.vercel.app"
+              href="https://names.safuverse.com"
               target="_blank"
               rel="noopener noreferrer"
             >

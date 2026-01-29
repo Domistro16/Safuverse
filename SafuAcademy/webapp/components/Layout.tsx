@@ -74,7 +74,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
             </button>
           </a>
 
-          <a href="https://safudomains.vercel.app" target="_blank" rel="noopener noreferrer">
+          <a href="https://names.safuverse.com" target="_blank" rel="noopener noreferrer">
             <button
               className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
                 ? "bg-white/5 border-white/10 text-white hover:bg-white/10"

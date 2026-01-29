@@ -19,7 +19,7 @@ All smart contracts in this ecosystem are deployed and operational on BNB Chain,
 
 On-chain educational platform with gasless transactions, allowing domain owners to create and participate in blockchain courses.
 
-**Live on BNB Chain**: https://safuverse.vercel.app
+**Live on BNB Chain**: https://academy.safuverse.com
 
 **Features**:
 
@@ -34,7 +34,7 @@ On-chain educational platform with gasless transactions, allowing domain owners 
 
 ENS-inspired domain name system with custom .safu TLD deployed on BNB Chain.
 
-**Live on BNB Chain**: https://safudomains.vercel.app
+**Live on BNB Chain**: https://names.safuverse.com
 
 **Features**:
 
