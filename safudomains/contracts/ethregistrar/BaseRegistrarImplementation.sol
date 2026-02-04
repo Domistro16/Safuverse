@@ -1,12 +1,29 @@
-
 pragma solidity >=0.8.4;
 
 import "../registry/ENS.sol";
 import "./IBaseRegistrar.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC2981} from "../utils/IERC2981.sol";
 
-contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
+contract BaseRegistrarImplementation is
+    ERC721,
+    IBaseRegistrar,
+    Ownable,
+    IERC2981
+{
+    // ============ Royalty Constants ============
+    uint96 public constant ROYALTY_BPS = 500; // 5% = 500 basis points
+    uint96 private constant BPS_DENOMINATOR = 10000;
+
+    // ============ Royalty State ============
+    address public royaltyReceiver;
+
+    // ============ Royalty Events ============
+    event RoyaltyReceiverUpdated(
+        address indexed oldReceiver,
+        address indexed newReceiver
+    );
     // A map of expiry times
     mapping(uint256 => uint256) expiries;
     // The ENS registry
@@ -200,7 +217,35 @@ contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
         return
             interfaceID == INTERFACE_META_ID ||
             interfaceID == ERC721_ID ||
-            interfaceID == RECLAIM_ID;
+            interfaceID == RECLAIM_ID ||
+            interfaceID == type(IERC2981).interfaceId;
+    }
+
+    // ============ ERC-2981 Royalty Implementation ============
+
+    /**
+     * @notice Returns royalty info for a given token and sale price
+     * @param salePrice The sale price of the NFT
+     * @return receiver Address to receive royalty
+     * @return royaltyAmount The royalty amount (5% of sale price)
+     */
+    function royaltyInfo(
+        uint256,
+        uint256 salePrice
+    ) external view override returns (address receiver, uint256 royaltyAmount) {
+        receiver = royaltyReceiver;
+        royaltyAmount = (salePrice * ROYALTY_BPS) / BPS_DENOMINATOR;
+    }
+
+    /**
+     * @notice Update the royalty receiver address
+     * @param _newReceiver New address to receive royalties
+     */
+    function setRoyaltyReceiver(address _newReceiver) external onlyOwner {
+        require(_newReceiver != address(0), "Invalid receiver");
+        address oldReceiver = royaltyReceiver;
+        royaltyReceiver = _newReceiver;
+        emit RoyaltyReceiverUpdated(oldReceiver, _newReceiver);
     }
 
     function _exists(uint256 tokenId) internal view override returns (bool) {
