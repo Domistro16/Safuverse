@@ -155,6 +155,23 @@ describe('AgentPriceOracle', () => {
                 expect(await agentPriceOracle.read.isAgentName(['my-agent'])).to.equal(false)
             })
 
+            it('should reject short names with agent patterns (<10 chars)', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                // These match agent patterns BUT are <10 chars, so should NOT be agents
+                expect(await agentPriceOracle.read.isAgentName(['ai-bot'])).to.equal(false)    // 6 chars
+                expect(await agentPriceOracle.read.isAgentName(['agent-v1'])).to.equal(false)  // 8 chars
+                expect(await agentPriceOracle.read.isAgentName(['bot-2024'])).to.equal(false)  // 8 chars
+                expect(await agentPriceOracle.read.isAgentName(['agent-bot'])).to.equal(false) // 9 chars
+            })
+
+            it('should use standard pricing for short names with patterns', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                // Short names with patterns should get standard $5 pricing (6-9 chars)
+                const price = await agentPriceOracle.read.getPrice(['agent-bot']) // 9 chars
+                expect(price.isAgentName).to.equal(false)
+                expect(price.priceUsd).to.equal(5n * 10n ** 18n) // $5, not $0.01-$0.10
+            })
+
             it('should reject names with disqualifying words', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
                 expect(await agentPriceOracle.read.isAgentName(['besttrader-agent-v1'])).to.equal(false)
@@ -172,6 +189,27 @@ describe('AgentPriceOracle', () => {
             it('should reject names without pattern match', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
                 expect(await agentPriceOracle.read.isAgentName(['mycoolagentname'])).to.equal(false) // no hyphens, no pattern
+            })
+        })
+
+        // ============ Edge Cases ============
+        describe('Edge Cases', () => {
+            it('should accept exactly 10 chars with pattern as agent', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                // "agent-bot1" is exactly 10 chars with prefix pattern
+                expect(await agentPriceOracle.read.isAgentName(['agent-bot1'])).to.equal(true)
+            })
+
+            it('should reject exactly 9 chars with pattern as standard', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                // "agent-bot" is 9 chars - should be standard
+                expect(await agentPriceOracle.read.isAgentName(['agent-bot'])).to.equal(false)
+            })
+
+            it('should be case-insensitive for pattern matching', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['AGENT-TRADING-BOT'])).to.equal(true)
+                expect(await agentPriceOracle.read.isAgentName(['Fleet-Manager-V2'])).to.equal(true)
             })
         })
     })
@@ -227,6 +265,20 @@ describe('AgentPriceOracle', () => {
                 const price = await agentPriceOracle.read.getPrice(['alice'])
                 expect(price.isAgentName).to.equal(false)
                 expect(price.priceUsd).to.equal(10n * 10n ** 18n)
+            })
+
+            it('should return $5 for 6-char names', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                const price = await agentPriceOracle.read.getPrice(['abcdef'])
+                expect(price.isAgentName).to.equal(false)
+                expect(price.priceUsd).to.equal(5n * 10n ** 18n)
+            })
+
+            it('should return $5 for 9-char names', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                const price = await agentPriceOracle.read.getPrice(['abcdefghi'])
+                expect(price.isAgentName).to.equal(false)
+                expect(price.priceUsd).to.equal(5n * 10n ** 18n)
             })
 
             it('should return $2 for 10+ char names', async () => {
