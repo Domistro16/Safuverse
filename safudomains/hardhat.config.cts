@@ -62,6 +62,19 @@ const config = {
       chainId: 56,
       accounts: real_accounts,
     },
+    // Base networks for SafuDomains v2
+    baseSepolia: {
+      url: 'https://sepolia.base.org',
+      tags: ['test', 'use_root'],
+      chainId: 84532,
+      accounts: real_accounts,
+    },
+    base: {
+      url: 'https://mainnet.base.org',
+      tags: ['use_root'],
+      chainId: 8453,
+      accounts: real_accounts,
+    },
   },
   mocha: {},
   solidity: {
@@ -155,9 +168,31 @@ const config = {
     ],
   },
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: process.env.BSCSCAN_API_KEY,
+    // API keys for block explorers
+    apiKey: {
+      bsc: process.env.BSCSCAN_API_KEY || '',
+      bscTestnet: process.env.BSCSCAN_API_KEY || '',
+      baseSepolia: process.env.BASESCAN_API_KEY || '',
+      base: process.env.BASESCAN_API_KEY || '',
+    },
+    customChains: [
+      {
+        network: 'baseSepolia',
+        chainId: 84532,
+        urls: {
+          apiURL: 'https://api-sepolia.basescan.org/api',
+          browserURL: 'https://sepolia.basescan.org',
+        },
+      },
+      {
+        network: 'base',
+        chainId: 8453,
+        urls: {
+          apiURL: 'https://api.basescan.org/api',
+          browserURL: 'https://basescan.org',
+        },
+      },
+    ],
   },
   sourcify: {
     // Disabled by default
