@@ -371,7 +371,7 @@ describe('AgentRegistrarController', () => {
                 { client: { wallet: registrant } }
             )
 
-            await registrantController.write.register([request], { value: priceWei })
+            await registrantController.write.register([request, emptyReferralData, '0x'], { value: priceWei })
 
             // Check contract balance
             const contractBalance = await publicClient.getBalance({
