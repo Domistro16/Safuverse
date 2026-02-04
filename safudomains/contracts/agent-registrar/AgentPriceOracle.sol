@@ -14,8 +14,8 @@ import {
  * @notice Price oracle with agent-aware pricing for SafuDomains v2
  * @dev Implements pattern matching for agent name detection and tiered pricing
  *
- * Agent names (≥14 chars + pattern match) get $0.01-$0.05 pricing
- * Standard names get length-based pricing from $1 to $2000
+ * Agent names (≥10 chars + pattern match) get $0.01-$0.10 pricing
+ * Standard names get length-based pricing from $2 to $2,000
  */
 contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
     using StringUtils for string;
@@ -31,7 +31,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
     /// @notice Minimum agent price: $0.01 (in 18 decimals)
     uint256 public constant AGENT_MIN_PRICE = 10000000000000000; // 0.01 * 1e18
 
-    /// @notice Length bonus per char over 14: $0.001 (max $0.02)
+    /// @notice Length bonus per char over 10: $0.001 (max $0.02)
     uint256 public constant LENGTH_BONUS_PER_CHAR = 1000000000000000; // 0.001 * 1e18
     uint256 public constant MAX_LENGTH_BONUS = 20000000000000000; // 0.02 * 1e18
 
@@ -124,7 +124,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
     /**
      * @notice Check if a name qualifies as an agent name
      * @dev Must meet all criteria:
-     *      1. Length ≥ 14 characters
+     *      1. Length ≥ 10 characters
      *      2. Matches at least one pattern category
      *      3. Does not start with disqualifying words
      */
