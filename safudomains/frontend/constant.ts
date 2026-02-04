@@ -1,50 +1,61 @@
-import { BigNumberish } from 'ethers'
+// SafuDomains v2 Constants - Base Chain
+// Contract addresses (placeholders - update after deployment)
 
 export const constants = {
-  Controller: '0xC902396A4E49914d1266cc80e22Aa182dcF23138' as `0x${string}`,
-  Registry: '0xa886B8897814193f99A88701d70b31b4a8E27a1E' as `0x${string}`,
-  ReverseRegistrar:
-    '0x1D0831eA9486Fada3887a737E8d6f8C6Ad72a125' as `0x${string}`,
-  BaseRegistrar: '0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c' as `0x${string}`,
-  NameWrapper: '0xbf4B53F867dfE5A78Cf268AfBfC1f334044e61ae' as `0x${string}`,
-  BulkRenewal: '0x2156C655d4668E7DB7584CA9B2a8Bc18A9125254' as `0x${string}`,
-  PublicResolver: '0x50143d9f7e496fF58049dE0db6FaDfB43FfE18e7' as `0x${string}`,
-  Referral: '0x92149696fDDC858A76253F71268D34147e662410' as `0x${string}`,
-  Course: '0x2967A3EDA537630Fb4eb144Fa02f5081457506BE' as `0x${string}`,
+  // AgentRegistrarController - main registration entry point
+  Controller: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // AgentPriceOracle - pricing with agent name detection
+  PriceOracle: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // ENS Registry
+  Registry: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // Reverse Registrar
+  ReverseRegistrar: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // Base Registrar
+  BaseRegistrar: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // Name Wrapper
+  NameWrapper: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // AgentPublicResolver - with x402/ERC-8004 support
+  PublicResolver: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // Referral Verifier
+  Referral: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // Backward compatibility - BulkRenewal (not used in v2 but referenced)
+  BulkRenewal: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // Backward compatibility - Course contract
+  Course: '0x0000000000000000000000000000000000000000' as `0x${string}`,
 }
-export interface Params {
-  /** The name to register */
+
+// Chain Configuration
+export const CHAIN_ID = 8453 // Base Mainnet (use 84532 for Base Sepolia)
+
+// Top-level domain
+export const TLD = 'safu'
+
+// Registration is always lifetime in v2
+export interface RegisterParams {
+  /** The name to register (without TLD) */
   name: string
 
-  /** Owner address (20-byte hex) */
+  /** Owner address */
   owner: `0x${string}`
 
-  /** Registration duration in seconds (uint256) */
-  duration: BigNumberish
-
-  /** Secret commitment (32-byte hex) */
-  secret: string
-
   /** Resolver contract address */
-  resolver: string
+  resolver: `0x${string}`
 
-  /** Array of ABI-encoded data blobs */
-  data: string[]
+  /** Array of ABI-encoded data blobs for text records */
+  data: `0x${string}`[]
 
   /** Whether to set up a reverse record */
   reverseRecord: boolean
 
-  /** Owner-controlled fuses bitmap (fits in uint16) */
+  /** Owner-controlled fuses bitmap */
   ownerControlledFuses: number
-
-  /** Whether this is a lifetime registration */
-  lifetime: boolean
-}
-
-export interface TokenParams {
-  /** Token symbol or identifier */
-  token: string
-
-  /** Token contract address */
-  tokenAddress: string
 }

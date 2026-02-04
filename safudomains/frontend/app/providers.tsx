@@ -2,23 +2,28 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http } from 'wagmi';
-import { bsc } from 'wagmi/chains';
+import { base, baseSepolia } from 'wagmi/chains';
 import { PrivyProvider } from '@privy-io/react-auth';
 import { WagmiProvider, createConfig } from '@privy-io/wagmi';
 import { ApolloClient, HttpLink, InMemoryCache, ApolloProvider } from '@apollo/client';
 import { ReactNode, useState, useEffect } from 'react';
 import NextTopLoader from 'nextjs-toploader';
 
+// Use Base chain for v2
+const activeChain = base; // Switch to baseSepolia for testnet
+
 const config = createConfig({
-    chains: [bsc],
+    chains: [base, baseSepolia],
     transports: {
-        [bsc.id]: http(),
+        [base.id]: http(),
+        [baseSepolia.id]: http(),
     },
 });
 
 function createApolloClient() {
     return new ApolloClient({
         link: new HttpLink({
+            // TODO: Update subgraph URL for Base chain
             uri: 'https://api.studio.thegraph.com/query/112443/safunames/v0.9.2',
         }),
         cache: new InMemoryCache(),
@@ -53,7 +58,7 @@ export function Providers({ children }: { children: ReactNode }) {
                     },
                 },
                 loginMethods: ['wallet', 'email', 'google', 'twitter'],
-                supportedChains: [bsc],
+                supportedChains: [activeChain],
             }}
         >
             <QueryClientProvider client={queryClient}>

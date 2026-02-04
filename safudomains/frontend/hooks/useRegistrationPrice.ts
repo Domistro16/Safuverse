@@ -1,102 +1,119 @@
-import { useMemo } from 'react'
-import { useReadContract } from 'wagmi'
-import { Controller, PriceAbi } from '../constants/registerAbis'
-import { constants } from '../constant'
+import { useState, useEffect, useMemo } from 'react'
+import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { CHAIN_ID } from '../constant'
 
 interface UseRegistrationPriceProps {
   label: string
-  seconds: number
-  lifetime: boolean
+  // Backward compatibility - these are ignored in v2 (always lifetime)
+  seconds?: number
+  lifetime?: boolean
+}
+
+interface PriceResult {
+  priceWei: bigint
+  priceUsd: bigint
+  isAgentName: boolean
 }
 
 export const useRegistrationPrice = ({
   label,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   seconds,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   lifetime,
 }: UseRegistrationPriceProps) => {
-  // Fetch base rent price in native currency (BNB)
-  const { data: latest, isPending: loading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any,
-    functionName: 'rentPrice',
-    args: [label, seconds, lifetime],
-  })
+  const [priceResult, setPriceResult] = useState<PriceResult | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  // Fetch price in USD1 token
-  const { data: usd1TokenData, isPending: tokenLoading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any,
-    functionName: 'rentPriceToken',
-    args: [label, seconds, 'usd1', lifetime],
-  })
+  // Create SDK client
+  const sdk = useMemo(() => {
+    return new SafuDomainsClient({ chainId: CHAIN_ID })
+  }, [])
 
-  // Fetch price in CAKE token
-  const { data: cakeTokenData, isPending: caketokenLoading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any,
-    functionName: 'rentPriceToken',
-    args: [label, seconds, 'cake', lifetime],
-  })
+  // Fetch price when label changes
+  useEffect(() => {
+    if (!label || label.length === 0) {
+      setPriceResult(null)
+      return
+    }
 
-  // Fetch BNB/USD price from Chainlink oracle
-  const { data: priceData } = useReadContract({
-    address: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE',
-    abi: PriceAbi as any,
-    functionName: 'latestRoundData',
-  })
+    const fetchPrice = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const result = await sdk.getPrice(label)
+        setPriceResult(result)
+      } catch (err) {
+        console.error('Error fetching price:', err)
+        setError(err as Error)
+        setPriceResult(null)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  // Calculate prices in different formats
+    fetchPrice()
+  }, [label, sdk])
+
+  // Format price for display (bnb -> eth for Base chain)
   const price = useMemo(() => {
-    let usd1priceInBNB = 0
-    let cakepriceInBNB = 0
-
-    if (!tokenLoading) {
-      const { base, premium } = (usd1TokenData as any) || {
-        base: 0,
-        premium: 0,
+    if (!priceResult) {
+      return {
+        bnb: '0.0000',
+        usd: '0.00',
+        usd1: '0.00',
+        cake: '0.00',
       }
-      usd1priceInBNB = (Number(base) + Number(premium)) / 1e18
     }
 
-    if (!caketokenLoading) {
-      const { base, premium } = (cakeTokenData as any) || {
-        base: 0,
-        premium: 0,
-      }
-      cakepriceInBNB = (Number(base) + Number(premium)) / 1e18
-    }
-
-    const { base } = (latest as any) || { base: 0 }
-    const [, answer, , ,] = (priceData as any) || [0, 0, 0, 0, 0]
-    const bnbPrice = Number(answer) / 1e8 // Chainlink ETH/USD has 8 decimals
-    const costInEth = Number(base) / 1e18 // base is in wei
-    const usdCost = costInEth * bnbPrice
-    const usd1cost = usd1priceInBNB
-    const cakecost = cakepriceInBNB
+    const ethValue = Number(priceResult.priceWei) / 1e18
+    const usdValue = Number(priceResult.priceUsd) / 1e18
 
     return {
-      bnb: costInEth.toFixed(4),
-      usd: usdCost.toFixed(2),
-      usd1: usd1cost.toFixed(2),
-      cake: cakecost.toFixed(2),
+      bnb: ethValue.toFixed(4), // Using 'bnb' key for backward compat
+      usd: usdValue < 1 ? usdValue.toFixed(2) : usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      usd1: usdValue.toFixed(2), // Backward compat
+      cake: '0.00', // Not available on Base
     }
-  }, [
-    latest,
-    priceData,
-    usd1TokenData,
-    cakeTokenData,
-    tokenLoading,
-    caketokenLoading,
-  ])
+  }, [priceResult])
+
+  // Backward compatible 'latest' format (simulates old rentPrice return)
+  const latest = useMemo(() => {
+    if (!priceResult) return null
+    return {
+      base: priceResult.priceWei,
+      premium: 0n,
+    }
+  }, [priceResult])
+
+  // Backward compatibility - empty token data (not used on Base)
+  const usd1TokenData = useMemo(() => ({
+    base: 0n,
+    premium: 0n,
+  }), [])
+
+  const cakeTokenData = useMemo(() => ({
+    base: 0n,
+    premium: 0n,
+  }), [])
+
+  // priceData for backward compat
+  const priceData = latest
 
   return {
     price,
     loading,
-    tokenLoading,
-    caketokenLoading,
+    tokenLoading: false,
+    caketokenLoading: false,
     latest,
     usd1TokenData,
     cakeTokenData,
     priceData,
+    // v2 additions
+    priceResult,
+    isAgentName: priceResult?.isAgentName ?? false,
+    error,
+    sdk,
   }
 }

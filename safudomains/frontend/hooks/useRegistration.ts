@@ -1,41 +1,30 @@
-import { useState } from 'react'
-import { useWriteContract } from 'wagmi'
-import {
-  bytesToHex,
-  encodeFunctionData,
-  namehash,
-  parseEther,
-  keccak256,
-  toBytes,
-  encodeAbiParameters,
-} from 'viem'
+import { useState, useMemo } from 'react'
+import { useWalletClient } from 'wagmi'
+import { namehash, encodeFunctionData } from 'viem'
+import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
 import { buildTextRecords } from './setText'
-import {
-  Controller,
-  ERC20_ABI,
-  addrResolver,
-  RegisterRequest,
-  ReferralData,
-  EMPTY_REFERRAL_DATA,
-  EMPTY_REFERRAL_SIGNATURE,
-} from '../constants/registerAbis'
-import { constants } from '../constant'
+import { addrResolver, ReferralData, EMPTY_REFERRAL_DATA, EMPTY_REFERRAL_SIGNATURE } from '../constants/registerAbis'
+import { constants, CHAIN_ID } from '../constant'
 import { normalize } from 'viem/ens'
 
 export const useRegistration = () => {
-  const [secret, setSecret] = useState<`0x${string}`>('0x')
   const [commitData, setCommitData] = useState<`0x${string}`[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
-  const { data: commithash, writeContractAsync } = useWriteContract()
-  const { writeContractAsync: approve } = useWriteContract()
-  const {
-    data: registerhash,
-    error: registerError,
-    isPending: registerPending,
-    writeContractAsync: registerContract,
-  } = useWriteContract()
+  const { data: walletClient } = useWalletClient()
 
+  // Create SDK client with wallet
+  const sdk = useMemo(() => {
+    if (!walletClient) return null
+    return new SafuDomainsClient({
+      chainId: CHAIN_ID,
+      walletClient: walletClient as any,
+    })
+  }, [walletClient])
+
+  // Build resolver data for text records and address
   const buildCommitDataFn = (
     textRecords: { key: string; value: string }[],
     newRecords: { key: string; value: string }[],
@@ -58,36 +47,7 @@ export const useRegistration = () => {
     })
     const fullData = [...builtData, addrEncoded]
     setCommitData(fullData)
-  }
-
-  // Helper to compute commitment hash (matches contract's makeCommitment)
-  const computeCommitment = (req: RegisterRequest): `0x${string}` => {
-    const labelHash = keccak256(toBytes(req.name))
-    const encoded = encodeAbiParameters(
-      [
-        { type: 'bytes32' },
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'bytes32' },
-        { type: 'address' },
-        { type: 'bytes[]' },
-        { type: 'bool' },
-        { type: 'uint16' },
-        { type: 'bool' },
-      ],
-      [
-        labelHash,
-        req.owner,
-        req.duration,
-        req.secret,
-        req.resolver,
-        req.data,
-        req.reverseRecord,
-        req.ownerControlledFuses,
-        req.lifetime,
-      ],
-    )
-    return keccak256(encoded)
+    return fullData
   }
 
   // Fetch referral data from API
@@ -96,6 +56,13 @@ export const useRegistration = () => {
     registrantAddress: string,
     name: string,
   ): Promise<{ referralData: ReferralData; signature: `0x${string}` }> => {
+    if (!referralCode) {
+      return {
+        referralData: EMPTY_REFERRAL_DATA,
+        signature: EMPTY_REFERRAL_SIGNATURE,
+      }
+    }
+
     try {
       const response = await fetch('/api/referral/generate', {
         method: 'POST',
@@ -126,165 +93,173 @@ export const useRegistration = () => {
       console.error('Error fetching referral data:', error)
     }
 
-    // Return empty referral if error or no valid referral
     return {
       referralData: EMPTY_REFERRAL_DATA,
       signature: EMPTY_REFERRAL_SIGNATURE,
     }
   }
 
-  const commit = async (
-    label: string,
-    address: `0x${string}`,
-    seconds: number,
-    isPrimary: boolean,
-    lifetime: boolean,
-  ) => {
-    const secretBytes = crypto.getRandomValues(new Uint8Array(32))
-    const secretGenerated = bytesToHex(secretBytes) as `0x${string}`
-    setSecret(secretGenerated)
-    const resolver = constants.PublicResolver
-
-    try {
-      // Build the RegisterRequest struct for makeCommitment
-      const registerRequest: RegisterRequest = {
-        name: normalize(label),
-        owner: address,
-        duration: BigInt(seconds),
-        secret: secretGenerated,
-        resolver: resolver as `0x${string}`,
-        data: commitData,
-        reverseRecord: isPrimary,
-        ownerControlledFuses: 0,
-        lifetime: lifetime,
-      }
-
-      // Compute commitment hash matching the contract
-      const commitment = computeCommitment(registerRequest)
-
-      await writeContractAsync({
-        address: constants.Controller,
-        account: address,
-        abi: Controller,
-        functionName: 'commit',
-        args: [commitment],
-      })
-    } catch (error) {
-      console.error('Error during Commit', error)
-      setIsLoading(false)
-      throw error
-    }
-  }
-
+  // Register a domain name (v2 - always lifetime, ETH only)
   const register = async (
     label: string,
     address: `0x${string}`,
-    seconds: number,
     isPrimary: boolean,
-    lifetime: boolean,
-    referrer: string,
-    useToken: boolean,
-    token: `0x${string}`,
-    usd1TokenData: any,
-    cakeTokenData: any,
-    priceData: any,
+    referrer: string = '',
   ) => {
+    if (!sdk) {
+      throw new Error('Wallet not connected')
+    }
+
     setIsLoading(true)
-    const resolver = constants.PublicResolver
+    setError(null)
+    setTxHash(null)
 
     try {
-      // Build the RegisterRequest struct
-      const registerRequest: RegisterRequest = {
-        name: normalize(label),
-        owner: address,
-        duration: BigInt(seconds),
-        secret: secret,
-        resolver: resolver as `0x${string}`,
-        data: commitData,
-        reverseRecord: isPrimary,
-        ownerControlledFuses: 0,
-        lifetime: lifetime,
-      }
+      const normalizedLabel = normalize(label)
 
-      // Fetch referral data from the API
-      const { referralData, signature } = await fetchReferralData(
+      // Build data for resolver if not already built
+      const data = commitData.length > 0 ? commitData : buildCommitDataFn([], [], label, address)
+
+      // Fetch referral data if provided
+      const { referralData } = await fetchReferralData(
         referrer,
         address,
-        normalize(label),
+        normalizedLabel,
       )
 
-      if (!useToken) {
-        // BNB payment
-        const { base, premium } = (priceData as any) || {
-          base: 0n,
-          premium: 0n,
-        }
-        const value = base + premium
+      // Register using SDK
+      const hash = await sdk.register(normalizedLabel, {
+        reverseRecord: isPrimary,
+        resolver: constants.PublicResolver,
+        data,
+        referral: referralData,
+      })
 
-        await registerContract({
-          address: constants.Controller,
-          abi: Controller,
-          functionName: 'register',
-          args: [registerRequest, referralData, signature],
-          value: value,
-        })
-      } else {
-        // Token payment
-        let value = 0n
-
-        if (token == '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82') {
-          const { base, premium } = (cakeTokenData as any) || {
-            base: 0n,
-            premium: 0n,
-          }
-          value = base + premium
-        } else {
-          const { base, premium } = (usd1TokenData as any) || {
-            base: 0n,
-            premium: 0n,
-          }
-          value = base + premium
-        }
-
-        const totalAmount = value
-
-        // Approve token spending
-        await approve({
-          address: token,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [constants.Controller, totalAmount + parseEther('1')],
-        })
-
-        // Wait for approval to be mined
-        await new Promise((r) => setTimeout(r, 2000))
-
-        // Register with token
-        await registerContract({
-          address: constants.Controller,
-          abi: Controller,
-          functionName: 'registerWithToken',
-          args: [registerRequest, token, referralData, signature],
-        })
-      }
-    } catch (error) {
-      console.error('Error during Registration', error)
+      setTxHash(hash)
+      return hash
+    } catch (err) {
+      console.error('Error during registration:', err)
+      setError(err as Error)
+      throw err
+    } finally {
       setIsLoading(false)
-      throw error
+    }
+  }
+
+  // Batch register multiple names
+  const batchRegister = async (
+    names: string[],
+    address: `0x${string}`,
+    isPrimary: boolean,
+  ) => {
+    if (!sdk) {
+      throw new Error('Wallet not connected')
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const normalizedNames = names.map(normalize)
+
+      const hash = await sdk.batchRegister(normalizedNames, {
+        reverseRecord: isPrimary,
+        resolver: constants.PublicResolver,
+      })
+
+      setTxHash(hash)
+      return hash
+    } catch (err) {
+      console.error('Error during batch registration:', err)
+      setError(err as Error)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Check if name is available
+  const checkAvailable = async (name: string): Promise<boolean> => {
+    if (!sdk) return false
+    try {
+      return await sdk.available(normalize(name))
+    } catch {
+      return false
     }
   }
 
   return {
-    secret,
+    // Backward compatibility
+    secret: '0x' as `0x${string}`,
     commitData,
     isLoading,
-    commithash,
-    registerhash,
-    registerError,
-    registerPending,
+    commithash: txHash,
+    registerhash: txHash,
+    registerError: error,
+    registerPending: isLoading,
     setIsLoading,
     buildCommitDataFn,
-    commit,
-    register,
+    // Backward compatible commit (no-op in v2 - agent mode skips commit-reveal)
+    commit: async (
+      _label: string,
+      _address: `0x${string}`,
+      _seconds: number,
+      _isPrimary: boolean,
+      _lifetime: boolean,
+    ) => {
+      // v2 agent mode doesn't require commit-reveal, so this is a no-op
+      return
+    },
+    // Backward compatible register with old signature
+    register: async (
+      label: string,
+      address: `0x${string}`,
+      seconds: number,
+      isPrimary: boolean,
+      lifetime: boolean,
+      referrer: string = '',
+      useToken: boolean = false,
+      token: `0x${string}` = '0x0000000000000000000000000000000000000000',
+      usd1TokenData: any = null,
+      cakeTokenData: any = null,
+      priceData: any = null,
+    ) => {
+      // v2 ignores seconds, lifetime, useToken, token, usd1TokenData, cakeTokenData
+      if (!sdk) {
+        throw new Error('Wallet not connected')
+      }
+
+      setIsLoading(true)
+      setError(null)
+      setTxHash(null)
+
+      try {
+        const normalizedLabel = normalize(label)
+        const data = commitData.length > 0 ? commitData : buildCommitDataFn([], [], label, address)
+        const { referralData } = await fetchReferralData(referrer, address, normalizedLabel)
+
+        const hash = await sdk.register(normalizedLabel, {
+          reverseRecord: isPrimary,
+          resolver: constants.PublicResolver,
+          data,
+          referral: referralData,
+        })
+
+        setTxHash(hash)
+        return hash
+      } catch (err) {
+        console.error('Error during registration:', err)
+        setError(err as Error)
+        throw err
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    // v2 additions
+    txHash,
+    error,
+    sdk,
+    batchRegister,
+    checkAvailable,
   }
 }
