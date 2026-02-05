@@ -147,39 +147,64 @@ describe('AgentPriceOracle', () => {
             })
         })
 
-        // ============ Molbo Agent Patterns ============
-        describe('Molbo Agent Patterns', () => {
-            it('should detect molbo- prefix', async () => {
+        // ============ External Agent Frameworks (Moltbot, OpenClaw, Moltbook) ============
+        describe('External Agent Frameworks', () => {
+            it('should recognize moltbot agent names via -bot suffix', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
-                expect(await agentPriceOracle.read.isAgentName(['molbo-trading-manager'])).to.equal(true)
+                expect(await agentPriceOracle.read.isAgentName(['moltbot-trading-bot'])).to.equal(true)
             })
 
-            it('should detect -molbo suffix', async () => {
+            it('should recognize moltbot agent names via -agent suffix', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
-                expect(await agentPriceOracle.read.isAgentName(['portfolio-manager-molbo'])).to.equal(true)
+                expect(await agentPriceOracle.read.isAgentName(['moltbot-portfolio-agent'])).to.equal(true)
             })
 
-            it('should detect molbo agent with version pattern', async () => {
+            it('should recognize moltbot agent names via version pattern', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
-                expect(await agentPriceOracle.read.isAgentName(['molbo-assistant-v2'])).to.equal(true)
+                expect(await agentPriceOracle.read.isAgentName(['moltbot-scanner-v1'])).to.equal(true)
             })
 
-            it('should detect molbo with functional pattern', async () => {
+            it('should recognize openclaw agent names via -agent suffix', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
-                expect(await agentPriceOracle.read.isAgentName(['molbo-task-runner-main'])).to.equal(true)
+                expect(await agentPriceOracle.read.isAgentName(['openclaw-security-agent'])).to.equal(true)
             })
 
-            it('should get agent pricing for molbo names', async () => {
+            it('should recognize openclaw agent names via -ai suffix', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
-                const price = await agentPriceOracle.read.getPrice(['molbo-trading-manager'])
-                expect(price.isAgentName).to.equal(true)
-                expect(price.priceUsd).to.be.greaterThanOrEqual(10000000000000000n) // $0.01
-                expect(price.priceUsd).to.be.lessThanOrEqual(100000000000000000n) // $0.10
+                expect(await agentPriceOracle.read.isAgentName(['openclaw-analyzer-ai'])).to.equal(true)
             })
 
-            it('should reject short molbo names (<10 chars)', async () => {
+            it('should recognize openclaw agent names via functional pattern', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
-                expect(await agentPriceOracle.read.isAgentName(['molbo-ai'])).to.equal(false) // 8 chars
+                expect(await agentPriceOracle.read.isAgentName(['openclaw-task-runner-main'])).to.equal(true)
+            })
+
+            it('should recognize moltbook agent names via -bot suffix', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['moltbook-learning-bot'])).to.equal(true)
+            })
+
+            it('should recognize moltbook agent names via -agent suffix', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['moltbook-tutor-agent'])).to.equal(true)
+            })
+
+            it('should get agent pricing ($0.01-$0.10) for external agent names', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                const moltbot = await agentPriceOracle.read.getPrice(['moltbot-trading-bot'])
+                expect(moltbot.isAgentName).to.equal(true)
+                expect(moltbot.priceUsd).to.be.greaterThanOrEqual(10000000000000000n) // $0.01
+                expect(moltbot.priceUsd).to.be.lessThanOrEqual(100000000000000000n) // $0.10
+
+                const openclaw = await agentPriceOracle.read.getPrice(['openclaw-security-agent'])
+                expect(openclaw.isAgentName).to.equal(true)
+                expect(openclaw.priceUsd).to.be.greaterThanOrEqual(10000000000000000n)
+                expect(openclaw.priceUsd).to.be.lessThanOrEqual(100000000000000000n)
+
+                const moltbook = await agentPriceOracle.read.getPrice(['moltbook-learning-bot'])
+                expect(moltbook.isAgentName).to.equal(true)
+                expect(moltbook.priceUsd).to.be.greaterThanOrEqual(10000000000000000n)
+                expect(moltbook.priceUsd).to.be.lessThanOrEqual(100000000000000000n)
             })
         })
 

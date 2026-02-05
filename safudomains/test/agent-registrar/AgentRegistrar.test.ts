@@ -328,12 +328,12 @@ describe('AgentRegistrarController', () => {
         })
     })
 
-    describe('molbo agent registration', () => {
-        it('should register a molbo agent name without commit-reveal', async () => {
+    describe('external agent registration (Moltbot, OpenClaw, Moltbook)', () => {
+        it('should register a moltbot agent name via -bot suffix', async () => {
             const { agentRegistrarController, agentPublicResolver, registrant } =
                 await loadFixture(fixture)
 
-            const name = 'molbo-trading-manager'
+            const name = 'moltbot-trading-bot'
             const [priceWei, , isAgentName] = await agentRegistrarController.read.rentPrice([name])
             expect(isAgentName).to.equal(true)
 
@@ -357,11 +357,11 @@ describe('AgentRegistrarController', () => {
             expect(await agentRegistrarController.read.available([name])).to.equal(false)
         })
 
-        it('should register a -molbo suffix name without commit-reveal', async () => {
+        it('should register an openclaw agent name via -agent suffix', async () => {
             const { agentRegistrarController, agentPublicResolver, registrant } =
                 await loadFixture(fixture)
 
-            const name = 'portfolio-manager-molbo'
+            const name = 'openclaw-security-agent'
             const [priceWei, , isAgentName] = await agentRegistrarController.read.rentPrice([name])
             expect(isAgentName).to.equal(true)
 
@@ -385,14 +385,42 @@ describe('AgentRegistrarController', () => {
             expect(await agentRegistrarController.read.available([name])).to.equal(false)
         })
 
-        it('should batch register multiple molbo agent names', async () => {
+        it('should register a moltbook agent name via -bot suffix', async () => {
+            const { agentRegistrarController, agentPublicResolver, registrant } =
+                await loadFixture(fixture)
+
+            const name = 'moltbook-learning-bot'
+            const [priceWei, , isAgentName] = await agentRegistrarController.read.rentPrice([name])
+            expect(isAgentName).to.equal(true)
+
+            const request = {
+                name,
+                owner: registrant.account.address,
+                secret: zeroHash,
+                resolver: agentPublicResolver.address,
+                data: [],
+                reverseRecord: false,
+                ownerControlledFuses: 0,
+            }
+
+            const registrantController = await hre.viem.getContractAt(
+                'AgentRegistrarController',
+                agentRegistrarController.address,
+                { client: { wallet: registrant } }
+            )
+
+            await registrantController.write.register([request, emptyReferralData, '0x'], { value: priceWei })
+            expect(await agentRegistrarController.read.available([name])).to.equal(false)
+        })
+
+        it('should batch register names from multiple agent frameworks', async () => {
             const { agentRegistrarController, agentPublicResolver, registrant } =
                 await loadFixture(fixture)
 
             const names = [
-                'molbo-scanner-agent',
-                'molbo-builder-agent',
-                'molbo-analyzer-prod',
+                'moltbot-scanner-agent',
+                'openclaw-analyzer-ai',
+                'moltbook-tutor-agent',
             ]
 
             let totalPrice = 0n
