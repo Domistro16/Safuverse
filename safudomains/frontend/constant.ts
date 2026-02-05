@@ -26,6 +26,16 @@ export const constants = {
   // Referral Verifier
   Referral: '0x0000000000000000000000000000000000000000' as `0x${string}`,
 
+  // v2 Premium Auctions
+  // PremiumNameRegistry - tracks premium/reserved names
+  PremiumRegistry: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // SafuDomainAuction - English auction system for premium names
+  Auction: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+
+  // USDC on Base
+  USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
+
   // Backward compatibility - BulkRenewal (not used in v2 but referenced)
   BulkRenewal: '0x0000000000000000000000000000000000000000' as `0x${string}`,
 

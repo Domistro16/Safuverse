@@ -1,50 +1,30 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react'
-import DatePicker from 'react-datepicker'
-import { Check } from 'lucide-react'
-import { intervalToDuration, startOfDay } from 'date-fns'
+import { useEffect, useState, useMemo } from 'react'
+import { Check, Loader2 } from 'lucide-react'
 import { useAccount, useReadContract } from 'wagmi'
 import { useParams, useRouter } from 'next/navigation'
-import Countdown from 'react-countdown'
 import { useENSName } from '../hooks/getPrimaryName'
 import { normalize } from 'viem/ens'
-import { useEstimateENSFees } from '../hooks/gasEstimation'
 import { constants } from '../constant'
-import UserForm from './userForm'
-import { formatDuration } from '../utils/domainUtils'
 import { Controller } from '../constants/registerAbis'
 import { useRegistrationPrice } from '../hooks/useRegistrationPrice'
 import { useRegistration } from '../hooks/useRegistration'
+import { usePremiumCheck } from '../hooks/usePremiumCheck'
 import SetupModal from './register/SetupModal'
 import ConfirmDetailsModal from './register/ConfirmDetailsModal'
 import RegisterDetailsModal from './register/RegisterDetailsModal'
 import RegistrationSteps from './register/RegistrationSteps'
-import PriceDisplay from './register/PriceDisplay'
+import { AgentPriceTag } from './AgentPriceTag'
+import { AgentPatternInfo } from './AgentPatternInfo'
 import { Input } from './ui/input'
-import { validateYears, VALIDATION_CONSTANTS } from '../utils/validation'
 
 const THEME_KEY = 'safudomains-theme'
-
-type RegisterParams = {
-  domain: string
-  duration: number
-  resolver: `0x${string}`
-  data: `0x${string}`[]
-  reverseRecord: boolean
-  ownerControlledFuses: number
-  lifetime: boolean
-  referree: string
-}
 
 const Register = () => {
   const router = useRouter()
   const params = useParams()
   const label = params.label as string
-  const [years, setYears] = useState(1)
-  const [currency, setCurrency] = useState<'BNB' | 'USD'>('BNB')
-  const [bnb, setBnb] = useState(true)
-  const now = useMemo(() => new Date(), [])
   const [theme, setTheme] = useState('light')
 
   useEffect(() => {
@@ -53,7 +33,6 @@ const Register = () => {
       setTheme(stored)
     }
 
-    // Listen for body class changes (when nav toggles dark mode)
     const observer = new MutationObserver(() => {
       const isDarkMode = document.body.classList.contains('dark-mode')
       setTheme(isDarkMode ? 'dark' : 'light')
@@ -61,7 +40,6 @@ const Register = () => {
 
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
 
-    // Check initial state from body class
     if (document.body.classList.contains('dark-mode')) {
       setTheme('dark')
     }
@@ -77,8 +55,6 @@ const Register = () => {
 
   const [next, setNext] = useState(0)
   const [isOpen, setIsOpen] = useState(true)
-  const [useToken, setUseToken] = useState(false)
-  const [token, setToken] = useState<`0x${string}`>('0x')
 
   useEffect(() => {
     if (!myName) {
@@ -90,23 +66,6 @@ const Register = () => {
     address || ('0x0000000000000000000000000000000000000000' as `0x${string}`),
   )
 
-  const nextYear = useMemo(() => {
-    const d = new Date(now)
-    d.setFullYear(d.getFullYear() + 1)
-    return d
-  }, [now])
-
-  const minDate = useMemo(() => {
-    const d = new Date(now)
-    d.setDate(d.getDate() + 28)
-    return d
-  }, [now])
-
-  const [input, setInput] = useState(true)
-  const [date, setDate] = useState(true)
-  const [picker, setPicker] = useState(false)
-  const [dateText, setDateText] = useState<Date | null>(nextYear)
-  const [seconds, setSeconds] = useState(0)
   const [description, setDescription] = useState('')
   const [email, setEmail] = useState('')
   const [twitter, setTwitter] = useState('')
@@ -115,46 +74,28 @@ const Register = () => {
   const [discord, setDiscord] = useState('')
   const [phone, setPhone] = useState('')
   const [avatar, setAvatar] = useState('')
-  const [wait, setWait] = useState(60)
-  const [done, setDone] = useState(false)
   const [referrer, setReferrer] = useState('')
   const [referralValid, setReferralValid] = useState<boolean | null>(null)
-  const [referralOwner, setReferralOwner] = useState<string | null>(null)
   const [referralValidating, setReferralValidating] = useState(false)
-  const [lifetime, setLifetime] = useState(false)
-  const [newRecords, setNewRecords] = useState<
-    { key: string; value: string }[]
-  >([])
-  const [validationError, setValidationError] = useState<string>('')
+  const [newRecords, setNewRecords] = useState<{ key: string; value: string }[]>([])
 
-  // Use custom hooks
-  const { price, loading, usd1TokenData, cakeTokenData, priceData } =
-    useRegistrationPrice({
-      label: label as string,
-      seconds,
-      lifetime,
-    })
-
-  const { fees, loading: estimateLoading } = useEstimateENSFees({
-    name: `${label}`,
-    owner: address as `0x${string}`,
-    duration: seconds,
+  // v2 hooks - lifetime only, no duration
+  const { price, loading, priceResult, isAgentName } = useRegistrationPrice({
+    label: label as string,
   })
+
+  // Premium name check
+  const { isPremium, requiresAuction, hasActiveAuction, isLoading: premiumLoading } = usePremiumCheck(label)
 
   const {
     commitData,
     isLoading,
-    commithash,
     registerhash,
     registerError,
     registerPending,
     buildCommitDataFn,
-    commit: commitFn,
     register: registerFn,
   } = useRegistration()
-
-  const [estimateBnb, setEstimateBnb] = useState('')
-  const [estimateUsd, setEstimateUsd] = useState('')
 
   useEffect(() => {
     const ref = localStorage.getItem('ref')
@@ -165,10 +106,8 @@ const Register = () => {
 
   // Real-time referral code validation with debounce
   useEffect(() => {
-    // Reset validation state when referrer changes
     if (!referrer || referrer.trim() === '') {
       setReferralValid(null)
-      setReferralOwner(null)
       setReferralValidating(false)
       return
     }
@@ -180,40 +119,16 @@ const Register = () => {
         const res = await fetch(`/api/referral/validate/${encodeURIComponent(referrer)}`)
         const data = await res.json()
         setReferralValid(data.valid)
-        setReferralOwner(data.owner || null)
       } catch (error) {
         console.error('Referral validation error:', error)
         setReferralValid(false)
-        setReferralOwner(null)
       } finally {
         setReferralValidating(false)
       }
-    }, 500) // 500ms debounce
+    }, 500)
 
     return () => clearTimeout(timer)
   }, [referrer])
-
-  useEffect(() => {
-    const bnb = Number(fees?.fee.totalEth).toFixed(4)
-    setEstimateBnb(bnb as string)
-
-    const [, answer, , ,] = (priceData as any) || [0, 0, 0, 0, 0]
-    const usd = (Number(fees?.fee.totalEth) * Number(answer)) / 1e8
-    setEstimateUsd(usd.toFixed(2))
-  }, [fees, priceData])
-
-  const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const duration = useMemo(() => {
-    if (!dateText) {
-      return { years: 0, months: 0, days: 0 }
-    }
-    const start = startOfDay(now)
-    const end = startOfDay(dateText)
-    const d = intervalToDuration({ start, end })
-    return { years: d.years || 0, months: d.months || 0, days: d.days || 0 }
-  }, [nextYear, dateText])
 
   useEffect(() => {
     if (label != undefined && label.includes('.')) {
@@ -222,116 +137,8 @@ const Register = () => {
   }, [])
 
   useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (
-        picker &&
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setPicker(false)
-      }
-    }
-    document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
-  }, [picker])
-
-  useEffect(() => {
-    if (dateText && !date && !lifetime) {
-      const d = new Date(dateText)
-      setSeconds((startOfDay(d).getTime() - startOfDay(now).getTime()) / 1000)
-    }
-  }, [dateText, date, lifetime])
-
-  useEffect(() => {
-    if (date && !lifetime) {
-      setSeconds(31536000 * years)
-    }
-  }, [date, years, lifetime])
-
-  useEffect(() => {
-    if (lifetime) {
-      setSeconds(31536000 * 1000)
-    }
-  }, [lifetime, years])
-
-  const increment = () => {
-    setYears((prev) => {
-      const newValue = prev + 1
-      if (newValue > VALIDATION_CONSTANTS.MAX_YEARS) {
-        setValidationError(
-          `Maximum ${VALIDATION_CONSTANTS.MAX_YEARS} years allowed`,
-        )
-        return prev
-      }
-      setValidationError('')
-      return newValue
-    })
-  }
-
-  const [disable, setDisable] = useState(true)
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (!input && inputRef.current) {
-        const clickedNode = event.target as Node
-        if (!inputRef.current.contains(clickedNode)) {
-          setInput(true)
-        }
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [input])
-
-  useEffect(() => {
     document.title = `Register – ${label}.safu`
   }, [label])
-
-  useEffect(() => {
-    if (years == 1) {
-      setDisable(true)
-    }
-    if (years > 1) {
-      setDisable(false)
-    }
-  }, [years])
-
-  const decrease = () => {
-    setYears((prev) => {
-      const newValue = prev - 1
-      if (newValue < VALIDATION_CONSTANTS.MIN_YEARS) {
-        setValidationError(
-          `Minimum ${VALIDATION_CONSTANTS.MIN_YEARS} year required`,
-        )
-        return prev
-      }
-      setValidationError('')
-      return newValue
-    })
-  }
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value
-
-    setValidationError('')
-
-    const validation = validateYears(value)
-
-    if (!validation.isValid) {
-      setValidationError(validation.error || 'Invalid input')
-      if (validation.sanitizedValue !== undefined) {
-        setYears(validation.sanitizedValue)
-      }
-      return
-    }
-
-    setYears(validation.sanitizedValue!)
-  }
-
-  let durationString = formatDuration(duration)
 
   const buildCommitData = () => {
     const textRecords = [
@@ -348,32 +155,21 @@ const Register = () => {
     buildCommitDataFn(textRecords, newRecords, label as string, owner)
   }
 
-  const commit = async () => {
-    await commitFn(
-      normalize(label as string),
-      address as `0x${string}`,
-      seconds,
-      isPrimary,
-      lifetime,
-    )
-    setWait(60)
-    setIsOpen(false)
-  }
-
+  // v2: Direct registration - no commit-reveal required for agent mode
   const register = async () => {
     setIsOpen(true)
     await registerFn(
       label as string,
       address as `0x${string}`,
-      seconds,
+      0, // seconds ignored in v2
       isPrimary,
-      lifetime,
+      true, // always lifetime
       referrer,
-      useToken,
-      token,
-      usd1TokenData,
-      cakeTokenData,
-      priceData,
+      false, // useToken - not used on Base
+      '0x0000000000000000000000000000000000000000' as `0x${string}`,
+      null,
+      null,
+      null,
     )
     setIsOpen(false)
   }
@@ -387,24 +183,11 @@ const Register = () => {
 
   useEffect(() => {
     if (available === false) {
-      router.push(`/profile`)
+      router.push(`/resolve/${label}`)
     } else if (available === true) {
       setNext(0)
     }
   }, [available, router, label])
-
-  const registerParams: RegisterParams = {
-    domain: label as string,
-    duration: seconds,
-    resolver: constants.PublicResolver,
-    data: commitData,
-    reverseRecord: isPrimary,
-    ownerControlledFuses: 0,
-    lifetime: lifetime,
-    referree: referrer || '',
-  }
-
-  const card = false
 
   // Card styles
   const cardStyle = {
@@ -440,6 +223,57 @@ const Register = () => {
     transition: 'all 0.25s ease',
   }
 
+  // Premium name - requires auction
+  if (isPremium && requiresAuction && !premiumLoading) {
+    return (
+      <div className="mb-25 md:mb-0">
+        <div className="hero-spacer" />
+        <div className="flex flex-col mx-auto px-4 md:px-30 mt-10 lg:px-60">
+          <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
+            {label}.safu
+          </h2>
+          <div style={{ ...cardStyle, padding: '32px' }}>
+            <div className="flex items-center gap-4 mb-6">
+              <span className="text-4xl">🏆</span>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: isDark ? '#f59e0b' : '#d97706' }}>
+                  Premium Name
+                </h3>
+                <p style={{ color: isDark ? '#aaa' : '#666' }}>
+                  This name is available via auction only
+                </p>
+              </div>
+            </div>
+
+            {hasActiveAuction ? (
+              <button
+                onClick={() => router.push(`/auctions?name=${label}`)}
+                style={{
+                  ...buttonPrimaryStyle,
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: '#000',
+                }}
+              >
+                View Active Auction →
+              </button>
+            ) : (
+              <p style={{ color: isDark ? '#888' : '#666' }}>
+                No active auction for this name. Check back later or browse other auctions.
+              </p>
+            )}
+
+            <button
+              onClick={() => router.push('/auctions')}
+              style={{ ...buttonSecondaryStyle, marginTop: '16px', display: 'block' }}
+            >
+              Browse All Auctions
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mb-25 md:mb-0">
       <div className="hero-spacer" />
@@ -455,456 +289,161 @@ const Register = () => {
                 Register {label}.safu
               </h1>
 
-              {date ? (
-                <div
-                  style={{
-                    ...cardStyle,
-                    padding: '16px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    position: 'relative',
-                  }}
-                >
-                  <button
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      background: lifetime || disable ? (isDark ? '#444' : '#ccc') : (isDark ? '#fff' : '#111'),
-                      color: lifetime || disable ? '#888' : (isDark ? '#000' : '#fff'),
-                      border: 'none',
-                      fontSize: '24px',
-                      cursor: lifetime || disable ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    disabled={disable || lifetime}
-                    onClick={decrease}
-                  >
-                    -
-                  </button>
-
-                  {input ? (
-                    <div
-                      style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        fontSize: '28px',
-                        fontWeight: 600,
-                        color: isDark ? '#fff' : '#111',
-                        cursor: lifetime ? 'default' : 'pointer',
-                        padding: '8px',
-                        borderRadius: '20px',
-                        margin: '0 16px',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onClick={() => {
-                        if (!lifetime) setInput(false)
-                      }}
-                    >
-                      {lifetime ? (
-                        <span style={{ opacity: 0.9 }}>Lifetime Registration</span>
-                      ) : (
-                        <span style={{ opacity: 0.9 }}>
-                          {years} Year{years > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <input
-                      ref={inputRef}
-                      type="number"
-                      min={1}
-                      style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        fontSize: '28px',
-                        fontWeight: 600,
-                        color: isDark ? '#fff' : '#111',
-                        background: 'transparent',
-                        border: 'none',
-                        outline: 'none',
-                        margin: '0 16px',
-                      }}
-                      value={years}
-                      onChange={handleChange}
-                      disabled={lifetime}
-                    />
-                  )}
-
-                  <button
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      background: lifetime ? (isDark ? '#444' : '#ccc') : (isDark ? '#fff' : '#111'),
-                      color: lifetime ? '#888' : (isDark ? '#000' : '#fff'),
-                      border: 'none',
-                      fontSize: '24px',
-                      cursor: lifetime ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    onClick={increment}
-                    disabled={lifetime}
-                  >
-                    +
-                  </button>
-                </div>
-              ) : (
-                <div
-                  ref={containerRef}
-                  style={{
-                    ...cardStyle,
-                    padding: '16px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    cursor: lifetime ? 'default' : 'pointer',
-                  }}
-                  onClick={() => {
-                    if (!lifetime) setPicker(true)
-                  }}
-                >
-                  <DatePicker
-                    selected={dateText}
-                    onChange={(d) => setDateText(d)}
-                    open={picker}
-                    onClickOutside={() => setPicker(false)}
-                    minDate={minDate}
-                    dateFormat="MMMM d, yyyy"
-                    customInput={<div style={{ display: 'none' }} />}
-                    popperPlacement="bottom-start"
-                    className="z-50 mt-50"
-                    disabled={lifetime}
-                    calendarContainer={({ className, children }) => (
-                      <div
-                        className={`${className} absolute top-full left-0 mt-7 z-50`}
-                        style={{ width: 'auto' }}
-                      >
-                        {children}
-                      </div>
-                    )}
+              {/* Price Display - v2 Lifetime Only */}
+              <div style={{ ...cardStyle, padding: '24px', marginBottom: '24px' }}>
+                {loading ? (
+                  <div className="flex items-center justify-center gap-3 py-4">
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
+                    <span style={{ color: isDark ? '#888' : '#666' }}>Loading price...</span>
+                  </div>
+                ) : (
+                  <AgentPriceTag
+                    name={label}
+                    priceUsd={price.usd}
+                    priceEth={price.bnb}
+                    isAgentName={isAgentName}
                   />
-                  <div style={{ flex: 1, fontSize: '24px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
-                    {dateText?.toLocaleString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </div>
-
-                  <button
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      background: isDark ? '#fff' : '#111',
-                      color: isDark ? '#000' : '#fff',
-                      border: 'none',
-                      fontSize: '24px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-              )}
-
-              {validationError && (
-                <div style={{ marginTop: '12px', padding: '12px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
-                  <p style={{ fontSize: '14px', color: '#ef4444', textAlign: 'center' }}>
-                    {validationError}
-                  </p>
-                </div>
-              )}
-
-              {date && !lifetime ? (
-                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: isDark ? '#ccc' : '#555' }}>
-                  {years} year{years > 1 ? 's' : ''} registration.{' '}
-                  <span
-                    style={{ color: isDark ? '#fff' : '#111', cursor: 'pointer', fontWeight: 600 }}
-                    onClick={() => setDate(!date)}
-                  >
-                    Pick by date
-                  </span>
-                </p>
-              ) : !date && !lifetime ? (
-                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: isDark ? '#ccc' : '#555' }}>
-                  {formatDuration(duration)} registration.{' '}
-                  <span
-                    style={{ color: isDark ? '#fff' : '#111', cursor: 'pointer', fontWeight: 600 }}
-                    onClick={() => setDate(!date)}
-                  >
-                    Pick by Years
-                  </span>
-                </p>
-              ) : null}
-
-              <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '14px' }}>
-                <span
-                  style={{ color: isDark ? '#fff' : '#111', cursor: 'pointer', fontWeight: 600 }}
-                  onClick={() => setLifetime(!lifetime)}
-                >
-                  {!lifetime
-                    ? 'Would you like a lifetime registration?'
-                    : 'Or Pick By Years/Date?'}
-                </span>
-              </p>
-
-              <div style={{ marginTop: '24px' }}>
-                <div style={{ display: 'inline-flex', background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', borderRadius: '9999px', padding: '4px' }}>
-                  {(['BNB', 'USD'] as const).map((curr) => {
-                    const isActive = curr === currency
-                    return (
-                      <button
-                        key={curr}
-                        onClick={() => {
-                          setCurrency(curr)
-                          setBnb(!bnb)
-                        }}
-                        style={{
-                          padding: '10px 20px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          borderRadius: '9999px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.25s ease',
-                          background: isActive ? (isDark ? '#fff' : '#111') : 'transparent',
-                          color: isActive ? (isDark ? '#000' : '#fff') : (isDark ? '#888' : '#666'),
-                        }}
-                      >
-                        {curr}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <PriceDisplay
-                  currency={currency}
-                  price={price}
-                  estimateBnb={estimateBnb}
-                  estimateUsd={estimateUsd}
-                  loading={loading}
-                  estimateLoading={estimateLoading}
-                  duration={duration}
-                  date={date}
-                  years={years}
-                  lifetime={lifetime}
-                />
-
-                <div style={{ display: 'flex', marginTop: '24px', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
-                      Set as Primary Name
-                    </h3>
-                    <p style={{ fontSize: '14px', color: isDark ? '#aaa' : '#666', marginTop: '8px', maxWidth: '400px' }}>
-                      This links your address to this name, allowing dApps to display it as your profile when connected to them.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setIsPrimary(!isPrimary)}
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      border: `3px solid ${isDark ? '#555' : '#ddd'}`,
-                      background: isPrimary ? '#111' : (isDark ? '#333' : '#f4f4f4'),
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    <Check
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        color: '#fff',
-                        opacity: isPrimary ? 1 : 0,
-                        transition: 'opacity 0.2s ease',
-                      }}
-                    />
-                  </button>
-                </div>
-
-                <div style={{ marginTop: '24px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>Referrer</h3>
-                  <div style={{ position: 'relative', maxWidth: '70%' }}>
-                    <Input
-                      value={referrer}
-                      placeholder="Enter referral code (e.g., vitalik)"
-                      style={{
-                        marginTop: '8px',
-                        padding: '12px 16px',
-                        paddingRight: '40px',
-                        background: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
-                        border: referrer
-                          ? referralValidating
-                            ? (isDark ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.2)')
-                            : referralValid
-                              ? '1px solid #22c55e'
-                              : '1px solid #ef4444'
-                          : (isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)'),
-                        borderRadius: '14px',
-                        color: isDark ? '#fff' : '#111',
-                        width: '100%',
-                        transition: 'border-color 0.2s ease',
-                      }}
-                      type="text"
-                      onChange={(e) => {
-                        if (e.target.value.includes('.')) {
-                          setReferrer('')
-                        } else {
-                          setReferrer(e.target.value.toLowerCase())
-                        }
-                      }}
-                    />
-                    {/* Validation indicator */}
-                    {referrer && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          right: '12px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          marginTop: '4px',
-                        }}
-                      >
-                        {referralValidating ? (
-                          <div
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              border: '2px solid transparent',
-                              borderTopColor: isDark ? '#fff' : '#666',
-                              borderRadius: '50%',
-                              animation: 'spin 0.8s linear infinite',
-                            }}
-                          />
-                        ) : referralValid ? (
-                          <Check style={{ width: '18px', height: '18px', color: '#22c55e' }} />
-                        ) : (
-                          <span style={{ color: '#ef4444', fontSize: '18px', fontWeight: 'bold' }}>✕</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {/* Validation message */}
-                  {referrer && !referralValidating && (
-                    <p
-                      style={{
-                        marginTop: '6px',
-                        fontSize: '13px',
-                        color: referralValid ? '#22c55e' : '#ef4444',
-                      }}
-                    >
-                      {referralValid
-                        ? `✓ Valid referral code - ${referrer}.safu`
-                        : `✕ Invalid referral code - domain doesn't exist or is expired`}
-                    </p>
-                  )}
-                  <p
-                    style={{
-                      marginTop: '4px',
-                      fontSize: '12px',
-                      color: isDark ? '#888' : '#666',
-                    }}
-                  >
-                    Enter a .safu domain name as your referral code (without .safu)
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', marginTop: '24px', alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
-                      Pay with Cake ({price.cake} $CAKE)
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setUseToken(!useToken)
-                      setToken('0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82')
-                    }}
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      border: `3px solid ${isDark ? '#555' : '#ddd'}`,
-                      background: useToken && token == '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82' ? '#111' : (isDark ? '#333' : '#f4f4f4'),
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    <Check
-                      style={{
-                        width: '16px',
-                        height: '16px',
-                        color: '#fff',
-                        opacity: useToken && token == '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82' ? 1 : 0,
-                        transition: 'opacity 0.2s ease',
-                      }}
-                    />
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', marginTop: '20px', alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
-                      Pay with USD1 ({price.usd1} $USD1)
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setUseToken(!useToken)
-                      setToken('0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d')
-                    }}
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      border: `3px solid ${isDark ? '#555' : '#ddd'}`,
-                      background: useToken && token == '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d' ? '#111' : (isDark ? '#333' : '#f4f4f4'),
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    <Check
-                      style={{
-                        width: '16px',
-                        height: '16px',
-                        color: '#fff',
-                        opacity: useToken && token == '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d' ? 1 : 0,
-                        transition: 'opacity 0.2s ease',
-                      }}
-                    />
-                  </button>
-                </div>
+                )}
               </div>
 
+              {/* Agent Pattern Info */}
+              <div style={{ marginBottom: '24px' }}>
+                <AgentPatternInfo />
+              </div>
+
+              {/* Set as Primary Name */}
+              <div style={{ display: 'flex', marginTop: '24px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
+                    Set as Primary Name
+                  </h3>
+                  <p style={{ fontSize: '14px', color: isDark ? '#aaa' : '#666', marginTop: '8px', maxWidth: '400px' }}>
+                    This links your address to this name, allowing dApps to display it as your profile when connected to them.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsPrimary(!isPrimary)}
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    border: `3px solid ${isDark ? '#555' : '#ddd'}`,
+                    background: isPrimary ? '#111' : (isDark ? '#333' : '#f4f4f4'),
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <Check
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      color: '#fff',
+                      opacity: isPrimary ? 1 : 0,
+                      transition: 'opacity 0.2s ease',
+                    }}
+                  />
+                </button>
+              </div>
+
+              {/* Referrer Input */}
+              <div style={{ marginTop: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>Referrer (Optional)</h3>
+                <div style={{ position: 'relative', maxWidth: '70%' }}>
+                  <Input
+                    value={referrer}
+                    placeholder="Enter referral code (e.g., vitalik)"
+                    style={{
+                      marginTop: '8px',
+                      padding: '12px 16px',
+                      paddingRight: '40px',
+                      background: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
+                      border: referrer
+                        ? referralValidating
+                          ? (isDark ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.2)')
+                          : referralValid
+                            ? '1px solid #22c55e'
+                            : '1px solid #ef4444'
+                        : (isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)'),
+                      borderRadius: '14px',
+                      color: isDark ? '#fff' : '#111',
+                      width: '100%',
+                      transition: 'border-color 0.2s ease',
+                    }}
+                    type="text"
+                    onChange={(e) => {
+                      if (e.target.value.includes('.')) {
+                        setReferrer('')
+                      } else {
+                        setReferrer(e.target.value.toLowerCase())
+                      }
+                    }}
+                  />
+                  {referrer && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        marginTop: '4px',
+                      }}
+                    >
+                      {referralValidating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
+                      ) : referralValid ? (
+                        <Check style={{ width: '18px', height: '18px', color: '#22c55e' }} />
+                      ) : (
+                        <span style={{ color: '#ef4444', fontSize: '18px', fontWeight: 'bold' }}>✕</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {referrer && !referralValidating && (
+                  <p
+                    style={{
+                      marginTop: '6px',
+                      fontSize: '13px',
+                      color: referralValid ? '#22c55e' : '#ef4444',
+                    }}
+                  >
+                    {referralValid
+                      ? `✓ Valid referral code - ${referrer}.safu`
+                      : `✕ Invalid referral code - domain doesn't exist`}
+                  </p>
+                )}
+                <p
+                  style={{
+                    marginTop: '4px',
+                    fontSize: '12px',
+                    color: isDark ? '#888' : '#666',
+                  }}
+                >
+                  Enter a .safu domain name as your referral code (without .safu)
+                </p>
+              </div>
+
+              {/* Continue Button */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '32px' }}>
                 {!isDisconnected && (
                   <button
                     style={buttonPrimaryStyle}
                     onClick={() => setNext(1)}
-                    disabled={isLoading}
+                    disabled={isLoading || loading}
                   >
                     Continue
                   </button>
                 )}
               </div>
+
+              {/* Price Summary */}
+              {!loading && (
+                <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px', color: isDark ? '#888' : '#666' }}>
+                  ${price.usd} • One-time payment • Lifetime ownership
+                </p>
+              )}
             </div>
           ) : next == 1 ? (
             <SetupModal
@@ -927,44 +466,22 @@ const Register = () => {
             <div style={{ ...cardStyle, padding: '32px', marginTop: '20px' }}>
               <RegistrationSteps />
               <div style={{ marginTop: '40px' }}>
-                <div style={{ display: 'inline-flex', background: isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f4', borderRadius: '9999px', padding: '4px' }}>
-                  {(['BNB', 'USD'] as const).map((curr) => {
-                    const isActive = curr === currency
-                    return (
-                      <button
-                        key={curr}
-                        onClick={() => {
-                          setCurrency(curr)
-                          setBnb(!bnb)
-                        }}
-                        style={{
-                          padding: '10px 20px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          borderRadius: '9999px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.25s ease',
-                          background: isActive ? (isDark ? '#fff' : '#111') : 'transparent',
-                          color: isActive ? (isDark ? '#000' : '#fff') : (isDark ? '#888' : '#666'),
-                        }}
-                      >
-                        {curr}
-                      </button>
-                    )
-                  })}
+                {/* Price Summary for v2 */}
+                <div style={{ ...cardStyle, padding: '20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#fff' : '#111' }}>
+                    ${price.usd}
+                  </div>
+                  <div style={{ fontSize: '14px', color: isDark ? '#888' : '#666', marginTop: '4px' }}>
+                    {price.bnb} ETH • Lifetime Registration
+                  </div>
+                  {isAgentName && (
+                    <div style={{ marginTop: '8px' }}>
+                      <span className="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
+                        🤖 Agent Price
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <PriceDisplay
-                  currency={currency}
-                  price={price}
-                  estimateBnb={estimateBnb}
-                  estimateUsd={estimateUsd}
-                  loading={loading}
-                  estimateLoading={estimateLoading}
-                  duration={duration}
-                  date={date}
-                  years={years}
-                />
               </div>
 
               <div style={{ display: 'flex', gap: '20px', marginTop: '40px', justifyContent: 'center' }}>
@@ -978,127 +495,57 @@ const Register = () => {
                   style={buttonPrimaryStyle}
                   onClick={() => {
                     setNext((prev) => prev + 1)
-                    if (!card) {
-                      commit()
-                    }
+                    register()
                   }}
+                  disabled={isLoading}
                 >
-                  Begin
+                  {isLoading ? 'Registering...' : 'Register Now'}
                 </button>
               </div>
             </div>
-          ) : next == 3 && !card ? (
-            <div style={{ ...cardStyle, padding: '40px', marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
-                Almost there
-              </h2>
-
-              <div style={{ position: 'relative' }}>
-                <div style={{
-                  width: '128px',
-                  height: '128px',
-                  borderRadius: '50%',
-                  border: '8px solid',
-                  borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  fontSize: '36px',
-                  fontWeight: 700,
-                  color: isDark ? '#fff' : '#111',
-                }}>
-                  {commithash && (
-                    <Countdown
-                      date={Date.now() + wait * 1000}
-                      renderer={({ seconds, completed }) => {
-                        if (completed) {
-                          setDone(true)
-                          return <span>0</span>
-                        }
-                        return <span>{seconds}</span>
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <p style={{ textAlign: 'center', fontSize: '14px', color: isDark ? '#aaa' : '#666', padding: '0 16px' }}>
-                This wait prevents others from front running your transaction.
-                <br />
-                You'll complete the second transaction when the timer ends.
-              </p>
-
-              <div style={{ display: 'flex', gap: '16px', width: '100%', marginTop: '16px' }}>
-                <button
-                  onClick={() => setNext((prev) => prev - 1)}
-                  style={{ ...buttonSecondaryStyle, flex: 1 }}
-                >
-                  Back
-                </button>
-                {done == false ? (
-                  <button
-                    disabled
-                    style={{
-                      ...buttonPrimaryStyle,
-                      flex: 1,
-                      opacity: 0.5,
-                      cursor: 'not-allowed',
-                    }}
-                  >
-                    Wait...
-                  </button>
-                ) : (
-                  <button
-                    style={{ ...buttonPrimaryStyle, flex: 1 }}
-                    onClick={() => {
-                      setNext((prev) => prev + 1)
-                      setIsOpen(true)
-                      register()
-                    }}
-                  >
-                    Complete Registration
-                  </button>
-                )}
-              </div>
-              <ConfirmDetailsModal
-                isOpen={isOpen}
-                onRequestClose={() => setNext((prev) => prev - 1)}
-                name={`${label}.safu` || ''}
-                action="Start timer"
-                info="Start timer to register name"
-              />
-            </div>
-          ) : next == 3 && card ? (
-            <UserForm address={owner} registerParams={registerParams} />
-          ) : next == 4 ? (
+          ) : next == 3 ? (
             <div style={{ ...cardStyle, padding: '40px', marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
               <RegisterDetailsModal
                 isOpen={isOpen}
                 onRequestClose={() => setNext((prev) => prev - 1)}
                 name={`${label}.safu` || ''}
                 action="Register name"
-                duration={durationString}
+                duration="Lifetime"
               />
               {registerPending ? (
-                <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
-                  Waiting for transaction to complete...
-                </h2>
+                <>
+                  <Loader2 className="w-12 h-12 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
+                    Waiting for transaction to complete...
+                  </h2>
+                </>
               ) : !registerhash ? (
-                <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
-                  Complete your registration
-                </h2>
+                <>
+                  <Loader2 className="w-12 h-12 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
+                    Processing registration...
+                  </h2>
+                </>
               ) : registerError ? (
-                <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
-                  There was an error while registering your name. Please{' '}
-                  <span
-                    style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                    onClick={() => setIsOpen(true)}
+                <div style={{ textAlign: 'center' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: '16px' }}>
+                    Registration Error
+                  </h2>
+                  <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
+                    There was an error while registering your name.
+                  </p>
+                  <button
+                    style={buttonPrimaryStyle}
+                    onClick={() => {
+                      setIsOpen(true)
+                      register()
+                    }}
                   >
-                    try again
-                  </span>
-                </h2>
+                    Try Again
+                  </button>
+                </div>
               ) : registerhash ? (
-                <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                <div style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
                   <div style={{ ...cardStyle, padding: '40px', maxWidth: '420px', width: '100%', textAlign: 'center' }}>
                     <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px', color: isDark ? '#fff' : '#111' }}>
                       Congratulations!
@@ -1139,21 +586,17 @@ const Register = () => {
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <span style={{ color: isDark ? '#888' : '#666', fontSize: '14px' }}>
-                          {durationString}
+                          Registration
                         </span>
                         <span style={{ fontWeight: 500, fontSize: '14px', color: isDark ? '#fff' : '#111' }}>
-                          {price.bnb} BNB{' '}
+                          {price.bnb} ETH{' '}
                           <span style={{ color: isDark ? '#888' : '#666' }}>{`($${price.usd})`}</span>
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: isDark ? '#888' : '#666', fontSize: '14px' }}>Name expires</span>
-                        <span style={{ fontWeight: 500, fontSize: '14px', color: isDark ? '#fff' : '#111' }}>
-                          {dateText?.toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                        <span style={{ color: isDark ? '#888' : '#666', fontSize: '14px' }}>Ownership</span>
+                        <span style={{ fontWeight: 500, fontSize: '14px', color: '#22c55e' }}>
+                          ✓ Lifetime
                         </span>
                       </div>
                     </div>
