@@ -20,7 +20,7 @@ describe('SafuDomainAuction', function () {
         // Deploy Base Registrar
         const baseRegistrar = await hre.viem.deployContract('BaseRegistrarImplementation', [
             ensRegistry.address,
-            '0x78f6f0d8de7e5c76da72b0e3a3a87f4e1f95e0c9f6e8d7c6b5a4938271605432', // safu namehash
+            '0xf92e9539a836c60f519caef3f817b823139813f56a7a19c9621f7b47f35b340d', // safu namehash
         ])
 
         // Deploy NameWrapper (simplified - may need actual dependencies)

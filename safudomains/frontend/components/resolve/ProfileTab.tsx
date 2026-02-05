@@ -9,7 +9,7 @@ import { IoLogoWhatsapp } from 'react-icons/io'
 import { FaSnapchatGhost, FaGithub } from 'react-icons/fa'
 import { SiBnbchain } from 'react-icons/si'
 import { shortenAddress, getCID } from '../../utils/domainUtils'
-import Renew from '../renew'
+// Renew removed in v2 - lifetime only
 import React from 'react'
 import { zeroAddress } from 'viem'
 
@@ -82,12 +82,9 @@ const ProfileTab = ({
                 </div>
               ))}
           </div>
-          <button
-            className="bg-[#FF7000] flex items-center p-1 md:px-4 md:py-2 rounded-lg mt-2 text-[12px] md:text-sm cursor-pointer font-bold"
-            onClick={handleRenewal}
-          >
-            <FastForwardIcon className="h-5 w-5 mr-1" /> Extend
-          </button>
+          <div className="px-4 py-2 bg-green-600/20 border border-green-500/30 rounded-lg mt-2 text-[12px] md:text-sm">
+            <span className="text-green-400">✓ Lifetime</span>
+          </div>
         </div>
       </div>
       {primaryName == `${label}.safu` ? (
@@ -242,13 +239,7 @@ const ProfileTab = ({
           </div>
         )}
       </div>
-      <Renew
-        label={label as string}
-        expires={expires as bigint}
-        setIsOpen={setIsOpen}
-        isOpen={isOpen}
-        number={next}
-      />
+      {/* v2: Renewals removed - all domains are lifetime */}
     </div>
   )
 }

@@ -1,3 +1,306 @@
+// SafuDomains v2 ABIs
+
+// ============ AgentPriceOracle ============
+export const AgentPriceOracleABI = [
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'getPrice',
+        outputs: [
+            { name: 'priceWei', type: 'uint256' },
+            { name: 'priceUsd', type: 'uint256' },
+            { name: 'isAgentName', type: 'bool' },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'isAgentName',
+        outputs: [{ type: 'bool' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+] as const
+
+// ============ AgentRegistrarController ============
+export const AgentRegistrarControllerABI = [
+    {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                ],
+                name: 'request',
+                type: 'tuple',
+            },
+            {
+                components: [
+                    { name: 'referrer', type: 'address' },
+                    { name: 'registrant', type: 'address' },
+                    { name: 'nameHash', type: 'bytes32' },
+                    { name: 'referrerCodeHash', type: 'bytes32' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'nonce', type: 'bytes32' },
+                ],
+                name: 'referralData',
+                type: 'tuple',
+            },
+            { name: 'signature', type: 'bytes' },
+        ],
+        name: 'register',
+        outputs: [],
+        stateMutability: 'payable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                ],
+                name: 'requests',
+                type: 'tuple[]',
+            },
+        ],
+        name: 'batchRegister',
+        outputs: [],
+        stateMutability: 'payable',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'available',
+        outputs: [{ type: 'bool' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+] as const
+
+// ============ AgentPublicResolver (x402/ERC-8004) ============
+export const AgentPublicResolverABI = [
+    // x402 Endpoint
+    {
+        inputs: [{ name: 'node', type: 'bytes32' }],
+        name: 'x402Endpoint',
+        outputs: [{ type: 'string' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'endpoint', type: 'string' },
+        ],
+        name: 'setX402Endpoint',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    // Payment address
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'chainId', type: 'uint256' },
+        ],
+        name: 'paymentAddress',
+        outputs: [{ type: 'address' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'chainId', type: 'uint256' },
+            { name: 'addr', type: 'address' },
+        ],
+        name: 'setPaymentAddress',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    // Supported chains
+    {
+        inputs: [{ name: 'node', type: 'bytes32' }],
+        name: 'supportedChains',
+        outputs: [{ type: 'uint256[]' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    // Accepted tokens
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'chainId', type: 'uint256' },
+        ],
+        name: 'acceptedTokens',
+        outputs: [{ type: 'address[]' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    // Agent metadata
+    {
+        inputs: [{ name: 'node', type: 'bytes32' }],
+        name: 'agentMetadata',
+        outputs: [{ type: 'string' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'uri', type: 'string' },
+        ],
+        name: 'setAgentMetadata',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    // Payment enabled
+    {
+        inputs: [{ name: 'node', type: 'bytes32' }],
+        name: 'paymentEnabled',
+        outputs: [{ type: 'bool' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'enabled', type: 'bool' },
+        ],
+        name: 'setPaymentEnabled',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    // Payment limits
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'chainId', type: 'uint256' },
+        ],
+        name: 'paymentLimits',
+        outputs: [
+            { name: 'minAmount', type: 'uint256' },
+            { name: 'maxAmount', type: 'uint256' },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    // Standard resolver functions
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'addr', type: 'address' },
+        ],
+        name: 'setAddr',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'key', type: 'string' },
+            { name: 'value', type: 'string' },
+        ],
+        name: 'setText',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+] as const
+
+// ============ PremiumNameRegistry ============
+export const PremiumRegistryABI = [
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'isPremium',
+        outputs: [{ type: 'bool' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'getPremiumInfo',
+        outputs: [
+            { name: 'isPremiumName', type: 'bool' },
+            { name: 'requiresAuction', type: 'bool' },
+            { name: 'fixedPrice', type: 'uint256' },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+    },
+] as const
+
+// ============ SafuDomainAuction ============
+export const AuctionABI = [
+    {
+        inputs: [],
+        name: 'nextAuctionId',
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'auctionId', type: 'uint256' }],
+        name: 'getAuction',
+        outputs: [
+            { name: 'name', type: 'string' },
+            { name: 'reservePrice', type: 'uint256' },
+            { name: 'startTime', type: 'uint256' },
+            { name: 'endTime', type: 'uint256' },
+            { name: 'highestBid', type: 'uint256' },
+            { name: 'highestBidder', type: 'address' },
+            { name: 'settled', type: 'bool' },
+            { name: 'isUSDC', type: 'bool' },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'hasActiveAuction',
+        outputs: [{ type: 'bool' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'auctionId', type: 'uint256' }],
+        name: 'getMinBid',
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'auctionId', type: 'uint256' }],
+        name: 'bid',
+        outputs: [],
+        stateMutability: 'payable',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'auctionId', type: 'uint256' }],
+        name: 'settle',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+] as const
+
+// ============ Legacy ABIs (backward compat) ============
 export const registrarAbi = [
     {
         name: 'register',
@@ -20,57 +323,20 @@ export const registrarAbi = [
                     { name: 'referrer', type: 'address' },
                     { name: 'registrant', type: 'address' },
                     { name: 'nameHash', type: 'bytes32' },
-                    { name: 'referrerCodeHash', type: 'bytes32' },  // NEW
+                    { name: 'referrerCodeHash', type: 'bytes32' },
                     { name: 'deadline', type: 'uint256' },
-                    { name: 'nonce', type: 'bytes32' }
-                ]
+                    { name: 'nonce', type: 'bytes32' },
+                ],
             },
-            { name: 'referralSignature', type: 'bytes' }
+            { name: 'referralSignature', type: 'bytes' },
         ],
-        outputs: []
-    },
-    {
-        name: 'renew',
-        type: 'function',
-        stateMutability: 'payable',
-        inputs: [
-            { name: 'name', type: 'string' },
-            { name: 'duration', type: 'uint256' },
-            { name: 'lifetime', type: 'bool' }
-        ],
-        outputs: []
-    },
-    {
-        name: 'rentPrice',
-        type: 'function',
-        stateMutability: 'view',
-        inputs: [
-            { name: 'name', type: 'string' },
-            { name: 'duration', type: 'uint256' },
-            { name: 'lifetime', type: 'bool' }
-        ],
-        outputs: [
-            {
-                type: 'tuple',
-                components: [
-                    { name: 'base', type: 'uint256' },
-                    { name: 'premium', type: 'uint256' }
-                ]
-            }
-        ]
+        outputs: [],
     },
     {
         name: 'available',
         type: 'function',
         stateMutability: 'view',
         inputs: [{ name: 'name', type: 'string' }],
-        outputs: [{ type: 'bool' }]
+        outputs: [{ type: 'bool' }],
     },
-    {
-        name: 'commit',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [{ name: 'commitment', type: 'bytes32' }],
-        outputs: []
-    }
-] as const;
+] as const
