@@ -1011,12 +1011,19 @@ function DomainCard({
   const [showUnwrapModal, setShowUnwrapModal] = useState(false)
   const [showPrimaryModal, setShowPrimaryModal] = useState(false)
 
+  // v2: Lifetime ownership - no expiry
+  // Check if this is a v2 lifetime domain (expiryDate far in future or 0)
+  const isLifetime = domain.expiryDate === 0 || domain.expiryDate > Date.now() / 1000 + 100 * 365 * 24 * 3600
+
   const nowSec = Date.now() / 1000
   const secondsLeft = domain.expiryDate - nowSec - 259200
   let statusText: string
   let statusColor: string
 
-  if (secondsLeft <= 0) {
+  if (isLifetime) {
+    statusText = '✓ Lifetime'
+    statusColor = '#22c55e'
+  } else if (secondsLeft <= 0) {
     statusText = 'Expired'
     statusColor = '#ef4444'
   } else if (secondsLeft < 30 * 24 * 3600) {
@@ -1028,8 +1035,8 @@ function DomainCard({
     statusColor = isDark ? '#888' : '#666'
   }
 
-  const isExpired = secondsLeft <= 0
-  const isExpiringSoon = secondsLeft > 0 && secondsLeft < 30 * 24 * 3600
+  const isExpired = !isLifetime && secondsLeft <= 0
+  const isExpiringSoon = !isLifetime && secondsLeft > 0 && secondsLeft < 30 * 24 * 3600
 
   return (
     <>
@@ -1084,6 +1091,20 @@ function DomainCard({
               <WrappedBadge name={domain.name} tag={'Manager'} />
               <WrappedBadge name={domain.name} tag={'Owner'} />
             </div>
+            {isLifetime && (
+              <div
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  color: '#22c55e',
+                }}
+              >
+                Lifetime
+              </div>
+            )}
             {(isExpired || isExpiringSoon) && (
               <div
                 style={{
