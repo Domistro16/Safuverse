@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 
 interface AuctionCountdownProps {
     endTime: number
+    className?: string
+    isDark?: boolean
 }
 
-export function AuctionCountdown({ endTime }: AuctionCountdownProps) {
+export function AuctionCountdown({ endTime, className, isDark = false }: AuctionCountdownProps) {
     const [timeLeft, setTimeLeft] = useState({
         days: 0,
         hours: 0,
@@ -40,30 +42,39 @@ export function AuctionCountdown({ endTime }: AuctionCountdownProps) {
 
     if (timeLeft.isEnded) {
         return (
-            <div className="text-3xl font-bold text-red-400 font-mono">
+            <div className={`text-font-bold font-mono text-red-500 ${className}`}>
                 Auction Ended
             </div>
         )
     }
 
     return (
-        <div className="flex gap-3">
-            <TimeUnit value={timeLeft.days} label="Days" />
-            <TimeUnit value={timeLeft.hours} label="Hours" />
-            <TimeUnit value={timeLeft.minutes} label="Mins" />
-            <TimeUnit value={timeLeft.seconds} label="Secs" highlight />
+        <div className={`flex gap-3 ${className}`}>
+            <TimeUnit value={timeLeft.days} label="Days" isDark={isDark} />
+            <TimeUnit value={timeLeft.hours} label="Hours" isDark={isDark} />
+            <TimeUnit value={timeLeft.minutes} label="Mins" isDark={isDark} />
+            <TimeUnit value={timeLeft.seconds} label="Secs" highlight isDark={isDark} />
         </div>
     )
 }
 
-function TimeUnit({ value, label, highlight }: { value: number; label: string; highlight?: boolean }) {
+function TimeUnit({ value, label, highlight, isDark }: { value: number; label: string; highlight?: boolean; isDark: boolean }) {
     return (
         <div className="text-center">
-            <div className={`text-3xl font-bold font-mono px-3 py-2 rounded-lg ${highlight ? 'bg-green-500/20 text-green-400' : 'bg-gray-800 text-white'
-                }`}>
+            <div className={`text-3xl font-bold font-mono px-3 py-2 rounded-lg transition-colors border`}
+                style={{
+                    background: highlight
+                        ? (isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)')
+                        : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0,0,0,0.04)'),
+                    color: highlight
+                        ? '#22c55e'
+                        : (isDark ? '#fff' : '#111'),
+                    borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'transparent'
+                }}
+            >
                 {value.toString().padStart(2, '0')}
             </div>
-            <div className="text-xs text-gray-500 mt-1 uppercase tracking-wider">{label}</div>
+            <div className="text-xs mt-1 uppercase tracking-wider font-semibold" style={{ color: isDark ? '#888' : '#888' }}>{label}</div>
         </div>
     )
 }

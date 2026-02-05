@@ -2,43 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { formatEther } from 'viem'
-import { useAccount } from 'wagmi'
 import Link from 'next/link'
 
-interface AuctionCardProps {
-    auctionId: number
+interface Auction {
+    id: number
     name: string
-    reservePrice: bigint
+    reservePrice: string
+    startTime: number
     endTime: number
-    highestBid: bigint
+    highestBid: string
     highestBidder: string
+    settled: boolean
     isUSDC: boolean
-    settled?: boolean
+    status: 'active' | 'ended' | 'settled'
 }
 
-export function AuctionCard({
-    auctionId,
-    name,
-    reservePrice,
-    endTime,
-    highestBid,
-    highestBidder,
-    isUSDC,
-    settled = false,
-}: AuctionCardProps) {
-    const { address } = useAccount()
+export function AuctionCard({ auction, isDark }: { auction: Auction, isDark: boolean }) {
     const [timeLeft, setTimeLeft] = useState('')
 
-    const currency = isUSDC ? 'USDC' : 'ETH'
-    const isEnded = Date.now() / 1000 >= endTime
-    const hasNoBids = highestBid === 0n
-    const isLeading = address && highestBidder.toLowerCase() === address.toLowerCase()
-
-    // Countdown timer
     useEffect(() => {
         const updateTime = () => {
             const now = Math.floor(Date.now() / 1000)
-            const remaining = endTime - now
+            const remaining = auction.endTime - now
 
             if (remaining <= 0) {
                 setTimeLeft('Ended')
@@ -61,73 +46,73 @@ export function AuctionCard({
         updateTime()
         const interval = setInterval(updateTime, 1000)
         return () => clearInterval(interval)
-    }, [endTime])
+    }, [auction.endTime])
+
+    const isEnded = Date.now() / 1000 >= auction.endTime
+    const hasNoBids = auction.highestBid === '0'
+    const currency = auction.isUSDC ? 'USDC' : 'ETH'
 
     return (
-        <Link href={`/auctions/${auctionId}`}>
-            <div className="group p-6 bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-2xl border border-gray-700/50 hover:border-yellow-500/50 transition-all hover:shadow-lg hover:shadow-yellow-500/10 cursor-pointer">
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4">
+        <Link href={`/auctions/${auction.id}`}>
+            <div
+                className={`page-card h-full transition-transform hover:-translate-y-2 cursor-pointer flex flex-col`}
+                style={{
+                    background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.92)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0,0,0,0.06)'
+                }}
+            >
+                <div className="flex justify-between items-start mb-6">
                     <div>
-                        <h3 className="text-2xl font-bold text-white group-hover:text-yellow-400 transition-colors">
-                            {name}.safu
+                        <h3 className="text-2xl font-bold mb-1" style={{ color: isDark ? '#fff' : '#111' }}>
+                            {auction.name}.safu
                         </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-yellow-400">🏆 Premium</span>
-                            {isLeading && (
-                                <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
-                                    Leading
-                                </span>
-                            )}
-                        </div>
+                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#f59e0b]">
+                            <span>🏆</span> Premium
+                        </span>
                     </div>
                     <div className="text-right">
-                        <div className="text-xs text-gray-500 uppercase tracking-wider">Time Left</div>
-                        <div className={`text-lg font-mono font-bold ${isEnded ? 'text-red-400' : remaining < 3600 ? 'text-orange-400 animate-pulse' : 'text-green-400'
-                            }`}>
+                        <div className="text-xs uppercase tracking-wider font-semibold mb-1" style={{ color: isDark ? '#888' : '#888' }}>Time Left</div>
+                        <div className={`text-lg font-mono font-bold ${isEnded ? 'text-red-500' : 'text-green-500'}`}>
                             {timeLeft}
                         </div>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="p-3 bg-gray-900/50 rounded-xl">
-                        <div className="text-xs text-gray-500 uppercase tracking-wider">Reserve</div>
-                        <div className="text-lg font-bold">
-                            {formatEther(reservePrice)} {currency}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="p-4 rounded-2xl" style={{ background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)' }}>
+                        <div className="text-xs uppercase tracking-wider font-semibold mb-1" style={{ color: isDark ? '#888' : '#888' }}>Reserve</div>
+                        <div className="text-lg font-bold" style={{ color: isDark ? '#fff' : '#111' }}>
+                            {formatEther(BigInt(auction.reservePrice))} {currency}
                         </div>
                     </div>
-                    <div className="p-3 bg-gray-900/50 rounded-xl">
-                        <div className="text-xs text-gray-500 uppercase tracking-wider">Current Bid</div>
-                        <div className={`text-lg font-bold ${hasNoBids ? 'text-gray-500' : 'text-green-400'}`}>
-                            {hasNoBids ? '—' : `${formatEther(highestBid)} ${currency}`}
+                    <div className="p-4 rounded-2xl" style={{ background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)' }}>
+                        <div className="text-xs uppercase tracking-wider font-semibold mb-1" style={{ color: isDark ? '#888' : '#888' }}>Current Bid</div>
+                        <div className={`text-lg font-bold ${hasNoBids ? 'opacity-50' : 'text-green-500'}`} style={{ color: hasNoBids ? (isDark ? '#fff' : '#111') : undefined }}>
+                            {hasNoBids ? '—' : `${formatEther(BigInt(auction.highestBid))} ${currency}`}
                         </div>
                     </div>
                 </div>
 
-                {/* Action button */}
-                {!isEnded && !settled && (
-                    <button className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold rounded-xl group-hover:from-yellow-400 group-hover:to-orange-400 transition-all">
-                        Place Bid
-                    </button>
-                )}
+                <div className="mt-auto">
+                    {!isEnded && (
+                        <button className="w-full btn-primary">
+                            Place Bid
+                        </button>
+                    )}
 
-                {isEnded && !settled && (
-                    <button className="w-full py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-500 transition-all">
-                        Settle Auction
-                    </button>
-                )}
+                    {isEnded && !auction.settled && (
+                        <button className="w-full py-3 bg-green-600 text-white font-bold rounded-[40px] hover:bg-green-500 transition-all shadow-lg hover:shadow-green-500/20">
+                            Settle Auction
+                        </button>
+                    )}
 
-                {settled && (
-                    <div className="w-full py-3 bg-gray-700 text-gray-400 font-bold rounded-xl text-center">
-                        ✅ Settled
-                    </div>
-                )}
+                    {auction.settled && (
+                        <div className="w-full py-3 bg-gray-500/20 text-gray-500 font-bold rounded-[40px] text-center border border-gray-500/20">
+                            Settled
+                        </div>
+                    )}
+                </div>
             </div>
         </Link>
     )
 }
-
-// Helper to get remaining time
-const remaining = 0 // This is just for the animation class check

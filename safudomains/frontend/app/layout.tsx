@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Providers } from './providers';
 import '@/app/globals.css';
+import Nav from '@/components/nav';
+import { MobileNav } from '@/components/mobilenav';
 
 export const metadata: Metadata = {
     title: 'SafuDomains - .safu Domain Registration',
@@ -28,7 +30,11 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body>
                 <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-                <Providers>{children}</Providers>
+                <Providers>
+                    <Nav />
+                    <MobileNav />
+                    {children}
+                </Providers>
             </body>
         </html>
     );
