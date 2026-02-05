@@ -81,6 +81,12 @@ export default function Nav() {
 
   const navLinks = [
     {
+      href: '/auctions',
+      label: '🏆 Auctions',
+      isExternal: false,
+      isNew: true,
+    },
+    {
       href: 'https://safuverse.gitbook.io/safuverse-docs/',
       label: 'Docs',
       isExternal: true,
@@ -267,18 +273,34 @@ export default function Nav() {
             <span className="whitespace-nowrap">Profile</span>
           </div>
 
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
-              style={{ color: isDark ? '#f5f5f5' : '#111' }}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.isExternal ? (
+              <a
+                key={link.label}
+                href={link.href}
+                className="font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
+                style={{ color: isDark ? '#f5f5f5' : '#111' }}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <div
+                key={link.label}
+                onClick={() => router.push(link.href)}
+                className="flex items-center gap-1 cursor-pointer font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
+                style={{ color: isDark ? '#f5f5f5' : '#111' }}
+              >
+                {link.label}
+                {link.isNew && (
+                  <span className="px-1.5 py-0.5 text-[10px] bg-yellow-500 text-black rounded-full font-bold">
+                    NEW
+                  </span>
+                )}
+              </div>
+            )
+          )}
 
           <a
             href="https://academy.safuverse.com/courses/all"
