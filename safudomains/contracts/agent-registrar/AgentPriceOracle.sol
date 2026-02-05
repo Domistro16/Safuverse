@@ -164,7 +164,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
 
     /**
      * @notice Category A: Suffix patterns
-     * @dev Matches: -agent, -bot, -ai, -llm, -gpt, -model, -tutor, -edu, -credential, -synthesia, -donna
+     * @dev Matches: -agent, -bot, -ai, -llm, -gpt, -model, -tutor, -edu, -credential, -synthesia, -donna, -molbo
      */
     function _matchesSuffixPattern(
         string calldata name
@@ -204,6 +204,9 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
 
         // Check for -donna (6 chars)
         if (len >= 6 && _endsWithIgnoreCase(b, "-donna")) return true;
+
+        // Check for -molbo (6 chars)
+        if (len >= 6 && _endsWithIgnoreCase(b, "-molbo")) return true;
 
         return false;
     }
@@ -359,7 +362,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
 
     /**
      * @notice Category D: Prefix patterns
-     * @dev Matches: agent-, bot-, ai-, llm-, gpt-, edu-, task-, swarm-, safu-agent-, donna-, sys-, fleet-
+     * @dev Matches: agent-, bot-, ai-, llm-, gpt-, edu-, task-, swarm-, safu-agent-, donna-, sys-, fleet-, molbo-
      */
     function _matchesPrefixPattern(
         string calldata name
@@ -380,6 +383,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
         if (_startsWithIgnoreCase(b, "donna-")) return true;
         if (_startsWithIgnoreCase(b, "sys-")) return true;
         if (_startsWithIgnoreCase(b, "fleet-")) return true;
+        if (_startsWithIgnoreCase(b, "molbo-")) return true;
 
         return false;
     }

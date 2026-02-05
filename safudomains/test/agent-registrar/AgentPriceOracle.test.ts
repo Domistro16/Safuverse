@@ -147,6 +147,80 @@ describe('AgentPriceOracle', () => {
             })
         })
 
+        // ============ Molbo Agent Patterns ============
+        describe('Molbo Agent Patterns', () => {
+            it('should detect molbo- prefix', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['molbo-trading-manager'])).to.equal(true)
+            })
+
+            it('should detect -molbo suffix', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['portfolio-manager-molbo'])).to.equal(true)
+            })
+
+            it('should detect molbo agent with version pattern', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['molbo-assistant-v2'])).to.equal(true)
+            })
+
+            it('should detect molbo with functional pattern', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['molbo-task-runner-main'])).to.equal(true)
+            })
+
+            it('should get agent pricing for molbo names', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                const price = await agentPriceOracle.read.getPrice(['molbo-trading-manager'])
+                expect(price.isAgentName).to.equal(true)
+                expect(price.priceUsd).to.be.greaterThanOrEqual(10000000000000000n) // $0.01
+                expect(price.priceUsd).to.be.lessThanOrEqual(100000000000000000n) // $0.10
+            })
+
+            it('should reject short molbo names (<10 chars)', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['molbo-ai'])).to.equal(false) // 8 chars
+            })
+        })
+
+        // ============ AI Agent Patterns ============
+        describe('AI Agent Patterns', () => {
+            it('should detect ai- prefix for AI agents', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['ai-dapp-builder-prod'])).to.equal(true)
+            })
+
+            it('should detect -ai suffix for AI agents', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['website-builder-ai'])).to.equal(true)
+            })
+
+            it('should detect AI agent with -agent suffix', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['ai-scanner-agent'])).to.equal(true)
+            })
+
+            it('should detect AI agent with -bot suffix', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                expect(await agentPriceOracle.read.isAgentName(['ai-replyooor-bot'])).to.equal(true)
+            })
+
+            it('should get agent pricing for AI agent names', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                const price = await agentPriceOracle.read.getPrice(['ai-dapp-builder-prod'])
+                expect(price.isAgentName).to.equal(true)
+                expect(price.priceUsd).to.be.greaterThanOrEqual(10000000000000000n) // $0.01
+                expect(price.priceUsd).to.be.lessThanOrEqual(100000000000000000n) // $0.10
+            })
+
+            it('should count multiple patterns for ai-...-agent', async () => {
+                const { agentPriceOracle } = await loadFixture(fixture)
+                // ai- prefix + -agent suffix = 2 patterns
+                const count = await agentPriceOracle.read.getPatternMatchCount(['ai-scanner-agent'])
+                expect(count).to.be.greaterThanOrEqual(2n)
+            })
+        })
+
         // ============ Negative Cases ============
         describe('Negative Cases - Should NOT be agent names', () => {
             it('should reject names shorter than 10 chars', async () => {

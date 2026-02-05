@@ -328,6 +328,202 @@ describe('AgentRegistrarController', () => {
         })
     })
 
+    describe('molbo agent registration', () => {
+        it('should register a molbo agent name without commit-reveal', async () => {
+            const { agentRegistrarController, agentPublicResolver, registrant } =
+                await loadFixture(fixture)
+
+            const name = 'molbo-trading-manager'
+            const [priceWei, , isAgentName] = await agentRegistrarController.read.rentPrice([name])
+            expect(isAgentName).to.equal(true)
+
+            const request = {
+                name,
+                owner: registrant.account.address,
+                secret: zeroHash,
+                resolver: agentPublicResolver.address,
+                data: [],
+                reverseRecord: false,
+                ownerControlledFuses: 0,
+            }
+
+            const registrantController = await hre.viem.getContractAt(
+                'AgentRegistrarController',
+                agentRegistrarController.address,
+                { client: { wallet: registrant } }
+            )
+
+            await registrantController.write.register([request, emptyReferralData, '0x'], { value: priceWei })
+            expect(await agentRegistrarController.read.available([name])).to.equal(false)
+        })
+
+        it('should register a -molbo suffix name without commit-reveal', async () => {
+            const { agentRegistrarController, agentPublicResolver, registrant } =
+                await loadFixture(fixture)
+
+            const name = 'portfolio-manager-molbo'
+            const [priceWei, , isAgentName] = await agentRegistrarController.read.rentPrice([name])
+            expect(isAgentName).to.equal(true)
+
+            const request = {
+                name,
+                owner: registrant.account.address,
+                secret: zeroHash,
+                resolver: agentPublicResolver.address,
+                data: [],
+                reverseRecord: false,
+                ownerControlledFuses: 0,
+            }
+
+            const registrantController = await hre.viem.getContractAt(
+                'AgentRegistrarController',
+                agentRegistrarController.address,
+                { client: { wallet: registrant } }
+            )
+
+            await registrantController.write.register([request, emptyReferralData, '0x'], { value: priceWei })
+            expect(await agentRegistrarController.read.available([name])).to.equal(false)
+        })
+
+        it('should batch register multiple molbo agent names', async () => {
+            const { agentRegistrarController, agentPublicResolver, registrant } =
+                await loadFixture(fixture)
+
+            const names = [
+                'molbo-scanner-agent',
+                'molbo-builder-agent',
+                'molbo-analyzer-prod',
+            ]
+
+            let totalPrice = 0n
+            const requests = []
+
+            for (const name of names) {
+                const [priceWei] = await agentRegistrarController.read.rentPrice([name])
+                totalPrice += priceWei
+                requests.push({
+                    name,
+                    owner: registrant.account.address,
+                    secret: zeroHash,
+                    resolver: agentPublicResolver.address,
+                    data: [],
+                    reverseRecord: false,
+                    ownerControlledFuses: 0,
+                })
+            }
+
+            const registrantController = await hre.viem.getContractAt(
+                'AgentRegistrarController',
+                agentRegistrarController.address,
+                { client: { wallet: registrant } }
+            )
+
+            await registrantController.write.batchRegister([requests], { value: totalPrice })
+
+            for (const name of names) {
+                expect(await agentRegistrarController.read.available([name])).to.equal(false)
+            }
+        })
+    })
+
+    describe('AI agent registration', () => {
+        it('should register an AI agent name with ai- prefix', async () => {
+            const { agentRegistrarController, agentPublicResolver, registrant } =
+                await loadFixture(fixture)
+
+            const name = 'ai-dapp-builder-prod'
+            const [priceWei, , isAgentName] = await agentRegistrarController.read.rentPrice([name])
+            expect(isAgentName).to.equal(true)
+
+            const request = {
+                name,
+                owner: registrant.account.address,
+                secret: zeroHash,
+                resolver: agentPublicResolver.address,
+                data: [],
+                reverseRecord: false,
+                ownerControlledFuses: 0,
+            }
+
+            const registrantController = await hre.viem.getContractAt(
+                'AgentRegistrarController',
+                agentRegistrarController.address,
+                { client: { wallet: registrant } }
+            )
+
+            await registrantController.write.register([request, emptyReferralData, '0x'], { value: priceWei })
+            expect(await agentRegistrarController.read.available([name])).to.equal(false)
+        })
+
+        it('should register an AI agent name with -ai suffix', async () => {
+            const { agentRegistrarController, agentPublicResolver, registrant } =
+                await loadFixture(fixture)
+
+            const name = 'website-builder-ai'
+            const [priceWei, , isAgentName] = await agentRegistrarController.read.rentPrice([name])
+            expect(isAgentName).to.equal(true)
+
+            const request = {
+                name,
+                owner: registrant.account.address,
+                secret: zeroHash,
+                resolver: agentPublicResolver.address,
+                data: [],
+                reverseRecord: false,
+                ownerControlledFuses: 0,
+            }
+
+            const registrantController = await hre.viem.getContractAt(
+                'AgentRegistrarController',
+                agentRegistrarController.address,
+                { client: { wallet: registrant } }
+            )
+
+            await registrantController.write.register([request, emptyReferralData, '0x'], { value: priceWei })
+            expect(await agentRegistrarController.read.available([name])).to.equal(false)
+        })
+
+        it('should register AI agent names in batch', async () => {
+            const { agentRegistrarController, agentPublicResolver, registrant } =
+                await loadFixture(fixture)
+
+            const names = [
+                'ai-replyooor-agent',
+                'ai-scanner-security',
+                'ai-pitch-deck-builder',
+            ]
+
+            let totalPrice = 0n
+            const requests = []
+
+            for (const name of names) {
+                const [priceWei] = await agentRegistrarController.read.rentPrice([name])
+                totalPrice += priceWei
+                requests.push({
+                    name,
+                    owner: registrant.account.address,
+                    secret: zeroHash,
+                    resolver: agentPublicResolver.address,
+                    data: [],
+                    reverseRecord: false,
+                    ownerControlledFuses: 0,
+                })
+            }
+
+            const registrantController = await hre.viem.getContractAt(
+                'AgentRegistrarController',
+                agentRegistrarController.address,
+                { client: { wallet: registrant } }
+            )
+
+            await registrantController.write.batchRegister([requests], { value: totalPrice })
+
+            for (const name of names) {
+                expect(await agentRegistrarController.read.available([name])).to.equal(false)
+            }
+        })
+    })
+
     describe('no renewals', () => {
         it('should not have a renew function', async () => {
             const { agentRegistrarController } = await loadFixture(fixture)
