@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { formatEther } from 'viem'
-import Link from 'next/link'
-import { constants } from '@/constant'
+import { AuctionCard } from '@/components/auction/AuctionCard'
 
 interface Auction {
     id: number
@@ -130,19 +128,4 @@ export default function AuctionsPage() {
             </div>
         </div>
     )
-}
-
-import { AuctionCard } from '@/components/auction/AuctionCard'
-
-interface Auction {
-    id: number
-    name: string
-    reservePrice: string
-    startTime: number
-    endTime: number
-    highestBid: string
-    highestBidder: string
-    settled: boolean
-    isUSDC: boolean
-    status: 'active' | 'ended' | 'settled'
 }
