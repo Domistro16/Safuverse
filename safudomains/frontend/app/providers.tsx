@@ -9,8 +9,8 @@ import { ApolloClient, HttpLink, InMemoryCache, ApolloProvider } from '@apollo/c
 import { ReactNode, useState, useEffect } from 'react';
 import NextTopLoader from 'nextjs-toploader';
 
-// Use Base chain for v2
-const activeChain = base; // Switch to baseSepolia for testnet
+// Use Base chain for v2 - support both Mainnet and Sepolia
+const supportedChains = [base, baseSepolia];
 
 const config = createConfig({
     chains: [base, baseSepolia],
@@ -58,7 +58,7 @@ export function Providers({ children }: { children: ReactNode }) {
                     },
                 },
                 loginMethods: ['wallet', 'email', 'google', 'twitter'],
-                supportedChains: [activeChain],
+                supportedChains: supportedChains,
             }}
         >
             <QueryClientProvider client={queryClient}>

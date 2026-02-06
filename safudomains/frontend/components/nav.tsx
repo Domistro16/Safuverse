@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useReadContract } from 'wagmi'
+import { useReadContract, useChainId } from 'wagmi'
 import { IdentificationIcon } from '@heroicons/react/outline'
 import { CustomConnect } from '@/components/connectButton'
-import { constants } from '../constant'
+import { getConstants } from '../constant'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BookOpen, X, Menu, Search } from 'lucide-react'
 
@@ -40,6 +40,9 @@ export default function Nav() {
   const [search, setSearch] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
   const [theme, setTheme] = useState('light')
+
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
 
   const { data, isPending } = useReadContract({
     address: constants.Controller,

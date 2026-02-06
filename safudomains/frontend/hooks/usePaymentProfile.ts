@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { useChainId } from 'wagmi'
 import { CHAIN_ID } from '../constant'
 
 export interface PaymentProfile {
@@ -27,8 +28,10 @@ interface UsePaymentProfileResult {
  */
 export const usePaymentProfile = (
     name: string,
-    chainId: number = CHAIN_ID
+    overrideChainId?: number
 ): UsePaymentProfileResult => {
+    const activeChainId = useChainId()
+    const chainId = overrideChainId || activeChainId || CHAIN_ID
     const [profile, setProfile] = useState<PaymentProfile | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Error | null>(null)

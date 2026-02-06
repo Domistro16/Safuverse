@@ -80,6 +80,7 @@ func.id = 'agent-registrar-controller'
 func.tags = ['agent', 'AgentRegistrarController']
 func.dependencies = [
     'BaseRegistrarImplementation',
+    'setupRegistrar',
     'AgentPriceOracle',
     'ReverseRegistrar',
     'NameWrapper',

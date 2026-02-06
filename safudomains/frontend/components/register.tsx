@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { Check, Loader2 } from 'lucide-react'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract, useChainId } from 'wagmi'
 import { useParams, useRouter } from 'next/navigation'
 import { useENSName } from '../hooks/getPrimaryName'
 import { normalize } from 'viem/ens'
-import { constants } from '../constant'
+import { getConstants } from '../constant'
 import { Controller } from '../constants/registerAbis'
 import { useRegistrationPrice } from '../hooks/useRegistrationPrice'
 import { useRegistration } from '../hooks/useRegistration'
@@ -173,6 +173,9 @@ const Register = () => {
     )
     setIsOpen(false)
   }
+
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
 
   const { data: available } = useReadContract({
     address: constants.Controller,

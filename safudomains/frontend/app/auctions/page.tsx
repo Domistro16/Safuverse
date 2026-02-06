@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useChainId } from 'wagmi'
 import { AuctionCard } from '@/components/auction/AuctionCard'
 
 interface Auction {
@@ -20,6 +21,8 @@ export default function AuctionsPage() {
     const [auctions, setAuctions] = useState<Auction[]>([])
     const [filter, setFilter] = useState<'active' | 'ended' | 'all'>('active')
     const [loading, setLoading] = useState(true)
+
+    const chainId = useChainId()
 
     // Theme state for conditional rendering if needed
     const [theme, setTheme] = useState('light')
@@ -42,9 +45,11 @@ export default function AuctionsPage() {
             try {
                 // Determine status for API based on tab
                 const statusParam = filter === 'all' ? '' : `status=${filter}`
+                const chainParam = chainId ? `&chainId=${chainId}` : ''
+
                 // Note: The actual API might need specific implementation to filter
                 // For now assuming existing structure
-                const res = await fetch(`/api/auctions?${statusParam}`)
+                const res = await fetch(`/api/auctions?${statusParam}${chainParam}`)
                 const data = await res.json()
 
                 // Client-side filter if API returns all
@@ -62,7 +67,7 @@ export default function AuctionsPage() {
             setLoading(false)
         }
         fetchAuctions()
-    }, [filter])
+    }, [filter, chainId])
 
     return (
         <div className="hero-section-wrapper min-h-screen">

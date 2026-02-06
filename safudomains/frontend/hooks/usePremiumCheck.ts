@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { useChainId } from 'wagmi'
 import { CHAIN_ID, constants } from '../constant'
 
 interface PremiumCheckResult {
@@ -22,8 +23,10 @@ export const usePremiumCheck = (name: string): PremiumCheckResult => {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Error | null>(null)
 
+    const chainId = useChainId()
+
     // Create SDK client
-    const sdk = useMemo(() => new SafuDomainsClient({ chainId: CHAIN_ID }), [])
+    const sdk = useMemo(() => new SafuDomainsClient({ chainId: chainId || CHAIN_ID }), [chainId])
 
     useEffect(() => {
         if (!name || name.length === 0) {

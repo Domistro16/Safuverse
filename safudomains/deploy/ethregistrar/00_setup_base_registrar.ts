@@ -5,7 +5,6 @@ const func: DeployFunction = async function (hre) {
   const { network, viem } = hre
 
   const { deployer, owner } = await viem.getNamedClients()
-  const publicClient = await viem.getPublicClient()
 
   if (!network.tags.use_root) {
     return true
@@ -25,9 +24,18 @@ const func: DeployFunction = async function (hre) {
   )
   await viem.waitForTransactionSuccess(transferOwnershipHash)
 
+  const publicClient = await viem.getPublicClient()
+  const nonce = await publicClient.getTransactionCount({
+    address: owner.address,
+    blockTag: 'pending',
+  })
+
   const setSubnodeOwnerHash = await root.write.setSubnodeOwner(
     [labelhash('safu'), registrar.address],
-    { account: owner.account },
+    {
+      account: owner.account,
+      nonce,
+    },
   )
   console.log(
     `Setting owner of safu node to registrar on root (tx: ${setSubnodeOwnerHash})...`,

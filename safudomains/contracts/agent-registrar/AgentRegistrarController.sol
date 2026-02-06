@@ -269,6 +269,7 @@ contract AgentRegistrarController is
         uint256 totalCost = 0;
 
         for (uint256 i = 0; i < requests.length; i++) {
+       
             totalCost += _executeRegistration(requests[i]);
         }
 

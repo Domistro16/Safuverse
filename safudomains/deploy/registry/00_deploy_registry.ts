@@ -30,10 +30,17 @@ const func: DeployFunction = async function (hre) {
       })
     }
 
-    const revertRootHash = await legacyRegistry.write.setOwner([
-      zeroHash,
-      zeroAddress,
-    ])
+    const publicClient = await viem.getPublicClient()
+    const nonce = await publicClient.getTransactionCount({
+      address: owner.address,
+      blockTag: 'pending',
+    })
+    const revertRootHash = await legacyRegistry.write.setOwner(
+      [zeroHash, zeroAddress],
+      {
+        nonce,
+      },
+    )
     console.log(`Unsetting owner of root node (tx: ${revertRootHash})`)
     await viem.waitForTransactionSuccess(revertRootHash)
 

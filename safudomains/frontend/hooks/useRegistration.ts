@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react'
-import { useWalletClient } from 'wagmi'
+import { useWalletClient, useChainId } from 'wagmi'
 import { namehash, encodeFunctionData } from 'viem'
 import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
 import { buildTextRecords } from './setText'
 import { addrResolver, ReferralData, EMPTY_REFERRAL_DATA, EMPTY_REFERRAL_SIGNATURE } from '../constants/registerAbis'
-import { constants, CHAIN_ID } from '../constant'
+import { getConstants, CHAIN_ID } from '../constant'
 import { normalize } from 'viem/ens'
 
 export const useRegistration = () => {
@@ -14,15 +14,17 @@ export const useRegistration = () => {
   const [error, setError] = useState<Error | null>(null)
 
   const { data: walletClient } = useWalletClient()
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
 
   // Create SDK client with wallet
   const sdk = useMemo(() => {
     if (!walletClient) return null
     return new SafuDomainsClient({
-      chainId: CHAIN_ID,
+      chainId: chainId || CHAIN_ID,
       walletClient: walletClient as any,
     })
-  }, [walletClient])
+  }, [walletClient, chainId])
 
   // Build resolver data for text records and address
   const buildCommitDataFn = (

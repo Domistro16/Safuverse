@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { useChainId } from 'wagmi'
 import { CHAIN_ID } from '../constant'
 
 interface UseRegistrationPriceProps {
@@ -26,10 +27,12 @@ export const useRegistrationPrice = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
+  const chainId = useChainId()
+
   // Create SDK client
   const sdk = useMemo(() => {
-    return new SafuDomainsClient({ chainId: CHAIN_ID })
-  }, [])
+    return new SafuDomainsClient({ chainId: chainId || CHAIN_ID })
+  }, [chainId])
 
   // Fetch price when label changes
   useEffect(() => {

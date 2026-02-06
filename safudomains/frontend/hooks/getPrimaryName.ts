@@ -1,5 +1,5 @@
-import { useReadContract } from 'wagmi'
-import { constants } from '../constant'
+import { useReadContract, useChainId } from 'wagmi'
+import { getConstants } from '../constant'
 import { useMemo } from 'react'
 
 interface UseENSNameProps {
@@ -70,6 +70,8 @@ const nameAbi = [
 ]
 
 export function useENSName({ owner }: UseENSNameProps) {
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
   // 1️⃣ Fetch owner address, explicitly on our client
   // 2️⃣ ReverseRegistrar.node()
   const {

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { keccak256, namehash } from 'viem'
-import { useReadContract } from 'wagmi'
-import { constants } from '../constant'
+import { useReadContract, useChainId } from 'wagmi'
+import { getConstants } from '../constant'
 import {
   availableAbi,
   isWrapped,
@@ -19,6 +19,8 @@ import { useENSName } from './getPrimaryName'
 import { zeroAddress } from 'viem'
 
 export const useResolveData = (label: string, walletAddress: `0x${string}`) => {
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
   const node = namehash(`${label}.safu`)
   const id = keccak256(label as any)
 

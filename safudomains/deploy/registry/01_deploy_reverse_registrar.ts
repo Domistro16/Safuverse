@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre) {
   const reverseRegistrarDeployment = await viem.deploy('ReverseRegistrar', [
     registry.address,
   ])
-  if (!reverseRegistrarDeployment.newlyDeployed) return
+  // if (!reverseRegistrarDeployment.newlyDeployed) return
 
   const reverseRegistrar = await viem.getContract('ReverseRegistrar')
 
@@ -57,6 +57,6 @@ const func: DeployFunction = async function (hre) {
 
 func.id = 'reverse-registrar'
 func.tags = ['ReverseRegistrar']
-func.dependencies = ['root']
+func.dependencies = ['setupRoot']
 
 export default func
