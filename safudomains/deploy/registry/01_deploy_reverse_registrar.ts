@@ -46,6 +46,19 @@ const func: DeployFunction = async function (hre) {
   )
   await viem.waitForTransactionSuccess(setReverseOwnerHash)
 
+  // Verify reverse node ownership is propagated on the RPC before proceeding.
+  // On L2s like Base Sepolia, eth_call may see stale state after a tx confirms,
+  // causing viem's pre-send simulation to revert with authorised() failure.
+  const reverseNode = namehash('reverse')
+  for (let i = 0; i < 15; i++) {
+    const reverseOwner = await registry.read.owner([reverseNode])
+    if (reverseOwner.toLowerCase() === owner.address.toLowerCase()) break
+    console.log(
+      `Waiting for .reverse node ownership to propagate (attempt ${i + 1})...`,
+    )
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+  }
+
   const setAddrOwnerHash = await registry.write.setSubnodeOwner(
     [namehash('reverse'), labelhash('addr'), reverseRegistrar.address],
     { account: owner.account },
