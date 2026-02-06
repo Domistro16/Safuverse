@@ -9,17 +9,51 @@ const func: DeployFunction = async function (hre) {
   let usd1Address: Address
 
   if (network.tags.test) {
+    const publicClient = await viem.getPublicClient()
+    const { deployer } = await viem.getNamedClients()
+
+    // Helper to wait for nonce to propagate
+    const waitForNonce = async (lastTxHash: `0x${string}`) => {
+      await viem.waitForTransactionSuccess(lastTxHash)
+      const tx = await publicClient.getTransaction({ hash: lastTxHash })
+      const expectedNextNonce = BigInt(tx.nonce) + 1n
+      for (let i = 0; i < 15; i++) {
+        const currentNonce = BigInt(
+          await publicClient.getTransactionCount({
+            address: deployer.address as Address,
+          }),
+        )
+        if (currentNonce >= expectedNextNonce) break
+        console.log(
+          `Waiting for nonce to propagate (current: ${currentNonce}, expected: ${expectedNextNonce}, attempt ${i + 1
+          })...`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
+    }
+
     // Deploy DummyOracle instances for test networks (baseSepolia, testnet, etc.)
     // ETH/USD price: $2500 (8 decimals)
     const dummyUsdOracle = await viem.deploy('DummyOracle', [250000000000n])
+    if (dummyUsdOracle.transactionHash) {
+      await waitForNonce(dummyUsdOracle.transactionHash)
+    }
+
     // CAKE/USD price: $2.50 (8 decimals)
     const dummyCakeOracle = await viem.deploy('DummyCakeOracle', [250000000n], {
       artifact: await hre.deployments.getArtifact('DummyOracle'),
     })
+    if (dummyCakeOracle.transactionHash) {
+      await waitForNonce(dummyCakeOracle.transactionHash)
+    }
+
     // USD1/USD price: $1.00 (8 decimals)
     const dummyUsd1Oracle = await viem.deploy('DummyUsd1Oracle', [100000000n], {
       artifact: await hre.deployments.getArtifact('DummyOracle'),
     })
+    if (dummyUsd1Oracle.transactionHash) {
+      await waitForNonce(dummyUsd1Oracle.transactionHash)
+    }
 
     oracleAddress = dummyUsdOracle.address as Address
     cakeAddress = dummyCakeOracle.address as Address
@@ -41,8 +75,8 @@ const func: DeployFunction = async function (hre) {
   ])
 }
 
-func.id = 'price-oracle'
-func.tags = ['ethregistrar', 'TokenPriceOracle', 'DummyOracle']
-func.dependencies = ['registry']
+  func.id = 'price-oracle'
+  func.tags = ['ethregistrar', 'TokenPriceOracle', 'DummyOracle']
+  func.dependencies = ['registry']
 
-export default func
+  export default func

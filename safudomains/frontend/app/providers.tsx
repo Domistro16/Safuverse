@@ -10,12 +10,11 @@ import { ReactNode, useState, useEffect } from 'react';
 import NextTopLoader from 'nextjs-toploader';
 
 // Use Base chain for v2 - support both Mainnet and Sepolia
-const supportedChains = [base, baseSepolia];
+const supportedChains = [baseSepolia];
 
 const config = createConfig({
-    chains: [base, baseSepolia],
+    chains: [baseSepolia],
     transports: {
-        [base.id]: http(),
         [baseSepolia.id]: http(),
     },
 });

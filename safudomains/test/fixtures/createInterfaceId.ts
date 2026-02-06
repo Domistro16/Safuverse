@@ -109,8 +109,13 @@ const getSolidityReferenceInterfaceAbi = async (
   if (!buildInfo) throw new Error("Couldn't find build info for interface")
 
   const path = fullyQualifiedInterfaceName.split(':')[0]
+  // Extract short name if interfaceName is fully qualified
+  const shortName = interfaceName.includes(':')
+    ? interfaceName.split(':')[1]
+    : interfaceName
+
   const buildMetadata = JSON.parse(
-    (buildInfo.output.contracts[path][interfaceName] as any).metadata,
+    (buildInfo.output.contracts[path][shortName] as any).metadata,
   ) as CompilerInput
   const { content } = buildMetadata.sources[path]
 
@@ -118,15 +123,15 @@ const getSolidityReferenceInterfaceAbi = async (
   const cleanedContent = content.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
 
   // Find the interface declaration
-  const interfaceStart = cleanedContent.indexOf(`interface ${interfaceName}`)
+  const interfaceStart = cleanedContent.indexOf(`interface ${shortName}`)
   if (interfaceStart === -1) {
-    throw new Error(`Could not find interface ${interfaceName}`)
+    throw new Error(`Could not find interface ${shortName}`)
   }
 
   // Find the opening brace of the interface
   const openBraceIdx = cleanedContent.indexOf('{', interfaceStart)
   if (openBraceIdx === -1) {
-    throw new Error(`Could not find opening brace for interface ${interfaceName}`)
+    throw new Error(`Could not find opening brace for interface ${shortName}`)
   }
 
   // Find the matching closing brace by counting braces

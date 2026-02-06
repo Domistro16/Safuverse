@@ -18,12 +18,12 @@ export const CHAIN_CONFIGS: Record<number, ChainConfig> = {
     // Base Sepolia
     84532: {
         chainId: 84532,
-        registrar: '0x0000000000000000000000000000000000000000' as Address, // TODO: Update after deployment
-        priceOracle: '0x0000000000000000000000000000000000000000' as Address,
-        resolver: '0x0000000000000000000000000000000000000000' as Address,
-        nameWrapper: '0x0000000000000000000000000000000000000000' as Address,
-        reverseRegistrar: '0x0000000000000000000000000000000000000000' as Address,
-    },
+        registrar: '0x8329F9d40647C460714Ab216136ABFa0F6229167' as Address, // AgentRegistrarController
+        priceOracle: '0x873e1dA6B21dFfe3bb584CC96F33f23BF622Af85' as Address, // AgentPriceOracle
+        resolver: '0x523a40261D90A2f81c70cFddEA507C744F0544E0' as Address, // AgentPublicResolver
+        nameWrapper: '0x3c761Aab45d876abfD643d5DA60b7930DAc28eA1' as Address,
+        reverseRegistrar: '0xE0E1970F3b7a71fa9df52A464F933AcC54d8742c' as Address,
+    }
 }
 
 /**

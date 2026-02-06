@@ -39,7 +39,9 @@ const func: DeployFunction = async function (hre) {
   )
   await viem.waitForTransactionSuccess(addControllerHash)
 
-  const interfaceId = await getInterfaceId('INameWrapper')
+  const interfaceId = await getInterfaceId(
+    'contracts/wrapper/INameWrapper.sol:INameWrapper',
+  )
   const resolver = await registry.read.resolver([namehash('safu')])
   if (resolver === zeroAddress) {
     console.log(

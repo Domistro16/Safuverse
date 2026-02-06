@@ -20,15 +20,14 @@ const func: DeployFunction = async function (hre) {
 
     const usdc = usdcAddresses[network.name] || usdcAddresses.baseSepolia
 
-    // ReferralVerifier - may not be deployed yet, use zero address initially
-    let referralVerifier: `0x${string}` = '0x0000000000000000000000000000000000000000'
-    try {
-        const rv = await viem.getContract('ReferralVerifier', owner)
-        referralVerifier = rv.address
-        console.log(`Using ReferralVerifier at ${referralVerifier}`)
-    } catch {
-        console.log('ReferralVerifier not deployed, using zero address')
-    }
+    // Deploy ReferralVerifier
+    const referralVerifierDeployment = await viem.deploy('ReferralVerifier', [
+        owner.address,
+        baseRegistrar.address,
+        nameWrapper.address,
+    ])
+    const referralVerifier = referralVerifierDeployment.address
+    console.log(`Deployed ReferralVerifier at ${referralVerifier}`)
 
     const controllerDeployment = await viem.deploy('AgentRegistrarController', [
         baseRegistrar.address,
@@ -49,6 +48,16 @@ const func: DeployFunction = async function (hre) {
             `Transferring ownership of AgentRegistrarController to ${owner.address} (tx: ${hash})...`,
         )
         await viem.waitForTransactionSuccess(hash)
+
+        // Verify ownership is propagated on the RPC before proceeding.
+        for (let i = 0; i < 15; i++) {
+            const currentOwner = await controller.read.owner()
+            if (currentOwner.toLowerCase() === owner.address.toLowerCase()) break
+            console.log(
+                `Waiting for AgentRegistrarController ownership to propagate (attempt ${i + 1})...`,
+            )
+            await new Promise((resolve) => setTimeout(resolve, 2000))
+        }
     }
 
     // Only attempt to make controller changes on testnets

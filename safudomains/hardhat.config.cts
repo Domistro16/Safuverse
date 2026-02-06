@@ -84,7 +84,7 @@ const config = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1200,
+            runs: 200,
           },
           outputSelection: {
             '*': {
@@ -119,7 +119,7 @@ const config = {
 
           optimizer: {
             enabled: true,
-            runs: 1200,
+            runs: 200,
           },
           outputSelection: {
             '*': {

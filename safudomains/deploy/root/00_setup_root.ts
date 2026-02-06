@@ -32,6 +32,16 @@ const func: DeployFunction = async function (hre) {
         `Transferring root ownership to final owner (tx: ${transferOwnershipHash})...`,
       )
       await viem.waitForTransactionSuccess(transferOwnershipHash)
+
+      // Verify ownership is propagated on the RPC before proceeding.
+      for (let i = 0; i < 15; i++) {
+        const currentOwner = await root.read.owner()
+        if (currentOwner.toLowerCase() === owner.address.toLowerCase()) break
+        console.log(
+          `Waiting for root ownership to propagate (attempt ${i + 1})...`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
     case owner.address:
       const ownerIsRootController = await root.read.controllers([owner.address])
       if (!ownerIsRootController) {

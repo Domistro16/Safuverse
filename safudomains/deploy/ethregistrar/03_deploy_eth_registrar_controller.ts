@@ -14,26 +14,23 @@ const func: DeployFunction = async function (hre) {
     network.tags.test
       ? []
       : [
-          {
-            token: 'cake',
-            tokenAddress: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
-          },
-          {
-            token: 'usd1',
-            tokenAddress: '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d',
-          },
-        ]
+        {
+          token: 'cake',
+          tokenAddress: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+        },
+        {
+          token: 'usd1',
+          tokenAddress: '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d',
+        },
+      ]
 
   const registrar = await viem.getContract('BaseRegistrarImplementation', owner)
   const priceOracle = await viem.getContract('TokenPriceOracle', owner)
   const reverseRegistrar = await viem.getContract('ReverseRegistrar', owner)
   const nameWrapper = await viem.getContract('NameWrapper', owner)
 
-  const referralDeployment = await viem.deploy('ReferralVerifier', [
-    owner.address,
-    registrar.address,
-    nameWrapper.address,
-  ])
+  // ReferralVerifier
+  const referralVerifier = await viem.getContract('ReferralVerifier', owner)
 
   const controllerDeployment = await viem.deploy('ETHRegistrarController', [
     registrar.address,
@@ -43,7 +40,7 @@ const func: DeployFunction = async function (hre) {
     reverseRegistrar.address,
     nameWrapper.address,
     registry.address,
-    referralDeployment.address,
+    referralVerifier.address,
   ])
   if (!controllerDeployment.newlyDeployed) return
 
@@ -57,6 +54,16 @@ const func: DeployFunction = async function (hre) {
       `Transferring ownership of ETHRegistrarController to ${owner.address} (tx: ${hash})...`,
     )
     await viem.waitForTransactionSuccess(hash)
+
+    // Verify ownership is propagated on the RPC before proceeding.
+    for (let i = 0; i < 15; i++) {
+      const currentOwner = await controller.read.owner()
+      if (currentOwner.toLowerCase() === owner.address.toLowerCase()) break
+      console.log(
+        `Waiting for ETHRegistrarController ownership to propagate (attempt ${i + 1})...`,
+      )
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+    }
   }
 
   for (const token of tokenAddresses) {
@@ -117,6 +124,7 @@ func.dependencies = [
   'ReverseRegistrar',
   'NameWrapper',
   'OwnedResolver',
+  'agent-registrar-controller',
 ]
 
 export default func

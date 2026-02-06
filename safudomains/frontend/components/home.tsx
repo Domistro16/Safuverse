@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { constants } from '../constant'
 import { FaSearch } from 'react-icons/fa'
 import { FaXmark } from 'react-icons/fa6'
+import { AgentRegistrarControllerAbi as abi } from '@safuverse/safudomains-sdk'
 
 const THEME_KEY = 'safudomains-theme'
 
@@ -18,28 +19,6 @@ function getPreferredTheme() {
   }
   return 'light'
 }
-
-const abi = [
-  {
-    inputs: [
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string',
-      },
-    ],
-    name: 'available',
-    outputs: [
-      {
-        internalType: 'bool',
-        name: '',
-        type: 'bool',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-]
 
 const faqItems = [
   {
@@ -78,12 +57,14 @@ export default function Home() {
   const [open, setOpen] = useState(false)
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
 
-  const { data, isPending } = useReadContract({
+  const { data, isPending, error } = useReadContract({
     address: constants.Controller,
     functionName: 'available',
     abi: abi,
     args: [search],
   })
+
+  console.log(error)
   const searchParams = useSearchParams()
 
   const ref = searchParams?.get('ref')

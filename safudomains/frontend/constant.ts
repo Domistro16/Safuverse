@@ -60,20 +60,20 @@ export const CONSTANTS_MAINNET: ContractAddresses = {
 }
 
 export const CONSTANTS_TESTNET: ContractAddresses = {
-  // Base Sepolia Addresses (Placeholders - update with real testnet deployments)
-  Controller: '0x0000000000000000000000000000000000000000',
-  PriceOracle: '0x0000000000000000000000000000000000000000',
-  Registry: '0x0000000000000000000000000000000000000000',
-  ReverseRegistrar: '0x0000000000000000000000000000000000000000',
-  BaseRegistrar: '0x0000000000000000000000000000000000000000',
-  NameWrapper: '0x0000000000000000000000000000000000000000',
-  PublicResolver: '0x0000000000000000000000000000000000000000',
-  Referral: '0x0000000000000000000000000000000000000000',
-  PremiumRegistry: '0x0000000000000000000000000000000000000000',
-  Auction: '0x0000000000000000000000000000000000000000',
+  // Base Sepolia Addresses
+  Controller: '0x8329F9d40647C460714Ab216136ABFa0F6229167', // AgentRegistrarController
+  PriceOracle: '0x873e1dA6B21dFfe3bb584CC96F33f23BF622Af85', // AgentPriceOracle
+  Registry: '0x4DA7b74079f26B91B4b89bE8e3f7001b705Fea04', // ENSRegistry
+  ReverseRegistrar: '0xE0E1970F3b7a71fa9df52A464F933AcC54d8742c',
+  BaseRegistrar: '0x6432e8743D8d3930AFda27c3d0220CDD6f881ddd', // BaseRegistrarImplementation
+  NameWrapper: '0x3c761Aab45d876abfD643d5DA60b7930DAc28eA1',
+  PublicResolver: '0x523a40261D90A2f81c70cFddEA507C744F0544E0', // AgentPublicResolver
+  Referral: '0xf799417734fB6B02AC37FbeD019A72266F37E6a8', // ReferralVerifier
+  PremiumRegistry: '0x51D743dC9040621066004B41568F99Dc1C61f292', // PremiumNameRegistry
+  Auction: '0x70ed4CdeA920f67fF4C3f2f0628A7dDA4957c026', // SafuDomainAuction
   // USDC on Base Sepolia
   USDC: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-  BulkRenewal: '0x0000000000000000000000000000000000000000',
+  BulkRenewal: '0x0000000000000000000000000000000000000000', // TODO: Deploy if needed
   Course: '0x0000000000000000000000000000000000000000',
 }
 
@@ -83,10 +83,11 @@ export const ADDRESSES: Record<number, ContractAddresses> = {
 }
 
 // Default to Mainnet for backward compatibility
-export const constants = CONSTANTS_MAINNET
+// Default to Testnet for development
+export const constants = CONSTANTS_TESTNET
 
 // Chain Configuration
-export const CHAIN_ID = 8453 // Default / Fallback
+export const CHAIN_ID = 84532 // Default / Fallback
 export const TESTNET_CHAIN_ID = 84532
 
 export const getConstants = (chainId?: number): ContractAddresses => {
