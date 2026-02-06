@@ -24,17 +24,10 @@ const func: DeployFunction = async function (hre) {
   )
   await viem.waitForTransactionSuccess(transferOwnershipHash)
 
-  const publicClient = await viem.getPublicClient()
-  const nonce = await publicClient.getTransactionCount({
-    address: owner.address,
-    blockTag: 'pending',
-  })
-
   const setSubnodeOwnerHash = await root.write.setSubnodeOwner(
     [labelhash('safu'), registrar.address],
     {
       account: owner.account,
-      nonce,
     },
   )
   console.log(

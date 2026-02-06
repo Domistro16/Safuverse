@@ -26,6 +26,6 @@ const func: DeployFunction = async function (hre) {
 
 func.id = 'safu-owned-resolver'
 func.tags = ['resolvers', 'OwnedResolver', 'EthOwnedResolver']
-func.dependencies = ['Registry']
+func.dependencies = ['registry', 'BaseRegistrarImplementation']
 
 export default func

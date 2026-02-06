@@ -8,16 +8,21 @@ const func: DeployFunction = async function (hre) {
   const { deployer, owner } = await viem.getNamedClients()
 
   const registry = await viem.getContract('ENSRegistry', owner)
-  const tokenAddresses: any[] = [
-    {
-      token: 'cake',
-      tokenAddress: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
-    },
-    {
-      token: 'usd1',
-      tokenAddress: '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d',
-    },
-  ]
+
+  // BSC mainnet token addresses - only used on non-test networks
+  const tokenAddresses: { token: string; tokenAddress: string }[] =
+    network.tags.test
+      ? []
+      : [
+          {
+            token: 'cake',
+            tokenAddress: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+          },
+          {
+            token: 'usd1',
+            tokenAddress: '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d',
+          },
+        ]
 
   const registrar = await viem.getContract('BaseRegistrarImplementation', owner)
   const priceOracle = await viem.getContract('TokenPriceOracle', owner)
@@ -56,7 +61,7 @@ const func: DeployFunction = async function (hre) {
 
   for (const token of tokenAddresses) {
     const hash = await controller.write.setToken([token, token.tokenAddress])
-    console.log(`Adding ${token} to ETHRegistrarController`)
+    console.log(`Adding ${token.token} to ETHRegistrarController (tx: ${hash})`)
     await viem.waitForTransactionSuccess(hash)
   }
 

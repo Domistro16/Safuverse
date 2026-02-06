@@ -33,6 +33,7 @@ const func: DeployFunction = async function (hre) {
   console.log(
     `Setting owner as controller on backend (tx: ${setControllerHash})...`,
   )
+  await viem.waitForTransactionSuccess(setControllerHash)
 
   const root = await viem.getContract('Root')
 
