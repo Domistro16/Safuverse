@@ -14,11 +14,19 @@ import {ReverseClaimer} from "../reverseRegistrar/ReverseClaimer.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReferralVerifier} from "../ethregistrar/ReferralVerifier.sol";
+
+// ERC-4337 Account Factory interface
+interface IAccountFactory {
+    function createAccount(address owner, uint256 salt) external returns (address);
+    function getAddress(address owner, uint256 salt) external view returns (address);
+}
 
 // Custom errors
 error CommitmentTooNew(bytes32 commitment);
@@ -27,19 +35,31 @@ error NameNotAvailable(string name);
 error ResolverRequiredWhenDataSupplied();
 error UnexpiredCommitmentExists(bytes32 commitment);
 error InsufficientValue();
+error InsufficientUSDC();
 error InvalidName(string name);
 error BatchTooLarge(uint256 count);
+error BatchOnlyForAgentNames(string name);
 
 /**
  * @title AgentRegistrarController
  * @notice Agent-first domain registration controller with lifetime-only pricing
- * @dev No renewal functions - all registrations are lifetime (100 years)
+ * @dev Supports USDC-only payments, ERC-4337 Account Abstraction,
+ *      Circle Paymaster for gasless transactions, and optional AA wallet deployment.
+ *      No renewal functions - all registrations are lifetime (100 years).
+ *
+ * Key Features:
+ * - ETH and USDC payments
+ * - EIP-2612 permit for gasless USDC approval
+ * - ERC-4337 Account Abstraction compatible
+ * - Optional AA wallet deployment with domain mint
+ * - Works with Circle Paymaster for gas sponsorship
  */
 contract AgentRegistrarController is
     IAgentRegistrar,
     Ownable,
     IERC165,
-    ReverseClaimer
+    ReverseClaimer,
+    ReentrancyGuard
 {
     using StringUtils for *;
     using Address for address;
@@ -84,6 +104,18 @@ contract AgentRegistrarController is
     /// @notice Total number of names minted
     uint256 public totalMints;
 
+    /// @notice Account factory for deploying AA wallets
+    IAccountFactory public accountFactory;
+
+    /// @notice Treasury address for USDC payments
+    address public treasury;
+
+    /// @notice Total USDC volume processed (6 decimals)
+    uint256 public totalVolumeUSDC;
+
+    /// @notice Total agent-specific registrations
+    uint256 public totalAgentRegistrations;
+
     // ============ Events ============
 
     event CommitmentMade(bytes32 indexed commitment, address indexed sender);
@@ -108,6 +140,7 @@ contract AgentRegistrarController is
         usdc = _usdc;
         referralVerifier = _referralVerifier;
         agentModeEnabled = true; // Enable agent mode by default
+        treasury = msg.sender; // Default treasury to deployer
     }
 
     // ============ Admin Functions ============
@@ -145,6 +178,20 @@ contract AgentRegistrarController is
         referralVerifier = ReferralVerifier(payable(_verifier));
     }
 
+    /**
+     * @notice Set the account factory for AA wallet deployment
+     */
+    function setAccountFactory(address _factory) external onlyOwner {
+        accountFactory = IAccountFactory(_factory);
+    }
+
+    /**
+     * @notice Set the treasury address for USDC payments
+     */
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+    }
+
     // ============ External View Functions ============
 
     /**
@@ -165,7 +212,7 @@ contract AgentRegistrarController is
     }
 
     /**
-     * @notice Get the rent price for a name
+     * @notice Get the rent price for a name (ETH + USD)
      */
     function rentPrice(
         string calldata name
@@ -176,6 +223,29 @@ contract AgentRegistrarController is
     {
         IAgentPriceOracle.AgentPrice memory price = prices.getPrice(name);
         return (price.priceWei, price.priceUsd, price.isAgentName);
+    }
+
+    /**
+     * @inheritdoc IAgentRegistrar
+     */
+    function getPrice(
+        string calldata name
+    ) external view override returns (uint256 priceUSDC, bool isAgentName) {
+        IAgentPriceOracle.AgentPrice memory price = prices.getPrice(name);
+        // Convert from 18 decimals to 6 decimals (USDC)
+        priceUSDC = price.priceUsd / 1e12;
+        isAgentName = price.isAgentName;
+    }
+
+    /**
+     * @inheritdoc IAgentRegistrar
+     */
+    function getWalletAddress(
+        address owner,
+        uint256 salt
+    ) external view override returns (address) {
+        require(address(accountFactory) != address(0), "No account factory");
+        return accountFactory.getAddress(owner, salt);
     }
 
     /**
@@ -242,18 +312,131 @@ contract AgentRegistrarController is
     /**
      * @inheritdoc IAgentRegistrar
      */
-    function registerWithUSDC(RegisterRequest calldata req) external override {
+    function registerWithUSDC(
+        RegisterRequest calldata req
+    ) external override nonReentrant {
         IAgentPriceOracle.AgentPrice memory price = prices.getPrice(req.name);
 
         // USDC has 6 decimals, priceUsd has 18 decimals
         uint256 usdcAmount = price.priceUsd / 1e12;
 
-        // Transfer USDC from sender
-        usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+        // Transfer USDC to treasury (or contract if no treasury set)
+        address recipient = treasury != address(0) ? treasury : address(this);
+        usdc.safeTransferFrom(msg.sender, recipient, usdcAmount);
 
         _executeRegistrationInternal(req, price.isAgentName);
 
+        // Deploy AA wallet if requested
+        if (req.deployWallet && address(accountFactory) != address(0)) {
+            _deployAgentWallet(req.owner, req.walletSalt, req.name);
+        }
+
+        // Update USDC stats
+        totalVolumeUSDC += usdcAmount;
+        if (price.isAgentName) {
+            totalAgentRegistrations++;
+        }
+
         totalMints++;
+    }
+
+    /**
+     * @inheritdoc IAgentRegistrar
+     */
+    function registerWithPermit(
+        RegisterRequest calldata req,
+        PermitData calldata permit
+    ) external override nonReentrant {
+        IAgentPriceOracle.AgentPrice memory price = prices.getPrice(req.name);
+        uint256 usdcAmount = price.priceUsd / 1e12;
+
+        // Execute permit (gasless USDC approval)
+        try IERC20Permit(address(usdc)).permit(
+            msg.sender,
+            address(this),
+            usdcAmount,
+            permit.deadline,
+            permit.v,
+            permit.r,
+            permit.s
+        ) {} catch {
+            // Permit might already be used or pre-approved
+        }
+
+        // Transfer USDC to treasury (or contract if no treasury set)
+        address recipient = treasury != address(0) ? treasury : address(this);
+        usdc.safeTransferFrom(msg.sender, recipient, usdcAmount);
+
+        _executeRegistrationInternal(req, price.isAgentName);
+
+        // Deploy AA wallet if requested
+        if (req.deployWallet && address(accountFactory) != address(0)) {
+            _deployAgentWallet(req.owner, req.walletSalt, req.name);
+        }
+
+        // Update USDC stats
+        totalVolumeUSDC += usdcAmount;
+        if (price.isAgentName) {
+            totalAgentRegistrations++;
+        }
+
+        totalMints++;
+    }
+
+    /**
+     * @inheritdoc IAgentRegistrar
+     */
+    function batchRegisterWithUSDC(
+        RegisterRequest[] calldata requests
+    ) external override nonReentrant {
+        if (requests.length > MAX_BATCH_SIZE) {
+            revert BatchTooLarge(requests.length);
+        }
+
+        uint256 totalCost = 0;
+
+        // Calculate total and validate all are agent names
+        for (uint256 i = 0; i < requests.length; i++) {
+            IAgentPriceOracle.AgentPrice memory price = prices.getPrice(
+                requests[i].name
+            );
+            if (!price.isAgentName) {
+                revert BatchOnlyForAgentNames(requests[i].name);
+            }
+            totalCost += price.priceUsd / 1e12;
+        }
+
+        // Transfer total USDC upfront
+        address recipient = treasury != address(0) ? treasury : address(this);
+        usdc.safeTransferFrom(msg.sender, recipient, totalCost);
+
+        // Execute registrations
+        for (uint256 i = 0; i < requests.length; i++) {
+            IAgentPriceOracle.AgentPrice memory price = prices.getPrice(
+                requests[i].name
+            );
+
+            _executeRegistrationInternal(requests[i], price.isAgentName);
+
+            // Deploy AA wallet if requested
+            if (
+                requests[i].deployWallet &&
+                address(accountFactory) != address(0)
+            ) {
+                _deployAgentWallet(
+                    requests[i].owner,
+                    requests[i].walletSalt,
+                    requests[i].name
+                );
+            }
+
+            totalAgentRegistrations++;
+        }
+
+        totalVolumeUSDC += totalCost;
+        totalMints += requests.length;
+
+        emit BatchRegistered(requests.length, msg.sender, totalCost);
     }
 
     /**
@@ -299,6 +482,18 @@ contract AgentRegistrarController is
     // ============ Internal Functions ============
 
     /**
+     * @notice Deploy an AA wallet for an agent via the account factory
+     */
+    function _deployAgentWallet(
+        address owner,
+        uint256 salt,
+        string calldata domainName
+    ) internal returns (address wallet) {
+        wallet = accountFactory.createAccount(owner, salt);
+        emit AgentWalletDeployed(owner, wallet, domainName);
+    }
+
+    /**
      * @notice Execute a single registration with ETH payment
      */
     function _executeRegistration(
@@ -308,6 +503,11 @@ contract AgentRegistrarController is
         cost = price.priceWei;
 
         _executeRegistrationInternal(req, price.isAgentName);
+
+        // Deploy AA wallet if requested
+        if (req.deployWallet && address(accountFactory) != address(0)) {
+            _deployAgentWallet(req.owner, req.walletSalt, req.name);
+        }
 
         return cost;
     }

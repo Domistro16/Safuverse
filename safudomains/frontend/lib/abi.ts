@@ -25,7 +25,8 @@ export const ResolverABI = [
     },
 ] as const
 
-// ============ AgentRegistrarControllerV2 (USDC + ERC-4337) ============
+// ============ AgentRegistrarController AA-specific ABI (USDC + ERC-4337 subset) ============
+// Used by API routes that only need the AA registration functions
 export const AgentRegistrarControllerV2ABI = [
     {
         inputs: [
@@ -206,7 +207,7 @@ export const AgentPriceOracleABI = [
     },
 ] as const
 
-// ============ AgentRegistrarController ============
+// ============ AgentRegistrarController (with AA + USDC support) ============
 export const AgentRegistrarControllerABI = [
     {
         inputs: [
@@ -219,6 +220,8 @@ export const AgentRegistrarControllerABI = [
                     { name: 'data', type: 'bytes[]' },
                     { name: 'reverseRecord', type: 'bool' },
                     { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
                 ],
                 name: 'request',
                 type: 'tuple',
@@ -253,6 +256,64 @@ export const AgentRegistrarControllerABI = [
                     { name: 'data', type: 'bytes[]' },
                     { name: 'reverseRecord', type: 'bool' },
                     { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
+                ],
+                name: 'req',
+                type: 'tuple',
+            },
+        ],
+        name: 'registerWithUSDC',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
+                ],
+                name: 'req',
+                type: 'tuple',
+            },
+            {
+                components: [
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'v', type: 'uint8' },
+                    { name: 'r', type: 'bytes32' },
+                    { name: 's', type: 'bytes32' },
+                ],
+                name: 'permit',
+                type: 'tuple',
+            },
+        ],
+        name: 'registerWithPermit',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
                 ],
                 name: 'requests',
                 type: 'tuple[]',
@@ -264,9 +325,80 @@ export const AgentRegistrarControllerABI = [
         type: 'function',
     },
     {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
+                ],
+                name: 'requests',
+                type: 'tuple[]',
+            },
+        ],
+        name: 'batchRegisterWithUSDC',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
         inputs: [{ name: 'name', type: 'string' }],
         name: 'available',
         outputs: [{ type: 'bool' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'getPrice',
+        outputs: [
+            { name: 'priceUSDC', type: 'uint256' },
+            { name: 'isAgentName', type: 'bool' },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'owner', type: 'address' },
+            { name: 'salt', type: 'uint256' },
+        ],
+        name: 'getWalletAddress',
+        outputs: [{ type: 'address' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'commitment', type: 'bytes32' }],
+        name: 'commit',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [],
+        name: 'totalMints',
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [],
+        name: 'totalAgentRegistrations',
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [],
+        name: 'totalVolumeUSDC',
+        outputs: [{ type: 'uint256' }],
         stateMutability: 'view',
         type: 'function',
     },
