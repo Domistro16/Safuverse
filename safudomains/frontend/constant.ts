@@ -15,6 +15,10 @@ export interface ContractAddresses {
   USDC: `0x${string}`
   BulkRenewal: `0x${string}`
   Course: `0x${string}`
+  // V2 Account Abstraction
+  AccountFactory: `0x${string}`
+  EntryPoint: `0x${string}`
+  CirclePaymaster: `0x${string}`
 }
 
 export const CONSTANTS_MAINNET: ContractAddresses = {
@@ -57,6 +61,11 @@ export const CONSTANTS_MAINNET: ContractAddresses = {
 
   // Backward compatibility - Course contract
   Course: '0x0000000000000000000000000000000000000000',
+
+  // V2 Account Abstraction
+  AccountFactory: '0x0000000000000000000000000000000000000000',
+  EntryPoint: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
+  CirclePaymaster: '0x0000000000000000000000000000000000000000',
 }
 
 export const CONSTANTS_TESTNET: ContractAddresses = {
@@ -75,6 +84,11 @@ export const CONSTANTS_TESTNET: ContractAddresses = {
   USDC: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
   BulkRenewal: '0x0000000000000000000000000000000000000000', // TODO: Deploy if needed
   Course: '0x0000000000000000000000000000000000000000',
+
+  // V2 Account Abstraction
+  AccountFactory: '0x0000000000000000000000000000000000000000', // TODO: Deploy
+  EntryPoint: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
+  CirclePaymaster: '0x0000000000000000000000000000000000000000', // TODO: Configure
 }
 
 export const ADDRESSES: Record<number, ContractAddresses> = {
