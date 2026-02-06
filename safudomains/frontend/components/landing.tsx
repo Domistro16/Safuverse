@@ -191,6 +191,10 @@ export default function Landing() {
     setModalOpen(true)
     setSearch('')
     setModalStage('search')
+    try {
+      const r = JSON.parse(localStorage.getItem('Recent') as string)
+      if (r?.length > 0) setRecents(r)
+    } catch { /* empty */ }
     setTimeout(() => modalInputRef.current?.focus(), 100)
   }
 
@@ -367,20 +371,67 @@ export default function Landing() {
                   />
                   <span className="landing-modal-suffix">.safu</span>
                 </div>
-                <div className="flex flex-col gap-2 min-h-[40px] items-center">
-                  {search.length >= 2 && available === 'Available' && (
-                    <div className="landing-status-msg avail visible">
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span>Available</span>
+
+                {/* Recent searches */}
+                {recents.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-[13px] text-gray-400 mb-2 text-left">Recent searches</p>
+                    <div className="flex flex-wrap gap-2">
+                      {recents.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all bg-gray-100 hover:bg-gray-200 text-sm text-black"
+                          onClick={() => setSearch(item)}
+                        >
+                          {item}.safu
+                          <X
+                            className="w-3.5 h-3.5 opacity-50 hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeRecent(item)
+                            }}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  {search.length >= 2 && available === 'Registered' && (
-                    <div className="landing-status-msg taken visible">
-                      <XCircle className="w-5 h-5" />
-                      <span>Taken</span>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Search result card */}
+                {search.length >= 2 && (
+                  <div
+                    className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200 mb-4 cursor-pointer transition-all hover:bg-gray-100"
+                    onClick={handleRoute}
+                  >
+                    <span className="font-semibold text-black">{search}.safu</span>
+                    {available === 'Loading...' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-gray-300 text-white font-semibold flex items-center gap-1.5">
+                        <Loader className="w-3 h-3 animate-spin" /> Checking
+                      </span>
+                    )}
+                    {available === 'Available' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-green-500 text-white font-semibold">
+                        Available
+                      </span>
+                    )}
+                    {available === 'Registered' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-amber-500 text-white font-semibold">
+                        Registered
+                      </span>
+                    )}
+                    {available === 'Invalid' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-red-500 text-white font-semibold">
+                        Invalid
+                      </span>
+                    )}
+                    {available === 'Too Short' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-gray-400 text-white font-semibold">
+                        Too Short
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <button
                   className={`landing-claim-btn ${available === 'Available' ? 'active' : ''}`}
                   onClick={available === 'Available' ? handleRoute : undefined}
