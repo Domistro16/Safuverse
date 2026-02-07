@@ -7,7 +7,14 @@ const func: DeployFunction = async function (hre) {
     const { deployer, owner } = await viem.getNamedClients()
 
     const nameWrapper = await viem.getContract('NameWrapper', owner)
-    const resolver = await viem.getContract('PublicResolver', owner)
+
+    // Use AgentPublicResolver on Base networks, fall back to PublicResolver
+    let resolver
+    if (network.name === 'base' || network.name === 'baseSepolia') {
+        resolver = await viem.getContract('AgentPublicResolver', owner)
+    } else {
+        resolver = await viem.getContract('PublicResolver', owner)
+    }
 
     // USDC address per network
     const usdcAddresses: Record<string, `0x${string}`> = {
@@ -50,6 +57,6 @@ const func: DeployFunction = async function (hre) {
 
 func.id = 'safu-domain-auction'
 func.tags = ['auction', 'SafuDomainAuction']
-func.dependencies = ['NameWrapper', 'PublicResolver']
+func.dependencies = ['NameWrapper', 'AgentPublicResolver', 'PublicResolver']
 
 export default func

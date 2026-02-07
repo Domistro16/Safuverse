@@ -8,7 +8,8 @@ const func: DeployFunction = async function (hre) {
 
   const { owner } = await viem.getNamedClients()
 
-  if (network.tags.legacy == true) {
+  // Skip on legacy networks and Base networks (archived BSC artifact not applicable)
+  if (network.tags.legacy == true || network.name === 'base' || network.name === 'baseSepolia') {
     return
   }
   const registrar = await viem.getContract('BaseRegistrarImplementation') // as owner

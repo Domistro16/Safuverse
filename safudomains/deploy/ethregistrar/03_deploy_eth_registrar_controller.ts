@@ -9,11 +9,13 @@ const func: DeployFunction = async function (hre) {
 
   const registry = await viem.getContract('ENSRegistry', owner)
 
-  // BSC mainnet token addresses - only used on non-test networks
-  const tokenAddresses: { token: string; tokenAddress: string }[] =
-    network.tags.test
-      ? []
-      : [
+  // Token addresses per network - only used on non-test networks
+  let tokenAddresses: { token: string; tokenAddress: string }[] = []
+
+  if (!network.tags.test) {
+    if (network.name === 'bsc') {
+      // BSC mainnet tokens
+      tokenAddresses = [
         {
           token: 'cake',
           tokenAddress: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
@@ -23,6 +25,9 @@ const func: DeployFunction = async function (hre) {
           tokenAddress: '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d',
         },
       ]
+    }
+    // Base mainnet: no additional tokens (uses USDC via AgentRegistrarController)
+  }
 
   const registrar = await viem.getContract('BaseRegistrarImplementation', owner)
   const priceOracle = await viem.getContract('TokenPriceOracle', owner)
@@ -67,13 +72,13 @@ const func: DeployFunction = async function (hre) {
   }
 
   for (const token of tokenAddresses) {
-    const hash = await controller.write.setToken([token, token.tokenAddress])
+    const hash = await controller.write.setToken([token.token, token.tokenAddress])
     console.log(`Adding ${token.token} to ETHRegistrarController (tx: ${hash})`)
     await viem.waitForTransactionSuccess(hash)
   }
 
   // Only attempt to make controller etc changes directly on testnets
-  if (network.name === 'mainnet') return
+  if (network.name === 'mainnet' || network.name === 'base' || network.name === 'bsc') return
   const backendHash = await controller.write.setBackend([owner.address])
   console.log(`Adding backend (tx: ${backendHash})...`)
   await viem.waitForTransactionSuccess(backendHash)
