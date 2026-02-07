@@ -1,11 +1,33 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
+import type { Address } from 'viem'
 
 const func: DeployFunction = async function (hre) {
-    const { viem } = hre
+    const { network, viem } = hre
 
     const { deployer, owner } = await viem.getNamedClients()
 
-    const priceOracleDeployment = await viem.deploy('AgentPriceOracle', [process.env.PRICE_ORACLE as `0x${string}`])
+    // Determine the Chainlink ETH/USD oracle address for the AgentPriceOracle
+    let oracleAddress: Address
+
+    if (process.env.PRICE_ORACLE) {
+        // Explicit override from environment
+        oracleAddress = process.env.PRICE_ORACLE as Address
+    } else if (network.tags.test) {
+        // On test networks, use the DummyOracle deployed by TokenPriceOracle step
+        const dummyOracle = await viem.getContract('DummyOracle')
+        oracleAddress = dummyOracle.address as Address
+        console.log(`Using DummyOracle at ${oracleAddress} for AgentPriceOracle`)
+    } else if (network.name === 'base') {
+        // Base mainnet Chainlink ETH/USD feed
+        oracleAddress = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70'
+    } else {
+        // BSC mainnet Chainlink ETH/USD feed (fallback)
+        oracleAddress = '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE'
+    }
+
+    console.log(`Deploying AgentPriceOracle with oracle: ${oracleAddress}`)
+
+    const priceOracleDeployment = await viem.deploy('AgentPriceOracle', [oracleAddress])
     if (!priceOracleDeployment.newlyDeployed) return
 
     const priceOracle = await viem.getContract('AgentPriceOracle')
@@ -24,6 +46,6 @@ const func: DeployFunction = async function (hre) {
 
 func.id = 'agent-price-oracle'
 func.tags = ['agent', 'AgentPriceOracle']
-func.dependencies = []
+func.dependencies = ['TokenPriceOracle']
 
 export default func
