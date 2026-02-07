@@ -294,10 +294,34 @@ export const AgentPublicResolverAbi = [
         type: 'function',
     },
     {
-        inputs: [{ name: 'node', type: 'bytes32' }],
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'key', type: 'string' },
+        ],
         name: 'text',
         outputs: [{ name: '', type: 'string' }],
         stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'addr', type: 'address' },
+        ],
+        name: 'setAddr',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'node', type: 'bytes32' },
+            { name: 'key', type: 'string' },
+            { name: 'value', type: 'string' },
+        ],
+        name: 'setText',
+        outputs: [],
+        stateMutability: 'nonpayable',
         type: 'function',
     },
 ] as const
@@ -307,6 +331,77 @@ export const NameWrapperAbi = [
     {
         inputs: [{ name: 'id', type: 'uint256' }],
         name: 'ownerOf',
+        outputs: [{ name: '', type: 'address' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+] as const
+
+// ============ AgentAccountFactory ABI ============
+export const AgentAccountFactoryAbi = [
+    {
+        inputs: [
+            { name: 'owner', type: 'address' },
+            { name: 'salt', type: 'uint256' },
+        ],
+        name: 'getAddress',
+        outputs: [{ name: '', type: 'address' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'owner', type: 'address' },
+            { name: 'salt', type: 'uint256' },
+        ],
+        name: 'createAccount',
+        outputs: [{ name: '', type: 'address' }],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+] as const
+
+// ============ EntryPoint ABI (v0.6) ============
+export const EntryPointAbi = [
+    {
+        inputs: [
+            { name: 'sender', type: 'address' },
+            { name: 'key', type: 'uint192' },
+        ],
+        name: 'getNonce',
+        outputs: [{ name: '', type: 'uint256' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+] as const
+
+// ============ SimpleAgentAccount ABI ============
+export const SimpleAgentAccountAbi = [
+    {
+        inputs: [
+            { name: 'dest', type: 'address' },
+            { name: 'value', type: 'uint256' },
+            { name: 'func', type: 'bytes' },
+        ],
+        name: 'execute',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'dest', type: 'address[]' },
+            { name: 'value', type: 'uint256[]' },
+            { name: 'func', type: 'bytes[]' },
+        ],
+        name: 'executeBatch',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [],
+        name: 'owner',
         outputs: [{ name: '', type: 'address' }],
         stateMutability: 'view',
         type: 'function',

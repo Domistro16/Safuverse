@@ -69,24 +69,24 @@ export const CONSTANTS_MAINNET: ContractAddresses = {
 }
 
 export const CONSTANTS_TESTNET: ContractAddresses = {
-  // Base Sepolia Addresses
-  Controller: '0x8329F9d40647C460714Ab216136ABFa0F6229167', // AgentRegistrarController
-  PriceOracle: '0x873e1dA6B21dFfe3bb584CC96F33f23BF622Af85', // AgentPriceOracle
-  Registry: '0x4DA7b74079f26B91B4b89bE8e3f7001b705Fea04', // ENSRegistry
-  ReverseRegistrar: '0xE0E1970F3b7a71fa9df52A464F933AcC54d8742c',
-  BaseRegistrar: '0x6432e8743D8d3930AFda27c3d0220CDD6f881ddd', // BaseRegistrarImplementation
-  NameWrapper: '0x3c761Aab45d876abfD643d5DA60b7930DAc28eA1',
-  PublicResolver: '0x523a40261D90A2f81c70cFddEA507C744F0544E0', // AgentPublicResolver
-  Referral: '0xf799417734fB6B02AC37FbeD019A72266F37E6a8', // ReferralVerifier
-  PremiumRegistry: '0x51D743dC9040621066004B41568F99Dc1C61f292', // PremiumNameRegistry
-  Auction: '0x70ed4CdeA920f67fF4C3f2f0628A7dDA4957c026', // SafuDomainAuction
+  // Base Sepolia Addresses (from deployments/baseSepolia)
+  Controller: '0xC4562C6F436a9aCcb739dc972aF8745e74b97462', // AgentRegistrarController
+  PriceOracle: '0x1137b3608a547C1d52bD2fb30644b561Bf374cd6', // AgentPriceOracle
+  Registry: '0x60b5c974D939C56A0b02EAaC197F57e0B3cf937b', // ENSRegistry
+  ReverseRegistrar: '0x6516d242117CE3Be817aeBF39e7e3A044F62D81C',
+  BaseRegistrar: '0xA0F3fF5eA4aA93e9C6247A7A09AFde9d0B7353C2', // BaseRegistrarImplementation
+  NameWrapper: '0x1300B1efc8E6D265B2482545379c86815Bc6f0A1',
+  PublicResolver: '0x2d35a4158b7f4c2AcAb1B6e200839f6f4b999107', // AgentPublicResolver
+  Referral: '0x28bC9c78C16d245B0ccbE91C6Fee1E9b70957049', // ReferralVerifier
+  PremiumRegistry: '0x7AFc4332ECd5F15fDF7c6Cd6BD7b6E4F316C10a0', // PremiumNameRegistry
+  Auction: '0x865e0eF8518cC426DF63129Cf9BC3fe575F79454', // SafuDomainAuction
   // USDC on Base Sepolia
   USDC: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-  BulkRenewal: '0x0000000000000000000000000000000000000000', // TODO: Deploy if needed
+  BulkRenewal: '0x3F9225F77611F32903b92AAA0CF3127e728a3B0C', // StaticBulkRenewal
   Course: '0x0000000000000000000000000000000000000000',
 
   // V2 Account Abstraction
-  AccountFactory: '0x0000000000000000000000000000000000000000', // TODO: Deploy
+  AccountFactory: '0x824a384F5638681D6b2c01621E931BA130DFf5A4', // AgentAccountFactory
   EntryPoint: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
   CirclePaymaster: '0x0000000000000000000000000000000000000000', // TODO: Configure
 }
