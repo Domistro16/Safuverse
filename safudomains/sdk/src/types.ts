@@ -9,6 +9,15 @@ export interface ChainConfig {
     resolver: Address
     nameWrapper: Address
     reverseRegistrar: Address
+    registry: Address
+    baseRegistrar: Address
+    referralVerifier: Address
+    premiumRegistry: Address
+    auction: Address
+    bulkRenewal: Address
+    accountFactory: Address
+    usdc: Address
+    entryPoint: Address
 }
 
 // ============ Pricing Types ============
@@ -52,6 +61,10 @@ export interface RegisterOptions {
     ownerControlledFuses?: number
     /** Referral data */
     referral?: ReferralData
+    /** Referral signature */
+    referralSignature?: Hex
+    /** Text records to set (key-value pairs) */
+    textRecords?: Record<string, string>
 }
 
 export interface ReferralData {
@@ -61,6 +74,53 @@ export interface ReferralData {
     referrerCodeHash: Hash
     deadline: bigint
     nonce: Hash
+}
+
+// ============ Relay Registration Types ============
+
+export interface RelayOptions {
+    /** Deploy an AA wallet for the agent */
+    deployWallet?: boolean
+    /** Salt for deterministic wallet address */
+    walletSalt?: number
+    /** Text records to set */
+    textRecords?: Record<string, string>
+    /** EIP-2612 permit signature for USDC */
+    permit?: PermitSignature
+    /** UserOp signature from owner (if omitted, returns unsigned UserOp) */
+    signature?: Hex
+}
+
+export interface PermitSignature {
+    deadline: number
+    v: number
+    r: Hex
+    s: Hex
+}
+
+// ============ UserOperation Types (ERC-4337) ============
+
+export interface UserOperation {
+    sender: Address
+    nonce: Hex
+    initCode: Hex
+    callData: Hex
+    callGasLimit: Hex
+    verificationGasLimit: Hex
+    preVerificationGas: Hex
+    maxFeePerGas: Hex
+    maxPriorityFeePerGas: Hex
+    paymasterAndData: Hex
+    signature: Hex
+}
+
+export interface BuildUserOpOptions {
+    /** Deploy an AA wallet */
+    deployWallet?: boolean
+    /** Salt for deterministic wallet */
+    walletSalt?: number
+    /** Text records to set */
+    textRecords?: Record<string, string>
 }
 
 // ============ x402 / ERC-8004 Types ============
@@ -93,6 +153,164 @@ export interface FullPaymentProfile {
     paymentLimits: PaymentLimits
 }
 
+// ============ Premium / Auction Types ============
+
+export interface PremiumInfo {
+    name: string
+    isPremium: boolean
+    requiresAuction: boolean
+    fixedPrice: string
+    hasActiveAuction: boolean
+}
+
+export interface AuctionInfo {
+    id: number
+    name: string
+    reservePrice: string
+    startTime: number
+    endTime: number
+    highestBid: string
+    highestBidder: Address
+    settled: boolean
+    isUSDC: boolean
+    status?: 'active' | 'ended' | 'settled'
+}
+
+// ============ Referral Types ============
+
+export interface ReferralGenerateRequest {
+    /** Referral code (domain name of referrer, without .safu) */
+    referralCode: string
+    /** Address of the person being referred */
+    registrantAddress: Address
+    /** Name being registered */
+    name: string
+}
+
+export interface ReferralGenerateResponse {
+    success: boolean
+    referralData: ReferralData
+    signature: Hex
+    error?: string
+}
+
+export interface ReferralValidateResponse {
+    code: string
+    valid: boolean
+    owner: Address | null
+    expiry: number | null
+}
+
+// ============ API Response Types ============
+
+export interface ApiPriceResponse {
+    name: string
+    available: boolean
+    priceWei: string
+    priceUsd: string
+    priceUsdFormatted: string
+    priceEthFormatted: string
+    isAgentName: boolean
+}
+
+export interface ApiRegisterResponse {
+    success: boolean
+    name: string
+    fullName: string
+    isAgentName: boolean
+    transaction: {
+        to: Address
+        data: Hex
+        value: string
+        chainId: number
+    }
+    price: {
+        wei: string
+        eth: string
+        usd: number
+    }
+    instructions: string
+}
+
+export interface ApiBatchRegisterResponse {
+    success: boolean
+    count: number
+    names: { name: string; priceWei: string; isAgentName: boolean }[]
+    transaction: {
+        to: Address
+        data: Hex
+        value: string
+        chainId: number
+    }
+    totalPrice: {
+        wei: string
+        eth: string
+    }
+    instructions: string
+}
+
+export interface ApiRelayResponse {
+    success: boolean
+    /** If signature was not provided, action is 'sign_required' */
+    action?: 'sign_required'
+    /** Unsigned UserOp (returned when signature not provided) */
+    userOp?: UserOperation
+    message: string
+    priceUSDC: string
+    isAgentName: boolean
+    /** Transaction hash (returned when signature was provided) */
+    txHash?: string
+    name?: string
+    fullName?: string
+    agentWallet?: Address | null
+}
+
+export interface ApiBuildUserOpResponse {
+    success: boolean
+    name: string
+    fullName: string
+    priceUSDC: string
+    isAgentName: boolean
+    userOp: UserOperation
+    instructions: {
+        step1: string
+        step2: string
+        step3: string
+    }
+    circlePaymaster: Address
+    entryPoint: Address
+}
+
+export interface ApiAutonomousResponse {
+    success: boolean
+    userOpHash: string
+    message: string
+}
+
+export interface ApiConfigurePaymentResponse {
+    success: boolean
+    name: string
+    fullName: string
+    transactions: {
+        description: string
+        to: Address
+        data: Hex
+        value: string
+    }[]
+    chainId: number
+    instructions: string
+}
+
+export interface ApiPaymentProfileResponse {
+    name: string
+    paymentAddress: Address
+    supportedChains: number[]
+    acceptedTokens: Address[]
+    limits: PaymentLimits
+    metadata: string
+    x402Endpoint: string
+}
+
 // ============ SDK Configuration ============
 
 export interface SafuDomainsConfig {
@@ -104,4 +322,6 @@ export interface SafuDomainsConfig {
     publicClient?: any
     /** Custom contract addresses (optional) */
     contracts?: Partial<ChainConfig>
+    /** Base URL for API calls (e.g., 'https://safudomains.com' or 'http://localhost:3000') */
+    apiBaseUrl?: string
 }
