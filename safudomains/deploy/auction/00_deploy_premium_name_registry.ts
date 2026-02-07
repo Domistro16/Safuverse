@@ -1,7 +1,9 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
+import { createNonceWaiter } from '../utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
     const { viem } = hre
+    const waitNonce = createNonceWaiter(viem)
 
     const { deployer, owner } = await viem.getNamedClients()
 
@@ -16,7 +18,7 @@ const func: DeployFunction = async function (hre) {
         console.log(
             `Transferring ownership of PremiumNameRegistry to ${owner.address} (tx: ${hash})...`,
         )
-        await viem.waitForTransactionSuccess(hash)
+        await waitNonce(hash)
     }
 
     // Add initial premium names

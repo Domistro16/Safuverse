@@ -1,9 +1,11 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
 import { namehash, zeroAddress } from 'viem'
 import { createInterfaceId } from '../../test/fixtures/createInterfaceId.js'
+import { createNonceWaiter } from '../utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
   const { deployments, network, viem } = hre
+  const waitNonce = createNonceWaiter(viem)
 
   const { deployer, owner } = await viem.getNamedClients()
 
@@ -58,7 +60,7 @@ const func: DeployFunction = async function (hre) {
     console.log(
       `Transferring ownership of ETHRegistrarController to ${owner.address} (tx: ${hash})...`,
     )
-    await viem.waitForTransactionSuccess(hash)
+    await waitNonce(hash)
 
     // Verify ownership is propagated on the RPC before proceeding.
     for (let i = 0; i < 15; i++) {
@@ -74,14 +76,14 @@ const func: DeployFunction = async function (hre) {
   for (const token of tokenAddresses) {
     const hash = await controller.write.setToken([token.token, token.tokenAddress])
     console.log(`Adding ${token.token} to ETHRegistrarController (tx: ${hash})`)
-    await viem.waitForTransactionSuccess(hash)
+    await waitNonce(hash)
   }
 
   // Only attempt to make controller etc changes directly on testnets
   if (network.name === 'mainnet' || network.name === 'base' || network.name === 'bsc') return
   const backendHash = await controller.write.setBackend([owner.address])
   console.log(`Adding backend (tx: ${backendHash})...`)
-  await viem.waitForTransactionSuccess(backendHash)
+  await waitNonce(backendHash)
   const nameWrapperSetControllerHash = await nameWrapper.write.setController([
     controller.address,
     true,
@@ -89,14 +91,14 @@ const func: DeployFunction = async function (hre) {
   console.log(
     `Adding ETHRegistrarController as a controller of NameWrapper (tx: ${nameWrapperSetControllerHash})...`,
   )
-  await viem.waitForTransactionSuccess(nameWrapperSetControllerHash)
+  await waitNonce(nameWrapperSetControllerHash)
 
   const reverseRegistrarSetControllerHash =
     await reverseRegistrar.write.setController([controller.address, true])
   console.log(
     `Adding ETHRegistrarController as a controller of ReverseRegistrar (tx: ${reverseRegistrarSetControllerHash})...`,
   )
-  await viem.waitForTransactionSuccess(reverseRegistrarSetControllerHash)
+  await waitNonce(reverseRegistrarSetControllerHash)
 
   const artifact = await deployments.getArtifact('IETHRegistrarController')
   const interfaceId = createInterfaceId(artifact.abi)

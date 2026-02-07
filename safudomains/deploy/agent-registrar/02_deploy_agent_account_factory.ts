@@ -1,7 +1,9 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
+import { createNonceWaiter } from '../utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
     const { network, viem } = hre
+    const waitNonce = createNonceWaiter(viem)
 
     const { deployer, owner } = await viem.getNamedClients()
 
@@ -11,6 +13,10 @@ const func: DeployFunction = async function (hre) {
     // Step 1: Deploy the SimpleAgentAccount implementation
     const implDeployment = await viem.deploy('SimpleAgentAccount', [])
     console.log(`SimpleAgentAccount implementation at ${implDeployment.address}`)
+
+    if (implDeployment.transactionHash) {
+        await waitNonce(implDeployment.transactionHash)
+    }
 
     // Step 2: Deploy the AgentAccountFactory
     const factoryDeployment = await viem.deploy('AgentAccountFactory', [

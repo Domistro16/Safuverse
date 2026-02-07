@@ -1,7 +1,9 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
+import { createNonceWaiter } from '../utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
     const { network, viem } = hre
+    const waitNonce = createNonceWaiter(viem)
 
     const { deployer, owner } = await viem.getNamedClients()
 
@@ -29,6 +31,10 @@ const func: DeployFunction = async function (hre) {
     const referralVerifier = referralVerifierDeployment.address
     console.log(`Deployed ReferralVerifier at ${referralVerifier}`)
 
+    if (referralVerifierDeployment.transactionHash) {
+        await waitNonce(referralVerifierDeployment.transactionHash)
+    }
+
     const controllerDeployment = await viem.deploy('AgentRegistrarController', [
         baseRegistrar.address,
         priceOracle.address,
@@ -47,7 +53,7 @@ const func: DeployFunction = async function (hre) {
         console.log(
             `Transferring ownership of AgentRegistrarController to ${owner.address} (tx: ${hash})...`,
         )
-        await viem.waitForTransactionSuccess(hash)
+        await waitNonce(hash)
 
         // Verify ownership is propagated on the RPC before proceeding.
         for (let i = 0; i < 15; i++) {
@@ -70,7 +76,7 @@ const func: DeployFunction = async function (hre) {
     console.log(
         `Adding AgentRegistrarController as controller on registrar (tx: ${addControllerHash})...`,
     )
-    await viem.waitForTransactionSuccess(addControllerHash)
+    await waitNonce(addControllerHash)
 
     // Enable agent mode by default on testnets
     const enableAgentModeHash = await controller.write.setAgentMode([true])
