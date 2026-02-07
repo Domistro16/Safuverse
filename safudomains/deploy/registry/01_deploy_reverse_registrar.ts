@@ -1,8 +1,10 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
 import { labelhash, namehash } from 'viem'
+import { createNonceWaiter } from '../utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
   const { network, viem } = hre
+  const waitNonce = createNonceWaiter(viem)
 
   const { deployer, owner } = await viem.getNamedClients()
 
@@ -20,11 +22,11 @@ const func: DeployFunction = async function (hre) {
     console.log(
       `Transferring ownership of ReverseRegistrar to ${owner.address} (tx: ${hash})...`,
     )
-    await viem.waitForTransactionSuccess(hash)
+    await waitNonce(hash)
   }
 
   // Only attempt to make controller etc changes directly on testnets
-  if (network.name === 'mainnet') return
+  if (network.name === 'mainnet' || network.name === 'base' || network.name === 'bsc') return
 
   const setControllerHash = await reverseRegistrar.write.setController(
     [owner.address, true],
@@ -33,7 +35,7 @@ const func: DeployFunction = async function (hre) {
   console.log(
     `Setting owner as controller on backend (tx: ${setControllerHash})...`,
   )
-  await viem.waitForTransactionSuccess(setControllerHash)
+  await waitNonce(setControllerHash)
 
   const root = await viem.getContract('Root')
 
@@ -44,11 +46,13 @@ const func: DeployFunction = async function (hre) {
   console.log(
     `Setting owner of .reverse to owner on root (tx: ${setReverseOwnerHash})...`,
   )
-  await viem.waitForTransactionSuccess(setReverseOwnerHash)
+  await waitNonce(setReverseOwnerHash)
 
   // Verify reverse node ownership is propagated on the RPC before proceeding.
   // On L2s like Base Sepolia, eth_call may see stale state after a tx confirms,
   // causing viem's pre-send simulation to revert with authorised() failure.
+  // This shows up as "ContractFunctionExecutionError: Missing or invalid parameters"
+  // because viem wraps the simulation revert misleadingly.
   const reverseNode = namehash('reverse')
   for (let i = 0; i < 15; i++) {
     const reverseOwner = await registry.read.owner([reverseNode])
