@@ -14,18 +14,28 @@ import {ReverseClaimer} from "../reverseRegistrar/ReverseClaimer.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import {
+    IERC20Permit
+} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReferralVerifier} from "../ethregistrar/ReferralVerifier.sol";
 
 // ERC-4337 Account Factory interface
 interface IAccountFactory {
-    function createAccount(address owner, uint256 salt) external returns (address);
-    function getAddress(address owner, uint256 salt) external view returns (address);
+    function createAccount(
+        address owner,
+        uint256 salt
+    ) external returns (address);
+    function getAddress(
+        address owner,
+        uint256 salt
+    ) external view returns (address);
 }
 
 // Custom errors
@@ -351,18 +361,19 @@ contract AgentRegistrarController is
         uint256 usdcAmount = price.priceUsd / 1e12;
 
         // Execute permit (gasless USDC approval)
-        try IERC20Permit(address(usdc)).permit(
-            msg.sender,
-            address(this),
-            usdcAmount,
-            permit.deadline,
-            permit.v,
-            permit.r,
-            permit.s
-        ) {} catch {
+        try
+            IERC20Permit(address(usdc)).permit(
+                msg.sender,
+                address(this),
+                usdcAmount,
+                permit.deadline,
+                permit.v,
+                permit.r,
+                permit.s
+            )
+        {} catch {
             // Permit might already be used or pre-approved
         }
-
         // Transfer USDC to treasury (or contract if no treasury set)
         address recipient = treasury != address(0) ? treasury : address(this);
         usdc.safeTransferFrom(msg.sender, recipient, usdcAmount);

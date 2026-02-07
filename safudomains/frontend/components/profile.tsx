@@ -7,8 +7,7 @@ import { formatEther, namehash, keccak256, toBytes } from 'viem';
 import { useAllOwnedNames } from '../hooks/getAllNames';
 import { useReferralStats } from '../hooks/useReferralStats';
 import { useENSName } from '../hooks/getPrimaryName';
-import Nav from './nav';
-import { MobileNav } from './mobilenav';
+
 import { MoreVertical, Image, Package, Settings, Star, X } from 'lucide-react';
 import { constants } from '../constant';
 import Modal from 'react-modal';
@@ -584,8 +583,7 @@ export default function Profile() {
   if (!isConnected) {
     return (
       <>
-        <Nav />
-        <MobileNav />
+
         <div className="soft-mist-bg" />
         <div className="nav-spacer" />
         <div className="profile-shell">
@@ -601,8 +599,7 @@ export default function Profile() {
 
   return (
     <>
-      <Nav />
-      <MobileNav />
+
       <div className="soft-mist-bg" />
       <div className="nav-spacer" />
 

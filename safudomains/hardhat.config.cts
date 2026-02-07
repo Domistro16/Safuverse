@@ -110,6 +110,21 @@ const config = {
           },
         },
       },
+      {
+        version: '0.8.20',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+          outputSelection: {
+            '*': {
+              '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'metadata'],
+              '': ['ast'], // Make sure AST is included
+            },
+          },
+        },
+      },
     ],
     overrides: {
       'node_modules/@uniswap/v3-periphery/**': { version: '0.7.6' },
