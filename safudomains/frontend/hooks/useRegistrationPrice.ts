@@ -1,40 +1,35 @@
 import { useState, useEffect, useMemo } from 'react'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { createPublicClient, http } from 'viem'
+import { base, baseSepolia } from 'viem/chains'
 import { useChainId } from 'wagmi'
-import { CHAIN_ID } from '../constant'
+import { getConstants, CHAIN_ID } from '../constant'
+import { AgentRegistrarControllerABI } from '../lib/abi'
 
 interface UseRegistrationPriceProps {
   label: string
-  // Backward compatibility - these are ignored in v2 (always lifetime)
-  seconds?: number
-  lifetime?: boolean
 }
 
 interface PriceResult {
-  priceWei: bigint
-  priceUsd: bigint
+  priceUSDC: bigint
   isAgentName: boolean
 }
 
 export const useRegistrationPrice = ({
   label,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  seconds,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  lifetime,
 }: UseRegistrationPriceProps) => {
   const [priceResult, setPriceResult] = useState<PriceResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
   const chainId = useChainId()
+  const constants = getConstants(chainId)
 
-  // Create SDK client
-  const sdk = useMemo(() => {
-    return new SafuDomainsClient({ chainId: chainId || CHAIN_ID })
+  const publicClient = useMemo(() => {
+    const chain = (chainId || CHAIN_ID) === 8453 ? base : baseSepolia
+    return createPublicClient({ chain, transport: http() })
   }, [chainId])
 
-  // Fetch price when label changes
+  // Fetch price from controller (returns USDC price)
   useEffect(() => {
     if (!label || label.length === 0) {
       setPriceResult(null)
@@ -45,8 +40,17 @@ export const useRegistrationPrice = ({
       setLoading(true)
       setError(null)
       try {
-        const result = await sdk.getPrice(label)
-        setPriceResult(result)
+        const result = await publicClient.readContract({
+          address: constants.Controller,
+          abi: AgentRegistrarControllerABI,
+          functionName: 'getPrice',
+          args: [label],
+        }) as [bigint, boolean]
+
+        setPriceResult({
+          priceUSDC: result[0],
+          isAgentName: result[1],
+        })
       } catch (err) {
         console.error('Error fetching price:', err)
         setError(err as Error)
@@ -57,66 +61,30 @@ export const useRegistrationPrice = ({
     }
 
     fetchPrice()
-  }, [label, sdk])
+  }, [label, publicClient, constants.Controller])
 
-  // Format price for display (bnb -> eth for Base chain)
+  // Format price for display (USDC has 6 decimals)
   const price = useMemo(() => {
     if (!priceResult) {
       return {
-        bnb: '0.0000',
+        usdc: '0.00',
         usd: '0.00',
-        usd1: '0.00',
-        cake: '0.00',
       }
     }
 
-    const ethValue = Number(priceResult.priceWei) / 1e18
-    const usdValue = Number(priceResult.priceUsd) / 1e18
+    const usdcValue = Number(priceResult.priceUSDC) / 1e6
 
     return {
-      bnb: ethValue.toFixed(4), // Using 'bnb' key for backward compat
-      usd: usdValue < 1 ? usdValue.toFixed(2) : usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      usd1: usdValue.toFixed(2), // Backward compat
-      cake: '0.00', // Not available on Base
+      usdc: usdcValue < 1 ? usdcValue.toFixed(2) : usdcValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      usd: usdcValue < 1 ? usdcValue.toFixed(2) : usdcValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     }
   }, [priceResult])
-
-  // Backward compatible 'latest' format (simulates old rentPrice return)
-  const latest = useMemo(() => {
-    if (!priceResult) return null
-    return {
-      base: priceResult.priceWei,
-      premium: 0n,
-    }
-  }, [priceResult])
-
-  // Backward compatibility - empty token data (not used on Base)
-  const usd1TokenData = useMemo(() => ({
-    base: 0n,
-    premium: 0n,
-  }), [])
-
-  const cakeTokenData = useMemo(() => ({
-    base: 0n,
-    premium: 0n,
-  }), [])
-
-  // priceData for backward compat
-  const priceData = latest
 
   return {
     price,
     loading,
-    tokenLoading: false,
-    caketokenLoading: false,
-    latest,
-    usd1TokenData,
-    cakeTokenData,
-    priceData,
-    // v2 additions
     priceResult,
     isAgentName: priceResult?.isAgentName ?? false,
     error,
-    sdk,
   }
 }
