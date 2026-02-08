@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useWalletClient, useChainId, usePublicClient } from 'wagmi'
-import { namehash, encodeFunctionData } from 'viem'
+import { namehash, encodeFunctionData, createPublicClient, http } from 'viem'
+import { base, baseSepolia } from 'viem/chains'
 import { buildTextRecords } from './setText'
 import { addrResolver, ReferralData, EMPTY_REFERRAL_DATA, EMPTY_REFERRAL_SIGNATURE, ERC20_ABI } from '../constants/registerAbis'
-import { getConstants } from '../constant'
+import { getConstants, CHAIN_ID } from '../constant'
 import { AgentRegistrarControllerABI } from '../lib/abi'
 import { normalize } from 'viem/ens'
 import { AgentRegistrarControllerAbi } from '@safuverse/safudomains-sdk'
@@ -21,9 +22,17 @@ export const useRegistration = () => {
   const [secret, setSecret] = useState<`0x${string}`>('0x0000000000000000000000000000000000000000000000000000000000000000')
 
   const { data: walletClient } = useWalletClient()
-  const publicClient = usePublicClient()
+  const wagmiPublicClient = usePublicClient()
   const chainId = useChainId()
   const constants = getConstants(chainId)
+
+  // Create a fallback public client in case wagmi's usePublicClient returns undefined
+  const fallbackPublicClient = useMemo(() => {
+    const chain = (chainId || CHAIN_ID) === 8453 ? base : baseSepolia
+    return createPublicClient({ chain, transport: http() })
+  }, [chainId])
+
+  const publicClient = wagmiPublicClient ?? fallbackPublicClient
 
   // Build resolver data for text records and address
   const buildCommitDataFn = useCallback((
@@ -116,8 +125,8 @@ export const useRegistration = () => {
     isPrimary: boolean,
     data: `0x${string}`[],
   ) => {
-    if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected')
+    if (!walletClient) {
+      throw new Error('Please connect your wallet first')
     }
 
     setIsLoading(true)
@@ -193,8 +202,8 @@ export const useRegistration = () => {
     referrer: string = '',
     data?: `0x${string}`[],
   ) => {
-    if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected')
+    if (!walletClient) {
+      throw new Error('Please connect your wallet first')
     }
 
     setIsLoading(true)
