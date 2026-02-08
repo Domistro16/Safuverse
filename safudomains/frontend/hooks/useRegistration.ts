@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useWalletClient, useChainId, usePublicClient } from 'wagmi'
+import { useChainId, usePublicClient, useConfig } from 'wagmi'
+import { getWalletClient } from '@wagmi/core'
 import { namehash, encodeFunctionData, createPublicClient, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
 import { buildTextRecords } from './setText'
@@ -21,7 +22,7 @@ export const useRegistration = () => {
   const [countdown, setCountdown] = useState(0)
   const [secret, setSecret] = useState<`0x${string}`>('0x0000000000000000000000000000000000000000000000000000000000000000')
 
-  const { data: walletClient } = useWalletClient()
+  const config = useConfig()
   const wagmiPublicClient = usePublicClient()
   const chainId = useChainId()
   const constants = getConstants(chainId)
@@ -125,15 +126,14 @@ export const useRegistration = () => {
     isPrimary: boolean,
     data: `0x${string}`[],
   ) => {
-    if (!walletClient) {
-      throw new Error('Please connect your wallet first')
-    }
-
     setIsLoading(true)
     setError(null)
     setStep('committing')
 
     try {
+      // Get wallet client at call time (reliable with Privy + wagmi)
+      const wc = await getWalletClient(config)
+
       const normalizedLabel = normalize(label)
       const commitSecret = generateSecret()
 
@@ -154,8 +154,8 @@ export const useRegistration = () => {
       })
 
       // Send commit transaction
-      const [account] = await walletClient.getAddresses()
-      const hash = await walletClient.writeContract({
+      const [account] = await wc.getAddresses()
+      const hash = await wc.writeContract({
         address: constants.Controller,
         abi: AgentRegistrarControllerAbi,
         functionName: 'commit',
@@ -192,7 +192,7 @@ export const useRegistration = () => {
       setIsLoading(false)
       throw err
     }
-  }, [walletClient, publicClient, constants, generateSecret])
+  }, [config, publicClient, constants, generateSecret])
 
   // Step 2: Approve USDC + Register with USDC
   const registerWithUSDC = useCallback(async (
@@ -202,14 +202,13 @@ export const useRegistration = () => {
     referrer: string = '',
     data?: `0x${string}`[],
   ) => {
-    if (!walletClient) {
-      throw new Error('Please connect your wallet first')
-    }
-
     setIsLoading(true)
     setError(null)
 
     try {
+      // Get wallet client at call time (reliable with Privy + wagmi)
+      const wc = await getWalletClient(config)
+
       const normalizedLabel = normalize(label)
       const resolverData = data || commitData
 
@@ -222,7 +221,7 @@ export const useRegistration = () => {
       }) as [bigint, boolean]
       const priceUSDC = priceResult[0]
 
-      const [account] = await walletClient.getAddresses()
+      const [account] = await wc.getAddresses()
 
       // Check and approve USDC allowance
       setStep('approving')
@@ -234,7 +233,7 @@ export const useRegistration = () => {
       }) as bigint
 
       if (currentAllowance < priceUSDC) {
-        const approveHash = await walletClient.writeContract({
+        const approveHash = await wc.writeContract({
           address: constants.USDC,
           abi: ERC20_ABI,
           functionName: 'approve',
@@ -259,7 +258,7 @@ export const useRegistration = () => {
 
       // Register with USDC
       setStep('registering')
-      const hash = await walletClient.writeContract({
+      const hash = await wc.writeContract({
         address: constants.Controller,
         abi: AgentRegistrarControllerABI,
         functionName: 'registerWithUSDC',
@@ -279,7 +278,7 @@ export const useRegistration = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [walletClient, publicClient, constants, commitData, secret, fetchReferralData])
+  }, [config, publicClient, constants, commitData, secret, fetchReferralData])
 
   return {
     // State
