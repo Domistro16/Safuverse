@@ -192,39 +192,7 @@ const Register = () => {
     }
   }, [available, router, label])
 
-  // Card styles
-  const cardStyle = {
-    background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.92)',
-    backdropFilter: 'saturate(180%) blur(28px)',
-    border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.06)',
-    borderRadius: '26px',
-    boxShadow: isDark ? '0 25px 50px rgba(0,0,0,0.55)' : '0 22px 55px rgba(0,0,0,0.08)',
-  }
 
-  const buttonPrimaryStyle = {
-    padding: '14px 28px',
-    background: isDark ? '#fff' : '#111',
-    color: isDark ? '#000' : '#fff',
-    border: 'none',
-    borderRadius: '40px',
-    fontSize: '16px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
-    transition: 'all 0.25s ease',
-  }
-
-  const buttonSecondaryStyle = {
-    padding: '14px 28px',
-    background: isDark ? 'transparent' : '#fff',
-    color: isDark ? '#fff' : '#111',
-    border: isDark ? '1.5px solid #fff' : '1.5px solid #111',
-    borderRadius: '40px',
-    fontSize: '16px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.25s ease',
-  }
 
   // Premium name - requires auction
   if (isPremium && requiresAuction && !premiumLoading) {
@@ -232,17 +200,17 @@ const Register = () => {
       <div className="mb-25 md:mb-0">
         <div className="hero-spacer" />
         <div className="flex flex-col mx-auto px-4 md:px-30 mt-10 lg:px-60">
-          <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '20px' }}>
             {label}.safu
           </h2>
-          <div style={{ ...cardStyle, padding: '32px' }}>
+          <div className="page-card">
             <div className="flex items-center gap-4 mb-6">
               <span className="text-4xl">🏆</span>
               <div>
-                <h3 className="text-xl font-bold" style={{ color: isDark ? '#f59e0b' : '#d97706' }}>
+                <h3 className="text-xl font-bold text-amber-500">
                   Premium Name
                 </h3>
-                <p style={{ color: isDark ? '#aaa' : '#666' }}>
+                <p className="text-muted-foreground">
                   This name is available via auction only
                 </p>
               </div>
@@ -251,8 +219,8 @@ const Register = () => {
             {hasActiveAuction ? (
               <button
                 onClick={() => router.push(`/auctions?name=${label}`)}
+                className="btn-primary"
                 style={{
-                  ...buttonPrimaryStyle,
                   background: 'linear-gradient(135deg, #f59e0b, #d97706)',
                   color: '#000',
                 }}
@@ -267,7 +235,7 @@ const Register = () => {
 
             <button
               onClick={() => router.push('/auctions')}
-              style={{ ...buttonSecondaryStyle, marginTop: '16px', display: 'block' }}
+              className="btn-secondary w-full mt-4 block"
             >
               Browse All Auctions
             </button>
@@ -282,22 +250,22 @@ const Register = () => {
       <div className="hero-spacer" />
       <div className="flex flex-col mx-auto px-4 md:px-30 mt-10 lg:px-60">
         <div>
-          <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '20px' }}>
             {label}.safu
           </h2>
 
           {next == 0 ? (
-            <div style={{ ...cardStyle, padding: '32px' }}>
-              <h1 style={{ fontSize: '20px', fontWeight: 600, color: isDark ? '#f8f8f8' : '#111', marginBottom: '24px' }}>
+            <div className="page-card">
+              <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '24px' }}>
                 Register {label}.safu
               </h1>
 
               {/* Price Display - v2 Lifetime Only */}
-              <div style={{ ...cardStyle, padding: '24px', marginBottom: '24px' }}>
+              <div className="page-card mb-6 p-6">
                 {loading ? (
                   <div className="flex items-center justify-center gap-3 py-4">
-                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
-                    <span style={{ color: isDark ? '#888' : '#666' }}>Loading price...</span>
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Loading price...</span>
                   </div>
                 ) : (
                   <AgentPriceTag
@@ -317,10 +285,10 @@ const Register = () => {
               {/* Set as Primary Name */}
               <div style={{ display: 'flex', marginTop: '24px', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600 }}>
                     Set as Primary Name
                   </h3>
-                  <p style={{ fontSize: '14px', color: isDark ? '#aaa' : '#666', marginTop: '8px', maxWidth: '400px' }}>
+                  <p className="text-muted-foreground mt-2 text-sm max-w-[400px]">
                     This links your address to this name, allowing dApps to display it as your profile when connected to them.
                   </p>
                 </div>
@@ -331,49 +299,37 @@ const Register = () => {
                     height: '48px',
                     borderRadius: '50%',
                     border: `3px solid ${isDark ? '#555' : '#ddd'}`,
-                    background: isPrimary ? '#111' : (isDark ? '#333' : '#f4f4f4'),
+                    background: isPrimary ? 'var(--foreground)' : 'var(--secondary)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s ease',
                   }}
                 >
                   <Check
+                    className="w-5 h-5 text-[var(--background)] transition-opacity duration-200 ease-in-out"
                     style={{
-                      width: '20px',
-                      height: '20px',
-                      color: '#fff',
                       opacity: isPrimary ? 1 : 0,
-                      transition: 'opacity 0.2s ease',
                     }}
                   />
                 </button>
               </div>
 
               {/* Referrer Input */}
-              <div style={{ marginTop: '24px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>Referrer (Optional)</h3>
-                <div style={{ position: 'relative', maxWidth: '70%' }}>
+              <div className="mt-6">
+                <h3 className="text-base font-semibold">Referrer (Optional)</h3>
+                <div className="relative max-w-[70%]">
                   <Input
                     value={referrer}
                     placeholder="Enter referral code (e.g., vitalik)"
+                    className="input-field mt-2 pr-10 rounded-2xl transition-colors duration-200 ease-in-out"
                     style={{
-                      marginTop: '8px',
-                      padding: '12px 16px',
-                      paddingRight: '40px',
-                      background: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
-                      border: referrer
+                      borderColor: referrer
                         ? referralValidating
-                          ? (isDark ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.2)')
+                          ? 'var(--border)'
                           : referralValid
-                            ? '1px solid #22c55e'
-                            : '1px solid #ef4444'
-                        : (isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)'),
-                      borderRadius: '14px',
-                      color: isDark ? '#fff' : '#111',
-                      width: '100%',
-                      transition: 'border-color 0.2s ease',
+                            ? '#22c55e'
+                            : '#ef4444'
+                        : 'var(--border)',
                     }}
                     type="text"
                     onChange={(e) => {
@@ -386,20 +342,14 @@ const Register = () => {
                   />
                   {referrer && (
                     <div
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        marginTop: '4px',
-                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 mt-1"
                     >
                       {referralValidating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                       ) : referralValid ? (
-                        <Check style={{ width: '18px', height: '18px', color: '#22c55e' }} />
+                        <Check className="w-[18px] h-[18px] text-[#22c55e]" />
                       ) : (
-                        <span style={{ color: '#ef4444', fontSize: '18px', fontWeight: 'bold' }}>✕</span>
+                        <span className="text-[#ef4444] text-lg font-bold">✕</span>
                       )}
                     </div>
                   )}
@@ -432,7 +382,7 @@ const Register = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '32px' }}>
                 {!isDisconnected && (
                   <button
-                    style={buttonPrimaryStyle}
+                    className="btn-primary"
                     onClick={() => setNext(1)}
                     disabled={isLoading || loading}
                   >
@@ -443,7 +393,7 @@ const Register = () => {
 
               {/* Price Summary */}
               {!loading && (
-                <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px', color: isDark ? '#888' : '#666' }}>
+                <p className="text-center mt-4 text-sm text-muted-foreground">
                   ${price.usd} • One-time payment • Lifetime ownership
                 </p>
               )}
@@ -466,15 +416,15 @@ const Register = () => {
               buildCommitData={buildCommitData}
             />
           ) : next == 2 ? (
-            <div style={{ ...cardStyle, padding: '32px', marginTop: '20px' }}>
+            <div className="page-card mt-5 p-8">
               <RegistrationSteps />
               <div style={{ marginTop: '40px' }}>
                 {/* Price Summary for v2 */}
-                <div style={{ ...cardStyle, padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#fff' : '#111' }}>
+                <div className="page-card p-5 text-center">
+                  <div style={{ fontSize: '28px', fontWeight: 700 }}>
                     ${price.usd}
                   </div>
-                  <div style={{ fontSize: '14px', color: isDark ? '#888' : '#666', marginTop: '4px' }}>
+                  <div className="text-sm text-muted-foreground mt-1">
                     {price.bnb} ETH • Lifetime Registration
                   </div>
                   {isAgentName && (
@@ -489,13 +439,13 @@ const Register = () => {
 
               <div style={{ display: 'flex', gap: '20px', marginTop: '40px', justifyContent: 'center' }}>
                 <button
-                  style={buttonSecondaryStyle}
+                  className="btn-secondary"
                   onClick={() => setNext((prev) => prev - 1)}
                 >
                   Back
                 </button>
                 <button
-                  style={buttonPrimaryStyle}
+                  className="btn-primary"
                   onClick={() => {
                     setNext((prev) => prev + 1)
                     register()
@@ -507,7 +457,7 @@ const Register = () => {
               </div>
             </div>
           ) : next == 3 ? (
-            <div style={{ ...cardStyle, padding: '40px', marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+            <div className="page-card p-10 mt-5 flex flex-col items-center gap-6">
               <RegisterDetailsModal
                 isOpen={isOpen}
                 onRequestClose={() => setNext((prev) => prev - 1)}
@@ -517,28 +467,28 @@ const Register = () => {
               />
               {registerPending ? (
                 <>
-                  <Loader2 className="w-12 h-12 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
+                  <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
                     Waiting for transaction to complete...
                   </h2>
                 </>
               ) : !registerhash ? (
                 <>
-                  <Loader2 className="w-12 h-12 animate-spin" style={{ color: isDark ? '#888' : '#666' }} />
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center', color: isDark ? '#fff' : '#111' }}>
+                  <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
                     Processing registration...
                   </h2>
                 </>
               ) : registerError ? (
                 <div style={{ textAlign: 'center' }}>
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
                     Registration Error
                   </h2>
-                  <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
+                  <p className="text-muted-foreground mb-6">
                     There was an error while registering your name.
                   </p>
                   <button
-                    style={buttonPrimaryStyle}
+                    className="btn-primary"
                     onClick={() => {
                       setIsOpen(true)
                       register()
@@ -549,13 +499,13 @@ const Register = () => {
                 </div>
               ) : registerhash ? (
                 <div style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-                  <div style={{ ...cardStyle, padding: '40px', maxWidth: '420px', width: '100%', textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px', color: isDark ? '#fff' : '#111' }}>
+                  <div className="page-card p-10 max-w-[420px] w-full text-center">
+                    <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
                       Congratulations!
                     </h1>
-                    <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
+                    <p className="text-muted-foreground mb-6">
                       You are now the owner of{' '}
-                      <span style={{ fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
+                      <span style={{ fontWeight: 600 }}>
                         {label}.safu
                       </span>
                     </p>
@@ -570,34 +520,34 @@ const Register = () => {
                       alignItems: 'center',
                     }}>
                       <div style={{
-                        background: isDark ? '#111' : '#fff',
+                        background: 'var(--card)',
                         borderRadius: '50%',
                         padding: '12px',
                         marginBottom: '16px',
                       }}>
-                        <Check style={{ width: '32px', height: '32px', color: isDark ? '#fff' : '#111' }} />
+                        <Check style={{ width: '32px', height: '32px', color: 'var(--foreground)' }} />
                       </div>
                       <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.safu`}</p>
                     </div>
 
                     <div style={{
-                      background: isDark ? 'rgba(255,255,255,0.05)' : '#f4f4f4',
+                      background: 'var(--secondary)',
                       borderRadius: '16px',
                       padding: '16px',
                       marginBottom: '24px',
                       textAlign: 'left',
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <span style={{ color: isDark ? '#888' : '#666', fontSize: '14px' }}>
+                        <span className="text-sm text-muted-foreground">
                           Registration
                         </span>
-                        <span style={{ fontWeight: 500, fontSize: '14px', color: isDark ? '#fff' : '#111' }}>
+                        <span className="font-medium text-sm">
                           {price.bnb} ETH{' '}
-                          <span style={{ color: isDark ? '#888' : '#666' }}>{`($${price.usd})`}</span>
+                          <span className="text-muted-foreground">{`($${price.usd})`}</span>
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: isDark ? '#888' : '#666', fontSize: '14px' }}>Ownership</span>
+                        <span className="text-sm text-muted-foreground">Ownership</span>
                         <span style={{ fontWeight: 500, fontSize: '14px', color: '#22c55e' }}>
                           ✓ Lifetime
                         </span>
@@ -607,13 +557,13 @@ const Register = () => {
                     <div style={{ display: 'flex', gap: '16px' }}>
                       <button
                         onClick={() => router.push(`/`)}
-                        style={buttonSecondaryStyle}
+                        className="btn-secondary"
                       >
                         Register another
                       </button>
                       <button
                         onClick={() => router.push(`/profile`)}
-                        style={buttonPrimaryStyle}
+                        className="btn-primary"
                       >
                         View My Names
                       </button>

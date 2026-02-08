@@ -17,20 +17,20 @@ const RegistrationSteps = () => {
 
   return (
     <div>
-      <h1 className="text-center text-2xl font-semibold">Before we Start</h1>
-      <p className="text-center font-semibold mt-7 text-sm">
+      <h1 className="text-center text-2xl font-semibold text-foreground">Before we Start</h1>
+      <p className="text-center font-semibold mt-7 text-sm text-muted-foreground">
         Registering your name takes three steps
       </p>
       <div className="w-full flex space-x-5 justify-center mt-5">
         {steps.map((s) => (
           <div
             key={s.number}
-            className="rounded-lg p-3 border-1 border-gray-300 w-25 md:w-48 h-38 flex-col flex items-center text-sm lg:text-md"
+            className="rounded-lg p-3 border border-[var(--border)] w-25 md:w-48 h-38 flex-col flex items-center text-sm lg:text-md"
           >
-            <div className="p-2 flex items-center w-10 h-10 bg-[#FFF700] rounded-full justify-center text-neutral-900 font-bold">
+            <div className="p-2 flex items-center w-10 h-10 bg-[var(--primary)] rounded-full justify-center text-[var(--primary-foreground)] font-bold">
               {s.number}
             </div>
-            <p className="text-center text-[10px] lg:text-sm font-semibold mt-5">
+            <p className="text-center text-[10px] lg:text-sm font-semibold mt-5 text-foreground">
               {s.title}
             </p>
           </div>

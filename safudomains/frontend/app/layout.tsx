@@ -3,6 +3,8 @@ import { Providers } from './providers';
 import '@/app/globals.css';
 import Navbar from '@/components/navbar';
 
+import ThemeToggle from '@/components/ThemeToggle';
+
 export const metadata: Metadata = {
     title: 'Safuverse - Your Web3 Identity',
     description: 'Your web3 username, across all chains. Send crypto to names, not numbers.',
@@ -19,6 +21,7 @@ export default function RootLayout({
                 <Providers>
                     <Navbar />
                     {children}
+                    <ThemeToggle />
                 </Providers>
             </body>
         </html>

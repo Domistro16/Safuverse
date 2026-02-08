@@ -163,7 +163,7 @@ export default function Home() {
   useEffect(() => {
     if (search.includes('.')) {
       setAvailable('Invalid')
-    } else if (search.length < 2) {
+    } else if (search.length < 1) {
       setAvailable('Too Short')
     } else if (isPending) {
       setAvailable('Loading...')

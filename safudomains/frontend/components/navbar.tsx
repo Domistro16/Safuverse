@@ -39,7 +39,7 @@ export default function Navbar() {
   })
 
   useEffect(() => {
-    if (search.length < 2) {
+    if (search.length < 1) {
       setAvailable('Too Short')
     } else if (isPending) {
       setAvailable('Loading...')

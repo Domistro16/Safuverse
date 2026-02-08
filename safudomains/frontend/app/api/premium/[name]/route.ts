@@ -14,16 +14,7 @@ const premiumNames = new Map([
     ['420', { isPremium: true, requiresAuction: true, fixedPrice: '0' }],
 ])
 
-// Single letter names
-for (let i = 97; i <= 122; i++) {
-    const letter = String.fromCharCode(i)
-    premiumNames.set(letter, { isPremium: true, requiresAuction: true, fixedPrice: '0' })
-}
 
-// Single digit names
-for (let i = 0; i <= 9; i++) {
-    premiumNames.set(i.toString(), { isPremium: true, requiresAuction: true, fixedPrice: '0' })
-}
 
 export async function GET(
     request: NextRequest,

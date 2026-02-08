@@ -16,10 +16,10 @@ export const AgentPriceTag = ({
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-white">
+                <span className="text-2xl font-bold text-foreground">
                     ${priceUsd}
                 </span>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-muted-foreground">
                     ({priceEth} ETH)
                 </span>
                 {isAgentName && (
@@ -33,13 +33,13 @@ export const AgentPriceTag = ({
                 <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">
                     Lifetime
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                     One-time payment, no renewals
                 </span>
             </div>
 
             {isAgentName && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                     This name qualifies for agent pricing because it&apos;s 10+ characters
                     and matches agent naming patterns.
                 </p>

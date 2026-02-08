@@ -45,15 +45,29 @@
 
 body {
   margin: 0;
-  font-family: 'Gilroy-Regular',
-    Arial,
-    sans-serif;
-  background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.9), rgba(245, 245, 245, 0.7), rgba(235, 235, 235, 0.4)),
-    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.85), rgba(240, 240, 240, 0.55), rgba(230, 230, 230, 0.25)),
-    linear-gradient(180deg, #f8f8f7 0%, #f3f3f2 100%);
-  color: #111;
+  font-family: 'Gilroy-Regular', Arial, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
   position: relative;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body:not(.dark-mode) {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(200, 210, 255, 0.3) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(200, 255, 220, 0.3) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(255, 220, 200, 0.3) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(220, 210, 255, 0.4) 0px, transparent 50%);
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+body.dark-mode {
+  background: radial-gradient(circle at 25% 25%, #1a1a1a, #0d0d0d),
+    radial-gradient(circle at 75% 75%, #1f1f1f, #080808),
+    linear-gradient(180deg, #050505 0%, #000000 100%);
 }
 
 *::selection {
@@ -116,26 +130,62 @@ body {
 @custom-variant dark (&:is(.dark-mode *));
 
 :root {
-  --background: #f8f8f7;
-  --foreground: #111;
-  --card: rgba(255, 255, 255, 0.92);
-  --card-foreground: #111;
-  --popover: #fff;
-  --popover-foreground: #111;
-  --primary: #111;
-  --primary-foreground: #fff;
-  --secondary: #f4f4f4;
-  --secondary-foreground: #111;
-  --muted: #f4f4f4;
-  --muted-foreground: #666;
-  --accent: #f4f4f4;
-  --accent-foreground: #111;
+  /* Light Mode - Refined Premium */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  /* Cleaner card background with slight transparency */
+  --card: rgba(255, 255, 255, 0.75);
+  --card-foreground: #1e293b;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+
+  /* Softer secondary for better contrast against white/off-white */
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+
   --destructive: #ef4444;
-  --destructive-foreground: #fff;
-  --border: rgba(0, 0, 0, 0.06);
-  --input: rgba(0, 0, 0, 0.06);
-  --ring: #111;
-  --radius: 0.625rem;
+  --destructive-foreground: #ffffff;
+
+  /* Subtle border */
+  --border: rgba(148, 163, 184, 0.2);
+  --input: rgba(148, 163, 184, 0.2);
+  --ring: #0f172a;
+
+  --radius: 0.75rem;
+}
+
+.dark-mode {
+  /* Dark Mode - Deep Space */
+  --background: #050505;
+  --foreground: #ededed;
+  --card: rgba(20, 20, 20, 0.65);
+  --card-foreground: #ededed;
+  --popover: #0a0a0a;
+  --popover-foreground: #ededed;
+  --primary: #ededed;
+  --primary-foreground: #050505;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ededed;
+  --muted: #1a1a1a;
+  --muted-foreground: #a3a3a3;
+  --accent: #1a1a1a;
+  --accent-foreground: #ededed;
+  --destructive: #991b1b;
+  --destructive-foreground: #ededed;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #ededed;
 }
 
 /* === TOP NAVBAR === */
@@ -707,25 +757,27 @@ h1 span {
 
 /* PAGE CARD STYLES */
 .page-card {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--card);
+  color: var(--card-foreground);
   backdrop-filter: saturate(180%) blur(28px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border);
   padding: 32px;
   border-radius: 26px;
   box-shadow: 0 22px 55px rgba(0, 0, 0, 0.08);
 }
 
 .page-card-dark {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--card);
+  color: var(--card-foreground);
   backdrop-filter: saturate(180%) blur(28px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
 }
 
 /* BUTTON STYLES */
 .btn-primary {
   padding: 14px 28px;
-  background: #111;
-  color: #fff;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 40px;
   font-size: 16px;
@@ -738,13 +790,14 @@ h1 span {
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  opacity: 0.9;
 }
 
 .btn-secondary {
   padding: 14px 28px;
-  background: #fff;
-  color: #111;
-  border: 1.5px solid #111;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1.5px solid var(--ring);
   border-radius: 40px;
   font-size: 16px;
   font-weight: 600;
@@ -755,14 +808,16 @@ h1 span {
 .btn-secondary:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  opacity: 0.8;
 }
 
 /* INPUT STYLES */
 .input-field {
   width: 100%;
   padding: 16px 20px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--input);
+  color: var(--foreground);
+  border: 1px solid var(--border);
   border-radius: 14px;
   font-size: 16px;
   outline: none;
@@ -770,7 +825,7 @@ h1 span {
 }
 
 .input-field:focus {
-  border-color: #111;
+  border-color: var(--ring);
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -781,19 +836,19 @@ h1 span {
   border: none;
   font-size: 16px;
   font-weight: 600;
-  color: #666;
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
   border-bottom: 2px solid transparent;
 }
 
 .tab-button:hover {
-  color: #111;
+  color: var(--foreground);
 }
 
 .tab-button.active {
-  color: #111;
-  border-bottom-color: #111;
+  color: var(--foreground);
+  border-bottom-color: var(--foreground);
 }
 
 /* RESPONSIVE */
@@ -1388,7 +1443,7 @@ h1 span {
   font-weight: 800 !important;
   letter-spacing: -0.03em !important;
   line-height: 0.9 !important;
-  color: #111 !important;
+  color: var(--foreground) !important;
   font-style: normal !important;
   margin-bottom: 2rem;
 }
@@ -1401,7 +1456,7 @@ h1 span {
 
 .landing-hero-sub {
   font-size: 1.25rem !important;
-  color: #6B7280 !important;
+  color: var(--muted-foreground) !important;
   font-weight: 500;
   line-height: 1.6;
 }
@@ -1431,12 +1486,12 @@ h1 span {
 }
 
 .landing-tx-card-inner {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card);
   backdrop-filter: blur(12px);
   padding: 14px 20px;
   border-radius: 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1448,7 +1503,7 @@ h1 span {
   transform: scale(1.1) translateY(-5px);
   box-shadow: 0 30px 60px rgba(255, 176, 0, 0.25);
   border-color: rgba(255, 176, 0, 0.3);
-  background: #fff;
+  background: var(--card);
 }
 
 /* ── Phone Mockup ── */
@@ -1482,7 +1537,7 @@ h1 span {
   max-width: 90vw;
   height: 760px;
   max-height: 85vh;
-  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 60%, #F5F5F0 100%);
+  background: var(--card);
   border-radius: 50px;
   box-shadow: 0 0 0 8px #111, 0 30px 100px -20px rgba(0, 0, 0, 0.6);
   position: relative;
@@ -1509,7 +1564,7 @@ h1 span {
   padding-top: clamp(200px, 30vh, 450px);
   padding-bottom: 120px;
   text-align: center;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #fff 25%);
+  background: linear-gradient(to bottom, transparent 0%, var(--background) 25%);
   pointer-events: none;
 }
 
@@ -1533,7 +1588,7 @@ h1 span {
   font-family: 'Manrope', sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #111;
+  color: var(--foreground);
   margin-bottom: 12px;
   font-size: clamp(2.5rem, 5vw, 3.5rem);
   line-height: 1;
@@ -1545,7 +1600,7 @@ h1 span {
 
 .landing-search-sub {
   font-size: 1.125rem;
-  color: #666;
+  color: var(--muted-foreground);
   font-weight: 500;
   margin-bottom: 48px;
   padding: 0 20px;
@@ -1555,8 +1610,8 @@ h1 span {
   max-width: 500px;
   width: 90%;
   margin: 0 auto;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 100px;
   height: 72px;
   display: flex;
@@ -1626,7 +1681,8 @@ h1 span {
 }
 
 .landing-modal-box {
-  background: #FFFFFF;
+  background: var(--card);
+  color: var(--foreground);
   width: 90%;
   max-width: 700px;
   border-radius: 32px;
@@ -1666,7 +1722,7 @@ h1 span {
   font-size: 28px;
   font-weight: 800;
   margin-bottom: 40px;
-  color: #111;
+  color: var(--foreground);
 }
 
 .landing-modal-input-container {
@@ -1689,7 +1745,7 @@ h1 span {
   font-family: 'Manrope', sans-serif;
   font-size: 48px;
   font-weight: 800;
-  color: #111;
+  color: var(--foreground);
   background: transparent;
   border: none;
   outline: none;
@@ -1787,7 +1843,7 @@ h1 span {
 }
 
 .landing-pay-opt {
-  border: 1px solid #eee;
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   cursor: pointer;
@@ -1800,12 +1856,12 @@ h1 span {
 
 .landing-pay-opt:hover {
   border-color: #FFB000;
-  background: #FFFBF0;
+  background: var(--accent);
 }
 
 .landing-pay-opt.rec {
   border: 2px solid #FFB000;
-  background: #FFFBF0;
+  background: var(--accent);
   position: relative;
 }
 
@@ -1822,10 +1878,10 @@ h1 span {
 }
 
 .landing-guide-card {
-  border: 1px solid #eee;
+  border: 1px solid var(--border);
   padding: 20px;
   border-radius: 16px;
-  background: #F9F9F9;
+  background: var(--card);
   margin-bottom: 16px;
   transition: all 0.2s;
   text-decoration: none;
@@ -1836,7 +1892,7 @@ h1 span {
 .landing-guide-card:hover {
   border-color: #FFB000;
   transform: translateY(-2px);
-  background: #fff;
+  background: var(--card);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
@@ -1851,8 +1907,8 @@ h1 span {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #fff;
-  border: 1px solid #eee;
+  background: var(--background);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1876,8 +1932,8 @@ h1 span {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #eee;
-  color: #555;
+  background: var(--muted);
+  color: var(--muted-foreground);
   margin-right: 4px;
 }
 
@@ -2100,7 +2156,7 @@ h1 span {
 
 /* ── Security Section ── */
 .landing-security-section {
-  background-color: #FDFDF8;
+  background-color: var(--background);
   padding: 120px 20px;
   position: relative;
 }
@@ -2118,7 +2174,7 @@ h1 span {
   font-family: 'Manrope', sans-serif;
   font-size: 48px;
   font-weight: 800;
-  color: #111;
+  color: var(--foreground);
   line-height: 1.1;
   margin-bottom: 24px;
   letter-spacing: -1px;
@@ -2126,13 +2182,13 @@ h1 span {
 
 .landing-sec-desc {
   font-size: 18px;
-  color: #666;
+  color: var(--muted-foreground);
   margin-bottom: 48px;
   line-height: 1.6;
 }
 
 .landing-tab-btn {
-  background: #F3F3EF;
+  background: var(--secondary);
   border-radius: 16px;
   padding: 24px;
   text-align: left;
@@ -2146,14 +2202,14 @@ h1 span {
 }
 
 .landing-tab-btn.active {
-  background: #EAEAE5;
+  background: var(--muted);
 }
 
 .landing-tab-label {
   position: relative;
   z-index: 10;
   font-weight: 700;
-  color: #111;
+  color: var(--foreground);
   font-size: 18px;
 }
 
@@ -2182,7 +2238,7 @@ h1 span {
 }
 
 .landing-sec-stage {
-  background: #F3F3EF;
+  background: var(--secondary);
   border-radius: 32px;
   aspect-ratio: 4/3;
   position: relative;
@@ -2216,15 +2272,16 @@ h1 span {
 }
 
 .landing-vs-modal {
-  background: #FDFDF8;
+  background: var(--card);
   width: 320px;
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  color: var(--foreground);
 }
 
 .landing-vs-score {
-  background: #fff;
+  background: var(--card);
   width: 300px;
   border-radius: 24px;
   padding: 24px;

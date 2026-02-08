@@ -70,7 +70,7 @@ export default function Landing() {
   /* availability status */
   useEffect(() => {
     if (search.includes('.')) setAvailable('Invalid')
-    else if (search.length < 2) setAvailable('Too Short')
+    else if (search.length < 1) setAvailable('Too Short')
     else if (isPending) setAvailable('Loading...')
     else if (data === true) setAvailable('Available')
     else if (data === false) setAvailable('Registered')
@@ -255,17 +255,17 @@ export default function Landing() {
                   }}
                 >
                   <div className="landing-tx-card-inner">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${card.icon === 'up' ? 'bg-black text-white' : 'bg-[#FFB000] text-black'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${card.icon === 'up' ? 'bg-[var(--foreground)] text-[var(--background)]' : 'bg-[#FFB000] text-black'}`}>
                       {card.icon === 'up' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
                         <span className="font-bold text-sm">{card.name}</span>
-                        <span className="text-[10px] text-gray-500 font-bold uppercase">{card.type}</span>
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase">{card.type}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-500 font-mono">
+                      <div className="flex justify-between text-xs text-muted-foreground font-mono">
                         <span>{card.amount}</span>
-                        <span className="text-black font-bold">{card.token}</span>
+                        <span className="text-[var(--foreground)] font-bold">{card.token}</span>
                       </div>
                     </div>
                   </div>
@@ -287,7 +287,7 @@ export default function Landing() {
           >
             <div className="landing-phone-body">
               <div className="landing-notch" />
-              <div className="w-full h-full flex flex-col pt-14 px-6 relative text-black">
+              <div className="w-full h-full flex flex-col pt-14 px-6 relative text-[var(--foreground)]">
                 <div className="absolute top-4 left-9 text-[13px] font-bold">9:41</div>
                 <div className="absolute top-4 right-9 flex gap-1.5">
                   <Signal className="w-3.5 h-3.5" />
@@ -295,7 +295,7 @@ export default function Landing() {
                   <Battery className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex items-center justify-between mb-6 mt-2">
-                  <ChevronLeft className="w-6 h-6 text-gray-400" />
+                  <ChevronLeft className="w-6 h-6 text-muted-foreground" />
                   <span className="font-bold text-lg">Send</span>
                   <div className="w-6" />
                 </div>
@@ -303,22 +303,22 @@ export default function Landing() {
                   <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FFB000] to-yellow-400 p-1 mb-3 shadow-xl">
                     <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-bold">N</div>
                   </div>
-                  <h2 className="text-2xl font-bold tracking-tight text-black/90">Nadya.safu</h2>
-                  <div className="bg-black/5 px-3 py-1 rounded-full mt-2">
-                    <p className="text-xs font-mono text-gray-500 font-medium">0x71C9...8A21</p>
+                  <h2 className="text-2xl font-bold tracking-tight text-[var(--foreground)] opacity-90">Nadya.safu</h2>
+                  <div className="bg-[var(--muted)] px-3 py-1 rounded-full mt-2">
+                    <p className="text-xs font-mono text-muted-foreground font-medium">0x71C9...8A21</p>
                   </div>
                 </div>
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-4 text-center">
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Amount</p>
-                  <h3 className="text-5xl font-extrabold text-black mb-3 tracking-tighter">$50.00</h3>
-                  <div className="inline-flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 text-xs font-bold text-blue-600">USDC</div>
+                <div className="bg-[var(--background)] rounded-3xl p-6 shadow-sm border border-[var(--border)] mb-4 text-center">
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Amount</p>
+                  <h3 className="text-5xl font-extrabold text-[var(--foreground)] mb-3 tracking-tighter">$50.00</h3>
+                  <div className="inline-flex items-center gap-1.5 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 text-xs font-bold text-blue-500">USDC</div>
                 </div>
                 <div className="px-3 space-y-3 mb-6">
-                  <div className="flex justify-between text-sm"><span className="text-gray-500 font-medium">Network</span><span className="font-bold text-black">Base</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-gray-500 font-medium">Fee</span><span className="font-bold text-green-600">Free</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground font-medium">Network</span><span className="font-bold text-[var(--foreground)]">Base</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground font-medium">Fee</span><span className="font-bold text-green-500">Free</span></div>
                 </div>
                 <div className="px-4 mt-auto pb-10">
-                  <div className="w-full bg-black text-white h-14 rounded-2xl flex items-center justify-center font-bold text-lg">Send Now</div>
+                  <div className="w-full bg-[var(--foreground)] text-[var(--background)] h-14 rounded-2xl flex items-center justify-center font-bold text-lg">Send Now</div>
                 </div>
               </div>
             </div>
@@ -375,12 +375,12 @@ export default function Landing() {
                 {/* Recent searches */}
                 {recents.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-[13px] text-gray-400 mb-2 text-left">Recent searches</p>
+                    <p className="text-[13px] text-muted-foreground mb-2 text-left">Recent searches</p>
                     <div className="flex flex-wrap gap-2">
                       {recents.map((item, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all bg-gray-100 hover:bg-gray-200 text-sm text-black"
+                          className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all bg-[var(--secondary)] hover:bg-[var(--muted)] text-sm text-[var(--foreground)]"
                           onClick={() => setSearch(item)}
                         >
                           {item}.safu
@@ -398,12 +398,12 @@ export default function Landing() {
                 )}
 
                 {/* Search result card */}
-                {search.length >= 2 && (
+                {search.length >= 1 && (
                   <div
-                    className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200 mb-4 cursor-pointer transition-all hover:bg-gray-100"
+                    className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] mb-4 cursor-pointer transition-all hover:bg-[var(--accent)]"
                     onClick={handleRoute}
                   >
-                    <span className="font-semibold text-black">{search}.safu</span>
+                    <span className="font-semibold text-[var(--foreground)]">{search}.safu</span>
                     {available === 'Loading...' && (
                       <span className="text-xs px-3 py-1 rounded-full bg-gray-300 text-white font-semibold flex items-center gap-1.5">
                         <Loader className="w-3 h-3 animate-spin" /> Checking
@@ -457,7 +457,7 @@ export default function Landing() {
             {modalStage === 'payment' && (
               <div>
                 <h3 className="landing-modal-title">Select Payment</h3>
-                <p className="text-center text-gray-500 font-medium">Secure your identity forever.</p>
+                <p className="text-center text-muted-foreground font-medium">Secure your identity forever.</p>
                 <div className="landing-payment-options">
                   <div className="landing-pay-opt rec" onClick={handleRoute}>
                     <div className="landing-pay-tag">Recommended</div>
@@ -468,7 +468,7 @@ export default function Landing() {
                     <div className="text-xs text-gray-500">Pay with ETH, USDC, or BASE</div>
                   </div>
                   <div className="landing-pay-opt" onClick={() => setModalStage('guide')}>
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-black mb-2">
+                    <div className="w-12 h-12 bg-[var(--secondary)] rounded-full flex items-center justify-center text-[var(--foreground)] mb-2">
                       <CreditCard className="w-6 h-6" />
                     </div>
                     <div className="font-bold text-lg">Card</div>
@@ -628,15 +628,15 @@ export default function Landing() {
             {/* Visual 0: Vault */}
             <div className={`landing-visual-card ${secTab === 0 ? 'active' : ''}`}>
               <div className="landing-vs-modal">
-                <div className="font-bold border-b border-gray-200 pb-3 mb-3">Transfer Request</div>
-                <div className="flex justify-between text-sm text-gray-600 mb-2"><span>Asset</span><span className="font-semibold text-black">ceo.safu</span></div>
-                <div className="flex justify-between text-sm text-gray-600 mb-4"><span>From</span><span className="font-semibold text-black">Vault A</span></div>
+                <div className="font-bold border-b border-[var(--border)] pb-3 mb-3 text-[var(--foreground)]">Transfer Request</div>
+                <div className="flex justify-between text-sm text-muted-foreground mb-2"><span>Asset</span><span className="font-semibold text-[var(--foreground)]">ceo.safu</span></div>
+                <div className="flex justify-between text-sm text-muted-foreground mb-4"><span>From</span><span className="font-semibold text-[var(--foreground)]">Vault A</span></div>
                 <div className="flex gap-2 mb-5">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative"><User className="w-5 h-5" /><div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" /></div>
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative"><User className="w-5 h-5" /><div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" /></div>
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"><Loader className="w-5 h-5 animate-spin" /></div>
+                  <div className="w-10 h-10 rounded-full bg-[var(--secondary)] flex items-center justify-center relative"><User className="w-5 h-5 text-[var(--foreground)]" /><div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[var(--card)]" /></div>
+                  <div className="w-10 h-10 rounded-full bg-[var(--secondary)] flex items-center justify-center relative"><User className="w-5 h-5 text-[var(--foreground)]" /><div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[var(--card)]" /></div>
+                  <div className="w-10 h-10 rounded-full bg-[var(--secondary)] flex items-center justify-center"><Loader className="w-5 h-5 animate-spin text-[var(--foreground)]" /></div>
                 </div>
-                <div className="bg-black text-white text-center py-3 rounded-xl font-semibold">Sign Transaction</div>
+                <div className="bg-[var(--foreground)] text-[var(--background)] text-center py-3 rounded-xl font-semibold">Sign Transaction</div>
               </div>
             </div>
 
@@ -645,10 +645,10 @@ export default function Landing() {
               <div className="landing-vs-score">
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#FFB000] to-green-500" />
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl font-bold">N</div>
+                  <div className="w-12 h-12 rounded-full bg-[var(--secondary)] flex items-center justify-center text-xl font-bold text-[var(--foreground)]">N</div>
                   <div className="text-left">
-                    <div className="font-bold text-black text-base">nadya.safu</div>
-                    <span className="text-[11px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold">Verified Human</span>
+                    <div className="font-bold text-[var(--foreground)] text-base">nadya.safu</div>
+                    <span className="text-[11px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full font-bold">Verified Human</span>
                   </div>
                 </div>
                 <div className="relative w-[140px] h-[140px] mx-auto mb-6 flex items-center justify-center flex-col">
@@ -657,15 +657,15 @@ export default function Landing() {
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#00C853" strokeWidth="8" strokeLinecap="round" strokeDasharray="283" strokeDashoffset="20" />
                   </svg>
                   <div className="absolute text-center">
-                    <div className="text-[42px] font-extrabold text-black leading-none">98</div>
-                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wide mt-1">Trust Score</div>
+                    <div className="text-[42px] font-extrabold text-[var(--foreground)] leading-none">98</div>
+                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mt-1">Trust Score</div>
                   </div>
                 </div>
                 <div className="flex justify-center gap-3">
                   {[Wallet, Twitter, MessageCircle, History].map((Icon, i) => (
-                    <div key={i} className="w-9 h-9 bg-black rounded-[10px] flex items-center justify-center text-white relative">
+                    <div key={i} className="w-9 h-9 bg-[var(--muted)] rounded-[10px] flex items-center justify-center text-[var(--foreground)] relative">
                       <Icon className="w-4 h-4" />
-                      <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">
+                      <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--card)] rounded-full flex items-center justify-center">
                         <Check className="w-2 h-2 text-white" strokeWidth={4} />
                       </div>
                     </div>
