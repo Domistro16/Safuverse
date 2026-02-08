@@ -1,33 +1,32 @@
-import { useState, useMemo } from 'react'
-import { useWalletClient, useChainId } from 'wagmi'
+import { useState, useCallback } from 'react'
+import { useWalletClient, useChainId, usePublicClient } from 'wagmi'
 import { namehash, encodeFunctionData } from 'viem'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
 import { buildTextRecords } from './setText'
-import { addrResolver, ReferralData, EMPTY_REFERRAL_DATA, EMPTY_REFERRAL_SIGNATURE } from '../constants/registerAbis'
-import { getConstants, CHAIN_ID } from '../constant'
+import { addrResolver, ReferralData, EMPTY_REFERRAL_DATA, EMPTY_REFERRAL_SIGNATURE, ERC20_ABI } from '../constants/registerAbis'
+import { getConstants } from '../constant'
+import { AgentRegistrarControllerABI } from '../lib/abi'
 import { normalize } from 'viem/ens'
+import { AgentRegistrarControllerAbi } from '@safuverse/safudomains-sdk'
+
+export type RegistrationStep = 'idle' | 'committing' | 'waiting' | 'approving' | 'registering' | 'done' | 'error'
 
 export const useRegistration = () => {
   const [commitData, setCommitData] = useState<`0x${string}`[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
+  const [step, setStep] = useState<RegistrationStep>('idle')
+  const [commitHash, setCommitHash] = useState<`0x${string}` | null>(null)
+  const [registerHash, setRegisterHash] = useState<`0x${string}` | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const [countdown, setCountdown] = useState(0)
+  const [secret, setSecret] = useState<`0x${string}`>('0x0000000000000000000000000000000000000000000000000000000000000000')
 
   const { data: walletClient } = useWalletClient()
+  const publicClient = usePublicClient()
   const chainId = useChainId()
   const constants = getConstants(chainId)
 
-  // Create SDK client with wallet
-  const sdk = useMemo(() => {
-    if (!walletClient) return null
-    return new SafuDomainsClient({
-      chainId: chainId || CHAIN_ID,
-      walletClient: walletClient as any,
-    })
-  }, [walletClient, chainId])
-
   // Build resolver data for text records and address
-  const buildCommitDataFn = (
+  const buildCommitDataFn = useCallback((
     textRecords: { key: string; value: string }[],
     newRecords: { key: string; value: string }[],
     label: string,
@@ -50,10 +49,19 @@ export const useRegistration = () => {
     const fullData = [...builtData, addrEncoded]
     setCommitData(fullData)
     return fullData
-  }
+  }, [])
+
+  // Generate a random secret for commit-reveal
+  const generateSecret = useCallback((): `0x${string}` => {
+    const randomBytes = new Uint8Array(32)
+    crypto.getRandomValues(randomBytes)
+    const newSecret = `0x${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as `0x${string}`
+    setSecret(newSecret)
+    return newSecret
+  }, [])
 
   // Fetch referral data from API
-  const fetchReferralData = async (
+  const fetchReferralData = useCallback(async (
     referralCode: string,
     registrantAddress: string,
     name: string,
@@ -99,62 +107,93 @@ export const useRegistration = () => {
       referralData: EMPTY_REFERRAL_DATA,
       signature: EMPTY_REFERRAL_SIGNATURE,
     }
-  }
+  }, [])
 
-  // Register a domain name (v2 - always lifetime, ETH only)
-  const register = async (
+  // Step 1: Commit transaction
+  const commit = useCallback(async (
     label: string,
-    address: `0x${string}`,
+    owner: `0x${string}`,
     isPrimary: boolean,
-    referrer: string = '',
+    data: `0x${string}`[],
   ) => {
-    if (!sdk) {
+    if (!walletClient || !publicClient) {
       throw new Error('Wallet not connected')
     }
 
     setIsLoading(true)
     setError(null)
-    setTxHash(null)
+    setStep('committing')
 
     try {
       const normalizedLabel = normalize(label)
+      const commitSecret = generateSecret()
 
-      // Build data for resolver if not already built
-      const data = commitData.length > 0 ? commitData : buildCommitDataFn([], [], label, address)
-
-      // Fetch referral data if provided
-      const { referralData } = await fetchReferralData(
-        referrer,
-        address,
-        normalizedLabel,
-      )
-
-      // Register using SDK
-      const hash = await sdk.register(normalizedLabel, {
-        reverseRecord: isPrimary,
-        resolver: constants.PublicResolver,
-        data,
-        referral: referralData,
+      // Generate commitment hash using makeCommitment on contract
+      const commitment = await publicClient.readContract({
+        address: constants.Controller,
+        abi: AgentRegistrarControllerAbi,
+        functionName: 'makeCommitment',
+        args: [
+          normalizedLabel,
+          owner,
+          commitSecret,
+          constants.PublicResolver,
+          data,
+          isPrimary,
+          0, // ownerControlledFuses
+        ],
       })
 
-      setTxHash(hash)
+      // Send commit transaction
+      const [account] = await walletClient.getAddresses()
+      const hash = await walletClient.writeContract({
+        address: constants.Controller,
+        abi: AgentRegistrarControllerAbi,
+        functionName: 'commit',
+        args: [commitment],
+        account,
+      })
+
+      // Wait for confirmation
+      await publicClient.waitForTransactionReceipt({ hash })
+      setCommitHash(hash)
+      setStep('waiting')
+
+      // Start 60 second countdown
+      let remaining = 60
+      setCountdown(remaining)
+      await new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+          remaining--
+          setCountdown(remaining)
+          if (remaining <= 0) {
+            clearInterval(interval)
+            resolve()
+          }
+        }, 1000)
+      })
+
+      setStep('idle')
+      setIsLoading(false)
       return hash
     } catch (err) {
-      console.error('Error during registration:', err)
+      console.error('Error during commit:', err)
       setError(err as Error)
-      throw err
-    } finally {
+      setStep('error')
       setIsLoading(false)
+      throw err
     }
-  }
+  }, [walletClient, publicClient, constants, generateSecret])
 
-  // Batch register multiple names
-  const batchRegister = async (
-    names: string[],
-    address: `0x${string}`,
+  // Step 2: Approve USDC + Register with USDC
+  const registerWithUSDC = useCallback(async (
+    label: string,
+    owner: `0x${string}`,
     isPrimary: boolean,
+    referrer: string = '',
+    data?: `0x${string}`[],
   ) => {
-    if (!sdk) {
+    if (!walletClient || !publicClient) {
       throw new Error('Wallet not connected')
     }
 
@@ -162,106 +201,112 @@ export const useRegistration = () => {
     setError(null)
 
     try {
-      const normalizedNames = names.map(normalize)
+      const normalizedLabel = normalize(label)
+      const resolverData = data || commitData
 
-      const hash = await sdk.batchRegister(normalizedNames, {
-        reverseRecord: isPrimary,
+      // Get price in USDC
+      const priceResult = await publicClient.readContract({
+        address: constants.Controller,
+        abi: AgentRegistrarControllerABI,
+        functionName: 'getPrice',
+        args: [normalizedLabel],
+      }) as [bigint, boolean]
+      const priceUSDC = priceResult[0]
+
+      const [account] = await walletClient.getAddresses()
+
+      // Check and approve USDC allowance
+      setStep('approving')
+      const currentAllowance = await publicClient.readContract({
+        address: constants.USDC,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [account, constants.Controller],
+      }) as bigint
+
+      if (currentAllowance < priceUSDC) {
+        const approveHash = await walletClient.writeContract({
+          address: constants.USDC,
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [constants.Controller, priceUSDC],
+          account,
+        })
+        await publicClient.waitForTransactionReceipt({ hash: approveHash })
+      }
+
+      // Build registration request
+      const request = {
+        name: normalizedLabel,
+        owner,
+        secret,
         resolver: constants.PublicResolver,
+        data: resolverData,
+        reverseRecord: isPrimary,
+        ownerControlledFuses: 0,
+        deployWallet: false,
+        walletSalt: 0n,
+      }
+
+      // Register with USDC
+      setStep('registering')
+      const hash = await walletClient.writeContract({
+        address: constants.Controller,
+        abi: AgentRegistrarControllerABI,
+        functionName: 'registerWithUSDC',
+        args: [request],
+        account,
       })
 
-      setTxHash(hash)
+      await publicClient.waitForTransactionReceipt({ hash })
+      setRegisterHash(hash)
+      setStep('done')
       return hash
     } catch (err) {
-      console.error('Error during batch registration:', err)
+      console.error('Error during USDC registration:', err)
       setError(err as Error)
+      setStep('error')
       throw err
     } finally {
       setIsLoading(false)
     }
-  }
-
-  // Check if name is available
-  const checkAvailable = async (name: string): Promise<boolean> => {
-    if (!sdk) return false
-    try {
-      return await sdk.available(normalize(name))
-    } catch {
-      return false
-    }
-  }
+  }, [walletClient, publicClient, constants, commitData, secret, fetchReferralData])
 
   return {
-    // Backward compatibility
-    secret: '0x' as `0x${string}`,
+    // State
+    step,
     commitData,
     isLoading,
-    commithash: txHash,
-    registerhash: txHash,
+    commitHash,
+    registerHash,
+    error,
+    countdown,
+    secret,
+    // Backward compat aliases
+    commithash: commitHash,
+    registerhash: registerHash,
     registerError: error,
     registerPending: isLoading,
     setIsLoading,
+    // Functions
     buildCommitDataFn,
-    // Backward compatible commit (no-op in v2 - agent mode skips commit-reveal)
-    commit: async (
-      _label: string,
-      _address: `0x${string}`,
-      _seconds: number,
-      _isPrimary: boolean,
-      _lifetime: boolean,
-    ) => {
-      // v2 agent mode doesn't require commit-reveal, so this is a no-op
-      return
-    },
-    // Backward compatible register with old signature
+    commit,
+    registerWithUSDC,
+    // Backward compat wrapper
     register: async (
       label: string,
       address: `0x${string}`,
-      seconds: number,
+      _seconds: number,
       isPrimary: boolean,
-      lifetime: boolean,
+      _lifetime: boolean,
       referrer: string = '',
-      useToken: boolean = false,
-      token: `0x${string}` = '0x0000000000000000000000000000000000000000',
-      usd1TokenData: any = null,
-      cakeTokenData: any = null,
-      priceData: any = null,
+      _useToken: boolean = false,
+      _token: `0x${string}` = '0x0000000000000000000000000000000000000000',
+      _usd1TokenData: any = null,
+      _cakeTokenData: any = null,
+      _priceData: any = null,
     ) => {
-      // v2 ignores seconds, lifetime, useToken, token, usd1TokenData, cakeTokenData
-      if (!sdk) {
-        throw new Error('Wallet not connected')
-      }
-
-      setIsLoading(true)
-      setError(null)
-      setTxHash(null)
-
-      try {
-        const normalizedLabel = normalize(label)
-        const data = commitData.length > 0 ? commitData : buildCommitDataFn([], [], label, address)
-        const { referralData } = await fetchReferralData(referrer, address, normalizedLabel)
-
-        const hash = await sdk.register(normalizedLabel, {
-          reverseRecord: isPrimary,
-          resolver: constants.PublicResolver,
-          data,
-          referral: referralData,
-        })
-
-        setTxHash(hash)
-        return hash
-      } catch (err) {
-        console.error('Error during registration:', err)
-        setError(err as Error)
-        throw err
-      } finally {
-        setIsLoading(false)
-      }
+      return registerWithUSDC(label, address, isPrimary, referrer)
     },
-    // v2 additions
-    txHash,
-    error,
-    sdk,
-    batchRegister,
-    checkAvailable,
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react'
-import { Check, Loader2 } from 'lucide-react'
+import { Check, Loader2, Clock, DollarSign, ShieldCheck } from 'lucide-react'
 import { useAccount, useReadContract, useChainId } from 'wagmi'
 import { useParams, useRouter } from 'next/navigation'
 import { useENSName } from '../hooks/getPrimaryName'
@@ -9,7 +9,7 @@ import { normalize } from 'viem/ens'
 import { getConstants } from '../constant'
 import { Controller } from '../constants/registerAbis'
 import { useRegistrationPrice } from '../hooks/useRegistrationPrice'
-import { useRegistration } from '../hooks/useRegistration'
+import { useRegistration, type RegistrationStep } from '../hooks/useRegistration'
 import { usePremiumCheck } from '../hooks/usePremiumCheck'
 import SetupModal from './register/SetupModal'
 import ConfirmDetailsModal from './register/ConfirmDetailsModal'
@@ -79,7 +79,7 @@ const Register = () => {
   const [referralValidating, setReferralValidating] = useState(false)
   const [newRecords, setNewRecords] = useState<{ key: string; value: string }[]>([])
 
-  // v2 hooks - lifetime only, no duration
+  // v2 hooks - lifetime only, USDC payment
   const { price, loading, priceResult, isAgentName } = useRegistrationPrice({
     label: label as string,
   })
@@ -88,13 +88,16 @@ const Register = () => {
   const { isPremium, requiresAuction, hasActiveAuction, isLoading: premiumLoading } = usePremiumCheck(label)
 
   const {
+    step,
     commitData,
     isLoading,
-    registerhash,
-    registerError,
-    registerPending,
+    commitHash,
+    registerHash,
+    error: regError,
+    countdown,
     buildCommitDataFn,
-    register: registerFn,
+    commit,
+    registerWithUSDC,
   } = useRegistration()
 
   useEffect(() => {
@@ -155,21 +158,26 @@ const Register = () => {
     buildCommitDataFn(textRecords, newRecords, label as string, owner)
   }
 
-  // v2: Direct registration - no commit-reveal required for agent mode
-  const register = async () => {
+  // Step 1: Commit transaction + 60s countdown
+  const handleCommit = async () => {
     setIsOpen(true)
-    await registerFn(
+    const data = commitData.length > 0 ? commitData : buildCommitDataFn([], [], label as string, owner)
+    await commit(
       label as string,
       address as `0x${string}`,
-      0, // seconds ignored in v2
       isPrimary,
-      true, // always lifetime
+      data,
+    )
+  }
+
+  // Step 2: Approve USDC + Register
+  const handleRegister = async () => {
+    setIsOpen(true)
+    await registerWithUSDC(
+      label as string,
+      address as `0x${string}`,
+      isPrimary,
       referrer,
-      false, // useToken - not used on Base
-      '0x0000000000000000000000000000000000000000' as `0x${string}`,
-      null,
-      null,
-      null,
     )
     setIsOpen(false)
   }
@@ -192,6 +200,32 @@ const Register = () => {
     }
   }, [available, router, label])
 
+  // Auto-advance when commit countdown finishes
+  useEffect(() => {
+    if (step === 'idle' && commitHash && next === 3) {
+      setNext(4)
+    }
+  }, [step, commitHash, next])
+
+  // Auto-advance when registration completes
+  useEffect(() => {
+    if (step === 'done' && registerHash) {
+      setNext(5)
+    }
+  }, [step, registerHash])
+
+  // Get step status label
+  const getStepLabel = (s: RegistrationStep) => {
+    switch (s) {
+      case 'committing': return 'Sending commit transaction...'
+      case 'waiting': return `Waiting ${countdown}s for timer to complete...`
+      case 'approving': return 'Approving USDC...'
+      case 'registering': return 'Registering your name...'
+      case 'done': return 'Registration complete!'
+      case 'error': return 'An error occurred'
+      default: return ''
+    }
+  }
 
 
   // Premium name - requires auction
@@ -260,7 +294,7 @@ const Register = () => {
                 Register {label}.safu
               </h1>
 
-              {/* Price Display - v2 Lifetime Only */}
+              {/* Price Display - USDC */}
               <div className="page-card mb-6 p-6">
                 {loading ? (
                   <div className="flex items-center justify-center gap-3 py-4">
@@ -271,7 +305,7 @@ const Register = () => {
                   <AgentPriceTag
                     name={label}
                     priceUsd={price.usd}
-                    priceEth={price.bnb}
+                    priceEth={price.usdc}
                     isAgentName={isAgentName}
                   />
                 )}
@@ -394,7 +428,7 @@ const Register = () => {
               {/* Price Summary */}
               {!loading && (
                 <p className="text-center mt-4 text-sm text-muted-foreground">
-                  ${price.usd} • One-time payment • Lifetime ownership
+                  ${price.usd} USDC • One-time payment • Lifetime ownership
                 </p>
               )}
             </div>
@@ -419,18 +453,18 @@ const Register = () => {
             <div className="page-card mt-5 p-8">
               <RegistrationSteps />
               <div style={{ marginTop: '40px' }}>
-                {/* Price Summary for v2 */}
+                {/* Price Summary - USDC */}
                 <div className="page-card p-5 text-center">
                   <div style={{ fontSize: '28px', fontWeight: 700 }}>
                     ${price.usd}
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    {price.bnb} ETH • Lifetime Registration
+                    {price.usdc} USDC • Lifetime Registration
                   </div>
                   {isAgentName && (
                     <div style={{ marginTop: '8px' }}>
                       <span className="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
-                        🤖 Agent Price
+                        Agent Price
                       </span>
                     </div>
                   )}
@@ -447,130 +481,275 @@ const Register = () => {
                 <button
                   className="btn-primary"
                   onClick={() => {
-                    setNext((prev) => prev + 1)
-                    register()
+                    setNext(3)
+                    handleCommit()
                   }}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Registering...' : 'Register Now'}
+                  Begin Registration
                 </button>
               </div>
             </div>
           ) : next == 3 ? (
+            /* Step 3: Commit + 60 second countdown */
+            <div className="page-card p-10 mt-5 flex flex-col items-center gap-6">
+              <ConfirmDetailsModal
+                isOpen={step === 'committing'}
+                onRequestClose={() => {}}
+                name={`${label}.safu`}
+                action="Commit"
+                info="Step 1 of 2: Commit transaction"
+              />
+
+              {step === 'committing' ? (
+                <>
+                  <ShieldCheck className="w-12 h-12 text-muted-foreground" />
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
+                    Confirm the commit transaction in your wallet
+                  </h2>
+                  <p className="text-muted-foreground text-center text-sm">
+                    This begins the registration process to protect your name.
+                  </p>
+                </>
+              ) : step === 'waiting' ? (
+                <>
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    border: '4px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '50%',
+                      border: '4px solid transparent',
+                      borderTopColor: 'var(--primary)',
+                      animation: 'spin 2s linear infinite',
+                    }} />
+                    <span style={{ fontSize: '36px', fontWeight: 700 }}>
+                      {countdown}
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
+                    Wait for timer to complete
+                  </h2>
+                  <p className="text-muted-foreground text-center text-sm max-w-md">
+                    This 60 second wait period protects against front-running. Your name is being reserved.
+                  </p>
+                  <div style={{
+                    width: '100%',
+                    maxWidth: '300px',
+                    height: '8px',
+                    background: 'var(--secondary)',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      width: `${((60 - countdown) / 60) * 100}%`,
+                      height: '100%',
+                      background: 'var(--primary)',
+                      borderRadius: '4px',
+                      transition: 'width 1s linear',
+                    }} />
+                  </div>
+                </>
+              ) : step === 'error' ? (
+                <>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
+                    Error During Commit
+                  </h2>
+                  <p className="text-muted-foreground text-center text-sm">
+                    {regError?.message || 'An error occurred during the commit transaction.'}
+                  </p>
+                  <button
+                    className="btn-primary"
+                    onClick={() => {
+                      handleCommit()
+                    }}
+                  >
+                    Try Again
+                  </button>
+                </>
+              ) : (
+                /* Countdown finished - auto advance handled by useEffect */
+                <>
+                  <Check className="w-12 h-12 text-green-500" />
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
+                    Timer complete! Proceeding to registration...
+                  </h2>
+                </>
+              )}
+            </div>
+          ) : next == 4 ? (
+            /* Step 4: USDC Approve + Register */
             <div className="page-card p-10 mt-5 flex flex-col items-center gap-6">
               <RegisterDetailsModal
-                isOpen={isOpen}
-                onRequestClose={() => setNext((prev) => prev - 1)}
+                isOpen={step === 'approving' || step === 'registering'}
+                onRequestClose={() => setNext(2)}
                 name={`${label}.safu` || ''}
                 action="Register name"
                 duration="Lifetime"
               />
-              {registerPending ? (
+
+              {step === 'idle' || step === 'approving' || step === 'registering' ? (
                 <>
-                  <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
-                    Waiting for transaction to complete...
-                  </h2>
+                  {step === 'approving' ? (
+                    <>
+                      <DollarSign className="w-12 h-12 text-muted-foreground" />
+                      <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
+                        Approve USDC
+                      </h2>
+                      <p className="text-muted-foreground text-center text-sm">
+                        Approve {price.usdc} USDC for the registration fee.
+                      </p>
+                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                    </>
+                  ) : step === 'registering' ? (
+                    <>
+                      <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
+                      <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
+                        Registering your name...
+                      </h2>
+                      <p className="text-muted-foreground text-center text-sm">
+                        Confirm the transaction in your wallet to complete registration.
+                      </p>
+                    </>
+                  ) : (
+                    /* step === 'idle' - ready to register */
+                    <>
+                      <Check className="w-12 h-12 text-green-500" />
+                      <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
+                        Ready to Register
+                      </h2>
+                      <p className="text-muted-foreground text-center text-sm">
+                        The timer is complete. Click below to approve USDC and register your name.
+                      </p>
+
+                      {/* Price Summary */}
+                      <div className="page-card p-5 text-center w-full max-w-sm">
+                        <div style={{ fontSize: '28px', fontWeight: 700 }}>
+                          ${price.usd}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {price.usdc} USDC • Lifetime Registration
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '20px', marginTop: '16px' }}>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setNext(2)}
+                        >
+                          Back
+                        </button>
+                        <button
+                          className="btn-primary"
+                          onClick={handleRegister}
+                          disabled={isLoading}
+                        >
+                          Approve USDC & Register
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </>
-              ) : !registerhash ? (
-                <>
-                  <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
-                    Processing registration...
-                  </h2>
-                </>
-              ) : registerError ? (
+              ) : step === 'error' ? (
                 <div style={{ textAlign: 'center' }}>
                   <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '16px' }}>
                     Registration Error
                   </h2>
                   <p className="text-muted-foreground mb-6">
-                    There was an error while registering your name.
+                    {regError?.message || 'There was an error while registering your name.'}
                   </p>
                   <button
                     className="btn-primary"
-                    onClick={() => {
-                      setIsOpen(true)
-                      register()
-                    }}
+                    onClick={handleRegister}
                   >
                     Try Again
                   </button>
                 </div>
-              ) : registerhash ? (
-                <div style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-                  <div className="page-card p-10 max-w-[420px] w-full text-center">
-                    <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
-                      Congratulations!
-                    </h1>
-                    <p className="text-muted-foreground mb-6">
-                      You are now the owner of{' '}
-                      <span style={{ fontWeight: 600 }}>
-                        {label}.safu
+              ) : null}
+            </div>
+          ) : next == 5 ? (
+            /* Step 5: Success */
+            <div className="page-card p-10 mt-5 flex flex-col items-center gap-6">
+              <div style={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                <div className="page-card p-10 max-w-[420px] w-full text-center">
+                  <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
+                    Congratulations!
+                  </h1>
+                  <p className="text-muted-foreground mb-6">
+                    You are now the owner of{' '}
+                    <span style={{ fontWeight: 600 }}>
+                      {label}.safu
+                    </span>
+                  </p>
+
+                  <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '20px',
+                    padding: '40px',
+                    marginBottom: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                  }}>
+                    <div style={{
+                      background: 'var(--card)',
+                      borderRadius: '50%',
+                      padding: '12px',
+                      marginBottom: '16px',
+                    }}>
+                      <Check style={{ width: '32px', height: '32px', color: 'var(--foreground)' }} />
+                    </div>
+                    <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.safu`}</p>
+                  </div>
+
+                  <div style={{
+                    background: 'var(--secondary)',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    marginBottom: '24px',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <span className="text-sm text-muted-foreground">
+                        Registration
                       </span>
-                    </p>
-
-                    <div style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      borderRadius: '20px',
-                      padding: '40px',
-                      marginBottom: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                    }}>
-                      <div style={{
-                        background: 'var(--card)',
-                        borderRadius: '50%',
-                        padding: '12px',
-                        marginBottom: '16px',
-                      }}>
-                        <Check style={{ width: '32px', height: '32px', color: 'var(--foreground)' }} />
-                      </div>
-                      <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.safu`}</p>
+                      <span className="font-medium text-sm">
+                        {price.usdc} USDC{' '}
+                        <span className="text-muted-foreground">{`($${price.usd})`}</span>
+                      </span>
                     </div>
-
-                    <div style={{
-                      background: 'var(--secondary)',
-                      borderRadius: '16px',
-                      padding: '16px',
-                      marginBottom: '24px',
-                      textAlign: 'left',
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <span className="text-sm text-muted-foreground">
-                          Registration
-                        </span>
-                        <span className="font-medium text-sm">
-                          {price.bnb} ETH{' '}
-                          <span className="text-muted-foreground">{`($${price.usd})`}</span>
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span className="text-sm text-muted-foreground">Ownership</span>
-                        <span style={{ fontWeight: 500, fontSize: '14px', color: '#22c55e' }}>
-                          ✓ Lifetime
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                      <button
-                        onClick={() => router.push(`/`)}
-                        className="btn-secondary"
-                      >
-                        Register another
-                      </button>
-                      <button
-                        onClick={() => router.push(`/profile`)}
-                        className="btn-primary"
-                      >
-                        View My Names
-                      </button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="text-sm text-muted-foreground">Ownership</span>
+                      <span style={{ fontWeight: 500, fontSize: '14px', color: '#22c55e' }}>
+                        ✓ Lifetime
+                      </span>
                     </div>
                   </div>
+
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <button
+                      onClick={() => router.push(`/`)}
+                      className="btn-secondary"
+                    >
+                      Register another
+                    </button>
+                    <button
+                      onClick={() => router.push(`/profile`)}
+                      className="btn-primary"
+                    >
+                      View My Names
+                    </button>
+                  </div>
                 </div>
-              ) : null}
+              </div>
             </div>
           ) : null}
         </div>

@@ -20,7 +20,7 @@ export const AgentPriceTag = ({
                     ${priceUsd}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                    ({priceEth} ETH)
+                    ({priceEth} USDC)
                 </span>
                 {isAgentName && (
                     <span className="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
