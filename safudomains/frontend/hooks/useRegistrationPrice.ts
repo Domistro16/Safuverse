@@ -31,7 +31,7 @@ export const useRegistrationPrice = ({
 
   // Fetch price from controller (returns USDC price)
   useEffect(() => {
-    if (!label || label.length === 0) {
+    if (!label || label.length < 2) {
       setPriceResult(null)
       return
     }

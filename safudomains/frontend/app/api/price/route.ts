@@ -11,9 +11,9 @@ function formatUsd(wei: bigint): string {
 export async function GET(request: NextRequest) {
     const name = request.nextUrl.searchParams.get('name')
 
-    if (!name) {
+    if (!name || name.length < 2) {
         return NextResponse.json(
-            { error: 'Name parameter required' },
+            { error: 'Name must be at least 2 characters' },
             { status: 400 }
         )
     }
