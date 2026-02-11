@@ -89,7 +89,7 @@ export default function Navbar() {
   const navLinks = [
     { label: 'Pricing', href: '/pricing', isExternal: false },
     { label: 'API', href: '/api-docs', isExternal: false },
-    { label: 'NexID Academy', href: 'https://academy.safuverse.com/courses/all', isExternal: true },
+    { label: 'NexID Academy', href: 'https://academy.nexdomains.com/courses/all', isExternal: true },
   ]
 
   const isHomepage = pathname === '/'

@@ -90,7 +90,7 @@ export default function Nav() {
       isNew: true,
     },
     {
-      href: 'https://safuverse.gitbook.io/safuverse-docs/',
+      href: 'https://nexdomains.gitbook.io/nexdomains-docs/',
       label: 'Docs',
       isExternal: true,
     },
@@ -306,7 +306,7 @@ export default function Nav() {
           )}
 
           <a
-            href="https://academy.safuverse.com/courses/all"
+            href="https://academy.nexdomains.com/courses/all"
             className="flex items-center font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
             style={{ color: isDark ? '#f5f5f5' : '#111' }}
             target="_blank"
@@ -602,7 +602,7 @@ export default function Nav() {
               ))}
 
               <a
-                href="https://academy.safuverse.com/courses/all"
+                href="https://academy.nexdomains.com/courses/all"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
