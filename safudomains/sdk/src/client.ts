@@ -55,10 +55,10 @@ import {
  *
  * @example
  * ```typescript
- * import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+ * import { NexDomains } from '@safuverse/safudomains-sdk'
  *
  * // API-based usage (for agents - no wallet needed for reads)
- * const sdk = new SafuDomainsClient({
+ * const sdk = new NexDomains({
  *   chainId: 84532,
  *   apiBaseUrl: 'https://safudomains.com',
  * })
@@ -70,14 +70,14 @@ import {
  * const result = await sdk.apiRegister('my-trading-agent', '0x...')
  *
  * // Direct on-chain usage (needs wallet client)
- * const sdk2 = new SafuDomainsClient({
+ * const sdk2 = new NexDomains({
  *   chainId: 84532,
  *   walletClient,
  * })
  * await sdk2.register('my-agent')
  * ```
  */
-export class SafuDomainsClient {
+export class NexDomains {
     public readonly chainId: number
     public readonly config: ChainConfig
     public readonly publicClient: PublicClient
