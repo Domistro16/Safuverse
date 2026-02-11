@@ -6,7 +6,7 @@ import Navbar from '@/components/navbar';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
-    title: 'Safuverse - Your Web3 Identity',
+    title: 'NexDomains - Your Web3 Identity',
     description: 'Your web3 username, across all chains. Send crypto to names, not numbers.',
 };
 

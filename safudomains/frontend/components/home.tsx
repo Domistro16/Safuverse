@@ -31,7 +31,7 @@ const faqItems = [
   },
   {
     q: 'What can I do with my domain?',
-    a: 'Use it as your universal Web3 identity, receive payments, access exclusive features in the safuverse ecosystem, and more.',
+    a: 'Use it as your universal Web3 identity, receive payments, access exclusive features in the NexDomains ecosystem, and more.',
   },
   {
     q: 'How long does registration last?',
@@ -360,7 +360,7 @@ export default function Home() {
             Web3 Identity
           </h3>
           <p style={{ fontSize: '14px', color: isDark ? '#ccc' : '#555', lineHeight: 1.55, marginTop: '10px' }}>
-            Your .id name becomes your universal on-chain username across the safuverse ecosystem.
+            Your .id name becomes your universal on-chain username across the NexDomains ecosystem.
           </p>
         </div>
 
@@ -370,7 +370,7 @@ export default function Home() {
             Academy Access
           </h3>
           <p style={{ fontSize: '14px', color: isDark ? '#ccc' : '#555', lineHeight: 1.55, marginTop: '10px' }}>
-            Use your domain to access courses, AI tutors, and learning tools inside the safuverse Academy.
+            Use your domain to access courses, AI tutors, and learning tools inside the NexDomains Academy.
           </p>
         </div>
 
@@ -393,11 +393,11 @@ export default function Home() {
             <div className="content-pill">About</div>
             <h2 className="content-title">Your Gateway to Web3 Identity</h2>
             <p className="content-text" style={{ marginBottom: '14px' }}>
-              id Domains is the official naming service for the safuverse ecosystem on BSC.
+              id Domains is the official naming service for the NexDomains ecosystem on BSC.
               Replace your long wallet address with a memorable .id name.
             </p>
             <p className="content-text">
-              Own your identity, receive payments easily, and unlock exclusive features across the safuverse platforms.
+              Own your identity, receive payments easily, and unlock exclusive features across the NexDomains platforms.
             </p>
 
             <div style={{ marginTop: '22px', fontSize: '14px', color: isDark ? '#ddd' : '#222' }}>
@@ -446,12 +446,12 @@ export default function Home() {
           <section className="footer-promo">
             <div className="footer-promo-bg" />
             <h2 className="footer-title">
-              Explore the safuverse
+              Explore the NexDomains
               <br />
               Ecosystem
             </h2>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <a href="https://academy.safuverse.com/courses/all" target="_blank" rel="noopener noreferrer">
+              <a href="https://academy.nexdomains.com/courses/all" target="_blank" rel="noopener noreferrer">
                 <button className="footer-btn" type="button">
                   Visit Academy
                 </button>
@@ -465,19 +465,19 @@ export default function Home() {
           </section>
 
           <div className="footer-actions">
-            <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer">
+            <a href="https://nexdomains.gitbook.io/nexdomains-docs/" target="_blank" rel="noopener noreferrer">
               <button className="footer-chip" type="button">
                 📄 Documentation
               </button>
             </a>
-            <a href="https://safuverse.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://nexdomains.com" target="_blank" rel="noopener noreferrer">
               <button className="footer-chip" type="button">
                 🌐 Main Website
               </button>
             </a>
           </div>
 
-          <div className="footer-copy">safuverse 2025. All rights reserved.</div>
+          <div className="footer-copy">NexDomains 2025. All rights reserved.</div>
         </div>
       </footer>
     </>
