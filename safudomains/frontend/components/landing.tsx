@@ -558,9 +558,15 @@ export default function Landing() {
           <div className="landing-bento-card landing-tilted-1">
             <div className="landing-card-visual-area">
               <div className="flex gap-4">
-                <div className="landing-sq-icon"><Box className="text-blue-500 w-8 h-8" /></div>
-                <div className="landing-sq-icon"><Diamond className="text-purple-400 w-8 h-8" /></div>
-                <div className="landing-sq-icon"><Zap className="text-teal-400 w-8 h-8" /></div>
+                <div className="landing-sq-icon p-1">
+                  <img src="https://i.pravatar.cc/120?img=32" alt="Human face" className="w-full h-full rounded-[14px] object-cover" />
+                </div>
+                <div className="landing-sq-icon p-1">
+                  <img src="https://i.pravatar.cc/120?img=47" alt="Human face" className="w-full h-full rounded-[14px] object-cover" />
+                </div>
+                <div className="landing-sq-icon p-1">
+                  <img src="https://i.pravatar.cc/120?img=12" alt="Human face" className="w-full h-full rounded-[14px] object-cover" />
+                </div>
               </div>
             </div>
             <div className="mt-auto">
@@ -574,9 +580,9 @@ export default function Landing() {
           <div className="landing-bento-card landing-tilted-2">
             <div className="landing-card-visual-area">
               <div className="flex items-center justify-center">
-                <div className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-orange-400 to-yellow-300 border-[3px] border-[#161616] -mr-5 z-[1]" />
-                <div className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-blue-400 to-purple-300 border-[3px] border-[#161616] -mr-5 z-[2]" />
-                <div className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-green-400 to-teal-300 border-[3px] border-[#161616] z-[3]" />
+                <img src="https://i.pravatar.cc/120?img=8" alt="Human face" className="w-[60px] h-[60px] rounded-full border-[3px] border-[#161616] -mr-5 z-[1] object-cover" />
+                <img src="https://i.pravatar.cc/120?img=21" alt="Human face" className="w-[60px] h-[60px] rounded-full border-[3px] border-[#161616] -mr-5 z-[2] object-cover" />
+                <img src="https://i.pravatar.cc/120?img=58" alt="Human face" className="w-[60px] h-[60px] rounded-full border-[3px] border-[#161616] z-[3] object-cover" />
               </div>
             </div>
             <div className="mt-auto">
@@ -589,8 +595,8 @@ export default function Landing() {
           {/* Academy */}
           <div className="landing-bento-card landing-tilted-3">
             <div className="landing-card-visual-area">
-              <div className="landing-academy-icon">
-                <GraduationCap className="w-10 h-10" />
+              <div className="landing-academy-icon overflow-hidden">
+                <img src="https://i.pravatar.cc/160?img=6" alt="Human face" className="w-full h-full object-cover" />
               </div>
             </div>
             <div className="mt-auto">
