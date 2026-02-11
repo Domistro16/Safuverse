@@ -261,6 +261,14 @@ export const AgentPriceOracleABI = [
 
 // ============ AgentRegistrarController (with AA + USDC support) ============
 export const AgentRegistrarControllerABI = [
+    // Ownable
+    {
+        inputs: [],
+        name: 'owner',
+        outputs: [{ type: 'address' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
     {
         inputs: [
             {
@@ -455,6 +463,54 @@ export const AgentRegistrarControllerABI = [
     {
         inputs: [{ name: 'commitment', type: 'bytes32' }],
         name: 'commit',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    // Reserved names
+    {
+        inputs: [{ name: 'name', type: 'string' }, { name: 'owner', type: 'address' }],
+        name: 'reserveName',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'names', type: 'string[]' },
+            { name: 'owners', type: 'address[]' },
+        ],
+        name: 'reserveNamesBatch',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'clearReservation',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
+                ],
+                name: 'req',
+                type: 'tuple',
+            },
+        ],
+        name: 'mintReserved',
         outputs: [],
         stateMutability: 'nonpayable',
         type: 'function',
