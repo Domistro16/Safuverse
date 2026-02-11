@@ -558,15 +558,9 @@ export default function Landing() {
           <div className="landing-bento-card landing-tilted-1">
             <div className="landing-card-visual-area">
               <div className="flex gap-4">
-                <div className="landing-sq-icon p-1">
-                  <img src="https://i.pravatar.cc/120?img=32" alt="Human face" className="w-full h-full rounded-[14px] object-cover" />
-                </div>
-                <div className="landing-sq-icon p-1">
-                  <img src="https://i.pravatar.cc/120?img=47" alt="Human face" className="w-full h-full rounded-[14px] object-cover" />
-                </div>
-                <div className="landing-sq-icon p-1">
-                  <img src="https://i.pravatar.cc/120?img=12" alt="Human face" className="w-full h-full rounded-[14px] object-cover" />
-                </div>
+                <div className="landing-sq-icon"><Box className="text-blue-500 w-8 h-8" /></div>
+                <div className="landing-sq-icon"><Diamond className="text-purple-400 w-8 h-8" /></div>
+                <div className="landing-sq-icon"><Zap className="text-teal-400 w-8 h-8" /></div>
               </div>
             </div>
             <div className="mt-auto">
@@ -595,8 +589,8 @@ export default function Landing() {
           {/* Academy */}
           <div className="landing-bento-card landing-tilted-3">
             <div className="landing-card-visual-area">
-              <div className="landing-academy-icon overflow-hidden">
-                <img src="https://i.pravatar.cc/160?img=6" alt="Human face" className="w-full h-full object-cover" />
+              <div className="landing-academy-icon">
+                <GraduationCap className="w-10 h-10" />
               </div>
             </div>
             <div className="mt-auto">
