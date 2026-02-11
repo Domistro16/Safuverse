@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 contract BulkRenewal is IBulkRenewal {
     bytes32 private constant ETH_NAMEHASH =
-        0xf92e9539a836c60f519caef3f817b823139813f56a7a19c9621f7b47f35b340d;
+        0xe3f6fa8ec34a0592261cf8313365d7f76784e190d0c33fbd4d51f8461a9b8e54;
 
     ENS public immutable ens;
 

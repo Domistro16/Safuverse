@@ -9,7 +9,7 @@ import { IoLogoWhatsapp } from 'react-icons/io'
 import { FaSnapchatGhost, FaGithub } from 'react-icons/fa'
 import { SiBnbchain } from 'react-icons/si'
 import { shortenAddress, getCID } from '../../utils/domainUtils'
-import Renew from '../renew'
+// Renew removed in v2 - lifetime only
 import React from 'react'
 import { zeroAddress } from 'viem'
 
@@ -65,12 +65,12 @@ const ProfileTab = ({
     <div>
       <div className="rounded-xl bg-neutral-800 p-3 md:px-10 md:py-5 mt-5 border-[0.5px] border-gray-500 relative flex items-center">
         <Avatar
-          name={`${label}.safu`}
+          name={`${label}.id`}
           className="w-15 h-15 md:w-24 md:h-24 mr-2 "
         />
         <div className="ml-1 md:ml-5 flex items-center w-[80%]">
           <div className="text-xl md:text-2xl font-bold grow-1">
-            {label}.safu
+            {label}.id
             {texts
               .filter((k) => k.key == 'description')
               .map((item) => (
@@ -82,15 +82,12 @@ const ProfileTab = ({
                 </div>
               ))}
           </div>
-          <button
-            className="bg-[#FF7000] flex items-center p-1 md:px-4 md:py-2 rounded-lg mt-2 text-[12px] md:text-sm cursor-pointer font-bold"
-            onClick={handleRenewal}
-          >
-            <FastForwardIcon className="h-5 w-5 mr-1" /> Extend
-          </button>
+          <div className="px-4 py-2 bg-green-600/20 border border-green-500/30 rounded-lg mt-2 text-[12px] md:text-sm">
+            <span className="text-green-400">✓ Lifetime</span>
+          </div>
         </div>
       </div>
-      {primaryName == `${label}.safu` ? (
+      {primaryName == `${label}.id` ? (
         <div>
           <ReferralProgress referrals={referrals ?? 0} />
         </div>
@@ -219,7 +216,7 @@ const ProfileTab = ({
               {expiry}
             </div>
             <div className="bg-gray-900 px-3 py-1 rounded-full hover:bg-gray-950 delay-200 duration-200 transition-all hover:scale-105">
-              <span className="text-gray-400 mr-1 font-bold">parent</span> safu
+              <span className="text-gray-400 mr-1 font-bold">parent</span> id
             </div>
           </div>
         ) : (
@@ -237,18 +234,12 @@ const ProfileTab = ({
               {expiry}
             </div>
             <div className="bg-gray-900 px-3 py-1 rounded-full hover:bg-gray-950 delay-200 duration-200 transition-all hover:scale-105">
-              <span className="text-gray-400 mr-1 font-bold">parent</span> safu
+              <span className="text-gray-400 mr-1 font-bold">parent</span> id
             </div>
           </div>
         )}
       </div>
-      <Renew
-        label={label as string}
-        expires={expires as bigint}
-        setIsOpen={setIsOpen}
-        isOpen={isOpen}
-        number={next}
-      />
+      {/* v2: Renewals removed - all domains are lifetime */}
     </div>
   )
 }

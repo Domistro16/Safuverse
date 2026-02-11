@@ -1,102 +1,90 @@
-import { useMemo } from 'react'
-import { useReadContract } from 'wagmi'
-import { Controller, PriceAbi } from '../constants/registerAbis'
-import { constants } from '../constant'
+import { useState, useEffect, useMemo } from 'react'
+import { createPublicClient, http } from 'viem'
+import { base, baseSepolia } from 'viem/chains'
+import { useChainId } from 'wagmi'
+import { getConstants, CHAIN_ID } from '../constant'
+import { AgentRegistrarControllerABI } from '../lib/abi'
 
 interface UseRegistrationPriceProps {
   label: string
-  seconds: number
-  lifetime: boolean
+}
+
+interface PriceResult {
+  priceUSDC: bigint
+  isAgentName: boolean
 }
 
 export const useRegistrationPrice = ({
   label,
-  seconds,
-  lifetime,
 }: UseRegistrationPriceProps) => {
-  // Fetch base rent price in native currency (BNB)
-  const { data: latest, isPending: loading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any,
-    functionName: 'rentPrice',
-    args: [label, seconds, lifetime],
-  })
+  const [priceResult, setPriceResult] = useState<PriceResult | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-  // Fetch price in USD1 token
-  const { data: usd1TokenData, isPending: tokenLoading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any,
-    functionName: 'rentPriceToken',
-    args: [label, seconds, 'usd1', lifetime],
-  })
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
 
-  // Fetch price in CAKE token
-  const { data: cakeTokenData, isPending: caketokenLoading } = useReadContract({
-    address: constants.Controller,
-    abi: Controller as any,
-    functionName: 'rentPriceToken',
-    args: [label, seconds, 'cake', lifetime],
-  })
+  const publicClient = useMemo(() => {
+    const chain = (chainId || CHAIN_ID) === 8453 ? base : baseSepolia
+    return createPublicClient({ chain, transport: http() })
+  }, [chainId])
 
-  // Fetch BNB/USD price from Chainlink oracle
-  const { data: priceData } = useReadContract({
-    address: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE',
-    abi: PriceAbi as any,
-    functionName: 'latestRoundData',
-  })
+  // Fetch price from controller (returns USDC price)
+  useEffect(() => {
+    if (!label || label.length === 0) {
+      setPriceResult(null)
+      return
+    }
 
-  // Calculate prices in different formats
+    const fetchPrice = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const result = await publicClient.readContract({
+          address: constants.Controller,
+          abi: AgentRegistrarControllerABI,
+          functionName: 'getPrice',
+          args: [label],
+        }) as [bigint, boolean]
+
+        setPriceResult({
+          priceUSDC: result[0],
+          isAgentName: result[1],
+        })
+      } catch (err) {
+        console.error('Error fetching price:', err)
+        setError(err as Error)
+        setPriceResult(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPrice()
+  }, [label, publicClient, constants.Controller])
+
+  // Format price for display (USDC has 6 decimals)
   const price = useMemo(() => {
-    let usd1priceInBNB = 0
-    let cakepriceInBNB = 0
-
-    if (!tokenLoading) {
-      const { base, premium } = (usd1TokenData as any) || {
-        base: 0,
-        premium: 0,
+    if (!priceResult) {
+      return {
+        usdc: '0.00',
+        usd: '0.00',
       }
-      usd1priceInBNB = (Number(base) + Number(premium)) / 1e18
     }
 
-    if (!caketokenLoading) {
-      const { base, premium } = (cakeTokenData as any) || {
-        base: 0,
-        premium: 0,
-      }
-      cakepriceInBNB = (Number(base) + Number(premium)) / 1e18
-    }
-
-    const { base } = (latest as any) || { base: 0 }
-    const [, answer, , ,] = (priceData as any) || [0, 0, 0, 0, 0]
-    const bnbPrice = Number(answer) / 1e8 // Chainlink ETH/USD has 8 decimals
-    const costInEth = Number(base) / 1e18 // base is in wei
-    const usdCost = costInEth * bnbPrice
-    const usd1cost = usd1priceInBNB
-    const cakecost = cakepriceInBNB
+    const usdcValue = Number(priceResult.priceUSDC) / 1e6
 
     return {
-      bnb: costInEth.toFixed(4),
-      usd: usdCost.toFixed(2),
-      usd1: usd1cost.toFixed(2),
-      cake: cakecost.toFixed(2),
+      usdc: usdcValue < 1 ? usdcValue.toFixed(2) : usdcValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      usd: usdcValue < 1 ? usdcValue.toFixed(2) : usdcValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     }
-  }, [
-    latest,
-    priceData,
-    usd1TokenData,
-    cakeTokenData,
-    tokenLoading,
-    caketokenLoading,
-  ])
+  }, [priceResult])
 
   return {
     price,
     loading,
-    tokenLoading,
-    caketokenLoading,
-    latest,
-    usd1TokenData,
-    cakeTokenData,
-    priceData,
+    priceResult,
+    isAgentName: priceResult?.isAgentName ?? false,
+    error,
   }
 }

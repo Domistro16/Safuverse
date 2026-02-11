@@ -15,7 +15,7 @@ import {
 export const getDataTests = () => {
   describe('getData()', () => {
     const label = 'getfuses'
-    const name = `${label}.safu`
+    const name = `${label}.id`
     const sublabel = 'sub'
     const subname = `${sublabel}.${name}`
 

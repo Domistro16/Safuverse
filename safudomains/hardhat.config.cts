@@ -62,6 +62,19 @@ const config = {
       chainId: 56,
       accounts: real_accounts,
     },
+    // Base networks for SafuDomains v2
+    baseSepolia: {
+      url: 'https://sepolia.base.org',
+      tags: ['test', 'use_root'],
+      chainId: 84532,
+      accounts: real_accounts,
+    },
+    base: {
+      url: 'https://mainnet.base.org',
+      tags: ['use_root'],
+      chainId: 8453,
+      accounts: real_accounts,
+    },
   },
   mocha: {},
   solidity: {
@@ -71,7 +84,7 @@ const config = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1200,
+            runs: 200,
           },
           outputSelection: {
             '*': {
@@ -97,6 +110,21 @@ const config = {
           },
         },
       },
+      {
+        version: '0.8.20',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+          outputSelection: {
+            '*': {
+              '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'metadata'],
+              '': ['ast'], // Make sure AST is included
+            },
+          },
+        },
+      },
     ],
     overrides: {
       'node_modules/@uniswap/v3-periphery/**': { version: '0.7.6' },
@@ -106,7 +134,7 @@ const config = {
 
           optimizer: {
             enabled: true,
-            runs: 1200,
+            runs: 200,
           },
           outputSelection: {
             '*': {
@@ -142,9 +170,9 @@ const config = {
     },
     owner: {
       default: 1,
-      9745: '0x2A0D7311fA7e9aC2890CFd8219b2dEf0c206E79B',
       56: '0xD83deFbA240568040b39bb2C8B4DB7dB02d40593',
-      97: '0xd83defba240568040b39bb2c8b4db7db02d40593',
+      84532: '0xd83defba240568040b39bb2c8b4db7db02d40593',
+      8453: '0xd83defba240568040b39bb2c8b4db7db02d40593',
     },
   },
   external: {
@@ -155,9 +183,31 @@ const config = {
     ],
   },
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: process.env.BSCSCAN_API_KEY,
+    // API keys for block explorers
+    apiKey: {
+      bsc: process.env.BSCSCAN_API_KEY || '',
+      bscTestnet: process.env.BSCSCAN_API_KEY || '',
+      baseSepolia: process.env.BASESCAN_API_KEY || '',
+      base: process.env.BASESCAN_API_KEY || '',
+    },
+    customChains: [
+      {
+        network: 'baseSepolia',
+        chainId: 84532,
+        urls: {
+          apiURL: 'https://api-sepolia.basescan.org/api',
+          browserURL: 'https://sepolia.basescan.org',
+        },
+      },
+      {
+        network: 'base',
+        chainId: 8453,
+        urls: {
+          apiURL: 'https://api.basescan.org/api',
+          browserURL: 'https://basescan.org',
+        },
+      },
+    ],
   },
   sourcify: {
     // Disabled by default

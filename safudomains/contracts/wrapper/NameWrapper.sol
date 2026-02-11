@@ -3,7 +3,22 @@ pragma solidity ~0.8.17;
 
 import {ERC1155Fuse, IERC165, IERC1155MetadataURI} from "./ERC1155Fuse.sol";
 import {Controllable} from "./Controllable.sol";
-import {INameWrapper, CANNOT_UNWRAP, CANNOT_BURN_FUSES, CANNOT_TRANSFER, CANNOT_SET_RESOLVER, CANNOT_SET_TTL, CANNOT_CREATE_SUBDOMAIN, CANNOT_APPROVE, PARENT_CANNOT_CONTROL, CAN_DO_EVERYTHING, IS_DOT_CRE8OR, CAN_EXTEND_EXPIRY, PARENT_CONTROLLED_FUSES, USER_SETTABLE_FUSES} from "./INameWrapper.sol";
+import {
+    INameWrapper,
+    CANNOT_UNWRAP,
+    CANNOT_BURN_FUSES,
+    CANNOT_TRANSFER,
+    CANNOT_SET_RESOLVER,
+    CANNOT_SET_TTL,
+    CANNOT_CREATE_SUBDOMAIN,
+    CANNOT_APPROVE,
+    PARENT_CANNOT_CONTROL,
+    CAN_DO_EVERYTHING,
+    IS_DOT_CRE8OR,
+    CAN_EXTEND_EXPIRY,
+    PARENT_CONTROLLED_FUSES,
+    USER_SETTABLE_FUSES
+} from "./INameWrapper.sol";
 import {INameWrapperUpgrade} from "./INameWrapperUpgrade.sol";
 import {IMetadataService} from "./IMetadataService.sol";
 import {ENS} from "../registry/ENS.sol";
@@ -11,11 +26,14 @@ import {Resolver} from "../resolvers/Resolver.sol";
 import {IReverseRegistrar} from "../reverseRegistrar/IReverseRegistrar.sol";
 import {ReverseClaimer} from "../reverseRegistrar/ReverseClaimer.sol";
 import {IBaseRegistrar} from "../ethregistrar/IBaseRegistrar.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {
+    IERC721Receiver
+} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BytesUtils} from "../utils/BytesUtils.sol";
 import {ERC20Recoverable} from "../utils/ERC20Recoverable.sol";
+import {IERC2981} from "../utils/IERC2981.sol";
 
 error Unauthorised(bytes32 node, address addr);
 error IncompatibleParent();
@@ -36,7 +54,8 @@ contract NameWrapper is
     Controllable,
     IERC721Receiver,
     ERC20Recoverable,
-    ReverseClaimer
+    ReverseClaimer,
+    IERC2981
 {
     using BytesUtils for bytes;
 
@@ -48,7 +67,7 @@ contract NameWrapper is
 
     uint64 private constant GRACE_PERIOD = 30 days;
     bytes32 private constant CRE8OR_NODE =
-        0xf92e9539a836c60f519caef3f817b823139813f56a7a19c9621f7b47f35b340d;
+        0xe3f6fa8ec34a0592261cf8313365d7f76784e190d0c33fbd4d51f8461a9b8e54;
 
     bytes32 private constant CRE8OR_LABELHASH =
         0x5b7218b9fa9136601dc9992219571b5b20ef11b579b651383f4a9890866c08f3;
@@ -57,6 +76,19 @@ contract NameWrapper is
 
     INameWrapperUpgrade public upgradeContract;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
+
+    // ============ Royalty Constants ============
+    uint96 public constant ROYALTY_BPS = 500; // 5% = 500 basis points
+    uint96 private constant BPS_DENOMINATOR = 10000;
+
+    // ============ Royalty State ============
+    address public royaltyReceiver;
+
+    // ============ Royalty Events ============
+    event RoyaltyReceiverUpdated(
+        address indexed oldReceiver,
+        address indexed newReceiver
+    );
 
     constructor(
         ENS _ens,
@@ -82,7 +114,7 @@ contract NameWrapper is
             MAX_EXPIRY
         );
         names[ROOT_NODE] = "\x00";
-        names[CRE8OR_NODE] = "\x04safu\x00";
+        names[CRE8OR_NODE] = "\x02id\x00";
     }
 
     function setMetadata(address _metadata) public onlyOwner {
@@ -91,10 +123,17 @@ contract NameWrapper is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC1155Fuse, INameWrapper) returns (bool) {
+    )
+        public
+        view
+        virtual
+        override(ERC1155Fuse, INameWrapper, IERC165)
+        returns (bool)
+    {
         return
             interfaceId == type(INameWrapper).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||
+            interfaceId == type(IERC2981).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
@@ -334,7 +373,6 @@ contract NameWrapper is
         } catch {
             return registrarExpiry;
         }
-
         // Set expiry in Wrapper
         uint64 expiry = uint64(registrarExpiry) + GRACE_PERIOD;
 
@@ -1009,7 +1047,7 @@ contract NameWrapper is
         bytes32 labelhash = keccak256(bytes(label));
         bytes32 node = _makeNode(CRE8OR_NODE, labelhash);
         // hardcode dns-encoded eth string for gas savings
-        bytes memory name = _addLabel(label, "\x04safu\x00");
+        bytes memory name = _addLabel(label, "\x02id\x00");
         names[node] = name;
 
         _wrap(
@@ -1092,5 +1130,32 @@ contract NameWrapper is
         return
             fuses & IS_DOT_CRE8OR == IS_DOT_CRE8OR &&
             expiry - GRACE_PERIOD < block.timestamp;
+    }
+
+    // ============ ERC-2981 Royalty Implementation ============
+
+    /**
+     * @notice Returns royalty info for a given token and sale price
+     * @param salePrice The sale price of the NFT
+     * @return receiver Address to receive royalty
+     * @return royaltyAmount The royalty amount (5% of sale price)
+     */
+    function royaltyInfo(
+        uint256,
+        uint256 salePrice
+    ) external view override returns (address receiver, uint256 royaltyAmount) {
+        receiver = royaltyReceiver;
+        royaltyAmount = (salePrice * ROYALTY_BPS) / BPS_DENOMINATOR;
+    }
+
+    /**
+     * @notice Update the royalty receiver address
+     * @param _newReceiver New address to receive royalties
+     */
+    function setRoyaltyReceiver(address _newReceiver) external onlyOwner {
+        require(_newReceiver != address(0), "Invalid receiver");
+        address oldReceiver = royaltyReceiver;
+        royaltyReceiver = _newReceiver;
+        emit RoyaltyReceiverUpdated(oldReceiver, _newReceiver);
     }
 }

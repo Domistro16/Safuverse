@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre) {
 
   const bri = await viem.deploy('BaseRegistrarImplementation', [
     registry.address,
-    namehash('safu'),
+    namehash('id'),
   ])
   if (!bri.newlyDeployed) return
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 const UNWRAPPED_QUERY = gql`
   query UnwrappedByOwner($owner: String!, $first: Int!, $skip: Int!) {
     domains(
-      where: { owner: $owner, name_ends_with: ".safu" }
+      where: { owner: $owner, name_ends_with: ".id" }
       first: $first
       skip: $skip
       orderBy: name
@@ -20,7 +20,7 @@ const UNWRAPPED_QUERY = gql`
 const WRAPPED_QUERY = gql`
   query WrappedByOwner($owner: String!, $first: Int!, $skip: Int!) {
     wrappedDomains(
-      where: { owner: $owner, name_ends_with: ".safu" }
+      where: { owner: $owner, name_ends_with: ".id" }
       first: $first
       skip: $skip
       orderBy: name
@@ -40,7 +40,7 @@ function usePaged(
   const pageSize = 200
   const skipRef = useRef(0)
   const { data, fetchMore, loading } = useQuery<any>(query, {
-    variables: {owner , first: pageSize, skip: skipRef.current },
+    variables: { owner, first: pageSize, skip: skipRef.current },
     skip: !owner,
   })
 

@@ -29,14 +29,23 @@ export const CustomConnect = () => {
     );
   }
 
+  const isStuck = authenticated && !isConnected;
+
+  const handleLogin = async () => {
+    if (isStuck) {
+      await logout();
+    }
+    login();
+  };
+
   if (!authenticated || !isConnected) {
     return (
       <button
         className="bg-[#FFB000] text-black p-8 py-[8px] font-bold rounded-full hover:scale-105 duration-200 cursor-pointer"
         type="button"
-        onClick={login}
+        onClick={handleLogin}
       >
-        Login
+        {isStuck ? 'Reconnect' : 'Login'}
       </button>
     );
   }

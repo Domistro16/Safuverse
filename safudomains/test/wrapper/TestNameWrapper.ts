@@ -62,9 +62,9 @@ describe('NameWrapper', () => {
         ...contracts,
       })),
     targetTokenIds: [
-      toNameId('test1.safu'),
-      toNameId('test2.safu'),
-      toNameId('doesnotexist.safu'),
+      toNameId('test1.id'),
+      toNameId('test2.id'),
+      toNameId('doesnotexist.id'),
     ],
     mint: async (
       { accounts, actions },
@@ -123,7 +123,7 @@ describe('NameWrapper', () => {
 
   describe('Transfer', () => {
     const label = 'transfer'
-    const name = `${label}.safu`
+    const name = `${label}.id`
 
     async function transferFixture() {
       const initial = await loadFixture(fixture)
@@ -249,7 +249,7 @@ describe('NameWrapper', () => {
       } = await loadFixture(fixture)
 
       const label = 'base'
-      const name = `${label}.safu`
+      const name = `${label}.id`
 
       await actions.register({
         label,
@@ -271,7 +271,7 @@ describe('NameWrapper', () => {
 
       // signed a submomain for the hacker, with a soon-expired expiry
       const sublabel1 = 'sub1'
-      const subname1 = `${sublabel1}.${name}` // sub1.base.safu
+      const subname1 = `${sublabel1}.${name}` // sub1.base.id
       const timestamp = await publicClient.getBlock().then((b) => b.timestamp)
 
       await actions.setSubnodeOwner.onNameWrapper({
@@ -301,7 +301,7 @@ describe('NameWrapper', () => {
 
       // the hacker setSubnodeOwner, to set the owner of subname2 as NameWrapper
       const sublabel2 = 'sub2'
-      const subname2 = `${sublabel2}.${subname1}` // sub2.sub1.base.safu
+      const subname2 = `${sublabel2}.${subname1}` // sub2.sub1.base.id
 
       await actions.setSubnodeOwner.onEnsRegistry({
         parentName: subname1,
@@ -338,8 +338,8 @@ describe('NameWrapper', () => {
       ).resolves.toEqual(dnsEncodeName(subname2))
 
       // the hacker forge a fake root node
-      const sublabel3 = 'safu'
-      const subname3 = `${sublabel3}.${subname2}` // safu.sub2.sub1.base.safu
+      const sublabel3 = 'id'
+      const subname3 = `${sublabel3}.${subname2}` // id.sub2.sub1.base.id
 
       await actions.setSubnodeOwner.onNameWrapper({
         parentName: subname2,
@@ -359,7 +359,7 @@ describe('NameWrapper', () => {
 
   describe('Grace period tests', () => {
     const label = 'test'
-    const name = `${label}.safu`
+    const name = `${label}.id`
     const sublabel = 'sub'
     const subname = `${sublabel}.${name}`
 
@@ -386,7 +386,7 @@ describe('NameWrapper', () => {
         expiry: parentExpiry - DAY / 2n,
       })
 
-      // move .safu name to expired and be within grace period
+      // move .id name to expired and be within grace period
       await testClient.increaseTime({ seconds: Number(2n * DAY) })
       await testClient.mine({ blocks: 1 })
 
@@ -406,7 +406,7 @@ describe('NameWrapper', () => {
       return { ...initial, parentExpiry }
     }
 
-    it('When a .safu name is in grace period it cannot call setSubnodeOwner', async () => {
+    it('When a .id name is in grace period it cannot call setSubnodeOwner', async () => {
       const { nameWrapper, parentExpiry, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -423,7 +423,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[0].address))
     })
 
-    it('When a .safu name is in grace period it cannot call setSubnodeRecord', async () => {
+    it('When a .id name is in grace period it cannot call setSubnodeRecord', async () => {
       const { nameWrapper, parentExpiry, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -442,7 +442,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[0].address))
     })
 
-    it('When a .safu name is in grace period it cannot call setRecord', async () => {
+    it('When a .id name is in grace period it cannot call setRecord', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await expect(nameWrapper)
@@ -456,7 +456,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[0].address))
     })
 
-    it('When a .safu name is in grace period it cannot call safeTransferFrom', async () => {
+    it('When a .id name is in grace period it cannot call safeTransferFrom', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await expect(nameWrapper)
@@ -470,7 +470,7 @@ describe('NameWrapper', () => {
         .toBeRevertedWithString('ERC1155: insufficient balance for transfer')
     })
 
-    it('When a .safu name is in grace period it cannot call batchSafeTransferFrom', async () => {
+    it('When a .id name is in grace period it cannot call batchSafeTransferFrom', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await expect(nameWrapper)
@@ -484,7 +484,7 @@ describe('NameWrapper', () => {
         .toBeRevertedWithString('ERC1155: insufficient balance for transfer')
     })
 
-    it('When a .safu name is in grace period it cannot call setResolver', async () => {
+    it('When a .id name is in grace period it cannot call setResolver', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await expect(nameWrapper)
@@ -493,7 +493,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[0].address))
     })
 
-    it('When a .safu name is in grace period it cannot call setTTL', async () => {
+    it('When a .id name is in grace period it cannot call setTTL', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await expect(nameWrapper)
@@ -502,7 +502,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[0].address))
     })
 
-    it('When a .safu name is in grace period it cannot call setFuses', async () => {
+    it('When a .id name is in grace period it cannot call setFuses', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await expect(nameWrapper)
@@ -511,7 +511,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[0].address))
     })
 
-    it('When a .safu name is in grace period it cannot call setChildFuses', async () => {
+    it('When a .id name is in grace period it cannot call setChildFuses', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await expect(nameWrapper)
@@ -520,7 +520,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[0].address))
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can call setFuses', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can call setFuses', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await nameWrapper.write.setFuses([namehash(subname), CANNOT_UNWRAP], {
@@ -531,7 +531,7 @@ describe('NameWrapper', () => {
       expect(fuses).toEqual(PARENT_CANNOT_CONTROL | CANNOT_UNWRAP)
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can transfer', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can transfer', async () => {
       const { nameWrapper, accounts } = await loadFixture(gracePeriodFixture)
 
       await nameWrapper.write.safeTransferFrom(
@@ -542,7 +542,7 @@ describe('NameWrapper', () => {
       await expectOwnerOf(subname).on(nameWrapper).toBe(accounts[0])
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can set resolver', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can set resolver', async () => {
       const { ensRegistry, nameWrapper, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -559,7 +559,7 @@ describe('NameWrapper', () => {
       ).resolves.toEqualAddress(accounts[0].address)
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can set ttl', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can set ttl', async () => {
       const { ensRegistry, nameWrapper, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -573,7 +573,7 @@ describe('NameWrapper', () => {
       )
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can call setRecord', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can call setRecord', async () => {
       const { ensRegistry, nameWrapper, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -595,7 +595,7 @@ describe('NameWrapper', () => {
       )
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can call setSubnodeOwner', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can call setSubnodeOwner', async () => {
       const { nameWrapper, actions, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -612,7 +612,7 @@ describe('NameWrapper', () => {
       await expectOwnerOf(`sub2.${subname}`).on(nameWrapper).toBe(accounts[1])
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can call setSubnodeRecord', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can call setSubnodeRecord', async () => {
       const { nameWrapper, actions, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -631,7 +631,7 @@ describe('NameWrapper', () => {
       await expectOwnerOf(`sub2.${subname}`).on(nameWrapper).toBe(accounts[1])
     })
 
-    it('When a .safu name is in grace period, unexpired subdomains can call setChildFuses if the subdomain exists', async () => {
+    it('When a .id name is in grace period, unexpired subdomains can call setChildFuses if the subdomain exists', async () => {
       const { nameWrapper, actions, accounts } = await loadFixture(
         gracePeriodFixture,
       )
@@ -663,7 +663,7 @@ describe('NameWrapper', () => {
 
   describe('Registrar tests', () => {
     const label = 'sub1'
-    const name = `${label}.safu`
+    const name = `${label}.id`
     const sublabel = 'sub2'
     const subname = `${sublabel}.${name}`
 
@@ -688,8 +688,8 @@ describe('NameWrapper', () => {
       })
       await testClient.mine({ blocks: 1 })
 
-      // XXX: note that at this step, the hackler should use the current .safu
-      // registrar to directly register `sub1.safu` to himself, without wrapping
+      // XXX: note that at this step, the hackler should use the current .id
+      // registrar to directly register `sub1.id` to himself, without wrapping
       // the name.
       await actions.register({
         label,
@@ -702,12 +702,12 @@ describe('NameWrapper', () => {
       // set `EnsRegistry.owner` as NameWrapper. Note that this step is used to
       // bypass the newly-introduced checks for [ZZ-001]
       //
-      // XXX: corrently, `sub1.safu` becomes a normal node
+      // XXX: corrently, `sub1.id` becomes a normal node
       await ensRegistry.write.setOwner([namehash(name), nameWrapper.address], {
         account: accounts[2],
       })
 
-      // create `sub2.sub1.safu` to the victim user with `PARENT_CANNOT_CONTROL`
+      // create `sub2.sub1.id` to the victim user with `PARENT_CANNOT_CONTROL`
       // burnt.
       await expect(nameWrapper)
         .write(
@@ -728,7 +728,7 @@ describe('NameWrapper', () => {
 
   describe('ERC1155 additional tests', () => {
     const label = 'erc1155'
-    const name = `${label}.safu`
+    const name = `${label}.id`
 
     it('Transferring a token that is not owned by the owner reverts', async () => {
       const { nameWrapper, actions, accounts } = await loadFixture(fixture)
@@ -747,7 +747,7 @@ describe('NameWrapper', () => {
         .toBeRevertedWithString('ERC1155: insufficient balance for transfer')
     })
 
-    it('Approval on the Wrapper does not give permission to wrap the .safu name', async () => {
+    it('Approval on the Wrapper does not give permission to wrap the .id name', async () => {
       const { nameWrapper, actions, accounts } = await loadFixture(fixture)
 
       await actions.register({
@@ -763,10 +763,10 @@ describe('NameWrapper', () => {
           account: accounts[2],
         })
         .toBeRevertedWithCustomError('Unauthorised')
-        .withArgs(namehash(label + '.safu'), getAddress(accounts[2].address))
+        .withArgs(namehash(label + '.id'), getAddress(accounts[2].address))
     })
 
-    it('Approval on the Wrapper does not give permission to wrap a non .safu name', async () => {
+    it('Approval on the Wrapper does not give permission to wrap a non .id name', async () => {
       const { nameWrapper, ensRegistry, accounts, actions } = await loadFixture(
         fixture,
       )
@@ -789,7 +789,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash('xyz'), getAddress(accounts[2].address))
     })
 
-    it('When .safu name expires, it is untransferrable', async () => {
+    it('When .id name expires, it is untransferrable', async () => {
       const { nameWrapper, actions, accounts, testClient } = await loadFixture(
         fixture,
       )
@@ -947,7 +947,7 @@ describe('NameWrapper', () => {
 
   describe('Implicit unwrap tests', () => {
     const label = 'sub1'
-    const name = `${label}.safu`
+    const name = `${label}.id`
     const sublabel = 'sub2'
     const subname = `${sublabel}.${name}`
 
@@ -979,7 +979,7 @@ describe('NameWrapper', () => {
         CANNOT_UNWRAP,
       ])
 
-      // create `sub2.sub1.safu` w/o fuses burnt
+      // create `sub2.sub1.id` w/o fuses burnt
       await actions.setSubnodeOwner.onNameWrapper({
         parentName: name,
         label: sublabel,
@@ -997,8 +997,8 @@ describe('NameWrapper', () => {
       })
       await testClient.mine({ blocks: 1 })
 
-      // XXX: note that at this step, the hacker should use the current .safu
-      // registrar to directly register `sub1.safu` to themselves, without wrapping
+      // XXX: note that at this step, the hacker should use the current .id
+      // registrar to directly register `sub1.id` to themselves, without wrapping
       // the name.
       await actions.register({
         label,
@@ -1009,7 +1009,7 @@ describe('NameWrapper', () => {
       await expectOwnerOf(label).on(baseRegistrar).toBe(accounts[2])
 
       // XXX: PREPARE HACK!
-      // set `EnsRegistry.owner` of `sub1.safu` as the hacker themselves.
+      // set `EnsRegistry.owner` of `sub1.id` as the hacker themselves.
       await ensRegistry.write.setOwner([namehash(name), accounts[2].address], {
         account: accounts[2],
       })
@@ -1022,7 +1022,7 @@ describe('NameWrapper', () => {
       )
       await expectOwnerOf(label).on(baseRegistrar).toBe(nameWrapper)
 
-      // set `sub2.sub1.safu` to the victim user w fuses burnt
+      // set `sub2.sub1.id` to the victim user w fuses burnt
       // XXX: do this via `setChildFuses`
       // Cannot setChildFuses as the owner has not been updated in the wrapper when reregistering
       await expect(nameWrapper)
@@ -1040,7 +1040,7 @@ describe('NameWrapper', () => {
         .withArgs(namehash(name), getAddress(accounts[2].address))
     })
 
-    it('Renewing a wrapped, but expired name .safu in the wrapper, but unexpired on the registrar resyncs expiry', async () => {
+    it('Renewing a wrapped, but expired name .id in the wrapper, but unexpired on the registrar resyncs expiry', async () => {
       const { ensRegistry, nameWrapper, baseRegistrar, accounts, testClient } =
         await loadFixture(implicitUnwrapFixture)
 

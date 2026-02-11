@@ -39,23 +39,25 @@ const func: DeployFunction = async function (hre) {
   )
   await viem.waitForTransactionSuccess(addControllerHash)
 
-  const interfaceId = await getInterfaceId('INameWrapper')
-  const resolver = await registry.read.resolver([namehash('safu')])
+  const interfaceId = await getInterfaceId(
+    'contracts/wrapper/INameWrapper.sol:INameWrapper',
+  )
+  const resolver = await registry.read.resolver([namehash('id')])
   if (resolver === zeroAddress) {
     console.log(
-      `No resolver set for .safu; not setting interface ${interfaceId} for NameWrapper`,
+      `No resolver set for .id; not setting interface ${interfaceId} for NameWrapper`,
     )
     return
   }
 
   const resolverContract = await viem.getContractAt('OwnedResolver', resolver)
   const setInterfaceHash = await resolverContract.write.setInterface([
-    namehash('safu'),
+    namehash('id'),
     interfaceId,
     nameWrapper.address,
   ])
   console.log(
-    `Setting NameWrapper interface ID ${interfaceId} on .safu resolver (tx: ${setInterfaceHash})...`,
+    `Setting NameWrapper interface ID ${interfaceId} on .id resolver (tx: ${setInterfaceHash})...`,
   )
   await viem.waitForTransactionSuccess(setInterfaceHash)
 }

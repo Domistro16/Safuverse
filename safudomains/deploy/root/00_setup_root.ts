@@ -1,8 +1,10 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
 import { zeroHash } from 'viem'
+import { createNonceWaiter } from '../../deploy-utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
   const { network, viem } = hre
+  const waitNonce = createNonceWaiter(viem)
 
   const { deployer, owner } = await viem.getNamedClients()
 
@@ -19,7 +21,7 @@ const func: DeployFunction = async function (hre) {
   console.log(
     `Setting owner of root node to root contract (tx: ${setOwnerHash})...`,
   )
-  await viem.waitForTransactionSuccess(setOwnerHash)
+  await waitNonce(setOwnerHash)
 
   const rootOwner = await root.read.owner()
 
@@ -31,7 +33,17 @@ const func: DeployFunction = async function (hre) {
       console.log(
         `Transferring root ownership to final owner (tx: ${transferOwnershipHash})...`,
       )
-      await viem.waitForTransactionSuccess(transferOwnershipHash)
+      await waitNonce(transferOwnershipHash)
+
+      // Verify ownership is propagated on the RPC before proceeding.
+      for (let i = 0; i < 15; i++) {
+        const currentOwner = await root.read.owner()
+        if (currentOwner.toLowerCase() === owner.address.toLowerCase()) break
+        console.log(
+          `Waiting for root ownership to propagate (attempt ${i + 1})...`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
     case owner.address:
       const ownerIsRootController = await root.read.controllers([owner.address])
       if (!ownerIsRootController) {
@@ -42,7 +54,7 @@ const func: DeployFunction = async function (hre) {
         console.log(
           `Setting final owner as controller on root contract (tx: ${setControllerHash})...`,
         )
-        await viem.waitForTransactionSuccess(setControllerHash)
+        await waitNonce(setControllerHash)
       }
       break
     default:

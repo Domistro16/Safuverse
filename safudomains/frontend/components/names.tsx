@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
   Modal.setAppElement(document.body)
 }
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 // ABI definitions for contract interactions
 const isWrappedAbi = [
@@ -348,7 +348,7 @@ function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalPr
 
 // Wrap Modal Component
 function WrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
-  const label = domain.replace(/\.safu$/, '')
+  const label = domain.replace(/\.id$/, '')
   const { address } = useAccount()
   const [step, setStep] = useState(0)
   const [info, setInfo] = useState('')
@@ -506,7 +506,7 @@ function WrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
 
 // Unwrap Modal Component
 function UnwrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
-  const label = domain.replace(/\.safu$/, '')
+  const label = domain.replace(/\.id$/, '')
   const { address } = useAccount()
   const [step, setStep] = useState(0)
   const [ownerAddress, setOwnerAddress] = useState(address || '')
@@ -1011,12 +1011,19 @@ function DomainCard({
   const [showUnwrapModal, setShowUnwrapModal] = useState(false)
   const [showPrimaryModal, setShowPrimaryModal] = useState(false)
 
+  // v2: Lifetime ownership - no expiry
+  // Check if this is a v2 lifetime domain (expiryDate far in future or 0)
+  const isLifetime = domain.expiryDate === 0 || domain.expiryDate > Date.now() / 1000 + 100 * 365 * 24 * 3600
+
   const nowSec = Date.now() / 1000
   const secondsLeft = domain.expiryDate - nowSec - 259200
   let statusText: string
   let statusColor: string
 
-  if (secondsLeft <= 0) {
+  if (isLifetime) {
+    statusText = '✓ Lifetime'
+    statusColor = '#22c55e'
+  } else if (secondsLeft <= 0) {
     statusText = 'Expired'
     statusColor = '#ef4444'
   } else if (secondsLeft < 30 * 24 * 3600) {
@@ -1028,8 +1035,8 @@ function DomainCard({
     statusColor = isDark ? '#888' : '#666'
   }
 
-  const isExpired = secondsLeft <= 0
-  const isExpiringSoon = secondsLeft > 0 && secondsLeft < 30 * 24 * 3600
+  const isExpired = !isLifetime && secondsLeft <= 0
+  const isExpiringSoon = !isLifetime && secondsLeft > 0 && secondsLeft < 30 * 24 * 3600
 
   return (
     <>
@@ -1084,6 +1091,20 @@ function DomainCard({
               <WrappedBadge name={domain.name} tag={'Manager'} />
               <WrappedBadge name={domain.name} tag={'Owner'} />
             </div>
+            {isLifetime && (
+              <div
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  color: '#22c55e',
+                }}
+              >
+                Lifetime
+              </div>
+            )}
             {(isExpired || isExpiringSoon) && (
               <div
                 style={{
@@ -1405,7 +1426,7 @@ export default function Names() {
                 Loading...
               </h3>
               <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
-                Fetching your .safu domains.
+                Fetching your .id domains.
               </p>
             </div>
           ) : sortedDomains.length === 0 ? (
@@ -1416,7 +1437,7 @@ export default function Names() {
               <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
                 {searchQuery
                   ? 'No domains match your search query.'
-                  : 'You don\'t have any .safu domains yet.'}
+                  : 'You don\'t have any .id domains yet.'}
               </p>
               {!searchQuery && (
                 <button

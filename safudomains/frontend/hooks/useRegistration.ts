@@ -1,42 +1,48 @@
-import { useState } from 'react'
-import { useWriteContract } from 'wagmi'
-import {
-  bytesToHex,
-  encodeFunctionData,
-  namehash,
-  parseEther,
-  keccak256,
-  toBytes,
-  encodeAbiParameters,
-} from 'viem'
+import { useState, useCallback, useMemo } from 'react'
+import { useChainId, usePublicClient, useConfig, useSwitchChain } from 'wagmi'
+import { getWalletClient } from '@wagmi/core'
+import { namehash, encodeFunctionData, createPublicClient, http } from 'viem'
+import { base, baseSepolia } from 'viem/chains'
 import { buildTextRecords } from './setText'
-import {
-  Controller,
-  ERC20_ABI,
-  addrResolver,
-  RegisterRequest,
-  ReferralData,
-  EMPTY_REFERRAL_DATA,
-  EMPTY_REFERRAL_SIGNATURE,
-} from '../constants/registerAbis'
-import { constants } from '../constant'
+import { addrResolver, ReferralData, EMPTY_REFERRAL_DATA, EMPTY_REFERRAL_SIGNATURE, ERC20_ABI } from '../constants/registerAbis'
+import { getConstants, CHAIN_ID } from '../constant'
+import { AgentRegistrarControllerABI } from '../lib/abi'
 import { normalize } from 'viem/ens'
+import { AgentRegistrarControllerAbi } from '@nexid/sdk'
+import { buildPaymasterAndData, signPermit, eip2612Abi } from '../lib/permit'
+import { create7702KernelAccount } from '@zerodev/ecdsa-validator'
+import { KERNEL_V3_3 } from '@zerodev/sdk/constants'
+import { createSmartAccountClient } from 'permissionless'
+
+export type RegistrationStep = 'idle' | 'committing' | 'waiting' | 'approving' | 'registering' | 'done' | 'error'
 
 export const useRegistration = () => {
-  const [secret, setSecret] = useState<`0x${string}`>('0x')
   const [commitData, setCommitData] = useState<`0x${string}`[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [step, setStep] = useState<RegistrationStep>('idle')
+  const [commitHash, setCommitHash] = useState<`0x${string}` | null>(null)
+  const [registerHash, setRegisterHash] = useState<`0x${string}` | null>(null)
+  const [humanUsdcBalance, setHumanUsdcBalance] = useState<bigint | null>(null)
+  const [error, setError] = useState<Error | null>(null)
+  const [countdown, setCountdown] = useState(0)
+  const [secret, setSecret] = useState<`0x${string}`>('0x0000000000000000000000000000000000000000000000000000000000000000')
 
-  const { data: commithash, writeContractAsync } = useWriteContract()
-  const { writeContractAsync: approve } = useWriteContract()
-  const {
-    data: registerhash,
-    error: registerError,
-    isPending: registerPending,
-    writeContractAsync: registerContract,
-  } = useWriteContract()
+  const config = useConfig()
+  const wagmiPublicClient = usePublicClient()
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
 
-  const buildCommitDataFn = (
+  const activeChain = (chainId || CHAIN_ID) === 8453 ? base : baseSepolia
+
+  // Create a fallback public client in case wagmi's usePublicClient returns undefined
+  const fallbackPublicClient = useMemo(() => {
+    return createPublicClient({ chain: activeChain, transport: http() })
+  }, [activeChain])
+
+  const publicClient = wagmiPublicClient ?? fallbackPublicClient
+
+  // Build resolver data for text records and address
+  const buildCommitDataFn = useCallback((
     textRecords: { key: string; value: string }[],
     newRecords: { key: string; value: string }[],
     label: string,
@@ -49,53 +55,40 @@ export const useRegistration = () => {
 
     const builtData = buildTextRecords(
       validTextRecords,
-      namehash(`${label}.safu`),
+      namehash(`${label}.id`),
     )
     const addrEncoded = encodeFunctionData({
       abi: addrResolver,
       functionName: 'setAddr',
-      args: [namehash(`${label}.safu`), owner],
+      args: [namehash(`${label}.id`), owner],
     })
     const fullData = [...builtData, addrEncoded]
     setCommitData(fullData)
-  }
+    return fullData
+  }, [])
 
-  // Helper to compute commitment hash (matches contract's makeCommitment)
-  const computeCommitment = (req: RegisterRequest): `0x${string}` => {
-    const labelHash = keccak256(toBytes(req.name))
-    const encoded = encodeAbiParameters(
-      [
-        { type: 'bytes32' },
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'bytes32' },
-        { type: 'address' },
-        { type: 'bytes[]' },
-        { type: 'bool' },
-        { type: 'uint16' },
-        { type: 'bool' },
-      ],
-      [
-        labelHash,
-        req.owner,
-        req.duration,
-        req.secret,
-        req.resolver,
-        req.data,
-        req.reverseRecord,
-        req.ownerControlledFuses,
-        req.lifetime,
-      ],
-    )
-    return keccak256(encoded)
-  }
+  // Generate a random secret for commit-reveal
+  const generateSecret = useCallback((): `0x${string}` => {
+    const randomBytes = new Uint8Array(32)
+    crypto.getRandomValues(randomBytes)
+    const newSecret = `0x${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as `0x${string}`
+    setSecret(newSecret)
+    return newSecret
+  }, [])
 
   // Fetch referral data from API
-  const fetchReferralData = async (
+  const fetchReferralData = useCallback(async (
     referralCode: string,
     registrantAddress: string,
     name: string,
   ): Promise<{ referralData: ReferralData; signature: `0x${string}` }> => {
+    if (!referralCode) {
+      return {
+        referralData: EMPTY_REFERRAL_DATA,
+        signature: EMPTY_REFERRAL_SIGNATURE,
+      }
+    }
+
     try {
       const response = await fetch('/api/referral/generate', {
         method: 'POST',
@@ -126,165 +119,280 @@ export const useRegistration = () => {
       console.error('Error fetching referral data:', error)
     }
 
-    // Return empty referral if error or no valid referral
     return {
       referralData: EMPTY_REFERRAL_DATA,
       signature: EMPTY_REFERRAL_SIGNATURE,
     }
-  }
+  }, [])
 
-  const commit = async (
+  const { switchChainAsync } = useSwitchChain()
+
+  // Step 1: Commit transaction
+  const commit = useCallback(async (
     label: string,
-    address: `0x${string}`,
-    seconds: number,
+    owner: `0x${string}`,
     isPrimary: boolean,
-    lifetime: boolean,
-  ) => {
-    const secretBytes = crypto.getRandomValues(new Uint8Array(32))
-    const secretGenerated = bytesToHex(secretBytes) as `0x${string}`
-    setSecret(secretGenerated)
-    const resolver = constants.PublicResolver
-
-    try {
-      // Build the RegisterRequest struct for makeCommitment
-      const registerRequest: RegisterRequest = {
-        name: normalize(label),
-        owner: address,
-        duration: BigInt(seconds),
-        secret: secretGenerated,
-        resolver: resolver as `0x${string}`,
-        data: commitData,
-        reverseRecord: isPrimary,
-        ownerControlledFuses: 0,
-        lifetime: lifetime,
-      }
-
-      // Compute commitment hash matching the contract
-      const commitment = computeCommitment(registerRequest)
-
-      await writeContractAsync({
-        address: constants.Controller,
-        account: address,
-        abi: Controller,
-        functionName: 'commit',
-        args: [commitment],
-      })
-    } catch (error) {
-      console.error('Error during Commit', error)
-      setIsLoading(false)
-      throw error
-    }
-  }
-
-  const register = async (
-    label: string,
-    address: `0x${string}`,
-    seconds: number,
-    isPrimary: boolean,
-    lifetime: boolean,
-    referrer: string,
-    useToken: boolean,
-    token: `0x${string}`,
-    usd1TokenData: any,
-    cakeTokenData: any,
-    priceData: any,
+    data: `0x${string}`[],
   ) => {
     setIsLoading(true)
-    const resolver = constants.PublicResolver
+    setError(null)
+    setStep('committing')
 
     try {
-      // Build the RegisterRequest struct
-      const registerRequest: RegisterRequest = {
-        name: normalize(label),
-        owner: address,
-        duration: BigInt(seconds),
-        secret: secret,
-        resolver: resolver as `0x${string}`,
-        data: commitData,
+      // Switch chain if necessary
+      if (chainId !== activeChain.id) {
+        await switchChainAsync({ chainId: activeChain.id })
+      }
+
+      // Get wallet client at call time (reliable with Privy + wagmi)
+      const wc = await getWalletClient(config, { chainId: activeChain.id })
+
+      const normalizedLabel = normalize(label)
+      const commitSecret = generateSecret()
+
+      // Generate commitment hash using makeCommitment on contract
+      const commitment = await publicClient.readContract({
+        address: constants.Controller,
+        abi: AgentRegistrarControllerAbi,
+        functionName: 'makeCommitment',
+        args: [{
+          name: normalizedLabel,
+          owner,
+          secret: commitSecret,
+          resolver: constants.PublicResolver,
+          data,
+          reverseRecord: isPrimary,
+          ownerControlledFuses: 0,
+          deployWallet: false,
+          walletSalt: 0n,
+        }],
+      })
+
+      // Send commit transaction
+      const [account] = await wc.getAddresses()
+      const hash = await wc.writeContract({
+        address: constants.Controller,
+        abi: AgentRegistrarControllerAbi,
+        functionName: 'commit',
+        args: [commitment],
+        account,
+        chain: activeChain,
+      })
+
+      // Wait for confirmation
+      await publicClient.waitForTransactionReceipt({ hash })
+      setCommitHash(hash)
+      setStep('waiting')
+
+      // Start 60 second countdown
+      let remaining = 60
+      setCountdown(remaining)
+      await new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+          remaining--
+          setCountdown(remaining)
+          if (remaining <= 0) {
+            clearInterval(interval)
+            resolve()
+          }
+        }, 1000)
+      })
+
+      setStep('idle')
+      setIsLoading(false)
+      return hash
+    } catch (err) {
+      console.error('Error during commit:', err)
+      setError(err as Error)
+      setStep('error')
+      setIsLoading(false)
+      throw err
+    }
+  }, [config, publicClient, constants, generateSecret, activeChain, chainId, switchChainAsync])
+
+  // Step 2: Approve USDC + Register with USDC (Standard Flow)
+  const registerWithUSDC = useCallback(async (
+    label: string,
+    owner: `0x${string}`,
+    isPrimary: boolean,
+    referrer: string = '',
+    data?: `0x${string}`[],
+  ) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Switch chain if necessary
+      if (chainId !== activeChain.id) {
+        await switchChainAsync({ chainId: activeChain.id })
+      }
+
+      const wc = await getWalletClient(config, { chainId: activeChain.id })
+      const [account] = await wc.getAddresses()
+
+      const normalizedLabel = normalize(label)
+      const resolverData = data || commitData
+
+      // Get price in USDC
+      const priceResult = await publicClient.readContract({
+        address: constants.Controller,
+        abi: AgentRegistrarControllerABI,
+        functionName: 'getPrice',
+        args: [normalizedLabel],
+      }) as [bigint, boolean]
+      const priceUSDC = priceResult[0]
+      // Human flow: use EIP-7702 smart account (EOA behaves as SCA)
+      const smartAccount = await create7702KernelAccount(publicClient, {
+        signer: wc as any,
+        entryPoint: { address: constants.EntryPoint, version: '0.7' },
+        kernelVersion: KERNEL_V3_3,
+      })
+
+      const ownerForRegistration = account as `0x${string}`
+
+      // Check USDC balance for registration fee
+      const feePayer = ownerForRegistration
+      const feeBalance = await publicClient.readContract({
+        address: constants.USDC,
+        abi: eip2612Abi,
+        functionName: 'balanceOf',
+        args: [feePayer],
+      }) as bigint
+
+      setHumanUsdcBalance(feeBalance)
+      if (feeBalance < priceUSDC) {
+        throw new Error('EOA has insufficient USDC for the registration fee')
+      }
+
+      // Step 2a: Sign Paymaster Permit (gas in USDC)
+      setStep('approving')
+
+      const permitAmount = 10_000_000n // 10 USDC (6 decimals) for gas cap
+      const permitSignature = await signPermit({
+        publicClient: publicClient as any,
+        walletClient: wc,
+        ownerAddress: account,
+        tokenAddress: constants.USDC,
+        spenderAddress: constants.CirclePaymaster,
+        value: permitAmount,
+      })
+
+      const paymasterAndData = buildPaymasterAndData({
+        paymaster: constants.CirclePaymaster,
+        usdc: constants.USDC,
+        permitAmount,
+        permitSignature,
+      })
+
+      // Step 2b: Build registration callData
+      setStep('registering')
+
+      const registerRequest = {
+        name: normalizedLabel,
+        owner: ownerForRegistration,
+        secret,
+        resolver: constants.PublicResolver,
+        data: resolverData,
         reverseRecord: isPrimary,
         ownerControlledFuses: 0,
-        lifetime: lifetime,
+        deployWallet: false,
+        walletSalt: 0n,
       }
 
-      // Fetch referral data from the API
-      const { referralData, signature } = await fetchReferralData(
-        referrer,
-        address,
-        normalize(label),
-      )
-
-      if (!useToken) {
-        // BNB payment
-        const { base, premium } = (priceData as any) || {
-          base: 0n,
-          premium: 0n,
-        }
-        const value = base + premium
-
-        await registerContract({
-          address: constants.Controller,
-          abi: Controller,
-          functionName: 'register',
-          args: [registerRequest, referralData, signature],
-          value: value,
-        })
-      } else {
-        // Token payment
-        let value = 0n
-
-        if (token == '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82') {
-          const { base, premium } = (cakeTokenData as any) || {
-            base: 0n,
-            premium: 0n,
-          }
-          value = base + premium
-        } else {
-          const { base, premium } = (usd1TokenData as any) || {
-            base: 0n,
-            premium: 0n,
-          }
-          value = base + premium
-        }
-
-        const totalAmount = value
-
-        // Approve token spending
-        await approve({
-          address: token,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [constants.Controller, totalAmount + parseEther('1')],
-        })
-
-        // Wait for approval to be mined
-        await new Promise((r) => setTimeout(r, 2000))
-
-        // Register with token
-        await registerContract({
-          address: constants.Controller,
-          abi: Controller,
-          functionName: 'registerWithToken',
-          args: [registerRequest, token, referralData, signature],
-        })
+      const emptyReferralData = {
+        referrer: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+        registrant: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+        nameHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+        referrerCodeHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+        deadline: 0n,
+        nonce: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
       }
-    } catch (error) {
-      console.error('Error during Registration', error)
+
+      const registerCallData = encodeFunctionData({
+        abi: AgentRegistrarControllerABI,
+        functionName: 'registerWithUSDC',
+        args: [registerRequest, emptyReferralData, '0x'],
+      })
+
+      const callData = await smartAccount.encodeCalls([{
+        to: constants.Controller,
+        value: 0n,
+        data: registerCallData,
+      }])
+
+      const bundlerUrl = process.env.NEXT_PUBLIC_PIMLICO_BUNDLER_URL
+      if (!bundlerUrl) {
+        throw new Error('Missing NEXT_PUBLIC_PIMLICO_BUNDLER_URL')
+      }
+
+      const smartAccountClient = createSmartAccountClient({
+        account: smartAccount,
+        chain: activeChain,
+        bundlerTransport: http(bundlerUrl),
+        paymaster: {
+          getPaymasterData: async () => ({
+            paymasterAndData,
+          }),
+          getPaymasterStubData: async () => ({
+            paymasterAndData,
+          }),
+        },
+      })
+
+      const userOpHash = await smartAccountClient.sendUserOperation({
+        callData,
+      })
+
+      setRegisterHash(userOpHash as `0x${string}`)
+      setStep('done')
+      return userOpHash as `0x${string}`
+
+    } catch (err) {
+      console.error('Error during registration:', err)
+      setError(err as Error)
+      setStep('error')
+      throw err
+    } finally {
       setIsLoading(false)
-      throw error
     }
-  }
+  }, [config, publicClient, constants, commitData, secret, activeChain, chainId, switchChainAsync])
 
   return {
-    secret,
+    // State
+    step,
     commitData,
     isLoading,
-    commithash,
-    registerhash,
-    registerError,
-    registerPending,
+    commitHash,
+    registerHash,
+    humanUsdcBalance,
+    error,
+    countdown,
+    secret,
+    // Backward compat aliases
+    commithash: commitHash,
+    registerhash: registerHash,
+    registerError: error,
+    registerPending: isLoading,
     setIsLoading,
+    // Functions
     buildCommitDataFn,
     commit,
-    register,
+    registerWithUSDC,
+    // Backward compat wrapper
+    register: async (
+      label: string,
+      address: `0x${string}`,
+      _seconds: number,
+      isPrimary: boolean,
+      _lifetime: boolean,
+      referrer: string = '',
+      _useToken: boolean = false,
+      _token: `0x${string}` = '0x0000000000000000000000000000000000000000',
+      _usd1TokenData: any = null,
+      _cakeTokenData: any = null,
+      _priceData: any = null,
+    ) => {
+      return registerWithUSDC(label, address, isPrimary, referrer)
+    },
   }
 }

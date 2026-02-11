@@ -1,8 +1,10 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
 import { labelhash, namehash } from 'viem'
+import { createNonceWaiter } from '../../deploy-utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
   const { network, viem } = hre
+  const waitNonce = createNonceWaiter(viem)
 
   const { deployer, owner } = await viem.getNamedClients()
 
@@ -11,7 +13,7 @@ const func: DeployFunction = async function (hre) {
   const reverseRegistrarDeployment = await viem.deploy('ReverseRegistrar', [
     registry.address,
   ])
-  if (!reverseRegistrarDeployment.newlyDeployed) return
+  // if (!reverseRegistrarDeployment.newlyDeployed) return
 
   const reverseRegistrar = await viem.getContract('ReverseRegistrar')
 
@@ -20,7 +22,7 @@ const func: DeployFunction = async function (hre) {
     console.log(
       `Transferring ownership of ReverseRegistrar to ${owner.address} (tx: ${hash})...`,
     )
-    await viem.waitForTransactionSuccess(hash)
+    await waitNonce(hash)
   }
 
   // Only attempt to make controller etc changes directly on testnets
@@ -33,6 +35,7 @@ const func: DeployFunction = async function (hre) {
   console.log(
     `Setting owner as controller on backend (tx: ${setControllerHash})...`,
   )
+  await waitNonce(setControllerHash)
 
   const root = await viem.getContract('Root')
 
@@ -43,7 +46,22 @@ const func: DeployFunction = async function (hre) {
   console.log(
     `Setting owner of .reverse to owner on root (tx: ${setReverseOwnerHash})...`,
   )
-  await viem.waitForTransactionSuccess(setReverseOwnerHash)
+  await waitNonce(setReverseOwnerHash)
+
+  // Verify reverse node ownership is propagated on the RPC before proceeding.
+  // On L2s like Base Sepolia, eth_call may see stale state after a tx confirms,
+  // causing viem's pre-send simulation to revert with authorised() failure.
+  // This shows up as "ContractFunctionExecutionError: Missing or invalid parameters"
+  // because viem wraps the simulation revert misleadingly.
+  const reverseNode = namehash('reverse')
+  for (let i = 0; i < 15; i++) {
+    const reverseOwner = await registry.read.owner([reverseNode])
+    if (reverseOwner.toLowerCase() === owner.address.toLowerCase()) break
+    console.log(
+      `Waiting for .reverse node ownership to propagate (attempt ${i + 1})...`,
+    )
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+  }
 
   const setAddrOwnerHash = await registry.write.setSubnodeOwner(
     [namehash('reverse'), labelhash('addr'), reverseRegistrar.address],
@@ -57,6 +75,6 @@ const func: DeployFunction = async function (hre) {
 
 func.id = 'reverse-registrar'
 func.tags = ['ReverseRegistrar']
-func.dependencies = ['root']
+func.dependencies = ['setupRoot']
 
 export default func

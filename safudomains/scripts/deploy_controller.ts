@@ -95,22 +95,22 @@ const main = async () => {
   const artifact = await deployments.getArtifact('IETHRegistrarController')
   const interfaceId = createInterfaceId(artifact.abi)
 
-  const resolver = await registry.read.resolver([namehash('safu')])
+  const resolver = await registry.read.resolver([namehash('id')])
   if (resolver === zeroAddress) {
     console.log(
-      `No resolver set for .safu; not setting interface ${interfaceId} for safu Registrar Controller`,
+      `No resolver set for .id; not setting interface ${interfaceId} for id Registrar Controller`,
     )
     return
   }
 
   const ethOwnedResolver = await viem.getContract('OwnedResolver')
   const setInterfaceHash = await ethOwnedResolver.write.setInterface([
-    namehash('safu'),
+    namehash('id'),
     interfaceId,
     controller.address,
   ])
   console.log(
-    `Setting ETHRegistrarController interface ID ${interfaceId} on .safu resolver (tx: ${setInterfaceHash})...`,
+    `Setting ETHRegistrarController interface ID ${interfaceId} on .id resolver (tx: ${setInterfaceHash})...`,
   )
   await viem.waitForTransactionSuccess(setInterfaceHash)  */
 }

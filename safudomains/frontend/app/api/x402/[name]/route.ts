@@ -1,0 +1,117 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { SafuDomainsClient } from '@nexid/sdk'
+
+const CHAIN_ID = 8453 // Base mainnet
+
+// GET: Get payment profile for a name
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ name: string }> }
+) {
+    const { name } = await params
+    const cleanName = name.replace('.id', '')
+
+    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+
+    try {
+        const profile = await sdk.getPaymentProfile(cleanName, CHAIN_ID)
+
+        if (!profile.paymentEnabled) {
+            return NextResponse.json(
+                { error: 'Payments not enabled for this name' },
+                { status: 404 }
+            )
+        }
+
+        // Return x402 compatible response
+        return NextResponse.json({
+            name: `${cleanName}.id`,
+            paymentAddress: profile.paymentAddress,
+            supportedChains: profile.supportedChains,
+            acceptedTokens: profile.acceptedTokens,
+            limits: profile.paymentLimits,
+            metadata: profile.agentMetadata,
+            x402Endpoint: profile.x402Endpoint,
+        })
+    } catch (error) {
+        console.error('Failed to resolve payment profile:', error)
+        return NextResponse.json(
+            { error: 'Failed to resolve payment profile' },
+            { status: 500 }
+        )
+    }
+}
+
+// POST: x402 payment negotiation
+export async function POST(
+    request: NextRequest,
+    { params }: { params: Promise<{ name: string }> }
+) {
+    const { name } = await params
+    const cleanName = name.replace('.id', '')
+
+    let body
+    try {
+        body = await request.json()
+    } catch {
+        return NextResponse.json(
+            { error: 'Invalid JSON body' },
+            { status: 400 }
+        )
+    }
+
+    const { amount, token, chainId } = body
+    const targetChainId = chainId || CHAIN_ID
+
+    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+
+    try {
+        const profile = await sdk.getPaymentProfile(cleanName, targetChainId)
+
+        if (!profile.paymentEnabled) {
+            return NextResponse.json(
+                {
+                    error: 'Payments not enabled',
+                    name: `${cleanName}.id`,
+                },
+                {
+                    status: 402,
+                    headers: { 'X-Payment-Required': 'true' }
+                }
+            )
+        }
+
+        // Validate amount against limits
+        if (amount) {
+            const amountBigInt = BigInt(amount)
+            if (profile.paymentLimits.minAmount > 0n && amountBigInt < profile.paymentLimits.minAmount) {
+                return NextResponse.json(
+                    { error: `Minimum payment: ${profile.paymentLimits.minAmount.toString()}` },
+                    { status: 400 }
+                )
+            }
+            if (profile.paymentLimits.maxAmount > 0n && amountBigInt > profile.paymentLimits.maxAmount) {
+                return NextResponse.json(
+                    { error: `Maximum payment: ${profile.paymentLimits.maxAmount.toString()}` },
+                    { status: 400 }
+                )
+            }
+        }
+
+        // Return payment instructions
+        return NextResponse.json({
+            payTo: profile.paymentAddress,
+            amount: amount || '0',
+            token: token || '0x0000000000000000000000000000000000000000', // Native ETH
+            chainId: targetChainId,
+            invoice: `id-${cleanName}-${Date.now()}`,
+            x402Endpoint: profile.x402Endpoint,
+        })
+    } catch (error) {
+        console.error('Payment negotiation failed:', error)
+        return NextResponse.json(
+            { error: 'Payment negotiation failed' },
+            { status: 500 }
+        )
+    }
+}

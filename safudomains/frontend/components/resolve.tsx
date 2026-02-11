@@ -19,7 +19,7 @@ import { Switch } from '@headlessui/react'
 // Dynamic import with SSR disabled to prevent canvas/fabric bundling issues
 const DomainImage = dynamic(() => import('./DomainImage'), { ssr: false })
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 const Resolve = () => {
   const router = useRouter()
@@ -90,7 +90,7 @@ const Resolve = () => {
   } = useResolveData(label as string, walletAddress as `0x${string}`)
 
   useEffect(() => {
-    document.title = `${label}.safu`
+    document.title = `${label}.id`
   }, [label])
 
   useEffect(() => {
@@ -227,7 +227,7 @@ const Resolve = () => {
       <div className="flex flex-col mx-auto p-4 mb-20 md:mb-5 md:px-30 mt-10 lg:px-60">
         <div>
           <h2 style={{ fontSize: '28px', fontWeight: 700, color: isDark ? '#f8f8f8' : '#111', marginBottom: '20px' }}>
-            {label as string}.safu
+            {label as string}.id
           </h2>
 
           {/* Tabs */}
@@ -539,7 +539,7 @@ const Resolve = () => {
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
                     <DomainImage
                       className="h-48 md:h-40 md:w-60"
-                      domain={`${label}.safu`}
+                      domain={`${label}.id`}
                     />
                   </div>
                 </div>

@@ -21,7 +21,7 @@ import {
 export const setRecordTests = () => {
   describe('setRecord', () => {
     const label = 'setrecord'
-    const name = `${label}.safu`
+    const name = `${label}.id`
 
     async function setRecordFixture() {
       const initial = await loadFixture(fixture)
@@ -216,7 +216,7 @@ export const setRecordTests = () => {
       )
     })
 
-    it('Setting the owner to 0 on a .safu reverts', async () => {
+    it('Setting the owner to 0 on a .id reverts', async () => {
       const { nameWrapper, actions, accounts } = await loadFixture(fixture)
 
       await actions.registerSetupAndWrapName({

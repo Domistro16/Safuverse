@@ -45,7 +45,7 @@ async function main() {
     ])
     console.log(`ETHRegistrarController deployed at: ${controllerDeployment.address}`)
 
- 
+
     const controller = await viem.getContract('ETHRegistrarController')
     const refferal = await viem.getContract('ReferralVerifier')
 
@@ -90,22 +90,22 @@ async function main() {
     // Calculate interface ID manually
     const interfaceId = '0x00000000' // You may need to calculate this properly
 
-    const resolver = await registry.read.resolver([namehash('safu')])
+    const resolver = await registry.read.resolver([namehash('id')])
     if (resolver === zeroAddress) {
         console.log(
-            `No resolver set for .safu; not setting interface for safu Registrar Controller`,
+            `No resolver set for .id; not setting interface for id Registrar Controller`,
         )
         return
     }
 
     const ethOwnedResolver = await viem.getContract('OwnedResolver')
     const setInterfaceHash = await ethOwnedResolver.write.setInterface([
-        namehash('safu'),
+        namehash('id'),
         interfaceId,
         controller.address,
     ])
     console.log(
-        `Setting ETHRegistrarController interface ID ${interfaceId} on .safu resolver (tx: ${setInterfaceHash})...`,
+        `Setting ETHRegistrarController interface ID ${interfaceId} on .id resolver (tx: ${setInterfaceHash})...`,
     )
     await viem.waitForTransactionSuccess(setInterfaceHash)
 

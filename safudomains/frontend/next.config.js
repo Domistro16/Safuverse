@@ -19,6 +19,9 @@ const nextConfig = {
         // Disable Turbopack for production builds
     },
 
+    // Silence Turbopack warning - we use webpack config intentionally
+    turbopack: {},
+
     // Server external packages to avoid bundling native modules
     serverExternalPackages: [
         'canvas',

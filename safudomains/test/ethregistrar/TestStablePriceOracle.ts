@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import hre from 'hardhat'
 
 async function fixture() {
-  // Dummy oracle with 1 safu == 10 USD
+  // Dummy oracle with 1 id == 10 USD
   const dummyOracle = await hre.viem.deployContract('DummyOracle', [
     1000000000n,
   ])

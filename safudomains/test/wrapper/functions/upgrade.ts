@@ -23,11 +23,11 @@ import {
 
 export const upgradeTests = () =>
   describe('upgrade()', () => {
-    describe('.safu', () => {
+    describe('.id', () => {
       const label = 'wrapped2'
-      const name = `${label}.safu`
+      const name = `${label}.id`
 
-      it('Upgrades a .safu name if sender is owner', async () => {
+      it('Upgrades a .id name if sender is owner', async () => {
         const {
           nameWrapper,
           baseRegistrar,
@@ -70,7 +70,7 @@ export const upgradeTests = () =>
           )
       })
 
-      it('Upgrades a .safu name if sender is authorised by the owner', async () => {
+      it('Upgrades a .id name if sender is authorised by the owner', async () => {
         const {
           nameWrapper,
           baseRegistrar,
@@ -318,7 +318,7 @@ export const upgradeTests = () =>
     describe('other', () => {
       const label = 'to-upgrade'
       const parentLabel = 'wrapped2'
-      const parentName = `${parentLabel}.safu`
+      const parentName = `${parentLabel}.id`
       const name = `${label}.${parentName}`
 
       it('Allows owner to upgrade name', async () => {

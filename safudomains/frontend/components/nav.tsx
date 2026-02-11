@@ -2,14 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useReadContract } from 'wagmi'
+import { useReadContract, useChainId } from 'wagmi'
 import { IdentificationIcon } from '@heroicons/react/outline'
 import { CustomConnect } from '@/components/connectButton'
-import { constants } from '../constant'
+import { getConstants } from '../constant'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BookOpen, X, Menu, Search } from 'lucide-react'
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 const abi = [
   {
@@ -40,6 +40,9 @@ export default function Nav() {
   const [search, setSearch] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
   const [theme, setTheme] = useState('light')
+
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
 
   const { data, isPending } = useReadContract({
     address: constants.Controller,
@@ -80,6 +83,12 @@ export default function Nav() {
   }, [])
 
   const navLinks = [
+    {
+      href: '/auctions',
+      label: '🏆 Auctions',
+      isExternal: false,
+      isNew: true,
+    },
     {
       href: 'https://safuverse.gitbook.io/safuverse-docs/',
       label: 'Docs',
@@ -192,14 +201,14 @@ export default function Nav() {
         {/* Logo */}
         <div onClick={() => router.push('/')} className="flex items-center gap-1.5 cursor-pointer flex-shrink-0">
           <img
-            src="/Safuverse.png"
+            src="/nexid_logo.png"
             className="h-8 sm:h-10 hidden sm:block"
-            alt="safuverse"
+            alt="nexid"
           />
           <img
-            src="/small.png"
+            src="/nexid_logo.png"
             className="h-10 sm:hidden block"
-            alt="safuverse"
+            alt="nexid"
           />
         </div>
 
@@ -238,7 +247,7 @@ export default function Nav() {
                 onClick={route}
               >
                 <div className="text-[14px] sm:text-[15px] font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
-                  {search != '' ? search + '.safu' : ''}
+                  {search != '' ? search + '.id' : ''}
                 </div>
                 {available != '' && search != '' && (
                   <div
@@ -267,18 +276,34 @@ export default function Nav() {
             <span className="whitespace-nowrap">Profile</span>
           </div>
 
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
-              style={{ color: isDark ? '#f5f5f5' : '#111' }}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.isExternal ? (
+              <a
+                key={link.label}
+                href={link.href}
+                className="font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
+                style={{ color: isDark ? '#f5f5f5' : '#111' }}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <div
+                key={link.label}
+                onClick={() => router.push(link.href)}
+                className="flex items-center gap-1 cursor-pointer font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
+                style={{ color: isDark ? '#f5f5f5' : '#111' }}
+              >
+                {link.label}
+                {link.isNew && (
+                  <span className="px-1.5 py-0.5 text-[10px] bg-yellow-500 text-black rounded-full font-bold">
+                    NEW
+                  </span>
+                )}
+              </div>
+            )
+          )}
 
           <a
             href="https://academy.safuverse.com/courses/all"
@@ -484,7 +509,7 @@ export default function Nav() {
                     }}
                   >
                     <span style={{ fontSize: '15px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
-                      {search}.safu
+                      {search}.id
                     </span>
                     {available && (
                       <span

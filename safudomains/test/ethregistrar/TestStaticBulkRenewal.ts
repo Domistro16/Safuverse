@@ -18,7 +18,7 @@ async function fixture() {
   // Create a base registrar
   const baseRegistrar = await hre.viem.deployContract(
     'BaseRegistrarImplementation',
-    [ensRegistry.address, namehash('safu')],
+    [ensRegistry.address, namehash('id')],
   )
 
   // Setup reverse registrar
@@ -98,15 +98,15 @@ async function fixture() {
     controller.address,
   ])
 
-  // Transfer .safu node to base registrar
+  // Transfer .id node to base registrar
   await ensRegistry.write.setSubnodeRecord([
     zeroHash,
-    labelhash('safu'),
+    labelhash('id'),
     accounts[0].address,
     publicResolver.address,
     0n,
   ])
-  await ensRegistry.write.setOwner([namehash('safu'), baseRegistrar.address])
+  await ensRegistry.write.setOwner([namehash('id'), baseRegistrar.address])
 
   // Register some names
   for (const name of ['test1', 'test2', 'test3']) {

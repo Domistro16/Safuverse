@@ -12,7 +12,7 @@ import {
 export const getApprovedTests = () => {
   describe('getApproved()', () => {
     const label = 'subdomain'
-    const name = `${label}.safu`
+    const name = `${label}.id`
 
     async function getApprovedFixture() {
       const initial = await loadFixture(fixture)
@@ -29,9 +29,9 @@ export const getApprovedTests = () => {
     it('Returns returns zero address when ownerOf() is zero', async () => {
       const { nameWrapper } = await loadFixture(getApprovedFixture)
 
-      await expectOwnerOf('unminted.safu').on(nameWrapper).toBe(zeroAccount)
+      await expectOwnerOf('unminted.id').on(nameWrapper).toBe(zeroAccount)
       await expect(
-        nameWrapper.read.getApproved([toNameId('unminted.safu')]),
+        nameWrapper.read.getApproved([toNameId('unminted.id')]),
       ).resolves.toEqualAddress(zeroAddress)
     })
 

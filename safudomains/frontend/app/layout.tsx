@@ -1,23 +1,14 @@
 import type { Metadata } from 'next';
 import { Providers } from './providers';
 import '@/app/globals.css';
+import Navbar from '@/components/navbar';
+
+import ThemeToggle from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
-    title: 'SafuDomains - .safu Domain Registration',
-    description: 'Register your .safu domain name on BSC',
+    title: 'Safuverse - Your Web3 Identity',
+    description: 'Your web3 username, across all chains. Send crypto to names, not numbers.',
 };
-
-// Script to apply dark mode before hydration
-const themeScript = `
-(function() {
-    try {
-        var theme = localStorage.getItem('safudomains-theme');
-        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.body.classList.add('dark-mode');
-        }
-    } catch (e) {}
-})();
-`;
 
 export default function RootLayout({
     children,
@@ -27,8 +18,11 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body>
-                <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-                <Providers>{children}</Providers>
+                <Providers>
+                    <Navbar />
+                    {children}
+                    <ThemeToggle />
+                </Providers>
             </body>
         </html>
     );

@@ -81,7 +81,7 @@ export const DomainMint: React.FC<Props> = ({
       walletAddress,
     },
     customizations: {
-      title: `Mint “${registerparams.domain}.safu”`,
+      title: `Mint “${registerparams.domain}.id”`,
       description: `${registerparams.duration} registration`,
       logo: 'https://our-site.com/logo.png',
     },

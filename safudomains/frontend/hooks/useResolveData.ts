@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { keccak256, namehash } from 'viem'
-import { useReadContract } from 'wagmi'
-import { constants } from '../constant'
+import { useReadContract, useChainId } from 'wagmi'
+import { getConstants } from '../constant'
 import {
   availableAbi,
   isWrapped,
@@ -19,7 +19,9 @@ import { useENSName } from './getPrimaryName'
 import { zeroAddress } from 'viem'
 
 export const useResolveData = (label: string, walletAddress: `0x${string}`) => {
-  const node = namehash(`${label}.safu`)
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
+  const node = namehash(`${label}.id`)
   const id = keccak256(label as any)
 
   // Account and text record keys
@@ -133,19 +135,19 @@ export const useResolveData = (label: string, walletAddress: `0x${string}`) => {
 
   const { records: others, isLoading: othersLoading } = useTextRecords({
     resolverAddress: resolver,
-    name: `${label}.safu`,
+    name: `${label}.id`,
     keys: otherKeys,
   })
 
   const { records: accounts, isLoading: accountsLoading } = useTextRecords({
     resolverAddress: resolver,
-    name: `${label}.safu`,
+    name: `${label}.id`,
     keys: accountKeys,
   })
 
   const { records: texts, isLoading: textsLoading } = useTextRecords({
     resolverAddress: resolver,
-    name: `${label}.safu`,
+    name: `${label}.id`,
     keys: textKeys,
   })
 

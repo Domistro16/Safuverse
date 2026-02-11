@@ -323,7 +323,7 @@ describe('ReverseRegistrar', () => {
         dummyOwnable.address,
         accounts[0].address,
         publicResolver.address,
-        'dummyownable.safu',
+        'dummyownable.id',
       ])
 
       await expect(
@@ -331,7 +331,7 @@ describe('ReverseRegistrar', () => {
       ).resolves.toEqualAddress(accounts[0].address)
       await expect(
         publicResolver.read.name([getReverseNodeHash(dummyOwnable.address)]),
-      ).resolves.toEqual('dummyownable.safu')
+      ).resolves.toEqual('dummyownable.id')
     })
   })
 
