@@ -1441,7 +1441,7 @@ h1 span {
 
 .landing-hero-h1 {
   font-family: 'Manrope', sans-serif !important;
-  font-size: clamp(2.5rem, 5vw + 1rem, 5rem) !important;
+  font-size: clamp(3.5rem, 7vw + 1rem, 6rem) !important;
   font-weight: 800 !important;
   letter-spacing: -0.03em !important;
   line-height: 0.9 !important;

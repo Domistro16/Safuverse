@@ -211,8 +211,8 @@ export default function Landing() {
   const heroOpacity = Math.max(0, 1 - scrollProgress * 2.5)
   const heroScale = 1 - scrollProgress * 0.3
   const heroTranslateY = scrollProgress * -50
-  const mobileOffset = isMobile ? 40 : 65
-  const startY = (typeof window !== 'undefined' ? window.innerHeight / 2 : 400) + mobileOffset
+  const mobileOffset = isMobile ? 10 : 30
+  const startY = (typeof window !== 'undefined' ? window.innerHeight / 2.8 : 350) + mobileOffset
   const endY = -50
   const currentY = startY - ((startY - endY) * scrollProgress)
   const ease = 1 - Math.pow(1 - scrollProgress, 3)
@@ -223,7 +223,7 @@ export default function Landing() {
       <div className="landing-track">
         <div className="landing-viewport">
           {/* Ambient glow */}
-          <div className="landing-ambient-glow" />
+          {/* Ambient glow removed */}
 
           {/* Hero Text */}
           <div
