@@ -550,7 +550,7 @@ export default function Landing() {
         </div>
 
         <div className="text-center mt-20 md:mt-32 mb-10 md:mb-16">
-          <h2 className="landing-section-headline">Explore, create, and trade <br /> seamlessly in the NexID.</h2>
+          <h2 className="landing-section-headline">Explore, create, and trade <br /> seamlessly in NexID.</h2>
         </div>
 
         <div className="landing-grid-bottom max-w-6xl mx-auto">
