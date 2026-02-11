@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 import { NexDomains } from '@nexid/sdk'
 import { encodeFunctionData } from 'viem'
 import { constants } from '@/constant'
@@ -18,6 +19,8 @@ const CHAIN_ID = 8453 // Base mainnet
  * }
  */
 export async function POST(request: NextRequest) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
     let body
     try {
         body = await request.json()

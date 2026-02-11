@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NexDomains } from '@nexid/sdk'
+import { rateLimit } from '@/lib/rateLimit'
 
 const CHAIN_ID = 8453 // Base mainnet
 
@@ -9,6 +10,9 @@ function formatUsd(wei: bigint): string {
 }
 
 export async function GET(request: NextRequest) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
+
     const name = request.nextUrl.searchParams.get('name')
 
     if (!name) {

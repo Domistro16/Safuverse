@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 import { NexDomains } from '@nexid/sdk'
 import { encodeFunctionData, namehash } from 'viem'
 import { constants } from '@/constant'
@@ -47,6 +48,8 @@ const ResolverABI = [
  * Returns transaction data that agent must sign and broadcast
  */
 export async function POST(request: NextRequest) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
     let body
     try {
         body = await request.json()
