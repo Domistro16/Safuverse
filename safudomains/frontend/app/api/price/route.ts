@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         )
     }
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         const [price, available] = await Promise.all([
