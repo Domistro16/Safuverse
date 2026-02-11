@@ -350,27 +350,6 @@ const Register = () => {
                 </button>
               </div>
 
-              {/* Wallet Info */}
-              <div className="mt-6">
-                <h3 className="text-base font-semibold">Wallets</h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Connected EOA: <span className="font-mono">{address || 'Not connected'}</span>
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  EOA USDC Balance:{' '}
-                  <span className="font-mono">
-                    {humanUsdcBalance !== null ? (Number(humanUsdcBalance) / 1e6).toFixed(2) : 'Unknown'}
-                  </span>
-                </p>
-                {humanUsdcBalance !== null && priceResult?.priceUSDC !== undefined && humanUsdcBalance < priceResult.priceUSDC && (
-                  <p className="text-xs text-red-500 mt-2">
-                    Add USDC to your EOA to cover the registration fee.
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-2">
-                  Humans use EIP-7702: your EOA acts as the smart account for registration.
-                </p>
-              </div>
 
               {/* Referrer Input */}
               <div className="mt-6">
