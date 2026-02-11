@@ -1,7 +1,7 @@
 {
     "name": "@nexid/sdk",
     "version": "1.0.1",
-    "description": "TypeScript SDK for SafuDomains v2 - Agent-first domain registration on Base",
+    "description": "TypeScript SDK for Nex Domains v2 - Agent-first domain registration on Base",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "types": "./dist/index.d.ts",
@@ -45,7 +45,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/Domistro16/Safuverse.git",
-        "directory": "safudomains/sdk"
+        "url": "https://github.com/Domistro16/nexid.git",
+        "directory": "nexdomains/sdk"
     }
 }
