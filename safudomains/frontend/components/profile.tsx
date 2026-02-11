@@ -512,7 +512,7 @@ export default function Profile() {
   // Calculate stats
   const domainsOwned = domains.length;
   const totalReferrals = referralCount ? Number(referralCount) : 0;
-  const earningsInBnb = totalEarnings ? Number(formatEther(totalEarnings)) : 0;
+  const earningsInUsdc = totalEarnings ? Number(formatEther(totalEarnings)) : 0;
   const currentPct = referralPct ? Number(referralPct) : 25;
 
   // Get the primary domain for referral link (prefer primary name, fallback to first domain)
@@ -621,7 +621,7 @@ export default function Profile() {
             </div>
             <div className="pill-row">
               <div className="pill">Identity · Learning · Rewards</div>
-              <div className="pill">Live on BNB Chain · .id</div>
+              <div className="pill">Live on Base · .id</div>
             </div>
           </header>
 
@@ -643,7 +643,7 @@ export default function Profile() {
                 <span className="stat-icon-pill">💰</span>
               </div>
               <p className="stat-value">
-                {referralLoading ? '...' : `${earningsInBnb.toFixed(4)} BNB`}
+                {referralLoading ? '...' : `${earningsInUsdc.toFixed(2)} USDC`}
               </p>
               <p className="stat-caption">
                 Total rewards earned from sharing your unique mint link.

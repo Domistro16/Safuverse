@@ -630,7 +630,23 @@ const Register = () => {
                     Registration Error
                   </h2>
                   <p className="text-muted-foreground mb-6">
-                    {regError?.message || 'There was an error while registering your name.'}
+                    {regError?.message === 'INSUFFICIENT_USDC' ? (
+                      <>
+                        You need USDC to proceed with this request. Get USDC on{' '}
+                        <a
+                          href="https://www.coinbase.com/buy-crypto"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold"
+                          style={{ color: '#FFB000' }}
+                        >
+                          Coinbase
+                        </a>
+                        .
+                      </>
+                    ) : (
+                      regError?.message || 'There was an error while registering your name.'
+                    )}
                   </p>
                   <button
                     className="btn-primary"

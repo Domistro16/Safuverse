@@ -261,7 +261,7 @@ export const useRegistration = () => {
 
       setHumanUsdcBalance(feeBalance)
       if (feeBalance < priceUSDC) {
-        throw new Error('EOA has insufficient USDC for the registration fee')
+        throw new Error('INSUFFICIENT_USDC')
       }
 
       // Step 2a: Sign Paymaster Permit (gas in USDC)
