@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@nexid/sdk'
+import { NexDomains } from '@nexid/sdk'
 import { encodeFunctionData, namehash } from 'viem'
 import { constants } from '@/constant'
 import { AgentPublicResolverABI, AgentRegistrarControllerABI } from '@/lib/abi'
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         // Check availability

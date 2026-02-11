@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { SafuDomainsClient } from '@nexid/sdk'
+import { NexDomains } from '@nexid/sdk'
 import { useChainId } from 'wagmi'
 import { CHAIN_ID, constants } from '../constant'
 
@@ -26,7 +26,7 @@ export const usePremiumCheck = (name: string): PremiumCheckResult => {
     const chainId = useChainId()
 
     // Create SDK client
-    const sdk = useMemo(() => new SafuDomainsClient({ chainId: chainId || CHAIN_ID }), [chainId])
+    const sdk = useMemo(() => new NexDomains({ chainId: chainId || CHAIN_ID }), [chainId])
 
     useEffect(() => {
         if (!name || name.length === 0) {

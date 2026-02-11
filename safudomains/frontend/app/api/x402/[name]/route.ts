@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@nexid/sdk'
+import { NexDomains } from '@nexid/sdk'
 
 const CHAIN_ID = 8453 // Base mainnet
 
@@ -11,7 +11,7 @@ export async function GET(
     const { name } = await params
     const cleanName = name.replace('.id', '')
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         const profile = await sdk.getPaymentProfile(cleanName, CHAIN_ID)
@@ -63,7 +63,7 @@ export async function POST(
     const { amount, token, chainId } = body
     const targetChainId = chainId || CHAIN_ID
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         const profile = await sdk.getPaymentProfile(cleanName, targetChainId)
