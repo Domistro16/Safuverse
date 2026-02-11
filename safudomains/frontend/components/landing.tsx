@@ -24,19 +24,19 @@ const abi = [
 
 /* ── Transaction cards for the phone animation ── */
 const txCards = [
-  { id: 'c1', name: 'agent.safu', type: 'Sent', amount: '500.00', token: 'USDC', tx: -270, ty: -180, rot: -6, icon: 'up' },
-  { id: 'c2', name: 'shop.safu', type: 'Paid', amount: '24.99', token: 'DAI', tx: -310, ty: 0, rot: -3, icon: 'down' },
-  { id: 'c3', name: 'dev.safu', type: 'Sent', amount: '0.1', token: 'ETH', tx: -260, ty: 180, rot: -5, icon: 'up' },
-  { id: 'c4', name: 'alice.safu', type: 'Rec', amount: '0.45', token: 'ETH', tx: 270, ty: -160, rot: 6, icon: 'down' },
-  { id: 'c5', name: 'bob.safu', type: 'Rec', amount: '50.00', token: 'USDC', tx: 310, ty: 20, rot: 2, icon: 'down' },
-  { id: 'c6', name: 'dao.safu', type: 'Sent', amount: '1,000', token: 'BASE', tx: 260, ty: 200, rot: 5, icon: 'up' },
+  { id: 'c1', name: 'agent.id', type: 'Sent', amount: '500.00', token: 'USDC', tx: -270, ty: -180, rot: -6, icon: 'up' },
+  { id: 'c2', name: 'shop.id', type: 'Paid', amount: '24.99', token: 'DAI', tx: -310, ty: 0, rot: -3, icon: 'down' },
+  { id: 'c3', name: 'dev.id', type: 'Sent', amount: '0.1', token: 'ETH', tx: -260, ty: 180, rot: -5, icon: 'up' },
+  { id: 'c4', name: 'alice.id', type: 'Rec', amount: '0.45', token: 'ETH', tx: 270, ty: -160, rot: 6, icon: 'down' },
+  { id: 'c5', name: 'bob.id', type: 'Rec', amount: '50.00', token: 'USDC', tx: 310, ty: 20, rot: 2, icon: 'down' },
+  { id: 'c6', name: 'dao.id', type: 'Sent', amount: '1,000', token: 'BASE', tx: 260, ty: 200, rot: 5, icon: 'up' },
 ]
 
 const faqItems = [
-  { q: 'What exactly is a .safu name?', a: "It's your universal identity for the decentralized web. A single .safu name replaces clunky wallet addresses for payments, works as your username across social dApps, and serves as a verified identity for AI agents across Base, Ethereum, Solana, and more." },
-  { q: 'How does the 25% revenue share work?', a: 'Every .safu holder gets a unique referral link. When someone mints a name using your link, you instantly receive a 25% commission of the minting fee directly to your wallet. Built-in at the smart contract level.' },
-  { q: 'Is this a subscription service?', a: 'No. Once you mint your .safu name, it is an NFT that you own forever in your wallet. There are no annual renewal fees, no rent, and no hidden costs.' },
-  { q: 'Can AI agents actually use this?', a: 'Yes. Safuverse embeds x402 and EIP-8004 standards, allowing autonomous AI agents to programmatically mint, manage, and transact using .safu identities via our API.' },
+  { q: 'What exactly is a .id name?', a: "It's your universal identity for the decentralized web. A single .id name replaces clunky wallet addresses for payments, works as your username across social dApps, and serves as a verified identity for AI agents across Base, Ethereum, Solana, and more." },
+  { q: 'How does the 25% revenue share work?', a: 'Every .id holder gets a unique referral link. When someone mints a name using your link, you instantly receive a 25% commission of the minting fee directly to your wallet. Built-in at the smart contract level.' },
+  { q: 'Is this a subscription service?', a: 'No. Once you mint your .id name, it is an NFT that you own forever in your wallet. There are no annual renewal fees, no rent, and no hidden costs.' },
+  { q: 'Can AI agents actually use this?', a: 'Yes. NexID embeds x402 and EIP-8004 standards, allowing autonomous AI agents to programmatically mint, manage, and transact using .id identities via our API.' },
   { q: 'Which wallets are supported?', a: 'We support all major Web3 wallets including MetaMask, Coinbase Wallet, Phantom, Rainbow, and any wallet that supports standard NFT assets on the Base network.' },
 ]
 
@@ -235,7 +235,7 @@ export default function Landing() {
               <span>You <span className="text-[#FFB000]">Transact.</span></span>
             </h1>
             <p className="landing-hero-sub">
-              Send crypto to names, not numbers. <br /> Powered by Safuverse on Base.
+              Send crypto to names, not numbers. <br /> Powered by NexID on Base.
             </p>
           </div>
 
@@ -275,10 +275,6 @@ export default function Landing() {
           </div>
 
           {/* Glow behind phone */}
-          <div
-            className="landing-intense-glow"
-            style={{ opacity: scrollProgress, transform: `translate(-50%, -50%) translateY(${currentY}px)` }}
-          />
 
           {/* Phone */}
           <div
@@ -300,10 +296,12 @@ export default function Landing() {
                   <div className="w-6" />
                 </div>
                 <div className="flex flex-col items-center mb-6">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FFB000] to-yellow-400 p-1 mb-3 shadow-xl">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-bold">N</div>
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FFB000] to-yellow-400 p-1 mb-3 shadow-xl"><div
+                    className="w-20 h-20 rounded-full bg-gradient-to-tr from-safu to-yellow-400 p-1 mb-3 shadow-xl shadow-orange/20">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nadya"
+                      className="w-full h-full rounded-full bg-white object-cover" /></div>
                   </div>
-                  <h2 className="text-2xl font-bold tracking-tight text-[var(--foreground)] opacity-90">Nadya.safu</h2>
+                  <h2 className="text-2xl font-bold tracking-tight text-[var(--foreground)] opacity-90">Nadya.id</h2>
                   <div className="bg-[var(--muted)] px-3 py-1 rounded-full mt-2">
                     <p className="text-xs font-mono text-muted-foreground font-medium">0x71C9...8A21</p>
                   </div>
@@ -335,7 +333,7 @@ export default function Landing() {
           </h2>
           <p className="landing-search-sub">Your web3 username, across all chains.</p>
           <div className="landing-search-bar" onClick={openModal}>
-            <span className="landing-search-text">Search for a .safu name...</span>
+            <span className="landing-search-text">Search for a .id name...</span>
             <div className="landing-search-icon">
               <Search className="w-6 h-6" />
             </div>
@@ -354,7 +352,7 @@ export default function Landing() {
             {/* Stage: Search */}
             {modalStage === 'search' && (
               <div>
-                <h3 className="landing-modal-title">Find your .safu name</h3>
+                <h3 className="landing-modal-title">Find your .id name</h3>
                 <div className="landing-modal-input-container">
                   <input
                     ref={modalInputRef}
@@ -369,7 +367,7 @@ export default function Landing() {
                       setSearch(val)
                     }}
                   />
-                  <span className="landing-modal-suffix">.safu</span>
+                  <span className="landing-modal-suffix">.id</span>
                 </div>
 
                 {/* Recent searches */}
@@ -383,7 +381,7 @@ export default function Landing() {
                           className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all bg-[var(--secondary)] hover:bg-[var(--muted)] text-sm text-[var(--foreground)]"
                           onClick={() => setSearch(item)}
                         >
-                          {item}.safu
+                          {item}.id
                           <X
                             className="w-3.5 h-3.5 opacity-50 hover:opacity-100"
                             onClick={(e) => {
@@ -403,7 +401,7 @@ export default function Landing() {
                     className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] mb-4 cursor-pointer transition-all hover:bg-[var(--accent)]"
                     onClick={handleRoute}
                   >
-                    <span className="font-semibold text-[var(--foreground)]">{search}.safu</span>
+                    <span className="font-semibold text-[var(--foreground)]">{search}.id</span>
                     {available === 'Loading...' && (
                       <span className="text-xs px-3 py-1 rounded-full bg-gray-300 text-white font-semibold flex items-center gap-1.5">
                         <Loader className="w-3 h-3 animate-spin" /> Checking
@@ -509,7 +507,7 @@ export default function Landing() {
         <div className="landing-feature-header max-w-6xl mx-auto px-4">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight max-w-xl">The Bridge Between Web2 & Web3.</h2>
           <div className="flex flex-col gap-6 max-w-sm">
-            <p className="text-gray-400 text-lg">Your .safu domain is more than a name. It&apos;s an intelligent identity layer.</p>
+            <p className="text-gray-400 text-lg">Your .id domain is more than a name. It&apos;s an intelligent identity layer.</p>
             <button className="bg-white text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-[#FFB000] transition-colors self-start" onClick={openModal}>Get Started</button>
           </div>
         </div>
@@ -535,7 +533,7 @@ export default function Landing() {
             <div className="z-10">
               <span className="landing-feature-super">REVENUE SHARE</span>
               <h3 className="landing-feature-title">Earn while <br /> you hold.</h3>
-              <p className="landing-feature-desc">Safu Academy is free, but holders get exclusive access to courses with earning opportunities. Plus, 25% referral fees.</p>
+              <p className="landing-feature-desc">NexID Academy is free, but holders get exclusive access to courses with earning opportunities. Plus, 25% referral fees.</p>
             </div>
             <div className="landing-staking-dashboard">
               <div className="landing-sd-row"><span>Total Earnings</span> <span className="text-green-400">+12.5%</span></div>
@@ -552,7 +550,7 @@ export default function Landing() {
         </div>
 
         <div className="text-center mt-20 md:mt-32 mb-10 md:mb-16">
-          <h2 className="landing-section-headline">Explore, create, and trade <br /> seamlessly in the Safuverse.</h2>
+          <h2 className="landing-section-headline">Explore, create, and trade <br /> seamlessly in the NexID.</h2>
         </div>
 
         <div className="landing-grid-bottom max-w-6xl mx-auto">
@@ -568,7 +566,7 @@ export default function Landing() {
             <div className="mt-auto">
               <span className="landing-feature-super">CROSS-CHAIN</span>
               <h3 className="landing-feature-title">One name, <br /> everywhere.</h3>
-              <p className="landing-feature-desc">Use your unified .safu identity seamlessly across Base, Ethereum, Solana, and beyond.</p>
+              <p className="landing-feature-desc">Use your unified .id identity seamlessly across Base, Ethereum, Solana, and beyond.</p>
             </div>
           </div>
 
@@ -596,7 +594,7 @@ export default function Landing() {
               </div>
             </div>
             <div className="mt-auto">
-              <span className="landing-feature-super">SAFU ACADEMY</span>
+              <span className="landing-feature-super">NexID Academy</span>
               <h3 className="landing-feature-title">Learn & <br /> Earn.</h3>
               <p className="landing-feature-desc">Unlock premium educational content and exclusive earning opportunities for holders.</p>
             </div>
@@ -629,7 +627,7 @@ export default function Landing() {
             <div className={`landing-visual-card ${secTab === 0 ? 'active' : ''}`}>
               <div className="landing-vs-modal">
                 <div className="font-bold border-b border-[var(--border)] pb-3 mb-3 text-[var(--foreground)]">Transfer Request</div>
-                <div className="flex justify-between text-sm text-muted-foreground mb-2"><span>Asset</span><span className="font-semibold text-[var(--foreground)]">ceo.safu</span></div>
+                <div className="flex justify-between text-sm text-muted-foreground mb-2"><span>Asset</span><span className="font-semibold text-[var(--foreground)]">ceo.id</span></div>
                 <div className="flex justify-between text-sm text-muted-foreground mb-4"><span>From</span><span className="font-semibold text-[var(--foreground)]">Vault A</span></div>
                 <div className="flex gap-2 mb-5">
                   <div className="w-10 h-10 rounded-full bg-[var(--secondary)] flex items-center justify-center relative"><User className="w-5 h-5 text-[var(--foreground)]" /><div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[var(--card)]" /></div>
@@ -647,7 +645,7 @@ export default function Landing() {
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-12 h-12 rounded-full bg-[var(--secondary)] flex items-center justify-center text-xl font-bold text-[var(--foreground)]">N</div>
                   <div className="text-left">
-                    <div className="font-bold text-[var(--foreground)] text-base">nadya.safu</div>
+                    <div className="font-bold text-[var(--foreground)] text-base">nadya.id</div>
                     <span className="text-[11px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full font-bold">Verified Human</span>
                   </div>
                 </div>
@@ -717,20 +715,20 @@ export default function Landing() {
         <div className="landing-footer-deck">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 flex items-center justify-center">
-              <img src="/small.png" alt="Safu" className="w-full h-full object-contain" />
+              <img src="/nexid_logo.png" alt="Safu" className="w-full h-full object-contain" />
             </div>
-            <span className="font-extrabold text-white text-lg">Safuverse</span>
+            <span className="font-extrabold text-white text-lg">NexID</span>
           </div>
           <div className="flex gap-8 flex-wrap justify-center">
-            <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer" className="landing-f-link">Docs</a>
+            <a href="https://NexID.gitbook.io/NexID-docs/" target="_blank" rel="noopener noreferrer" className="landing-f-link">Docs</a>
             <span className="landing-f-link cursor-pointer" onClick={() => router.push('/api-docs')}>API</span>
             <span className="landing-f-link cursor-pointer" onClick={() => router.push('/pricing')}>Pricing</span>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex gap-4 items-center">
-              <a href="https://twitter.com/safuverse" target="_blank" rel="noopener noreferrer"><Twitter className="w-5 h-5 text-gray-500 hover:text-[#FFB000] transition-colors cursor-pointer" /></a>
+              <a href="https://twitter.com/NexID" target="_blank" rel="noopener noreferrer"><Twitter className="w-5 h-5 text-gray-500 hover:text-[#FFB000] transition-colors cursor-pointer" /></a>
             </div>
-            <a href="https://discord.gg/safuverse" target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold text-sm px-6 py-2.5 rounded-full hover:bg-[#FFB000] transition-all">Join Community</a>
+            <a href="https://discord.gg/NexID" target="_blank" rel="noopener noreferrer" className="bg-white text-black font-bold text-sm px-6 py-2.5 rounded-full hover:bg-[#FFB000] transition-all">Join Community</a>
           </div>
         </div>
       </footer>

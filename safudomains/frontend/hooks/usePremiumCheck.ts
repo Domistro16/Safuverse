@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { SafuDomainsClient } from '@nexid/sdk'
 import { useChainId } from 'wagmi'
 import { CHAIN_ID, constants } from '../constant'
 

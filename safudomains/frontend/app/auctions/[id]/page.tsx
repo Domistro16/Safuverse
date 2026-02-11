@@ -108,7 +108,7 @@ export default function AuctionDetailPage() {
                         </div>
 
                         <h1 className="mb-8" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.1 }}>
-                            {auction.name}.safu
+                            {auction.name}.id
                         </h1>
 
                         <div className={`page-card`} style={{

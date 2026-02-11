@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const node = namehash(`${name}.safu`)
+    const node = namehash(`${name}.id`)
     const transactions: {
         description: string
         to: `0x${string}`
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             name,
-            fullName: `${name}.safu`,
+            fullName: `${name}.id`,
             transactions,
             chainId: CHAIN_ID,
             instructions: 'Sign and broadcast each transaction in order (or use multicall)',

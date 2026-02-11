@@ -359,7 +359,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
 
     /**
      * @notice Category D: Prefix patterns
-     * @dev Matches: agent-, bot-, ai-, llm-, gpt-, edu-, task-, swarm-, safu-agent-, donna-, sys-, fleet-
+     * @dev Matches: agent-, bot-, ai-, llm-, gpt-, edu-, task-, swarm-, id-agent-, donna-, sys-, fleet-
      */
     function _matchesPrefixPattern(
         string calldata name
@@ -376,7 +376,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
         if (_startsWithIgnoreCase(b, "edu-")) return true;
         if (_startsWithIgnoreCase(b, "task-")) return true;
         if (_startsWithIgnoreCase(b, "swarm-")) return true;
-        if (_startsWithIgnoreCase(b, "safu-agent-")) return true;
+        if (_startsWithIgnoreCase(b, "id-agent-")) return true;
         if (_startsWithIgnoreCase(b, "donna-")) return true;
         if (_startsWithIgnoreCase(b, "sys-")) return true;
         if (_startsWithIgnoreCase(b, "fleet-")) return true;
@@ -387,7 +387,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
     /**
      * @notice Category E: Functional descriptor patterns
      * @dev Matches names containing: -task-, -analyzer-, -issuer-, -generator-, -synthesizer-,
-     *      -clone-, -fork-, -academy-, -pad-, -course-, -learn-, -teach-, -safu-, -verse-
+     *      -clone-, -fork-, -academy-, -pad-, -course-, -learn-, -teach-, -id-, -verse-
      */
     function _matchesFunctionalPattern(
         string calldata name
@@ -407,7 +407,7 @@ contract AgentPriceOracle is IAgentPriceOracle, Ownable, IERC165 {
         if (_containsIgnoreCase(b, "-course-")) return true;
         if (_containsIgnoreCase(b, "-learn-")) return true;
         if (_containsIgnoreCase(b, "-teach-")) return true;
-        if (_containsIgnoreCase(b, "-safu-")) return true;
+        if (_containsIgnoreCase(b, "-id-")) return true;
         if (_containsIgnoreCase(b, "-verse-")) return true;
 
         return false;

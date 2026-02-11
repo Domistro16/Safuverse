@@ -71,7 +71,7 @@ const config = {
     },
     base: {
       url: 'https://mainnet.base.org',
-      tags: ['use_root', 'legacy'],
+      tags: ['use_root'],
       chainId: 8453,
       accounts: real_accounts,
     },
@@ -172,6 +172,7 @@ const config = {
       default: 1,
       56: '0xD83deFbA240568040b39bb2C8B4DB7dB02d40593',
       84532: '0xd83defba240568040b39bb2c8b4db7db02d40593',
+      8453: '0xd83defba240568040b39bb2c8b4db7db02d40593',
     },
   },
   external: {

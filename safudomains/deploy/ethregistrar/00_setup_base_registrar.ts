@@ -1,6 +1,6 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
 import { labelhash } from 'viem'
-import { createNonceWaiter } from '../utils/waitForNonce.js'
+import { createNonceWaiter } from '../../deploy-utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
   const { network, viem } = hre
@@ -27,13 +27,13 @@ const func: DeployFunction = async function (hre) {
   await waitNonce(transferOwnershipHash)
 
   const setSubnodeOwnerHash = await root.write.setSubnodeOwner(
-    [labelhash('safu'), registrar.address],
+    [labelhash('id'), registrar.address],
     {
       account: owner.account,
     },
   )
   console.log(
-    `Setting owner of safu node to registrar on root (tx: ${setSubnodeOwnerHash})...`,
+    `Setting owner of id node to registrar on root (tx: ${setSubnodeOwnerHash})...`,
   )
   await viem.waitForTransactionSuccess(setSubnodeOwnerHash)
 }

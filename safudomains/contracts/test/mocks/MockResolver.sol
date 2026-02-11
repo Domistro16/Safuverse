@@ -2,7 +2,7 @@
 pragma solidity ~0.8.17;
 
 /**
- * @notice Mock PublicResolver for testing SafuDomainAuction
+ * @notice Mock PublicResolver for testing IDDomainAuction
  */
 contract MockResolver {
     mapping(bytes32 => address) public addrs;

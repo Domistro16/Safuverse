@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useChainId, usePublicClient, useConfig } from 'wagmi'
+import { useChainId, usePublicClient, useConfig, useSwitchChain } from 'wagmi'
 import { getWalletClient } from '@wagmi/core'
 import { namehash, encodeFunctionData, createPublicClient, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
@@ -8,7 +8,11 @@ import { addrResolver, ReferralData, EMPTY_REFERRAL_DATA, EMPTY_REFERRAL_SIGNATU
 import { getConstants, CHAIN_ID } from '../constant'
 import { AgentRegistrarControllerABI } from '../lib/abi'
 import { normalize } from 'viem/ens'
-import { AgentRegistrarControllerAbi } from '@safuverse/safudomains-sdk'
+import { AgentRegistrarControllerAbi } from '@nexid/sdk'
+import { buildPaymasterAndData, signPermit, eip2612Abi } from '../lib/permit'
+import { create7702KernelAccount } from '@zerodev/ecdsa-validator'
+import { KERNEL_V3_3 } from '@zerodev/sdk/constants'
+import { createSmartAccountClient } from 'permissionless'
 
 export type RegistrationStep = 'idle' | 'committing' | 'waiting' | 'approving' | 'registering' | 'done' | 'error'
 
@@ -18,6 +22,7 @@ export const useRegistration = () => {
   const [step, setStep] = useState<RegistrationStep>('idle')
   const [commitHash, setCommitHash] = useState<`0x${string}` | null>(null)
   const [registerHash, setRegisterHash] = useState<`0x${string}` | null>(null)
+  const [humanUsdcBalance, setHumanUsdcBalance] = useState<bigint | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [countdown, setCountdown] = useState(0)
   const [secret, setSecret] = useState<`0x${string}`>('0x0000000000000000000000000000000000000000000000000000000000000000')
@@ -27,11 +32,12 @@ export const useRegistration = () => {
   const chainId = useChainId()
   const constants = getConstants(chainId)
 
+  const activeChain = (chainId || CHAIN_ID) === 8453 ? base : baseSepolia
+
   // Create a fallback public client in case wagmi's usePublicClient returns undefined
   const fallbackPublicClient = useMemo(() => {
-    const chain = (chainId || CHAIN_ID) === 8453 ? base : baseSepolia
-    return createPublicClient({ chain, transport: http() })
-  }, [chainId])
+    return createPublicClient({ chain: activeChain, transport: http() })
+  }, [activeChain])
 
   const publicClient = wagmiPublicClient ?? fallbackPublicClient
 
@@ -49,12 +55,12 @@ export const useRegistration = () => {
 
     const builtData = buildTextRecords(
       validTextRecords,
-      namehash(`${label}.safu`),
+      namehash(`${label}.id`),
     )
     const addrEncoded = encodeFunctionData({
       abi: addrResolver,
       functionName: 'setAddr',
-      args: [namehash(`${label}.safu`), owner],
+      args: [namehash(`${label}.id`), owner],
     })
     const fullData = [...builtData, addrEncoded]
     setCommitData(fullData)
@@ -119,6 +125,8 @@ export const useRegistration = () => {
     }
   }, [])
 
+  const { switchChainAsync } = useSwitchChain()
+
   // Step 1: Commit transaction
   const commit = useCallback(async (
     label: string,
@@ -131,8 +139,13 @@ export const useRegistration = () => {
     setStep('committing')
 
     try {
+      // Switch chain if necessary
+      if (chainId !== activeChain.id) {
+        await switchChainAsync({ chainId: activeChain.id })
+      }
+
       // Get wallet client at call time (reliable with Privy + wagmi)
-      const wc = await getWalletClient(config)
+      const wc = await getWalletClient(config, { chainId: activeChain.id })
 
       const normalizedLabel = normalize(label)
       const commitSecret = generateSecret()
@@ -142,15 +155,17 @@ export const useRegistration = () => {
         address: constants.Controller,
         abi: AgentRegistrarControllerAbi,
         functionName: 'makeCommitment',
-        args: [
-          normalizedLabel,
+        args: [{
+          name: normalizedLabel,
           owner,
-          commitSecret,
-          constants.PublicResolver,
+          secret: commitSecret,
+          resolver: constants.PublicResolver,
           data,
-          isPrimary,
-          0, // ownerControlledFuses
-        ],
+          reverseRecord: isPrimary,
+          ownerControlledFuses: 0,
+          deployWallet: false,
+          walletSalt: 0n,
+        }],
       })
 
       // Send commit transaction
@@ -161,6 +176,7 @@ export const useRegistration = () => {
         functionName: 'commit',
         args: [commitment],
         account,
+        chain: activeChain,
       })
 
       // Wait for confirmation
@@ -192,9 +208,9 @@ export const useRegistration = () => {
       setIsLoading(false)
       throw err
     }
-  }, [config, publicClient, constants, generateSecret])
+  }, [config, publicClient, constants, generateSecret, activeChain, chainId, switchChainAsync])
 
-  // Step 2: Approve USDC + Register with USDC
+  // Step 2: Approve USDC + Register with USDC (Standard Flow)
   const registerWithUSDC = useCallback(async (
     label: string,
     owner: `0x${string}`,
@@ -206,8 +222,13 @@ export const useRegistration = () => {
     setError(null)
 
     try {
-      // Get wallet client at call time (reliable with Privy + wagmi)
-      const wc = await getWalletClient(config)
+      // Switch chain if necessary
+      if (chainId !== activeChain.id) {
+        await switchChainAsync({ chainId: activeChain.id })
+      }
+
+      const wc = await getWalletClient(config, { chainId: activeChain.id })
+      const [account] = await wc.getAddresses()
 
       const normalizedLabel = normalize(label)
       const resolverData = data || commitData
@@ -220,33 +241,55 @@ export const useRegistration = () => {
         args: [normalizedLabel],
       }) as [bigint, boolean]
       const priceUSDC = priceResult[0]
+      // Human flow: use EIP-7702 smart account (EOA behaves as SCA)
+      const smartAccount = await create7702KernelAccount(publicClient, {
+        signer: wc as any,
+        entryPoint: { address: constants.EntryPoint, version: '0.7' },
+        kernelVersion: KERNEL_V3_3,
+      })
 
-      const [account] = await wc.getAddresses()
+      const ownerForRegistration = account as `0x${string}`
 
-      // Check and approve USDC allowance
-      setStep('approving')
-      const currentAllowance = await publicClient.readContract({
+      // Check USDC balance for registration fee
+      const feePayer = ownerForRegistration
+      const feeBalance = await publicClient.readContract({
         address: constants.USDC,
-        abi: ERC20_ABI,
-        functionName: 'allowance',
-        args: [account, constants.Controller],
+        abi: eip2612Abi,
+        functionName: 'balanceOf',
+        args: [feePayer],
       }) as bigint
 
-      if (currentAllowance < priceUSDC) {
-        const approveHash = await wc.writeContract({
-          address: constants.USDC,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [constants.Controller, priceUSDC],
-          account,
-        })
-        await publicClient.waitForTransactionReceipt({ hash: approveHash })
+      setHumanUsdcBalance(feeBalance)
+      if (feeBalance < priceUSDC) {
+        throw new Error('EOA has insufficient USDC for the registration fee')
       }
 
-      // Build registration request
-      const request = {
+      // Step 2a: Sign Paymaster Permit (gas in USDC)
+      setStep('approving')
+
+      const permitAmount = 10_000_000n // 10 USDC (6 decimals) for gas cap
+      const permitSignature = await signPermit({
+        publicClient: publicClient as any,
+        walletClient: wc,
+        ownerAddress: account,
+        tokenAddress: constants.USDC,
+        spenderAddress: constants.CirclePaymaster,
+        value: permitAmount,
+      })
+
+      const paymasterAndData = buildPaymasterAndData({
+        paymaster: constants.CirclePaymaster,
+        usdc: constants.USDC,
+        permitAmount,
+        permitSignature,
+      })
+
+      // Step 2b: Build registration callData
+      setStep('registering')
+
+      const registerRequest = {
         name: normalizedLabel,
-        owner,
+        owner: ownerForRegistration,
         secret,
         resolver: constants.PublicResolver,
         data: resolverData,
@@ -256,29 +299,63 @@ export const useRegistration = () => {
         walletSalt: 0n,
       }
 
-      // Register with USDC
-      setStep('registering')
-      const hash = await wc.writeContract({
-        address: constants.Controller,
+      const emptyReferralData = {
+        referrer: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+        registrant: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+        nameHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+        referrerCodeHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+        deadline: 0n,
+        nonce: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+      }
+
+      const registerCallData = encodeFunctionData({
         abi: AgentRegistrarControllerABI,
         functionName: 'registerWithUSDC',
-        args: [request],
-        account,
+        args: [registerRequest, emptyReferralData, '0x'],
       })
 
-      await publicClient.waitForTransactionReceipt({ hash })
-      setRegisterHash(hash)
+      const callData = await smartAccount.encodeCalls([{
+        to: constants.Controller,
+        value: 0n,
+        data: registerCallData,
+      }])
+
+      const bundlerUrl = process.env.NEXT_PUBLIC_PIMLICO_BUNDLER_URL
+      if (!bundlerUrl) {
+        throw new Error('Missing NEXT_PUBLIC_PIMLICO_BUNDLER_URL')
+      }
+
+      const smartAccountClient = createSmartAccountClient({
+        account: smartAccount,
+        chain: activeChain,
+        bundlerTransport: http(bundlerUrl),
+        paymaster: {
+          getPaymasterData: async () => ({
+            paymasterAndData,
+          }),
+          getPaymasterStubData: async () => ({
+            paymasterAndData,
+          }),
+        },
+      })
+
+      const userOpHash = await smartAccountClient.sendUserOperation({
+        callData,
+      })
+
+      setRegisterHash(userOpHash as `0x${string}`)
       setStep('done')
-      return hash
+      return userOpHash as `0x${string}`
+
     } catch (err) {
-      console.error('Error during USDC registration:', err)
+      console.error('Error during registration:', err)
       setError(err as Error)
       setStep('error')
       throw err
     } finally {
       setIsLoading(false)
     }
-  }, [config, publicClient, constants, commitData, secret, fetchReferralData])
+  }, [config, publicClient, constants, commitData, secret, activeChain, chainId, switchChainAsync])
 
   return {
     // State
@@ -287,6 +364,7 @@ export const useRegistration = () => {
     isLoading,
     commitHash,
     registerHash,
+    humanUsdcBalance,
     error,
     countdown,
     secret,

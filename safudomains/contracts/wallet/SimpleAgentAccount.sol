@@ -2,21 +2,25 @@
 pragma solidity ^0.8.17;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {IAccount, PackedUserOperation} from "./interfaces/IAccount.sol";
 
 /**
  * @title SimpleAgentAccount
  * @notice Minimal ERC-4337 compatible smart wallet for AI agents
  * @dev Deployed behind ERC1967Proxy via AgentAccountFactory.
- *      Uses a manual initializer pattern for OZ 4.x compatibility.
+ *      Updated for EntryPoint v0.7 (PackedUserOperation).
  */
-contract SimpleAgentAccount {
+contract SimpleAgentAccount is IAccount {
     using ECDSA for bytes32;
 
     address public owner;
     address public entryPoint;
     bool private _initialized;
 
-    event SimpleAgentAccountInitialized(address indexed owner, address indexed entryPoint);
+    event SimpleAgentAccountInitialized(
+        address indexed owner,
+        address indexed entryPoint
+    );
     event Executed(address indexed target, uint256 value, bytes data);
 
     modifier onlyOwnerOrEntryPoint() {
@@ -48,13 +52,7 @@ contract SimpleAgentAccount {
         uint256 value,
         bytes calldata func
     ) external onlyOwnerOrEntryPoint {
-        (bool success, bytes memory result) = dest.call{value: value}(func);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
-        emit Executed(dest, value, func);
+        _call(dest, value, func);
     }
 
     /**
@@ -70,36 +68,43 @@ contract SimpleAgentAccount {
             "Length mismatch"
         );
         for (uint256 i = 0; i < dest.length; i++) {
-            (bool success, bytes memory result) = dest[i].call{value: values[i]}(funcs[i]);
-            if (!success) {
-                assembly {
-                    revert(add(result, 32), mload(result))
-                }
-            }
+            _call(dest[i], values[i], funcs[i]);
         }
     }
 
+    function _call(address target, uint256 value, bytes memory data) internal {
+        (bool success, bytes memory result) = target.call{value: value}(data);
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+        emit Executed(target, value, data);
+    }
+
     /**
-     * @notice ERC-4337 validateUserOp
+     * @notice ERC-4337 v0.7 validateUserOp
      */
     function validateUserOp(
+        PackedUserOperation calldata userOp,
         bytes32 userOpHash,
-        bytes calldata signature,
         uint256 missingAccountFunds
-    ) external returns (uint256 validationData) {
+    ) external override returns (uint256 validationData) {
         require(msg.sender == entryPoint, "Only EntryPoint");
 
         bytes32 hash = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", userOpHash)
         );
-        address recovered = hash.recover(signature);
+        address recovered = hash.recover(userOp.signature);
 
         if (recovered != owner) {
             return 1; // SIG_VALIDATION_FAILED
         }
 
         if (missingAccountFunds > 0) {
-            (bool success, ) = payable(entryPoint).call{value: missingAccountFunds}("");
+            (bool success, ) = payable(entryPoint).call{
+                value: missingAccountFunds
+            }("");
             require(success, "Failed to prefund");
         }
 

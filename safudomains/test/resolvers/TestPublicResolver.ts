@@ -16,7 +16,7 @@ import {
 } from 'viem'
 import { createInterfaceId } from '../fixtures/createInterfaceId.js'
 
-const targetNode = namehash('safu')
+const targetNode = namehash('id')
 
 async function fixture() {
   const walletClients = await hre.viem.getWalletClients()
@@ -51,7 +51,7 @@ async function fixture() {
 
   await ensRegistry.write.setSubnodeOwner([
     zeroHash,
-    labelhash('safu'),
+    labelhash('id'),
     accounts[0].address,
   ])
 
@@ -251,7 +251,7 @@ describe('PublicResolver', () => {
       ).resolves.toEqual(accounts[1].address.toLowerCase() as Address)
     })
 
-    it('returns safu address for coin type 714 (BSC)', async () => {
+    it('returns id address for coin type 714 (BSC)', async () => {
       const { publicResolver, accounts } = await loadFixture(fixture)
 
       const hash = await publicResolver.write.setAddr([
@@ -272,7 +272,7 @@ describe('PublicResolver', () => {
       ).resolves.toEqual(accounts[1].address.toLowerCase() as Address)
     })
 
-    it('setting coin type 714 (BSC) updates safu address', async () => {
+    it('setting coin type 714 (BSC) updates id address', async () => {
       const { publicResolver, accounts } = await loadFixture(fixture)
 
       const hash = await publicResolver.write.setAddr([

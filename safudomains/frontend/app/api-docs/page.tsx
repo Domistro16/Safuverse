@@ -7,35 +7,35 @@ export default function APIDocsPage() {
   const router = useRouter()
 
   return (
-    <div className="landing-page-container">
+    <div className="landing-page-container bg-background text-foreground">
       <div className="api-container">
         <button
-          className="mb-8 flex items-center gap-2 text-gray-500 hover:text-black transition-colors"
+          className="mb-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => router.push('/')}
         >
           <ArrowLeft className="w-4 h-4" /> Back Home
         </button>
 
-        <h2 className="text-4xl font-extrabold mb-4" style={{ fontFamily: "'Manrope', sans-serif" }}>
+        <h2 className="text-4xl font-extrabold mb-4 text-foreground" style={{ fontFamily: "'Manrope', sans-serif" }}>
           Developer API.
         </h2>
-        <p className="text-xl text-gray-500 mb-12">
-          Integrate SafuDomains identity directly into your dApps and agents. All endpoints are relative to your deployment host.
+        <p className="text-xl text-muted-foreground mb-12">
+          Integrate NexID identity directly into your dApps and agents. All endpoints are relative to your deployment host.
         </p>
 
         {/* Pricing & Availability */}
         <div className="api-section">
-          <h3 className="api-header">Pricing &amp; Availability</h3>
-          <p className="api-sub">Check if a .safu name is available and get pricing info.</p>
+          <h3 className="api-header text-foreground">Pricing &amp; Availability</h3>
+          <p className="api-sub text-muted-foreground">Check if a .id name is available and get pricing info.</p>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method get">GET</span>
-              <span className="ep-url">/api/price?name=&#123;name&#125;</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method get bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">GET</span>
+              <span className="ep-url text-foreground">/api/price?name=&#123;name&#125;</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Returns availability status and pricing for a name. Price is returned in wei, USD, and ETH.</p>
-              <pre className="ep-code">{`curl "/api/price?name=my-trading-bot"
+              <p className="ep-desc text-muted-foreground">Returns availability status and pricing for a name. Price is returned in wei, USD, and ETH.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl "/api/price?name=my-trading-bot"
 
 // Response
 {
@@ -53,17 +53,17 @@ export default function APIDocsPage() {
 
         {/* Register Domain */}
         <div className="api-section">
-          <h3 className="api-header">Register Domain</h3>
-          <p className="api-sub">Register a .safu name for an AI agent. Returns transaction data for signing.</p>
+          <h3 className="api-header text-foreground">Register Domain</h3>
+          <p className="api-sub text-muted-foreground">Register a .id name for an AI agent. Returns transaction data for signing.</p>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method post">POST</span>
-              <span className="ep-url">/api/register</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method post bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">POST</span>
+              <span className="ep-url text-foreground">/api/register</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Builds a registration transaction for the agent to sign and broadcast. Checks availability and computes pricing automatically.</p>
-              <pre className="ep-code">{`curl -X POST /api/register \\
+              <p className="ep-desc text-muted-foreground">Builds a registration transaction for the agent to sign and broadcast. Checks availability and computes pricing automatically.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl -X POST /api/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "my-trading-bot",
@@ -79,7 +79,7 @@ export default function APIDocsPage() {
 {
   "success": true,
   "name": "my-trading-bot",
-  "fullName": "my-trading-bot.safu",
+  "fullName": "my-trading-bot.id",
   "isAgentName": true,
   "transaction": {
     "to": "0x8329...9167",
@@ -100,17 +100,17 @@ export default function APIDocsPage() {
 
         {/* Batch Registration */}
         <div className="api-section">
-          <h3 className="api-header">Batch Registration</h3>
-          <p className="api-sub">Register multiple .safu names in a single transaction (max 50).</p>
+          <h3 className="api-header text-foreground">Batch Registration</h3>
+          <p className="api-sub text-muted-foreground">Register multiple .id names in a single transaction (max 50).</p>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method post">POST</span>
-              <span className="ep-url">/api/register/batch</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method post bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">POST</span>
+              <span className="ep-url text-foreground">/api/register/batch</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Builds a batch registration transaction. All names must be available.</p>
-              <pre className="ep-code">{`curl -X POST /api/register/batch \\
+              <p className="ep-desc text-muted-foreground">Builds a batch registration transaction. All names must be available.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl -X POST /api/register/batch \\
   -H "Content-Type: application/json" \\
   -d '{
     "names": ["bot-alpha", "bot-beta", "bot-gamma"],
@@ -144,17 +144,17 @@ export default function APIDocsPage() {
 
         {/* Registration Relay */}
         <div className="api-section">
-          <h3 className="api-header">Registration Relay</h3>
-          <p className="api-sub">For non-native agents (Claude, Grok, etc.) that need gasless registration via ERC-4337 bundler.</p>
+          <h3 className="api-header text-foreground">Registration Relay</h3>
+          <p className="api-sub text-muted-foreground">For non-native agents (Claude, Grok, etc.) that need gasless registration via ERC-4337 bundler.</p>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method post">POST</span>
-              <span className="ep-url">/api/register/relay</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method post bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">POST</span>
+              <span className="ep-url text-foreground">/api/register/relay</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Builds and submits a UserOperation for domain registration. Supports EIP-2612 permit for USDC approval. Submit without a signature first to get the UserOp to sign, then resubmit with the signature.</p>
-              <pre className="ep-code">{`// Step 1: Get UserOp to sign
+              <p className="ep-desc text-muted-foreground">Builds and submits a UserOperation for domain registration. Supports EIP-2612 permit for USDC approval. Submit without a signature first to get the UserOp to sign, then resubmit with the signature.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`// Step 1: Get UserOp to sign
 curl -X POST /api/register/relay \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -194,7 +194,7 @@ curl -X POST /api/register/relay \\
   "success": true,
   "txHash": "0x...",
   "name": "trading-bot-v2",
-  "fullName": "trading-bot-v2.safu",
+  "fullName": "trading-bot-v2.id",
   "isAgentName": true,
   "priceUSDC": "50000",
   "agentWallet": "0x...",
@@ -203,14 +203,14 @@ curl -X POST /api/register/relay \\
             </div>
           </div>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method post">POST</span>
-              <span className="ep-url">/api/register/build-userop</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method post bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">POST</span>
+              <span className="ep-url text-foreground">/api/register/build-userop</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Builds an unsigned UserOperation for autonomous agents to sign themselves. Returns step-by-step instructions.</p>
-              <pre className="ep-code">{`curl -X POST /api/register/build-userop \\
+              <p className="ep-desc text-muted-foreground">Builds an unsigned UserOperation for autonomous agents to sign themselves. Returns step-by-step instructions.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl -X POST /api/register/build-userop \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "my-agent-v1",
@@ -223,7 +223,7 @@ curl -X POST /api/register/relay \\
 {
   "success": true,
   "name": "my-agent-v1",
-  "fullName": "my-agent-v1.safu",
+  "fullName": "my-agent-v1.id",
   "priceUSDC": "50000",
   "isAgentName": true,
   "userOp": {
@@ -244,14 +244,14 @@ curl -X POST /api/register/relay \\
             </div>
           </div>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method post">POST</span>
-              <span className="ep-url">/api/register/autonomous</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method post bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">POST</span>
+              <span className="ep-url text-foreground">/api/register/autonomous</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">For fully autonomous agents with their own AA wallets. Submit a complete, signed UserOperation for validation and bundler submission.</p>
-              <pre className="ep-code">{`curl -X POST /api/register/autonomous \\
+              <p className="ep-desc text-muted-foreground">For fully autonomous agents with their own AA wallets. Submit a complete, signed UserOperation for validation and bundler submission.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl -X POST /api/register/autonomous \\
   -H "Content-Type: application/json" \\
   -d '{
     "userOp": {
@@ -281,17 +281,17 @@ curl -X POST /api/register/relay \\
 
         {/* Payment Configuration */}
         <div className="api-section">
-          <h3 className="api-header">Payment Configuration (x402 / ERC-8004)</h3>
-          <p className="api-sub">Configure payment profiles for agent-to-agent payments.</p>
+          <h3 className="api-header text-foreground">Payment Configuration (x402 / ERC-8004)</h3>
+          <p className="api-sub text-muted-foreground">Configure payment profiles for agent-to-agent payments.</p>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method post">POST</span>
-              <span className="ep-url">/api/configure-payment</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method post bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">POST</span>
+              <span className="ep-url text-foreground">/api/configure-payment</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Configure x402/ERC-8004 payment settings for a .safu name. Returns transaction(s) to sign.</p>
-              <pre className="ep-code">{`curl -X POST /api/configure-payment \\
+              <p className="ep-desc text-muted-foreground">Configure x402/ERC-8004 payment settings for a .id name. Returns transaction(s) to sign.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl -X POST /api/configure-payment \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "my-agent",
@@ -306,7 +306,7 @@ curl -X POST /api/register/relay \\
 {
   "success": true,
   "name": "my-agent",
-  "fullName": "my-agent.safu",
+  "fullName": "my-agent.id",
   "transactions": [
     {
       "description": "Set x402 endpoint",
@@ -327,18 +327,18 @@ curl -X POST /api/register/relay \\
             </div>
           </div>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method get">GET</span>
-              <span className="ep-url">/api/x402/&#123;name&#125;</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method get bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">GET</span>
+              <span className="ep-url text-foreground">/api/x402/&#123;name&#125;</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Get the x402 payment profile for a .safu name.</p>
-              <pre className="ep-code">{`curl /api/x402/my-agent
+              <p className="ep-desc text-muted-foreground">Get the x402 payment profile for a .id name.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl /api/x402/my-agent
 
 // Response
 {
-  "name": "my-agent.safu",
+  "name": "my-agent.id",
   "paymentAddress": "0x71C9...8A21",
   "supportedChains": [8453, 1],
   "acceptedTokens": ["0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"],
@@ -352,17 +352,17 @@ curl -X POST /api/register/relay \\
 
         {/* Referrals */}
         <div className="api-section">
-          <h3 className="api-header">Referrals</h3>
-          <p className="api-sub">Generate and validate referral codes for discounted registrations.</p>
+          <h3 className="api-header text-foreground">Referrals</h3>
+          <p className="api-sub text-muted-foreground">Generate and validate referral codes for discounted registrations.</p>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method post">POST</span>
-              <span className="ep-url">/api/referral/generate</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method post bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">POST</span>
+              <span className="ep-url text-foreground">/api/referral/generate</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Generate a signed referral using an existing .safu domain as the referral code.</p>
-              <pre className="ep-code">{`curl -X POST /api/referral/generate \\
+              <p className="ep-desc text-muted-foreground">Generate a signed referral using an existing .id domain as the referral code.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl -X POST /api/referral/generate \\
   -H "Content-Type: application/json" \\
   -d '{
     "referralCode": "domistro",
@@ -386,14 +386,14 @@ curl -X POST /api/register/relay \\
             </div>
           </div>
 
-          <div className="endpoint-card">
-            <div className="ep-header">
-              <span className="ep-method get">GET</span>
-              <span className="ep-url">/api/referral/validate/&#123;code&#125;</span>
+          <div className="endpoint-card bg-card border-border text-card-foreground shadow-sm">
+            <div className="ep-header border-b border-border">
+              <span className="ep-method get bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">GET</span>
+              <span className="ep-url text-foreground">/api/referral/validate/&#123;code&#125;</span>
             </div>
             <div className="ep-body">
-              <p className="ep-desc">Validate whether a .safu domain is eligible as a referral code.</p>
-              <pre className="ep-code">{`curl /api/referral/validate/domistro
+              <p className="ep-desc text-muted-foreground">Validate whether a .id domain is eligible as a referral code.</p>
+              <pre className="ep-code bg-muted text-foreground border border-border">{`curl /api/referral/validate/domistro
 
 // Response
 {
@@ -408,15 +408,15 @@ curl -X POST /api/register/relay \\
 
         {/* Integration Notes */}
         <div className="api-section">
-          <h3 className="api-header">Integration Notes</h3>
-          <p className="api-sub">Key details for integrating with SafuDomains.</p>
+          <h3 className="api-header text-foreground">Integration Notes</h3>
+          <p className="api-sub text-muted-foreground">Key details for integrating with NexID.</p>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-6">
-            <h4 className="font-bold text-lg mb-4">No API Keys Required</h4>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-muted border border-border rounded-2xl p-6 mb-6">
+            <h4 className="font-bold text-lg mb-4 text-foreground">No API Keys Required</h4>
+            <p className="text-muted-foreground mb-4">
               All endpoints are open and do not require authentication. Registration security is enforced on-chain via transaction signing.
             </p>
-            <pre className="ep-code">{`// Registration flow:
+            <pre className="ep-code bg-card text-foreground border border-border">{`// Registration flow:
 // 1. Check price & availability
 const price = await fetch("/api/price?name=my-agent").then(r => r.json())
 
@@ -439,9 +439,9 @@ const tx = await wallet.sendTransaction({
 })`}</pre>
           </div>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
-            <h4 className="font-bold text-lg mb-4">Network</h4>
-            <p className="text-gray-600">
+          <div className="bg-muted border border-border rounded-2xl p-6">
+            <h4 className="font-bold text-lg mb-4 text-foreground">Network</h4>
+            <p className="text-muted-foreground">
               All contracts are deployed on <strong>Base</strong> (chain ID 8453) for mainnet and <strong>Base Sepolia</strong> (chain ID 84532) for testnet. Registration is lifetime with no renewal fees.
             </p>
           </div>

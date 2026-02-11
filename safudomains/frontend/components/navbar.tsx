@@ -89,7 +89,7 @@ export default function Navbar() {
   const navLinks = [
     { label: 'Pricing', href: '/pricing', isExternal: false },
     { label: 'API', href: '/api-docs', isExternal: false },
-    { label: 'Academy', href: 'https://academy.safuverse.com/courses/all', isExternal: true },
+    { label: 'NexID Academy', href: 'https://academy.safuverse.com/courses/all', isExternal: true },
   ]
 
   const isHomepage = pathname === '/'
@@ -106,7 +106,7 @@ export default function Navbar() {
           {/* Logo */}
           <div className="nav-pill-left">
             <div className="nav-pill-logo" onClick={() => router.push('/')}>
-              <img src="/small.png" alt="Safuverse" />
+              <img src="/nexid_logo.png" alt="NexId" />
             </div>
           </div>
 
@@ -126,7 +126,7 @@ export default function Navbar() {
               {showResults && search && (
                 <div ref={resultsRef} className="nav-pill-search-results">
                   <div className="nav-pill-search-result" onClick={handleRoute}>
-                    <span className="font-semibold text-sm text-white">{search}.safu</span>
+                    <span className="font-semibold text-sm text-white">{search}.id</span>
                     {available && (
                       <span
                         className="text-[10px] px-2 py-0.5 rounded-full font-bold"
@@ -212,7 +212,7 @@ export default function Navbar() {
 
               {showResults && search && !isHomepage && (
                 <div className="nav-pill-mobile-result" onClick={handleRoute}>
-                  <span className="font-semibold text-sm text-white">{search}.safu</span>
+                  <span className="font-semibold text-sm text-white">{search}.id</span>
                   {available && (
                     <span
                       className="text-[10px] px-2 py-0.5 rounded-full font-bold"

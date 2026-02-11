@@ -6,7 +6,7 @@ import { IdentificationIcon, SearchIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 export const MobileNav = () => {
   const { isConnected } = useAccount()

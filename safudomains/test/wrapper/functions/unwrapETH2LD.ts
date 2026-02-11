@@ -21,7 +21,7 @@ import {
 export const unwrapETH2LDTests = () =>
   describe('unwrapETH2LD()', () => {
     const label = 'unwrapped'
-    const name = `${label}.safu`
+    const name = `${label}.id`
 
     it('Allows the owner to unwrap a name.', async () => {
       const { baseRegistrar, ensRegistry, nameWrapper, accounts, actions } =
@@ -42,7 +42,7 @@ export const unwrapETH2LDTests = () =>
 
       // transfers the controller on the registry to the target address.
       await expectOwnerOf(name).on(ensRegistry).toBe(accounts[0])
-      //Transfers the registrant on the .safu registrar to the target address
+      //Transfers the registrant on the .id registrar to the target address
       await expectOwnerOf(label).on(baseRegistrar).toBe(accounts[0])
     })
 
@@ -115,7 +115,7 @@ export const unwrapETH2LDTests = () =>
         )
     })
 
-    it('Does not allows an account authorised by the owner on the .safu registrar to unwrap a name', async () => {
+    it('Does not allows an account authorised by the owner on the .id registrar to unwrap a name', async () => {
       const { baseRegistrar, nameWrapper, accounts, actions } =
         await loadFixture(fixture)
 

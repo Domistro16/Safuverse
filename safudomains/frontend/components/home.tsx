@@ -6,9 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { constants } from '../constant'
 import { FaSearch } from 'react-icons/fa'
 import { FaXmark } from 'react-icons/fa6'
-import { AgentRegistrarControllerAbi as abi } from '@safuverse/safudomains-sdk'
+import { AgentRegistrarControllerAbi as abi } from '@nexid/sdk'
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 function getPreferredTheme() {
   if (typeof window === 'undefined') return 'light'
@@ -22,8 +22,8 @@ function getPreferredTheme() {
 
 const faqItems = [
   {
-    q: 'What is a .safu domain?',
-    a: 'A .safu domain is your decentralized Web3 identity on the BSC. It replaces long wallet addresses with human-readable names.',
+    q: 'What is a .id domain?',
+    a: 'A .id domain is your decentralized Web3 identity on the BSC. It replaces long wallet addresses with human-readable names.',
   },
   {
     q: 'How do I register a domain?',
@@ -39,7 +39,7 @@ const faqItems = [
   },
   {
     q: 'Is my domain an NFT?',
-    a: 'Yes! Your .safu domain is a fully tradeable NFT that you own and control.',
+    a: 'Yes! Your .id domain is a fully tradeable NFT that you own and control.',
   },
   {
     q: 'What about referrals?',
@@ -121,7 +121,7 @@ export default function Home() {
   const modalRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    document.title = `safu Domains - Get a Domain name with a safu identity`
+    document.title = `id Domains - Get a Domain name with a id identity`
   }, [])
 
   const setRecent = (search: string) => {
@@ -223,7 +223,7 @@ export default function Home() {
         <div className="soft-mist-bg" />
         <div className="hero-inner">
           <div className="hero-icon">
-            <img src="/small.png" alt="safu" style={{ height: '40px' }} />
+            <img src="/nexid_logo.png" alt="id" style={{ height: '40px' }} />
           </div>
 
           <div className="hero-pill">
@@ -234,7 +234,7 @@ export default function Home() {
           <h1>
             Claim Your
             <br />
-            <span>.safu Domain Name</span>
+            <span>.id Domain Name</span>
           </h1>
 
           <p className="hero-subtext">
@@ -331,7 +331,7 @@ export default function Home() {
                   onClick={route}
                   style={{ borderRadius: '14px' }}
                 >
-                  <span style={{ fontWeight: 600 }}>{search}.safu</span>
+                  <span style={{ fontWeight: 600 }}>{search}.id</span>
                   {available && (
                     <span
                       style={{
@@ -360,7 +360,7 @@ export default function Home() {
             Web3 Identity
           </h3>
           <p style={{ fontSize: '14px', color: isDark ? '#ccc' : '#555', lineHeight: 1.55, marginTop: '10px' }}>
-            Your .safu name becomes your universal on-chain username across the safuverse ecosystem.
+            Your .id name becomes your universal on-chain username across the safuverse ecosystem.
           </p>
         </div>
 
@@ -393,8 +393,8 @@ export default function Home() {
             <div className="content-pill">About</div>
             <h2 className="content-title">Your Gateway to Web3 Identity</h2>
             <p className="content-text" style={{ marginBottom: '14px' }}>
-              safu Domains is the official naming service for the safuverse ecosystem on BSC.
-              Replace your long wallet address with a memorable .safu name.
+              id Domains is the official naming service for the safuverse ecosystem on BSC.
+              Replace your long wallet address with a memorable .id name.
             </p>
             <p className="content-text">
               Own your identity, receive payments easily, and unlock exclusive features across the safuverse platforms.
@@ -402,7 +402,7 @@ export default function Home() {
 
             <div style={{ marginTop: '22px', fontSize: '14px', color: isDark ? '#ddd' : '#222' }}>
               <p><strong>Network:</strong> BSC</p>
-              <p><strong>Extension:</strong> .safu</p>
+              <p><strong>Extension:</strong> .id</p>
               <p><strong>Features:</strong> Utility beyond Identity</p>
 
             </div>

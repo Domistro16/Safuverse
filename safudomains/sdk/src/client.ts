@@ -624,7 +624,7 @@ export class SafuDomainsClient {
     }
 
     /**
-     * Calculate the namehash for a full domain (e.g., "myname.safu")
+     * Calculate the namehash for a full domain (e.g., "myname.id")
      */
     namehash(name: string): Hash {
         const fullName = name.endsWith(`.${TLD}`) ? name : `${name}.${TLD}`
@@ -736,6 +736,7 @@ export class SafuDomainsClient {
      * // Step 3: Submit with signature
      * const step2 = await sdk.apiRelay('my-agent', '0x1234...', {
      *   signature: '0xsigned...',
+     *   paymasterPermit: '0xpaymasterPermit...',
      * })
      * ```
      */
@@ -753,6 +754,7 @@ export class SafuDomainsClient {
                 walletSalt: options.walletSalt ?? Date.now(),
                 textRecords: options.textRecords ?? {},
                 permit: options.permit,
+                paymasterPermit: options.paymasterPermit,
                 signature: options.signature,
             },
         })
@@ -860,7 +862,7 @@ export class SafuDomainsClient {
      * Get the x402/ERC-8004 payment profile for a domain via API
      */
     async apiGetPaymentProfile(name: string): Promise<ApiPaymentProfileResponse> {
-        const cleanName = name.replace('.safu', '')
+        const cleanName = name.replace('.id', '')
         return this.apiFetch<ApiPaymentProfileResponse>(`/api/x402/${encodeURIComponent(cleanName)}`)
     }
 
@@ -871,7 +873,7 @@ export class SafuDomainsClient {
     /**
      * Generate a referral for a registration
      *
-     * @param referralCode - The referrer's domain name (without .safu)
+     * @param referralCode - The referrer's domain name (without .id)
      * @param registrantAddress - Address of the person registering
      * @param name - Name being registered
      */
@@ -903,7 +905,7 @@ export class SafuDomainsClient {
      * Check if a name is premium and requires auction
      */
     async apiGetPremiumInfo(name: string): Promise<PremiumInfo> {
-        const cleanName = name.replace('.safu', '')
+        const cleanName = name.replace('.id', '')
         return this.apiFetch<PremiumInfo>(`/api/premium/${encodeURIComponent(cleanName)}`)
     }
 

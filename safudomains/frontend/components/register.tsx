@@ -19,7 +19,7 @@ import { AgentPriceTag } from './AgentPriceTag'
 import { AgentPatternInfo } from './AgentPatternInfo'
 import { Input } from './ui/input'
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 const Register = () => {
   const router = useRouter()
@@ -83,6 +83,7 @@ const Register = () => {
   const { price, loading, priceResult, isAgentName } = useRegistrationPrice({
     label: label as string,
   })
+  const requiresCommit = false
 
   // Premium name check
   const { isPremium, requiresAuction, hasActiveAuction, isLoading: premiumLoading } = usePremiumCheck(label)
@@ -93,6 +94,7 @@ const Register = () => {
     isLoading,
     commitHash,
     registerHash,
+    humanUsdcBalance,
     error: regError,
     countdown,
     buildCommitDataFn,
@@ -140,7 +142,7 @@ const Register = () => {
   }, [])
 
   useEffect(() => {
-    document.title = `Register – ${label}.safu`
+    document.title = `Register – ${label}.id`
   }, [label])
 
   const buildCommitData = () => {
@@ -219,7 +221,7 @@ const Register = () => {
     switch (s) {
       case 'committing': return 'Sending commit transaction...'
       case 'waiting': return `Waiting ${countdown}s for timer to complete...`
-      case 'approving': return 'Approving USDC...'
+      case 'approving': return 'Signing USDC permit for gas...'
       case 'registering': return 'Registering your name...'
       case 'done': return 'Registration complete!'
       case 'error': return 'An error occurred'
@@ -235,7 +237,7 @@ const Register = () => {
         <div className="hero-spacer" />
         <div className="flex flex-col mx-auto px-4 md:px-30 mt-10 lg:px-60">
           <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '20px' }}>
-            {label}.safu
+            {label}.id
           </h2>
           <div className="page-card">
             <div className="flex items-center gap-4 mb-6">
@@ -285,13 +287,13 @@ const Register = () => {
       <div className="flex flex-col mx-auto px-4 md:px-30 mt-10 lg:px-60">
         <div>
           <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '20px' }}>
-            {label}.safu
+            {label}.id
           </h2>
 
           {next == 0 ? (
             <div className="page-card">
               <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '24px' }}>
-                Register {label}.safu
+                Register {label}.id
               </h1>
 
               {/* Price Display - USDC */}
@@ -348,6 +350,28 @@ const Register = () => {
                 </button>
               </div>
 
+              {/* Wallet Info */}
+              <div className="mt-6">
+                <h3 className="text-base font-semibold">Wallets</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Connected EOA: <span className="font-mono">{address || 'Not connected'}</span>
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  EOA USDC Balance:{' '}
+                  <span className="font-mono">
+                    {humanUsdcBalance !== null ? (Number(humanUsdcBalance) / 1e6).toFixed(2) : 'Unknown'}
+                  </span>
+                </p>
+                {humanUsdcBalance !== null && priceResult?.priceUSDC !== undefined && humanUsdcBalance < priceResult.priceUSDC && (
+                  <p className="text-xs text-red-500 mt-2">
+                    Add USDC to your EOA to cover the registration fee.
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  Humans use EIP-7702: your EOA acts as the smart account for registration.
+                </p>
+              </div>
+
               {/* Referrer Input */}
               <div className="mt-6">
                 <h3 className="text-base font-semibold">Referrer (Optional)</h3>
@@ -397,7 +421,7 @@ const Register = () => {
                     }}
                   >
                     {referralValid
-                      ? `✓ Valid referral code - ${referrer}.safu`
+                      ? `✓ Valid referral code - ${referrer}.id`
                       : `✕ Invalid referral code - domain doesn't exist`}
                   </p>
                 )}
@@ -408,7 +432,7 @@ const Register = () => {
                     color: isDark ? '#888' : '#666',
                   }}
                 >
-                  Enter a .safu domain name as your referral code (without .safu)
+                  Enter a .id domain name as your referral code (without .id)
                 </p>
               </div>
 
@@ -451,7 +475,7 @@ const Register = () => {
             />
           ) : next == 2 ? (
             <div className="page-card mt-5 p-8">
-              <RegistrationSteps />
+              <RegistrationSteps requiresCommit={requiresCommit} />
               <div style={{ marginTop: '40px' }}>
                 {/* Price Summary - USDC */}
                 <div className="page-card p-5 text-center">
@@ -481,8 +505,12 @@ const Register = () => {
                 <button
                   className="btn-primary"
                   onClick={() => {
-                    setNext(3)
-                    handleCommit()
+                    if (requiresCommit) {
+                      setNext(3)
+                      handleCommit()
+                    } else {
+                      setNext(4)
+                    }
                   }}
                   disabled={isLoading}
                 >
@@ -490,13 +518,13 @@ const Register = () => {
                 </button>
               </div>
             </div>
-          ) : next == 3 ? (
+          ) : next == 3 && requiresCommit ? (
             /* Step 3: Commit + 60 second countdown */
             <div className="page-card p-10 mt-5 flex flex-col items-center gap-6">
               <ConfirmDetailsModal
                 isOpen={step === 'committing'}
-                onRequestClose={() => {}}
-                name={`${label}.safu`}
+                onRequestClose={() => { }}
+                name={`${label}.id`}
                 action="Commit"
                 info="Step 1 of 2: Commit transaction"
               />
@@ -591,7 +619,7 @@ const Register = () => {
               <RegisterDetailsModal
                 isOpen={step === 'approving' || step === 'registering'}
                 onRequestClose={() => setNext(2)}
-                name={`${label}.safu` || ''}
+                name={`${label}.id` || ''}
                 action="Register name"
                 duration="Lifetime"
               />
@@ -602,10 +630,10 @@ const Register = () => {
                     <>
                       <DollarSign className="w-12 h-12 text-muted-foreground" />
                       <h2 style={{ fontSize: '24px', fontWeight: 700, textAlign: 'center' }}>
-                        Approve USDC
+                        Sign USDC Permit
                       </h2>
                       <p className="text-muted-foreground text-center text-sm">
-                        Approve {price.usdc} USDC for the registration fee.
+                        Sign a USDC permit so gas can be paid in USDC.
                       </p>
                       <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                     </>
@@ -627,7 +655,7 @@ const Register = () => {
                         Ready to Register
                       </h2>
                       <p className="text-muted-foreground text-center text-sm">
-                        The timer is complete. Click below to approve USDC and register your name.
+                        The timer is complete. Click below to sign the permit and register your name.
                       </p>
 
                       {/* Price Summary */}
@@ -652,7 +680,7 @@ const Register = () => {
                           onClick={handleRegister}
                           disabled={isLoading}
                         >
-                          Approve USDC & Register
+                          Sign Permit & Register
                         </button>
                       </div>
                     </>
@@ -686,7 +714,7 @@ const Register = () => {
                   <p className="text-muted-foreground mb-6">
                     You are now the owner of{' '}
                     <span style={{ fontWeight: 600 }}>
-                      {label}.safu
+                      {label}.id
                     </span>
                   </p>
 
@@ -707,7 +735,7 @@ const Register = () => {
                     }}>
                       <Check style={{ width: '32px', height: '32px', color: 'var(--foreground)' }} />
                     </div>
-                    <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.safu`}</p>
+                    <p style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>{`${label}.id`}</p>
                   </div>
 
                   <div style={{

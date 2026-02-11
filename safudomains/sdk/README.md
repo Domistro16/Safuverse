@@ -97,7 +97,7 @@ const owner = await sdk.getOwner('my-agent')
 const node = sdk.namehash('my-agent')
 
 // Get full name with TLD
-const fullName = sdk.getFullName('my-agent') // "my-agent.safu"
+const fullName = sdk.getFullName('my-agent') // "my-agent.id"
 ```
 
 ## Pricing Reference

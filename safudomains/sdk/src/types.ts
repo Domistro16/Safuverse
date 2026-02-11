@@ -34,7 +34,7 @@ export interface PriceResult {
 // ============ Registration Types ============
 
 export interface RegisterRequest {
-    /** Name to register (without .safu suffix) */
+    /** Name to register (without .id suffix) */
     name: string
     /** Owner address for the registered name */
     owner: Address
@@ -87,6 +87,8 @@ export interface RelayOptions {
     textRecords?: Record<string, string>
     /** EIP-2612 permit signature for USDC */
     permit?: PermitSignature
+    /** Paymaster permit bytes for gasless submission */
+    paymasterPermit?: Hex
     /** UserOp signature from owner (if omitted, returns unsigned UserOp) */
     signature?: Hex
 }
@@ -179,7 +181,7 @@ export interface AuctionInfo {
 // ============ Referral Types ============
 
 export interface ReferralGenerateRequest {
-    /** Referral code (domain name of referrer, without .safu) */
+    /** Referral code (domain name of referrer, without .id) */
     referralCode: string
     /** Address of the person being referred */
     registrantAddress: Address

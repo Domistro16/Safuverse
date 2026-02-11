@@ -9,7 +9,7 @@ import { getConstants } from '../constant'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BookOpen, X, Menu, Search } from 'lucide-react'
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 const abi = [
   {
@@ -201,14 +201,14 @@ export default function Nav() {
         {/* Logo */}
         <div onClick={() => router.push('/')} className="flex items-center gap-1.5 cursor-pointer flex-shrink-0">
           <img
-            src="/Safuverse.png"
+            src="/nexid_logo.png"
             className="h-8 sm:h-10 hidden sm:block"
-            alt="safuverse"
+            alt="nexid"
           />
           <img
-            src="/small.png"
+            src="/nexid_logo.png"
             className="h-10 sm:hidden block"
-            alt="safuverse"
+            alt="nexid"
           />
         </div>
 
@@ -247,7 +247,7 @@ export default function Nav() {
                 onClick={route}
               >
                 <div className="text-[14px] sm:text-[15px] font-semibold" style={{ color: isDark ? '#fff' : '#111' }}>
-                  {search != '' ? search + '.safu' : ''}
+                  {search != '' ? search + '.id' : ''}
                 </div>
                 {available != '' && search != '' && (
                   <div
@@ -509,7 +509,7 @@ export default function Nav() {
                     }}
                   >
                     <span style={{ fontSize: '15px', fontWeight: 600, color: isDark ? '#fff' : '#111' }}>
-                      {search}.safu
+                      {search}.id
                     </span>
                     {available && (
                       <span

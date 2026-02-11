@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { SafuDomainsClient } from '@nexid/sdk'
 
 const CHAIN_ID = 8453 // Base mainnet
 
@@ -9,7 +9,7 @@ export async function GET(
     { params }: { params: Promise<{ name: string }> }
 ) {
     const { name } = await params
-    const cleanName = name.replace('.safu', '')
+    const cleanName = name.replace('.id', '')
 
     const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
 
@@ -25,7 +25,7 @@ export async function GET(
 
         // Return x402 compatible response
         return NextResponse.json({
-            name: `${cleanName}.safu`,
+            name: `${cleanName}.id`,
             paymentAddress: profile.paymentAddress,
             supportedChains: profile.supportedChains,
             acceptedTokens: profile.acceptedTokens,
@@ -48,7 +48,7 @@ export async function POST(
     { params }: { params: Promise<{ name: string }> }
 ) {
     const { name } = await params
-    const cleanName = name.replace('.safu', '')
+    const cleanName = name.replace('.id', '')
 
     let body
     try {
@@ -72,7 +72,7 @@ export async function POST(
             return NextResponse.json(
                 {
                     error: 'Payments not enabled',
-                    name: `${cleanName}.safu`,
+                    name: `${cleanName}.id`,
                 },
                 {
                     status: 402,
@@ -104,7 +104,7 @@ export async function POST(
             amount: amount || '0',
             token: token || '0x0000000000000000000000000000000000000000', // Native ETH
             chainId: targetChainId,
-            invoice: `safu-${cleanName}-${Date.now()}`,
+            invoice: `id-${cleanName}-${Date.now()}`,
             x402Endpoint: profile.x402Endpoint,
         })
     } catch (error) {

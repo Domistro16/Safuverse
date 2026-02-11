@@ -1,4 +1,4 @@
-// SafuDomains v2 ABIs
+// NexID v2 ABIs
 
 // ============ Resolver ABI (shared) ============
 export const ResolverABI = [
@@ -38,6 +38,7 @@ export const AgentRegistrarControllerV2ABI = [
                     { name: 'resolver', type: 'address' },
                     { name: 'data', type: 'bytes[]' },
                     { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
                     { name: 'deployWallet', type: 'bool' },
                     { name: 'walletSalt', type: 'uint256' },
                 ],
@@ -60,6 +61,43 @@ export const AgentRegistrarControllerV2ABI = [
                     { name: 'resolver', type: 'address' },
                     { name: 'data', type: 'bytes[]' },
                     { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
+                ],
+                name: 'req',
+                type: 'tuple',
+            },
+            {
+                components: [
+                    { name: 'referrer', type: 'address' },
+                    { name: 'registrant', type: 'address' },
+                    { name: 'nameHash', type: 'bytes32' },
+                    { name: 'referrerCodeHash', type: 'bytes32' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'nonce', type: 'bytes32' },
+                ],
+                name: 'referralData',
+                type: 'tuple',
+            },
+            { name: 'referralSignature', type: 'bytes' },
+        ],
+        name: 'registerWithUSDC',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
                     { name: 'deployWallet', type: 'bool' },
                     { name: 'walletSalt', type: 'uint256' },
                 ],
@@ -76,6 +114,19 @@ export const AgentRegistrarControllerV2ABI = [
                 name: 'permit',
                 type: 'tuple',
             },
+            {
+                components: [
+                    { name: 'referrer', type: 'address' },
+                    { name: 'registrant', type: 'address' },
+                    { name: 'nameHash', type: 'bytes32' },
+                    { name: 'referrerCodeHash', type: 'bytes32' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'nonce', type: 'bytes32' },
+                ],
+                name: 'referralData',
+                type: 'tuple',
+            },
+            { name: 'referralSignature', type: 'bytes' },
         ],
         name: 'registerWithPermit',
         outputs: [],
@@ -92,6 +143,7 @@ export const AgentRegistrarControllerV2ABI = [
                     { name: 'resolver', type: 'address' },
                     { name: 'data', type: 'bytes[]' },
                     { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
                     { name: 'deployWallet', type: 'bool' },
                     { name: 'walletSalt', type: 'uint256' },
                 ],
@@ -262,6 +314,19 @@ export const AgentRegistrarControllerABI = [
                 name: 'req',
                 type: 'tuple',
             },
+            {
+                components: [
+                    { name: 'referrer', type: 'address' },
+                    { name: 'registrant', type: 'address' },
+                    { name: 'nameHash', type: 'bytes32' },
+                    { name: 'referrerCodeHash', type: 'bytes32' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'nonce', type: 'bytes32' },
+                ],
+                name: 'referralData',
+                type: 'tuple',
+            },
+            { name: 'referralSignature', type: 'bytes' },
         ],
         name: 'registerWithUSDC',
         outputs: [],
@@ -295,6 +360,19 @@ export const AgentRegistrarControllerABI = [
                 name: 'permit',
                 type: 'tuple',
             },
+            {
+                components: [
+                    { name: 'referrer', type: 'address' },
+                    { name: 'registrant', type: 'address' },
+                    { name: 'nameHash', type: 'bytes32' },
+                    { name: 'referrerCodeHash', type: 'bytes32' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'nonce', type: 'bytes32' },
+                ],
+                name: 'referralData',
+                type: 'tuple',
+            },
+            { name: 'referralSignature', type: 'bytes' },
         ],
         name: 'registerWithPermit',
         outputs: [],
@@ -561,7 +639,7 @@ export const PremiumRegistryABI = [
     },
 ] as const
 
-// ============ SafuDomainAuction ============
+// ============ IDDomainAuction ============
 export const AuctionABI = [
     {
         inputs: [],

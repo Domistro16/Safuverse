@@ -3,7 +3,7 @@ import { fabric } from 'fabric'
 
 /**
  * DomainImage
- * - domain: string (required) e.g. "alice.safu"
+ * - domain: string (required) e.g. "alice.id"
  * - imagePath: string (optional) URL/path to background image (defaults to public/)
  * - alt: string (optional) alt text for the output <img/>
  *

@@ -7,14 +7,19 @@ import {Resolver} from "../resolvers/Resolver.sol";
 import {ENS} from "../registry/ENS.sol";
 import {ReverseRegistrar} from "../reverseRegistrar/ReverseRegistrar.sol";
 import {ReverseClaimer} from "../reverseRegistrar/ReverseClaimer.sol";
-import {IETHRegistrarController, IPriceOracle} from "./IETHRegistrarController.sol";
+import {
+    IETHRegistrarController,
+    IPriceOracle
+} from "./IETHRegistrarController.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {INameWrapper} from "../wrapper/INameWrapper.sol";
 import {ERC20Recoverable} from "../utils/ERC20Recoverable.sol";
 import {TokenPriceOracle} from "./TokenPriceOracle.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    SafeERC20
+} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReferralVerifier} from "./ReferralVerifier.sol";
 import {Airdrop} from "./Airdrop.sol";
@@ -45,7 +50,7 @@ contract ETHRegistrarController is
     uint256 private constant LIFETIME_DURATION = 31536000000;
     uint256 private constant MAX_REFERRAL_PCT = 30;
     bytes32 private constant ETH_NODE =
-        0xf92e9539a836c60f519caef3f817b823139813f56a7a19c9621f7b47f35b340d;
+        0xe3f6fa8ec34a0592261cf8313365d7f76784e190d0c33fbd4d51f8461a9b8e54;
 
     // ============ Immutables ============
     BaseRegistrarImplementation public immutable base;
@@ -593,7 +598,13 @@ contract ETHRegistrarController is
         if (!useAirdrop) return;
 
         uint256 len = name.strlen();
-        uint256 point = len == 2 ? 100 : len == 3 ? 50 : len == 4 ? 20 : 10;
+        uint256 point = len == 2
+            ? 100
+            : len == 3
+                ? 50
+                : len == 4
+                    ? 20
+                    : 10;
         uint256 points = point * (lifetime ? 3 : duration / 31536000);
 
         airdrop.updatePoints(owner, points);
@@ -639,7 +650,7 @@ contract ETHRegistrarController is
             msg.sender,
             owner,
             resolver,
-            string.concat(name, ".safu")
+            string.concat(name, ".id")
         );
     }
 

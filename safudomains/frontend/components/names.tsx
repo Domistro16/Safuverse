@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
   Modal.setAppElement(document.body)
 }
 
-const THEME_KEY = 'safudomains-theme'
+const THEME_KEY = 'nexid-theme'
 
 // ABI definitions for contract interactions
 const isWrappedAbi = [
@@ -348,7 +348,7 @@ function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalPr
 
 // Wrap Modal Component
 function WrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
-  const label = domain.replace(/\.safu$/, '')
+  const label = domain.replace(/\.id$/, '')
   const { address } = useAccount()
   const [step, setStep] = useState(0)
   const [info, setInfo] = useState('')
@@ -506,7 +506,7 @@ function WrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
 
 // Unwrap Modal Component
 function UnwrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
-  const label = domain.replace(/\.safu$/, '')
+  const label = domain.replace(/\.id$/, '')
   const { address } = useAccount()
   const [step, setStep] = useState(0)
   const [ownerAddress, setOwnerAddress] = useState(address || '')
@@ -1426,7 +1426,7 @@ export default function Names() {
                 Loading...
               </h3>
               <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
-                Fetching your .safu domains.
+                Fetching your .id domains.
               </p>
             </div>
           ) : sortedDomains.length === 0 ? (
@@ -1437,7 +1437,7 @@ export default function Names() {
               <p style={{ color: isDark ? '#aaa' : '#666', marginBottom: '24px' }}>
                 {searchQuery
                   ? 'No domains match your search query.'
-                  : 'You don\'t have any .safu domains yet.'}
+                  : 'You don\'t have any .id domains yet.'}
               </p>
               {!searchQuery && (
                 <button

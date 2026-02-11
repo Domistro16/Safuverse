@@ -28,31 +28,31 @@ async function main() {
   await viem.waitForTransactionSuccess(reverseRegistrarSetDefaultResolverHash)
 
   const resolverEthOwner = await registry.read.owner([
-    namehash('resolver.safu'),
+    namehash('resolver.id'),
   ])
 
   if (resolverEthOwner === owner.address) {
     const publicResolver = await viem.getContract('PublicResolver', owner)
     const setResolverHash = await registry.write.setResolver([
-      namehash('resolver.safu'),
+      namehash('resolver.id'),
       publicResolver.address,
     ])
     console.log(
-      `Setting resolver for resolver.safu to PublicResolver (tx: ${setResolverHash})...`,
+      `Setting resolver for resolver.id to PublicResolver (tx: ${setResolverHash})...`,
     )
     await viem.waitForTransactionSuccess(setResolverHash)
 
     const setAddrHash = await publicResolver.write.setAddr([
-      namehash('resolver.safu'),
+      namehash('resolver.id'),
       publicResolver.address,
     ])
     console.log(
-      `Setting address for resolver.safu to PublicResolver (tx: ${setAddrHash})...`,
+      `Setting address for resolver.id to PublicResolver (tx: ${setAddrHash})...`,
     )
     await viem.waitForTransactionSuccess(setAddrHash)
   } else {
     console.log(
-      'resolver.safu is not owned by the owner address, not setting resolver',
+      'resolver.id is not owned by the owner address, not setting resolver',
     )
   }
 }

@@ -12,7 +12,7 @@ const NAME_WRAPPER_ADDRESS = '0xbf4B53F867dfE5A78Cf268AfBfC1f334044e61ae';
 const BASE_REGISTRAR_ADDRESS = '0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c';
 const RPC_URL = 'https://bsc-dataseed.binance.org';
 
-// Compute namehash for full domain (e.g., domistro.safu)
+// Compute namehash for full domain (e.g., domistro.id)
 function namehash(name: string): string {
     let node = '0x0000000000000000000000000000000000000000000000000000000000000000';
     if (name) {
@@ -50,8 +50,8 @@ export async function GET(
 
         console.log(`Validating referral code: ${code}`);
 
-        // For NameWrapper: use full namehash (domistro.safu)
-        const fullName = `${code}.safu`;
+        // For NameWrapper: use full namehash (domistro.id)
+        const fullName = `${code}.id`;
         const wrappedTokenId = BigInt(namehash(fullName));
 
         // For BaseRegistrar: use labelhash (just domistro)

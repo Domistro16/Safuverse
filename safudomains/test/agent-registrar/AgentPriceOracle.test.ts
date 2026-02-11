@@ -123,9 +123,9 @@ describe('AgentPriceOracle', () => {
                 expect(await agentPriceOracle.read.isAgentName(['bot-trading-executor'])).to.equal(true)
             })
 
-            it('should detect safu-agent- prefix', async () => {
+            it('should detect id-agent- prefix', async () => {
                 const { agentPriceOracle } = await loadFixture(fixture)
-                expect(await agentPriceOracle.read.isAgentName(['safu-agent-validator'])).to.equal(true)
+                expect(await agentPriceOracle.read.isAgentName(['id-agent-validator'])).to.equal(true)
             })
         })
 

@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createPublicClient, http } from 'viem'
+import { createPublicClient, http, decodeFunctionData } from 'viem'
 import { base } from 'viem/chains'
 import { constants } from '@/constant'
+import { AgentRegistrarControllerV2ABI } from '@/lib/abi'
 
 const publicClient = createPublicClient({
   chain: base,
   transport: http(),
 })
 
-const BUNDLER_URL = process.env.PIMLICO_BUNDLER_URL!
+const BUNDLER_URL = process.env.PIMLICO_BUNDLER_URL
 
 /**
  * POST /api/register/autonomous
@@ -30,6 +31,13 @@ const BUNDLER_URL = process.env.PIMLICO_BUNDLER_URL!
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!BUNDLER_URL) {
+      return NextResponse.json(
+        { error: 'Missing PIMLICO_BUNDLER_URL environment variable' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { userOp } = body
 
@@ -45,7 +53,7 @@ export async function POST(request: NextRequest) {
     const isValidTarget = await validateUserOpTarget(userOp)
     if (!isValidTarget) {
       return NextResponse.json(
-        { error: 'UserOp must target SafuDomains registrar' },
+        { error: 'UserOp must target NexID registrar' },
         { status: 403 }
       )
     }
@@ -85,10 +93,54 @@ export async function POST(request: NextRequest) {
 }
 
 async function validateUserOpTarget(userOp: any): Promise<boolean> {
-  // Decode callData to verify it's calling our registrar
-  // For AA wallets, callData is typically an execute() call
-  // We verify the sender is a deployed contract (AA wallet)
   try {
+    const callData = userOp.callData as `0x${string}` | undefined
+    if (!callData) return false
+
+    // Kernel-style execute(dest,value,data)
+    const executeAbi = [
+      {
+        name: 'execute',
+        type: 'function',
+        inputs: [
+          { name: 'dest', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'func', type: 'bytes' },
+        ],
+        outputs: [],
+        stateMutability: 'nonpayable',
+      },
+    ] as const
+
+    const decoded = decodeFunctionData({
+      abi: executeAbi,
+      data: callData,
+    })
+
+    if (decoded.functionName !== 'execute') return false
+
+    const dest = decoded.args[0] as `0x${string}`
+    const innerCallData = decoded.args[2] as `0x${string}`
+
+    if (dest.toLowerCase() !== constants.Controller.toLowerCase()) {
+      return false
+    }
+
+    const innerDecoded = decodeFunctionData({
+      abi: AgentRegistrarControllerV2ABI,
+      data: innerCallData,
+    })
+
+    const allowedFns = new Set(['register', 'registerWithUSDC', 'registerWithPermit'])
+    if (!allowedFns.has(innerDecoded.functionName)) {
+      return false
+    }
+
+    // If factory/factoryData is present, it's a deployment (counterfactual), so no code check needed yet
+    if (userOp.factory || userOp.factoryData || userOp.initCode) {
+      return true
+    }
+
     const code = await publicClient.getCode({ address: userOp.sender })
     return code !== undefined && code !== '0x'
   } catch {

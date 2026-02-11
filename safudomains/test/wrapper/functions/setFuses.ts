@@ -28,7 +28,7 @@ import {
 export const setFusesTests = () => {
   describe('setFuses()', () => {
     const label = 'fuses'
-    const name = `${label}.safu`
+    const name = `${label}.id`
 
     // NOTE: PARENT_CANNOT_CONTROL (2^16) is now out of uint16 range for the fuses parameter
     // The contract uses uint16 for fuses, so these values cannot be passed
@@ -117,7 +117,7 @@ export const setFusesTests = () => {
       await expect(nameWrapper).transaction(tx).toBeRevertedWithoutReason()
     })
 
-    it('cannot burn fuses as the previous owner of a .safu when the name has expired', async () => {
+    it('cannot burn fuses as the previous owner of a .id when the name has expired', async () => {
       const { nameWrapper, actions, accounts, testClient } = await loadFixture(
         fixture,
       )
@@ -185,7 +185,7 @@ export const setFusesTests = () => {
         .withArgs(namehash(`sub.${name}`))
     })
 
-    it('Will not allow burning fuses of .safu names unless CANNOT_UNWRAP is also burned.', async () => {
+    it('Will not allow burning fuses of .id names unless CANNOT_UNWRAP is also burned.', async () => {
       const { nameWrapper, actions } = await loadFixture(fixture)
 
       await actions.registerSetupAndWrapName({

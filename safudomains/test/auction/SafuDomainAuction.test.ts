@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import hre from 'hardhat'
 import { parseEther, parseUnits, zeroAddress } from 'viem'
 
-describe('SafuDomainAuction', function () {
+describe('IDDomainAuction', function () {
     async function deployFullFixture() {
         const [owner, bidder1, bidder2, treasury] = await hre.viem.getWalletClients()
 
@@ -20,7 +20,7 @@ describe('SafuDomainAuction', function () {
         // Deploy Base Registrar
         const baseRegistrar = await hre.viem.deployContract('BaseRegistrarImplementation', [
             ensRegistry.address,
-            '0xf92e9539a836c60f519caef3f817b823139813f56a7a19c9621f7b47f35b340d', // safu namehash
+            '0xe3f6fa8ec34a0592261cf8313365d7f76784e190d0c33fbd4d51f8461a9b8e54', // id namehash
         ])
 
         // Deploy NameWrapper (simplified - may need actual dependencies)
@@ -30,8 +30,8 @@ describe('SafuDomainAuction', function () {
         // Deploy Public Resolver mock
         const mockResolver = await hre.viem.deployContract('MockResolver', [])
 
-        // Deploy SafuDomainAuction
-        const auction = await hre.viem.deployContract('SafuDomainAuction', [
+        // Deploy IDDomainAuction
+        const auction = await hre.viem.deployContract('IDDomainAuction', [
             mockNameWrapper.address,
             mockResolver.address,
             mockUSDC.address,
@@ -74,8 +74,8 @@ describe('SafuDomainAuction', function () {
         await mockUSDC.write.mint([bidder1.account.address, parseUnits('10000', 6)])
         await mockUSDC.write.mint([bidder2.account.address, parseUnits('10000', 6)])
 
-        // Deploy SafuDomainAuction
-        const auction = await hre.viem.deployContract('SafuDomainAuction', [
+        // Deploy IDDomainAuction
+        const auction = await hre.viem.deployContract('IDDomainAuction', [
             mockNameWrapper.address,
             mockResolver.address,
             mockUSDC.address,
@@ -159,7 +159,7 @@ describe('SafuDomainAuction', function () {
         it('Should revert if non-owner creates auction', async function () {
             const { auction, bidder1, ONE_DAY } = await loadFixture(deployAuctionOnlyFixture)
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
 
             await expect(
                 auctionAsBidder.write.createAuction(['test', parseEther('0.1'), ONE_DAY, false])
@@ -174,7 +174,7 @@ describe('SafuDomainAuction', function () {
             const reservePrice = parseEther('0.1')
             await auction.write.createAuction(['test', reservePrice, ONE_DAY, false])
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder.write.bid([1n], { value: reservePrice })
 
             const auctionData = await auction.read.getAuction([1n])
@@ -187,7 +187,7 @@ describe('SafuDomainAuction', function () {
 
             await auction.write.createAuction(['test', parseEther('1'), ONE_DAY, false])
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
 
             await expect(
                 auctionAsBidder.write.bid([1n], { value: parseEther('0.5') })
@@ -201,14 +201,14 @@ describe('SafuDomainAuction', function () {
             await auction.write.createAuction(['test', reservePrice, ONE_DAY, false])
 
             // First bid
-            const auctionAsBidder1 = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder1 = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder1.write.bid([1n], { value: reservePrice })
 
             // Get minimum bid for next
             const minBid = await auction.read.getMinBid([1n])
 
             // Second bid (higher)
-            const auctionAsBidder2 = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder2 })
+            const auctionAsBidder2 = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder2 })
             await auctionAsBidder2.write.bid([1n], { value: minBid })
 
             const auctionData = await auction.read.getAuction([1n])
@@ -222,14 +222,14 @@ describe('SafuDomainAuction', function () {
             await auction.write.createAuction(['test', reservePrice, ONE_DAY, false])
 
             // First bid
-            const auctionAsBidder1 = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder1 = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder1.write.bid([1n], { value: reservePrice })
 
             // Get minimum bid for next
             const minBid = await auction.read.getMinBid([1n])
 
             // Second bid
-            const auctionAsBidder2 = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder2 })
+            const auctionAsBidder2 = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder2 })
             await auctionAsBidder2.write.bid([1n], { value: minBid })
 
             // Check pending returns
@@ -245,7 +245,7 @@ describe('SafuDomainAuction', function () {
             const reservePrice = parseUnits('100', 6) // $100
             await auction.write.createAuction(['usdc-test', reservePrice, ONE_DAY, true])
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder.write.bidUSDC([1n, reservePrice])
 
             const auctionData = await auction.read.getAuction([1n])
@@ -258,7 +258,7 @@ describe('SafuDomainAuction', function () {
 
             await auction.write.createAuction(['eth-only', parseEther('0.1'), ONE_DAY, false])
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
 
             await expect(
                 auctionAsBidder.write.bidUSDC([1n, parseUnits('100', 6)])
@@ -279,7 +279,7 @@ describe('SafuDomainAuction', function () {
             await time.increase(Number(ONE_DAY) - 300)
 
             // Place bid
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder.write.bid([1n], { value: parseEther('0.1') })
 
             // Check end time extended
@@ -295,7 +295,7 @@ describe('SafuDomainAuction', function () {
             await auction.write.createAuction(['settle-test', parseEther('0.1'), ONE_DAY, false])
 
             // Place bid
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder.write.bid([1n], { value: parseEther('0.1') })
 
             // Fast forward past end
@@ -313,7 +313,7 @@ describe('SafuDomainAuction', function () {
 
             await auction.write.createAuction(['early-settle', parseEther('0.1'), ONE_DAY, false])
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder.write.bid([1n], { value: parseEther('0.1') })
 
             await expect(
@@ -326,7 +326,7 @@ describe('SafuDomainAuction', function () {
 
             await auction.write.createAuction(['double-settle', parseEther('0.1'), ONE_DAY, false])
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder.write.bid([1n], { value: parseEther('0.1') })
 
             await time.increase(Number(ONE_DAY) + 1)
@@ -354,7 +354,7 @@ describe('SafuDomainAuction', function () {
 
             await auction.write.createAuction(['no-cancel', parseEther('0.1'), ONE_DAY, false])
 
-            const auctionAsBidder = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder.write.bid([1n], { value: parseEther('0.1') })
 
             await expect(
@@ -370,11 +370,11 @@ describe('SafuDomainAuction', function () {
             await auction.write.createAuction(['withdraw-test', parseEther('0.1'), ONE_DAY, false])
 
             // First bid
-            const auctionAsBidder1 = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder1 })
+            const auctionAsBidder1 = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder1 })
             await auctionAsBidder1.write.bid([1n], { value: parseEther('0.1') })
 
             // Outbid
-            const auctionAsBidder2 = await hre.viem.getContractAt('SafuDomainAuction', auction.address, { client: bidder2 })
+            const auctionAsBidder2 = await hre.viem.getContractAt('IDDomainAuction', auction.address, { client: bidder2 })
             const minBid = await auction.read.getMinBid([1n])
             await auctionAsBidder2.write.bid([1n], { value: minBid })
 

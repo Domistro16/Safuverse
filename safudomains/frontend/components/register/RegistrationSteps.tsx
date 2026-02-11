@@ -1,25 +1,36 @@
 
-const RegistrationSteps = () => {
-  const steps = [
-    {
-      number: 1,
-      title: 'Complete a transaction to begin the timer',
-    },
-    {
-      number: 2,
-      title: 'Wait 60 seconds for the timer to complete',
-    },
-    {
-      number: 3,
-      title: 'Complete a second transaction to secure your name',
-    },
-  ]
+const RegistrationSteps = ({ requiresCommit }: { requiresCommit: boolean }) => {
+  const steps = requiresCommit
+    ? [
+      {
+        number: 1,
+        title: 'Complete a transaction to begin the timer',
+      },
+      {
+        number: 2,
+        title: 'Wait 60 seconds for the timer to complete',
+      },
+      {
+        number: 3,
+        title: 'Complete a second transaction to secure your name',
+      },
+    ]
+    : [
+      {
+        number: 1,
+        title: 'Sign a USDC permit for gas',
+      },
+      {
+        number: 2,
+        title: 'Complete the registration transaction',
+      },
+    ]
 
   return (
     <div>
       <h1 className="text-center text-2xl font-semibold text-foreground">Before we Start</h1>
       <p className="text-center font-semibold mt-7 text-sm text-muted-foreground">
-        Registering your name takes three steps
+        Registering your name takes {requiresCommit ? 'three' : 'two'} steps
       </p>
       <div className="w-full flex space-x-5 justify-center mt-5">
         {steps.map((s) => (

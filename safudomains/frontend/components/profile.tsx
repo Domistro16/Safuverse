@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
   Modal.setAppElement(document.body);
 }
 
-const THEME_KEY = 'safudomains-theme';
+const THEME_KEY = 'nexid-theme';
 
 // ABI definitions
 const isWrappedAbi = [
@@ -217,7 +217,7 @@ function ChangeBSCRecordModal({ isOpen, onClose, domain, isDark }: ActionModalPr
 
 // Wrap Modal
 function WrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
-  const label = domain.replace(/\.safu$/, '');
+  const label = domain.replace(/\.id$/, '');
   const { address } = useAccount();
   const [step, setStep] = useState(0);
   const [info, setInfo] = useState('');
@@ -286,7 +286,7 @@ function WrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
 
 // Unwrap Modal
 function UnwrapModal({ isOpen, onClose, domain, isDark }: ActionModalProps) {
-  const label = domain.replace(/\.safu$/, '');
+  const label = domain.replace(/\.id$/, '');
   const { address } = useAccount();
   const [step, setStep] = useState(0);
   const [ownerAddress, setOwnerAddress] = useState(address || '');
@@ -518,12 +518,12 @@ export default function Profile() {
   // Get the primary domain for referral link (prefer primary name, fallback to first domain)
   const referralDomain = useMemo(() => {
     // First try the primary name (reverse record)
-    if (primaryName && typeof primaryName === 'string' && primaryName.endsWith('.safu')) {
-      return primaryName.replace('.safu', '');
+    if (primaryName && typeof primaryName === 'string' && primaryName.endsWith('.id')) {
+      return primaryName.replace('.id', '');
     }
     // Fallback to first owned domain
     if (domains.length > 0) {
-      return domains[0].name?.replace('.safu', '') || '';
+      return domains[0].name?.replace('.id', '') || '';
     }
     return '';
   }, [primaryName, domains]);
@@ -590,7 +590,7 @@ export default function Profile() {
           <div className="connect-wallet-box">
             <div className="connect-wallet-icon">🔐</div>
             <h2>Connect Your Wallet</h2>
-            <p>Please connect your wallet to access your profile and manage your .safu domains.</p>
+            <p>Please connect your wallet to access your profile and manage your .id domains.</p>
           </div>
         </div>
       </>
@@ -614,14 +614,14 @@ export default function Profile() {
               <div>
                 <h1 className="profile-title">Your SafuVerse Profile</h1>
                 <p className="profile-subline">
-                  Track your .safu domains, referral rewards, and on‑chain
+                  Track your .id domains, referral rewards, and on‑chain
                   identity in one clean view.
                 </p>
               </div>
             </div>
             <div className="pill-row">
               <div className="pill">Identity · Learning · Rewards</div>
-              <div className="pill">Live on BNB Chain · .safu</div>
+              <div className="pill">Live on BNB Chain · .id</div>
             </div>
           </header>
 
@@ -633,7 +633,7 @@ export default function Profile() {
               </div>
               <p className="stat-value">{domainsOwned}</p>
               <p className="stat-caption">
-                Each name is a permanent .safu identity inside the SafuVerse.
+                Each name is a permanent .id identity inside the SafuVerse.
               </p>
             </article>
 
@@ -657,7 +657,7 @@ export default function Profile() {
               </div>
               <p className="stat-value">{referralLoading ? '...' : totalReferrals}</p>
               <p className="stat-caption">
-                People who minted a .safu domain through your link.
+                People who minted a .id domain through your link.
               </p>
             </article>
           </section>
@@ -665,7 +665,7 @@ export default function Profile() {
           <section className="profile-layout">
             <article className="domains-card">
               <div className="section-heading">
-                <h2>Your .safu domains</h2>
+                <h2>Your .id domains</h2>
                 <span className="tag-pill">Primary identity hub</span>
               </div>
               <p className="section-caption">

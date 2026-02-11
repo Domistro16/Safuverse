@@ -26,10 +26,12 @@ export function WalletModal({
   const router = useRouter()
   const { address: fullAddress } = useAccount()
   const { disconnect } = useDisconnect()
-  const { exportWallet, user, ready, authenticated } = usePrivy()
+  const { exportWallet, user, ready, authenticated, logout } = usePrivy()
 
-  const disconnectWithSession = () => {
+  const disconnectWithSession = async () => {
     disconnect()
+    await logout()
+    onRequestClose()
   }
 
   // Check embedded wallet

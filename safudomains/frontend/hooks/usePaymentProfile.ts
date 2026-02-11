@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { SafuDomainsClient } from '@nexid/sdk'
 import { useChainId } from 'wagmi'
 import { CHAIN_ID } from '../constant'
 
@@ -46,7 +46,7 @@ export const usePaymentProfile = (
         setError(null)
 
         try {
-            const cleanName = name.replace('.safu', '')
+            const cleanName = name.replace('.id', '')
             const response = await fetch(`/api/x402/${encodeURIComponent(cleanName)}`)
             const data = await response.json()
 

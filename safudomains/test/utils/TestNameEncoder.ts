@@ -16,10 +16,10 @@ describe('NameEncoder', () => {
       const { nameEncoder } = await loadFixture(fixture)
 
       await expect(
-        nameEncoder.read.encodeName(['foo.safu']),
+        nameEncoder.read.encodeName(['foo.id']),
       ).resolves.toMatchObject([
-        dnsEncodeName('foo.safu'),
-        namehash('foo.safu'),
+        dnsEncodeName('foo.id'),
+        namehash('foo.id'),
       ])
     })
 
@@ -38,10 +38,10 @@ describe('NameEncoder', () => {
       const { nameEncoder } = await loadFixture(fixture)
 
       await expect(
-        nameEncoder.read.encodeName(['something.else.test.safu']),
+        nameEncoder.read.encodeName(['something.else.test.id']),
       ).resolves.toMatchObject([
-        dnsEncodeName('something.else.test.safu'),
-        namehash('something.else.test.safu'),
+        dnsEncodeName('something.else.test.id'),
+        namehash('something.else.test.id'),
       ])
     })
   })

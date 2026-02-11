@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
-const THEME_KEY = 'safudomains-theme';
+const THEME_KEY = 'nexid-theme';
 
 export default function ThemeToggle() {
     const [isDark, setIsDark] = useState(false);
@@ -38,9 +38,9 @@ export default function ThemeToggle() {
     return (
         <button
             onClick={toggleTheme}
-            className={`fixed bottom-6 right-6 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none ${isDark
-                    ? 'bg-neutral-800 text-yellow-400 border border-neutral-700 hover:shadow-yellow-400/20'
-                    : 'bg-white text-orange-500 border border-neutral-200 hover:shadow-orange-500/20'
+            className={`fixed bottom-6 left-6 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none ${isDark
+                ? 'bg-neutral-800 text-yellow-400 border border-neutral-700 hover:shadow-yellow-400/20'
+                : 'bg-white text-orange-500 border border-neutral-200 hover:shadow-orange-500/20'
                 }`}
             aria-label="Toggle Theme"
         >

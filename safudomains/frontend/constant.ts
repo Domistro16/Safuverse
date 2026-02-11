@@ -1,4 +1,4 @@
-// SafuDomains v2 Constants - Base Chain
+// NexID v2 Constants - Base Chain
 // Contract addresses (placeholders - update after deployment)
 
 export interface ContractAddresses {
@@ -23,72 +23,72 @@ export interface ContractAddresses {
 
 export const CONSTANTS_MAINNET: ContractAddresses = {
   // AgentRegistrarController - main registration entry point
-  Controller: '0x0000000000000000000000000000000000000000',
+  Controller: '0x59cd36ada823a03A34431F0A881B9b4eAb9d70f9',
 
   // AgentPriceOracle - pricing with agent name detection
-  PriceOracle: '0x0000000000000000000000000000000000000000',
+  PriceOracle: '0xA6efF1Fc115eEeB89Fa09d3aCe740c006451aa22',
 
   // ENS Registry
-  Registry: '0x0000000000000000000000000000000000000000',
+  Registry: '0xA590B208e7F2e62a3987424D2E1b00cd62986fAd',
 
   // Reverse Registrar
-  ReverseRegistrar: '0x0000000000000000000000000000000000000000',
+  ReverseRegistrar: '0x38171C9Dc51c5F9b2Be96b8fde3D0CA8C6050eAA',
 
   // Base Registrar
-  BaseRegistrar: '0x0000000000000000000000000000000000000000',
+  BaseRegistrar: '0xCAfd2aCA95B79Ce2De0047F2309FCaB33Da75E9C',
 
   // Name Wrapper
-  NameWrapper: '0x0000000000000000000000000000000000000000',
+  NameWrapper: '0x90d848F20589437EF2e05a91130aEEA253512736',
 
   // AgentPublicResolver - with x402/ERC-8004 support
-  PublicResolver: '0x0000000000000000000000000000000000000000',
+  PublicResolver: '0x66a779e85F762B387478b4309398b174527eE358',
 
   // Referral Verifier
-  Referral: '0x0000000000000000000000000000000000000000',
+  Referral: '0x212c27756529679efBd46cb35440b2e4DC28e33C',
 
   // v2 Premium Auctions
   // PremiumNameRegistry - tracks premium/reserved names
-  PremiumRegistry: '0x0000000000000000000000000000000000000000',
+  PremiumRegistry: '0xd88dfd4E3B9a14C66E40bD931eCA713192DD2Dba',
 
-  // SafuDomainAuction - English auction system for premium names
-  Auction: '0x0000000000000000000000000000000000000000',
+  // IDDomainAuction - English auction system for premium names
+  Auction: '0x0F362C1D04F422c6C8a7A28A3e87d8E0A07766Db',
 
   // USDC on Base
   USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
 
-  // Backward compatibility - BulkRenewal (not used in v2 but referenced)
-  BulkRenewal: '0x0000000000000000000000000000000000000000',
+  // Backward compatibility - BulkRenewal
+  BulkRenewal: '0xeCE5eA613C203f5235c736c139bde431D23738eA',
 
   // Backward compatibility - Course contract
   Course: '0x0000000000000000000000000000000000000000',
 
   // V2 Account Abstraction
-  AccountFactory: '0x0000000000000000000000000000000000000000',
-  EntryPoint: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
-  CirclePaymaster: '0x0000000000000000000000000000000000000000',
+  AccountFactory: '0x594D8baAc764A91113E5AAC91DAcFDf9eeF066C8',
+  EntryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032', // EntryPoint v0.7
+  CirclePaymaster: '0x6C973eBe80dCD8660841D4356bf15c32460271C9', // Circle Paymaster (Base Mainnet)
 }
 
 export const CONSTANTS_TESTNET: ContractAddresses = {
   // Base Sepolia Addresses (from deployments/baseSepolia)
-  Controller: '0xC4562C6F436a9aCcb739dc972aF8745e74b97462', // AgentRegistrarController
-  PriceOracle: '0x1137b3608a547C1d52bD2fb30644b561Bf374cd6', // AgentPriceOracle
+  Controller: '0x64E86C4F19FC37Fe6c662F83dd4EB932bA601DC2', // AgentRegistrarController
+  PriceOracle: '0x6fB7F1F4F8Cbe1cb9C33d60742B1B5036505eBcb', // AgentPriceOracle
   Registry: '0x60b5c974D939C56A0b02EAaC197F57e0B3cf937b', // ENSRegistry
   ReverseRegistrar: '0x6516d242117CE3Be817aeBF39e7e3A044F62D81C',
-  BaseRegistrar: '0xA0F3fF5eA4aA93e9C6247A7A09AFde9d0B7353C2', // BaseRegistrarImplementation
-  NameWrapper: '0x1300B1efc8E6D265B2482545379c86815Bc6f0A1',
-  PublicResolver: '0x2d35a4158b7f4c2AcAb1B6e200839f6f4b999107', // AgentPublicResolver
-  Referral: '0x28bC9c78C16d245B0ccbE91C6Fee1E9b70957049', // ReferralVerifier
+  BaseRegistrar: '0x0Ba17Ee6c8d745F5bDB710Fead7d85ceE17E5622', // BaseRegistrarImplementation
+  NameWrapper: '0x1A7EB9815b6B1014A542CE0628D8FC65Bc5Cb653',
+  PublicResolver: '0x82fAa0d80dFFeFadF962C5f2DDBFeE92ABF500C5', // AgentPublicResolver
+  Referral: '0x43D667D367A48368Ee6CA072cD96b09a19Ee342b', // ReferralVerifier
   PremiumRegistry: '0x7AFc4332ECd5F15fDF7c6Cd6BD7b6E4F316C10a0', // PremiumNameRegistry
-  Auction: '0x865e0eF8518cC426DF63129Cf9BC3fe575F79454', // SafuDomainAuction
+  Auction: '0x8260188708e1f2aa225420F3bE3AcB5D7890e609', // IDDomainAuction
   // USDC on Base Sepolia
   USDC: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-  BulkRenewal: '0x3F9225F77611F32903b92AAA0CF3127e728a3B0C', // StaticBulkRenewal
+  BulkRenewal: '0x43A39a38e585f4894cdAb12a602b5F15495a65c0', // StaticBulkRenewal
   Course: '0x0000000000000000000000000000000000000000',
 
   // V2 Account Abstraction
-  AccountFactory: '0x824a384F5638681D6b2c01621E931BA130DFf5A4', // AgentAccountFactory
-  EntryPoint: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
-  CirclePaymaster: '0x0000000000000000000000000000000000000000', // TODO: Configure
+  AccountFactory: '0x860B78482d7ee00c53ae53A48d6577Cde0fdA230', // AgentAccountFactory
+  EntryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032', // EntryPoint v0.7
+  CirclePaymaster: '0x31BE08D380A21fc740883c0BC434FcFc88740b58', // Circle Paymaster (Base Sepolia)
 }
 
 export const ADDRESSES: Record<number, ContractAddresses> = {
@@ -96,12 +96,11 @@ export const ADDRESSES: Record<number, ContractAddresses> = {
   84532: CONSTANTS_TESTNET,
 }
 
-// Default to Mainnet for backward compatibility
-// Default to Testnet for development
-export const constants = CONSTANTS_TESTNET
+// Default to Base Mainnet
+export const constants = CONSTANTS_MAINNET
 
 // Chain Configuration
-export const CHAIN_ID = 84532 // Default / Fallback
+export const CHAIN_ID = 8453 // Default / Fallback
 export const TESTNET_CHAIN_ID = 84532
 
 export const getConstants = (chainId?: number): ContractAddresses => {
@@ -109,7 +108,7 @@ export const getConstants = (chainId?: number): ContractAddresses => {
 }
 
 // Top-level domain
-export const TLD = 'safu'
+export const TLD = 'id'
 
 // Registration is always lifetime in v2
 export interface RegisterParams {

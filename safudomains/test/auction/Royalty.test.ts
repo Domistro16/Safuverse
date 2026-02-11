@@ -13,8 +13,8 @@ describe('Royalty (ERC-2981)', function () {
         // Deploy ENS Registry
         const registry = await hre.viem.deployContract('ENSRegistry', [])
 
-        // Calculate safu namehash
-        const safuNamehash = namehash('safu')
+        // Calculate id namehash
+        const safuNamehash = namehash('id')
 
         // Deploy Base Registrar
         const baseRegistrar = await hre.viem.deployContract('BaseRegistrarImplementation', [
@@ -25,7 +25,7 @@ describe('Royalty (ERC-2981)', function () {
         // Set up registry
         await registry.write.setSubnodeOwner([
             '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-            labelhash('safu'),
+            labelhash('id'),
             baseRegistrar.address,
         ])
 
@@ -50,7 +50,7 @@ describe('Royalty (ERC-2981)', function () {
         // Deploy ENS Registry
         const registry = await hre.viem.deployContract('ENSRegistry', [])
 
-        const safuNamehash = namehash('safu')
+        const safuNamehash = namehash('id')
 
         // Deploy Base Registrar
         const baseRegistrar = await hre.viem.deployContract('BaseRegistrarImplementation', [
@@ -60,7 +60,7 @@ describe('Royalty (ERC-2981)', function () {
 
         // Deploy StaticMetadataService
         const metadataService = await hre.viem.deployContract('StaticMetadataService', [
-            'https://metadata.safu.domains/',
+            'https://metadata.id.domains/',
         ])
 
         // Deploy NameWrapper
@@ -144,7 +144,7 @@ describe('Royalty (ERC-2981)', function () {
             const { nameWrapper } = await loadFixture(deployNameWrapperFixture)
 
             const salePrice = 2000000000000000000n // 2 ETH
-            const tokenId = BigInt(namehash('test.safu'))
+            const tokenId = BigInt(namehash('test.id'))
             const [receiver, royaltyAmount] = await nameWrapper.read.royaltyInfo([tokenId, salePrice])
 
             // 5% = 500 basis points
@@ -158,7 +158,7 @@ describe('Royalty (ERC-2981)', function () {
             await nameWrapper.write.setRoyaltyReceiver([treasury.account.address])
 
             const salePrice = 1000000000000000000n
-            const tokenId = BigInt(namehash('test.safu'))
+            const tokenId = BigInt(namehash('test.id'))
             const [receiver] = await nameWrapper.read.royaltyInfo([tokenId, salePrice])
 
             expect(receiver.toLowerCase()).to.equal(treasury.account.address.toLowerCase())

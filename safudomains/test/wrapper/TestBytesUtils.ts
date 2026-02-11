@@ -69,12 +69,12 @@ describe('BytesUtils', () => {
       ).resolves.toEqual(namehash(''))
     })
 
-    it('hashes .safu correctly', async () => {
+    it('hashes .id correctly', async () => {
       const { bytesUtils } = await loadFixture(fixture)
 
       await expect(
-        bytesUtils.read.namehash([dnsEncodeName('safu'), 0n]),
-      ).resolves.toEqual(namehash('safu'))
+        bytesUtils.read.namehash([dnsEncodeName('id'), 0n]),
+      ).resolves.toEqual(namehash('id'))
     })
 
     it('hashes a 2LD correctly', async () => {

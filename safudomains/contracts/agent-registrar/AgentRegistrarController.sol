@@ -78,13 +78,13 @@ contract AgentRegistrarController is
     // ============ Constants ============
 
     /// @notice Lifetime duration: 100 years in seconds
-    uint256 public constant LIFETIME_DURATION = 100 * 365 days;
+    uint256 public constant LIFETIME_DURATION = 1000 * 365 days;
 
     /// @notice Maximum names in a single batch registration
     uint256 public constant MAX_BATCH_SIZE = 50;
 
-    /// @notice Minimum commitment age (10 minutes)
-    uint256 public constant MIN_COMMITMENT_AGE = 10 minutes;
+    /// @notice Minimum commitment age (60 seconds)
+    uint256 public constant MIN_COMMITMENT_AGE = 60 seconds;
 
     /// @notice Maximum commitment age (24 hours)
     uint256 public constant MAX_COMMITMENT_AGE = 24 hours;
@@ -111,6 +111,9 @@ contract AgentRegistrarController is
     /// @notice Whether to skip commit-reveal for agent names
     bool public agentModeEnabled;
 
+    /// @notice Whether to skip commit-reveal for non-agent (human) names
+    bool public skipCommitForNonAgents;
+
     /// @notice Total number of names minted
     uint256 public totalMints;
 
@@ -126,10 +129,29 @@ contract AgentRegistrarController is
     /// @notice Total agent-specific registrations
     uint256 public totalAgentRegistrations;
 
+    // ============ Points System ============
+
+    /// @notice Maximum total points that can be distributed
+    uint256 public constant MAX_TOTAL_POINTS = 3_000_000;
+
+    /// @notice Total points distributed so far
+    uint256 public totalPointsDistributed;
+
+    /// @notice Points balance per user
+    mapping(address => uint256) public userPoints;
+
     // ============ Events ============
 
+    event PointsAwarded(
+        address indexed user,
+        string name,
+        uint256 points,
+        uint256 totalUserPoints,
+        uint256 totalDistributed
+    );
     event CommitmentMade(bytes32 indexed commitment, address indexed sender);
     event AgentModeToggled(bool enabled);
+    event SkipCommitForNonAgentsUpdated(bool enabled);
     event FundsWithdrawn(address indexed to, uint256 amount);
     event USDCWithdrawn(address indexed to, uint256 amount);
 
@@ -150,6 +172,7 @@ contract AgentRegistrarController is
         usdc = _usdc;
         referralVerifier = _referralVerifier;
         agentModeEnabled = true; // Enable agent mode by default
+        skipCommitForNonAgents = true; // Skip commit-reveal for humans by default
         treasury = msg.sender; // Default treasury to deployer
     }
 
@@ -161,6 +184,14 @@ contract AgentRegistrarController is
     function setAgentMode(bool enabled) external onlyOwner {
         agentModeEnabled = enabled;
         emit AgentModeToggled(enabled);
+    }
+
+    /**
+     * @notice Toggle commit-reveal for non-agent (human) names
+     */
+    function setSkipCommitForNonAgents(bool enabled) external onlyOwner {
+        skipCommitForNonAgents = enabled;
+        emit SkipCommitForNonAgentsUpdated(enabled);
     }
 
     /**
@@ -316,6 +347,9 @@ contract AgentRegistrarController is
             payable(msg.sender).transfer(msg.value - cost);
         }
 
+        // Award registration points
+        _awardPoints(req.owner, req.name);
+
         totalMints++;
     }
 
@@ -323,16 +357,31 @@ contract AgentRegistrarController is
      * @inheritdoc IAgentRegistrar
      */
     function registerWithUSDC(
-        RegisterRequest calldata req
+        RegisterRequest calldata req,
+        ReferralVerifier.ReferralData calldata referralData,
+        bytes calldata referralSignature
     ) external override nonReentrant {
         IAgentPriceOracle.AgentPrice memory price = prices.getPrice(req.name);
 
         // USDC has 6 decimals, priceUsd has 18 decimals
         uint256 usdcAmount = price.priceUsd / 1e12;
 
-        // Transfer USDC to treasury (or contract if no treasury set)
-        address recipient = treasury != address(0) ? treasury : address(this);
-        usdc.safeTransferFrom(msg.sender, recipient, usdcAmount);
+        // Transfer USDC to controller first (so we can split referral + treasury)
+        usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+
+        // Handle USDC referral reward (transfers referral share from controller to ReferralVerifier)
+        _handleUSDCReferral(referralData, referralSignature, usdcAmount);
+
+        // Send remaining balance to treasury
+        uint256 remaining = usdc.balanceOf(address(this));
+        if (remaining > 0) {
+            address recipient = treasury != address(0)
+                ? treasury
+                : address(this);
+            if (recipient != address(this)) {
+                usdc.safeTransfer(recipient, remaining);
+            }
+        }
 
         _executeRegistrationInternal(req, price.isAgentName);
 
@@ -347,6 +396,9 @@ contract AgentRegistrarController is
             totalAgentRegistrations++;
         }
 
+        // Award registration points
+        _awardPoints(req.owner, req.name);
+
         totalMints++;
     }
 
@@ -355,7 +407,9 @@ contract AgentRegistrarController is
      */
     function registerWithPermit(
         RegisterRequest calldata req,
-        PermitData calldata permit
+        PermitData calldata permit,
+        ReferralVerifier.ReferralData calldata referralData,
+        bytes calldata referralSignature
     ) external override nonReentrant {
         IAgentPriceOracle.AgentPrice memory price = prices.getPrice(req.name);
         uint256 usdcAmount = price.priceUsd / 1e12;
@@ -374,9 +428,22 @@ contract AgentRegistrarController is
         {} catch {
             // Permit might already be used or pre-approved
         }
-        // Transfer USDC to treasury (or contract if no treasury set)
-        address recipient = treasury != address(0) ? treasury : address(this);
-        usdc.safeTransferFrom(msg.sender, recipient, usdcAmount);
+        // Transfer USDC to controller first (so we can split referral + treasury)
+        usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+
+        // Handle USDC referral reward (transfers referral share from controller to ReferralVerifier)
+        _handleUSDCReferral(referralData, referralSignature, usdcAmount);
+
+        // Send remaining balance to treasury
+        uint256 remaining = usdc.balanceOf(address(this));
+        if (remaining > 0) {
+            address recipient = treasury != address(0)
+                ? treasury
+                : address(this);
+            if (recipient != address(this)) {
+                usdc.safeTransfer(recipient, remaining);
+            }
+        }
 
         _executeRegistrationInternal(req, price.isAgentName);
 
@@ -390,6 +457,9 @@ contract AgentRegistrarController is
         if (price.isAgentName) {
             totalAgentRegistrations++;
         }
+
+        // Award registration points
+        _awardPoints(req.owner, req.name);
 
         totalMints++;
     }
@@ -441,6 +511,9 @@ contract AgentRegistrarController is
                 );
             }
 
+            // Award registration points
+            _awardPoints(requests[i].owner, requests[i].name);
+
             totalAgentRegistrations++;
         }
 
@@ -464,6 +537,8 @@ contract AgentRegistrarController is
 
         for (uint256 i = 0; i < requests.length; i++) {
             totalCost += _executeRegistration(requests[i]);
+            // Award registration points
+            _awardPoints(requests[i].owner, requests[i].name);
         }
 
         if (msg.value < totalCost) {
@@ -543,13 +618,15 @@ contract AgentRegistrarController is
         }
 
         // Check commitment (skip for agent names if agent mode is enabled)
-        if (!(agentModeEnabled && isAgentName)) {
+        bool skipCommit = (agentModeEnabled && isAgentName) ||
+            (skipCommitForNonAgents && !isAgentName);
+        if (!skipCommit) {
             bytes32 commitment = makeCommitment(req);
             _validateCommitment(commitment);
             delete commitments[commitment];
         }
 
-        // Register through name wrapper (lifetime = 100 years)
+        // Register through name wrapper (lifetime = 1000 years)
         uint256 expires = nameWrapper.registerAndWrapETH2LD(
             req.name,
             req.owner,
@@ -619,7 +696,7 @@ contract AgentRegistrarController is
             owner,
             owner,
             resolver,
-            string.concat(name, ".safu")
+            string.concat(name, ".id")
         );
     }
 
@@ -645,6 +722,69 @@ contract AgentRegistrarController is
             totalPrice,
             address(0), // ETH payment
             false // not fiat
+        );
+    }
+
+    /**
+     * @notice Handle referral reward for USDC registrations
+     */
+    function _handleUSDCReferral(
+        ReferralVerifier.ReferralData calldata referralData,
+        bytes calldata referralSignature,
+        uint256 usdcAmount
+    ) internal {
+        if (
+            address(referralVerifier) == address(0) ||
+            referralData.referrer == address(0) ||
+            referralSignature.length == 0
+        ) return;
+
+        uint256 referralAmount = (usdcAmount * MAX_REFERRAL_PCT) / 100;
+
+        // Transfer USDC referral share to ReferralVerifier
+        usdc.safeTransfer(address(referralVerifier), referralAmount);
+
+        referralVerifier.processReferral(
+            referralData,
+            referralSignature,
+            usdcAmount,
+            address(usdc), // USDC token payment
+            false // not fiat
+        );
+    }
+
+    /**
+     * @notice Award registration points based on name length
+     * @dev Points stop being awarded once MAX_TOTAL_POINTS (3,000,000) is reached
+     */
+    function _awardPoints(address user, string calldata name) internal {
+        if (totalPointsDistributed >= MAX_TOTAL_POINTS) return;
+
+        uint256 len = name.strlen();
+        uint256 pts;
+
+        if (len == 1) pts = 8000;
+        else if (len == 2) pts = 5000;
+        else if (len == 3) pts = 2000;
+        else if (len == 4) pts = 600;
+        else if (len == 5) pts = 120;
+        else if (len <= 9) pts = 50;
+        else pts = 15;
+
+        // Don't exceed global cap
+        if (totalPointsDistributed + pts > MAX_TOTAL_POINTS) {
+            pts = MAX_TOTAL_POINTS - totalPointsDistributed;
+        }
+
+        userPoints[user] += pts;
+        totalPointsDistributed += pts;
+
+        emit PointsAwarded(
+            user,
+            name,
+            pts,
+            userPoints[user],
+            totalPointsDistributed
         );
     }
 

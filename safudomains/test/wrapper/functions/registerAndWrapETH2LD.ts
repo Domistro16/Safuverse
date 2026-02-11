@@ -23,7 +23,7 @@ import {
 export const registerAndWrapETH2LDTests = () => {
   describe('registerAndWrapETH2LD()', () => {
     const label = 'register'
-    const name = `${label}.safu`
+    const name = `${label}.id`
 
     async function registerAndWrapETH2LDFixture() {
       const initial = await loadFixture(fixture)

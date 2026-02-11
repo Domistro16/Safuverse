@@ -1,4 +1,4 @@
-// SafuDomains v2 ABIs - Agent Registration System
+// NexID v2 ABIs - Agent Registration System
 // Re-export SDK ABIs for convenience
 export {
   AgentPriceOracleAbi,
@@ -6,7 +6,7 @@ export {
   AgentRegistrarControllerAbi as Controller, // Backward compatibility alias
   AgentPublicResolverAbi,
   NameWrapperAbi,
-} from '@safuverse/safudomains-sdk'
+} from '@nexid/sdk'
 
 export const ERC20_ABI = [
   {

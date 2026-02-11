@@ -12,7 +12,7 @@ async function main() {
 
   for (const name of DOMAIN_NAMES) {
     const label = normalize(name)
-    const node = namehash(`${label}.safu`)
+    const node = namehash(`${label}.id`)
     const wrapped = await wrapper.read.isWrapped([node])
     console.log(wrapped)
     console.log('Resolver set for', label)

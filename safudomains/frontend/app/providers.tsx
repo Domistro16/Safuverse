@@ -9,13 +9,13 @@ import { ApolloClient, HttpLink, InMemoryCache, ApolloProvider } from '@apollo/c
 import { ReactNode, useState, useEffect } from 'react';
 import NextTopLoader from 'nextjs-toploader';
 
-// Use Base chain for v2 - support both Mainnet and Sepolia
-const supportedChains = [baseSepolia];
+// Use Base mainnet for v2
+const supportedChains = [base];
 
 const config = createConfig({
-    chains: [baseSepolia],
+    chains: [base],
     transports: {
-        [baseSepolia.id]: http(),
+        [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC),
     },
 });
 
@@ -58,6 +58,7 @@ export function Providers({ children }: { children: ReactNode }) {
                 },
                 loginMethods: ['wallet', 'email', 'google', 'twitter'],
                 supportedChains: supportedChains,
+                defaultChain: base,
             }}
         >
             <QueryClientProvider client={queryClient}>

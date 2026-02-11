@@ -64,7 +64,7 @@ export function AuctionCard({ auction, isDark }: { auction: Auction, isDark: boo
                 <div className="flex justify-between items-start mb-6">
                     <div>
                         <h3 className="text-2xl font-bold mb-1" style={{ color: isDark ? '#fff' : '#111' }}>
-                            {auction.name}.safu
+                            {auction.name}.id
                         </h3>
                         <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#f59e0b]">
                             <span>🏆</span> Premium

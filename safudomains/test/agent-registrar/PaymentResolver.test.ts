@@ -21,7 +21,7 @@ async function fixture() {
     const ensRegistry = await hre.viem.deployContract('ENSRegistry', [])
     const baseRegistrar = await hre.viem.deployContract('BaseRegistrarImplementation', [
         ensRegistry.address,
-        namehash('safu'),
+        namehash('id'),
     ])
     const reverseRegistrar = await hre.viem.deployContract('ReverseRegistrar', [
         ensRegistry.address,
@@ -45,10 +45,10 @@ async function fixture() {
         owner.account.address,
     ])
 
-    // Set up safu TLD - owner must own it first
+    // Set up id TLD - owner must own it first
     await ensRegistry.write.setSubnodeOwner([
         zeroHash,
-        labelhash('safu'),
+        labelhash('id'),
         owner.account.address,
     ])
 
@@ -60,12 +60,12 @@ async function fixture() {
         reverseRegistrar.address,
     ])
 
-    // Create a test node under safu
-    const testNode = namehash('test.safu')
+    // Create a test node under id
+    const testNode = namehash('test.id')
 
-    // Owner can set subnode since they own safu
+    // Owner can set subnode since they own id
     await ensRegistry.write.setSubnodeOwner([
-        namehash('safu'),
+        namehash('id'),
         labelhash('test'),
         owner.account.address,
     ])
@@ -88,7 +88,7 @@ describe('PaymentResolver', () => {
         it('should set and get x402 endpoint', async () => {
             const { agentPublicResolver, testNode } = await loadFixture(fixture)
 
-            const endpoint = 'https://api.myagent.safu/x402'
+            const endpoint = 'https://api.myagent.id/x402'
             await agentPublicResolver.write.setX402Endpoint([testNode, endpoint])
 
             const result = await agentPublicResolver.read.x402Endpoint([testNode])
@@ -99,7 +99,7 @@ describe('PaymentResolver', () => {
             const { agentPublicResolver } = await loadFixture(fixture)
 
             // Use a random node that hasn't been set
-            const randomNode = namehash('random.safu')
+            const randomNode = namehash('random.id')
             const result = await agentPublicResolver.read.x402Endpoint([randomNode])
             expect(result).to.equal('')
         })
@@ -146,7 +146,7 @@ describe('PaymentResolver', () => {
         it('should support HTTP URIs', async () => {
             const { agentPublicResolver, testNode } = await loadFixture(fixture)
 
-            const uri = 'https://api.myagent.safu/metadata.json'
+            const uri = 'https://api.myagent.id/metadata.json'
             await agentPublicResolver.write.setAgentMetadata([testNode, uri])
 
             const result = await agentPublicResolver.read.agentMetadata([testNode])

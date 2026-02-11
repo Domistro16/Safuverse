@@ -21,7 +21,7 @@ export async function GET(
     { params }: { params: Promise<{ name: string }> }
 ) {
     const { name } = await params
-    const cleanName = name.toLowerCase().replace('.safu', '')
+    const cleanName = name.toLowerCase().replace('.id', '')
 
     const info = premiumNames.get(cleanName)
 

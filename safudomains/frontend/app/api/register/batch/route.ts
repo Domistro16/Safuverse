@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { SafuDomainsClient } from '@nexid/sdk'
 import { encodeFunctionData } from 'viem'
 import { constants } from '@/constant'
 import { AgentRegistrarControllerABI } from '@/lib/abi'
@@ -9,7 +9,7 @@ const CHAIN_ID = 8453 // Base mainnet
 /**
  * POST /api/register/batch
  *
- * For AI agents to register multiple .safu names in one transaction
+ * For AI agents to register multiple .id names in one transaction
  *
  * Request body:
  * {
@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
             data: [] as `0x${string}`[],
             reverseRecord: false,
             ownerControlledFuses: 0,
+            deployWallet: false,
+            walletSalt: 0n,
         }))
 
         // Encode batch transaction

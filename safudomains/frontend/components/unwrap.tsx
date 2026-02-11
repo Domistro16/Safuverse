@@ -85,7 +85,7 @@ const Unwrap = ({ label, setIsOpen, isOpen }: UpdateProps) => {
       {next == 0 ? (
         <div className="rounded-xl bg-neutral-800 px-10 py-5 mt-5 border-[0.5px] border-gray-400 h-[60vh] overflow-auto">
           <h1 className="text-3xl font-semibold text-[#FFF700] text-center">
-            Unwrap {label}.safu
+            Unwrap {label}.id
           </h1>
           <div className="flex justify-center mt-5">
             <div className="rounded-full w-30 h-30 bg-gray-600"></div>
@@ -158,7 +158,7 @@ const Unwrap = ({ label, setIsOpen, isOpen }: UpdateProps) => {
             <div className="flex justify-between items-center border border-gray-200 dark:border-gray-700 rounded-lg p-3">
               <div className="text-gray-500 text-sm">Name</div>
               <div className="flex items-center gap-2 font-bold text-black dark:text-white">
-                {`${label}.safu`}
+                {`${label}.id`}
                 <div className="w-4 h-4 rounded-full bg-gradient-to-r from-pink-400 to-pink-600" />
               </div>
             </div>

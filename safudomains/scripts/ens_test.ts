@@ -28,7 +28,7 @@ async function main() {
   const names = ['Richardteng', 'eljaboom', 'zero']
 
   for (const name of names) {
-    const TLD = 'safu'
+    const TLD = 'id'
     const LABEL = normalize(name)
     const FULL_NAME = `${LABEL}.${TLD}`
     const DURATION = 31536000000n // 1 year in seconds

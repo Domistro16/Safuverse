@@ -1,6 +1,6 @@
 # SafuDomains (dns-contracts)
 
-A decentralized naming system **deployed on BNB Chain** (BNB Smart Chain), inspired by ENS, with the custom .safu TLD. Features dynamic pricing in BNB, CAKE, and USD1 tokens via Chainlink oracles, plus a built-in referral rewards system.
+A decentralized naming system **deployed on BNB Chain** (BNB Smart Chain), inspired by ENS, with the custom .id TLD. Features dynamic pricing in BNB, CAKE, and USD1 tokens via Chainlink oracles, plus a built-in referral rewards system.
 
 ## Deployment Information
 
@@ -28,7 +28,7 @@ The following contracts are deployed on BNB Chain Mainnet (Chain ID: 56):
 
 **Production**: [names.safuverse.com](https://names.safuverse.com) - Running on BNB Chain
 
-Register your .safu domain on BNB Smart Chain today!
+Register your .id domain on BNB Smart Chain today!
 
 # ENS
 
@@ -38,7 +38,7 @@ For documentation of the ENS system, see [docs.ens.domains](https://docs.ens.dom
 
 Before deploying these contracts to setup your own domain name service, You must configure a few details tailored to the TLD you want to deploy.
 
-First of all, ALL instances of '.safu' in the contracts and deploy scripts must be replaced with your own TLD. For example:
+First of all, ALL instances of '.id' in the contracts and deploy scripts must be replaced with your own TLD. For example:
 
 ```solidity
 function _setReverseRecord(
@@ -50,7 +50,7 @@ function _setReverseRecord(
     msg.sender,
     owner,
     resolver,
-    string.concat(name, '.safu')
+    string.concat(name, '.id')
   );
 }
 ```
@@ -387,7 +387,7 @@ The ReferralController allocates a portion of each domain registration fee to re
 
 ## Integration with Safuverse
 
-The .safu domain system integrates with other Safuverse components on BNB Chain:
+The .id domain system integrates with other Safuverse components on BNB Chain:
 
 - **SafuAcademyy**: Domain-gated course enrollment
 - **Safucard**: Domain holder NFT bonuses
@@ -669,4 +669,4 @@ The built static files in `dist/` can be deployed to:
 
 ---
 
-**Deployed on BNB Chain and Powered by .safu** - Decentralized .safu domains on BNB Smart Chain with multi-token pricing and referral rewards.
+**Deployed on BNB Chain and Powered by .id** - Decentralized .id domains on BNB Smart Chain with multi-token pricing and referral rewards.

@@ -272,8 +272,8 @@ export function validateDomain(domain: string): ValidationResult {
     }
   }
 
-  // Remove .safu suffix if present for length validation
-  const baseDomain = trimmed.replace(/\.safu$/, '')
+  // Remove .id suffix if present for length validation
+  const baseDomain = trimmed.replace(/\.id$/, '')
 
   if (baseDomain.length < VALIDATION_CONSTANTS.MIN_DOMAIN_LENGTH) {
     return {

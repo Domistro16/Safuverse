@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { SafuDomainsClient } from '@nexid/sdk'
 import { encodeFunctionData, namehash } from 'viem'
 import { constants } from '@/constant'
 import { AgentPublicResolverABI, AgentRegistrarControllerABI } from '@/lib/abi'
@@ -34,7 +34,7 @@ const ResolverABI = [
 /**
  * POST /api/register
  *
- * For AI agents to register .safu names
+ * For AI agents to register .id names
  *
  * Request body:
  * {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         const priceResult = await sdk.getPrice(name)
 
         // Build resolver data
-        const node = namehash(`${name}.safu`)
+        const node = namehash(`${name}.id`)
         const data: `0x${string}`[] = []
 
         // Set owner address record
@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
             data,
             reverseRecord,
             ownerControlledFuses: 0,
+            deployWallet: false,
+            walletSalt: 0n,
         }
 
         // Empty referral
@@ -144,7 +146,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             name,
-            fullName: `${name}.safu`,
+            fullName: `${name}.id`,
             isAgentName: priceResult.isAgentName,
             transaction: {
                 to: constants.Controller,

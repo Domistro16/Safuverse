@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { SafuDomainsClient } from '@nexid/sdk'
 
 const CHAIN_ID = 8453 // Base mainnet
 

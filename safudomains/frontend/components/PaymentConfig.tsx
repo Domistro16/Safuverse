@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWalletClient } from 'wagmi'
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { SafuDomainsClient } from '@nexid/sdk'
 import { CHAIN_ID } from '../constant'
 
 interface PaymentConfigProps {
@@ -100,7 +100,7 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
             </div>
 
             <p className="text-sm text-gray-400 mb-6">
-                Configure x402/ERC-8004 payment settings for <span className="text-amber-400">{name}.safu</span>
+                Configure x402/ERC-8004 payment settings for <span className="text-amber-400">{name}.id</span>
             </p>
 
             <div className="space-y-4">
@@ -135,8 +135,8 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
 
                 {message && (
                     <div className={`p-3 rounded-lg text-sm ${message.type === 'success'
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
                         }`}>
                         {message.text}
                     </div>

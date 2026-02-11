@@ -1,6 +1,6 @@
 import type { DeployFunction } from 'hardhat-deploy/types'
 import { labelhash, namehash } from 'viem'
-import { createNonceWaiter } from '../utils/waitForNonce.js'
+import { createNonceWaiter } from '../../deploy-utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
   const { network, viem } = hre
@@ -26,7 +26,7 @@ const func: DeployFunction = async function (hre) {
   }
 
   // Only attempt to make controller etc changes directly on testnets
-  if (network.name === 'mainnet' || network.name === 'base' || network.name === 'bsc') return
+  if (network.name === 'mainnet') return
 
   const setControllerHash = await reverseRegistrar.write.setController(
     [owner.address, true],

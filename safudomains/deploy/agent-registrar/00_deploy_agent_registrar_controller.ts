@@ -1,5 +1,5 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
-import { createNonceWaiter } from '../utils/waitForNonce.js'
+import { createNonceWaiter } from '../../deploy-utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
     const { network, viem } = hre
@@ -67,7 +67,7 @@ const func: DeployFunction = async function (hre) {
     }
 
     // Only attempt to make controller changes on testnets
-    if (network.name === 'mainnet' || network.name === 'base') return
+    if (network.name === 'mainnet') return
 
     // Add controller to registrar
     const addControllerHash = await baseRegistrar.write.addController([
@@ -77,6 +77,26 @@ const func: DeployFunction = async function (hre) {
         `Adding AgentRegistrarController as controller on registrar (tx: ${addControllerHash})...`,
     )
     await waitNonce(addControllerHash)
+
+    // Add controller to NameWrapper
+    const addWrapperControllerHash = await nameWrapper.write.setController([
+        controller.address,
+        true,
+    ])
+    console.log(
+        `Adding AgentRegistrarController as controller on NameWrapper (tx: ${addWrapperControllerHash})...`,
+    )
+    await waitNonce(addWrapperControllerHash)
+
+    // Add controller to ReverseRegistrar
+    const addReverseControllerHash = await reverseRegistrar.write.setController([
+        controller.address,
+        true,
+    ])
+    console.log(
+        `Adding AgentRegistrarController as controller on ReverseRegistrar (tx: ${addReverseControllerHash})...`,
+    )
+    await waitNonce(addReverseControllerHash)
 
     // Enable agent mode by default on testnets
     const enableAgentModeHash = await controller.write.setAgentMode([true])

@@ -2,7 +2,7 @@
 pragma solidity ~0.8.17;
 
 /**
- * @notice Mock NameWrapper for testing SafuDomainAuction
+ * @notice Mock NameWrapper for testing IDDomainAuction
  */
 contract MockNameWrapper {
     mapping(bytes32 => address) public owners;

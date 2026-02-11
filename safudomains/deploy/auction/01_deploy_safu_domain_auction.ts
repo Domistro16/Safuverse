@@ -29,7 +29,7 @@ const func: DeployFunction = async function (hre) {
     // Treasury is the owner by default
     const treasury = owner.address
 
-    const auctionDeployment = await viem.deploy('SafuDomainAuction', [
+    const auctionDeployment = await viem.deploy('IDDomainAuction', [
         nameWrapper.address,
         resolver.address,
         usdc,
@@ -37,26 +37,26 @@ const func: DeployFunction = async function (hre) {
     ])
     if (!auctionDeployment.newlyDeployed) return
 
-    const auction = await viem.getContract('SafuDomainAuction')
+    const auction = await viem.getContract('IDDomainAuction')
 
     // Transfer ownership if deployer is not the owner
     if (owner.address !== deployer.address) {
         const hash = await auction.write.transferOwnership([owner.address])
         console.log(
-            `Transferring ownership of SafuDomainAuction to ${owner.address} (tx: ${hash})...`,
+            `Transferring ownership of IDDomainAuction to ${owner.address} (tx: ${hash})...`,
         )
         await viem.waitForTransactionSuccess(hash)
     }
 
-    console.log(`SafuDomainAuction deployed at ${auction.address}`)
+    console.log(`IDDomainAuction deployed at ${auction.address}`)
     console.log(`  - NameWrapper: ${nameWrapper.address}`)
     console.log(`  - Resolver: ${resolver.address}`)
     console.log(`  - USDC: ${usdc}`)
     console.log(`  - Treasury: ${treasury}`)
 }
 
-func.id = 'safu-domain-auction'
-func.tags = ['auction', 'SafuDomainAuction']
+func.id = 'id-domain-auction'
+func.tags = ['auction', 'IDDomainAuction']
 func.dependencies = ['NameWrapper', 'AgentPublicResolver', 'PublicResolver']
 
 export default func

@@ -78,7 +78,7 @@ export default function AuctionsPage() {
                         Premium <span>Auctions</span>
                     </h1>
                     <p className="hero-subtext">
-                        Bid on exclusive, high-value .safu domain names.
+                        Bid on exclusive, high-value .id domain names.
                     </p>
                 </div>
 

@@ -13,8 +13,8 @@ describe('StringUtils', () => {
     const { stringUtils } = await loadFixture(fixture)
 
     await expect(
-      stringUtils.read.testEscape(['My ENS is, "tanrikulu.safu"']),
-    ).resolves.toEqual('My ENS is, \\"tanrikulu.safu\\"')
+      stringUtils.read.testEscape(['My ENS is, "tanrikulu.id"']),
+    ).resolves.toEqual('My ENS is, \\"tanrikulu.id\\"')
   })
 
   it('should escape backslash correctly based on JSON standard', async () => {

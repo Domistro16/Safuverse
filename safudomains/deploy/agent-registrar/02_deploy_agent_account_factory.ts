@@ -1,5 +1,5 @@
 import type { DeployFunction } from 'hardhat-deploy/types.js'
-import { createNonceWaiter } from '../utils/waitForNonce.js'
+import { createNonceWaiter } from '../../deploy-utils/waitForNonce.js'
 
 const func: DeployFunction = async function (hre) {
     const { network, viem } = hre

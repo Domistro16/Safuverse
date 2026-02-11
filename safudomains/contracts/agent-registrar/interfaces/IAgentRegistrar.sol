@@ -14,7 +14,7 @@ interface IAgentRegistrar {
      * @notice Registration request structure
      */
     struct RegisterRequest {
-        string name; // Name to register (without .safu suffix)
+        string name; // Name to register (without .id suffix)
         address owner; // Owner of the registered name
         bytes32 secret; // Secret for commit-reveal (can be zero for agent names in agent mode)
         address resolver; // Resolver address to set
@@ -79,18 +79,28 @@ interface IAgentRegistrar {
     /**
      * @notice Register a name with USDC payment
      * @param req The registration request
+     * @param referralData The referral data
+     * @param referralSignature The referral signature
      */
-    function registerWithUSDC(RegisterRequest calldata req) external;
+    function registerWithUSDC(
+        RegisterRequest calldata req,
+        ReferralVerifier.ReferralData calldata referralData,
+        bytes calldata referralSignature
+    ) external;
 
     /**
      * @notice Register a name with USDC using EIP-2612 permit (gasless approval)
      * @dev Best for AA wallets - single transaction approval + mint
      * @param req The registration request
      * @param permit EIP-2612 permit data for USDC approval
+     * @param referralData The referral data
+     * @param referralSignature The referral signature
      */
     function registerWithPermit(
         RegisterRequest calldata req,
-        PermitData calldata permit
+        PermitData calldata permit,
+        ReferralVerifier.ReferralData calldata referralData,
+        bytes calldata referralSignature
     ) external;
 
     /**

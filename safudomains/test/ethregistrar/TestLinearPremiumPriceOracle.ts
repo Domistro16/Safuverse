@@ -13,17 +13,17 @@ async function fixture() {
   const ensRegistry = await hre.viem.deployContract('ENSRegistry', [])
   const baseRegistrar = await hre.viem.deployContract(
     'BaseRegistrarImplementation',
-    [ensRegistry.address, namehash('safu')],
+    [ensRegistry.address, namehash('id')],
   )
 
   await baseRegistrar.write.addController([accounts[0].address])
   await ensRegistry.write.setSubnodeOwner([
     zeroHash,
-    labelhash('safu'),
+    labelhash('id'),
     baseRegistrar.address,
   ])
 
-  // Dummy oracle with 1 safu == 2 USD
+  // Dummy oracle with 1 id == 2 USD
   const dummyOracle = await hre.viem.deployContract('DummyOracle', [200000000n])
   // 4 attousd per second for 3 character names, 2 attousd per second for 4 character names,
   // 1 attousd per second for longer names.
