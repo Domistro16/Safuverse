@@ -52,7 +52,7 @@
     "viem": "^2.29.0",
     "wagmi": "^2.15.2",
     "permissionless": "latest",
-    "@nexid/sdk": "file:../sdk"
+    "@nexid/sdk": "1.0.1^"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.8.0",
