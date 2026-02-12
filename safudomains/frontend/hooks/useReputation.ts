@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback } from "react";
 import type { ReputationResult } from "@/lib/reputation/types";
 
