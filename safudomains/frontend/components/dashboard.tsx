@@ -37,10 +37,12 @@ import {
   Loader2,
   Copy,
   Link,
+  KeyRound,
 } from 'lucide-react';
 import { constants } from '../constant';
 import Modal from 'react-modal';
 import DomainImage from './DomainImage';
+import { usePrivy } from '@privy-io/react-auth';
 import '../app/dashboard/dashboard.css';
 
 if (typeof window !== 'undefined') {
@@ -457,6 +459,14 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 export default function Dashboard() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
+  const { exportWallet, user, ready: privyReady, authenticated } = usePrivy();
+  const hasEmbeddedWallet = !!user?.linkedAccounts.find(
+    (account) =>
+      account.type === 'wallet' &&
+      account.walletClientType === 'privy' &&
+      account.connectorType === 'embedded'
+  );
+  const canExportKey = privyReady && authenticated && hasEmbeddedWallet;
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [copied, setCopied] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
@@ -1129,101 +1139,123 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {domains.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-          <p style={{ marginBottom: '16px' }}>Register a domain to manage settings.</p>
-          <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
-        </div>
-      ) : (
-        <div className="pay-form">
-          <div className="dash-form-group">
-            <label className="dash-form-label">Domain</label>
-            <select
-              className="dash-form-input"
-              value={settingsDomain}
-              onChange={(e) => { setSettingsDomain(e.target.value); setEditingRecord(null); }}
-            >
-              {domains.map((d: any, i: number) => (
-                <option key={i} value={d.name}>{d.name}</option>
-              ))}
-            </select>
-          </div>
+      <div className="pay-form">
+        {domains.length > 0 && (
+          <>
+            <div className="dash-form-group">
+              <label className="dash-form-label">Domain</label>
+              <select
+                className="dash-form-input"
+                value={settingsDomain}
+                onChange={(e) => { setSettingsDomain(e.target.value); setEditingRecord(null); }}
+              >
+                {domains.map((d: any, i: number) => (
+                  <option key={i} value={d.name}>{d.name}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="dash-form-group">
-            <label className="dash-form-label">Profile Records</label>
-            {textRecordsLoading ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', padding: '12px' }}>
-                <Loader2 size={16} className="animate-spin" /> Loading records...
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {socialConfig.map((social) => {
-                  const currentValue = getRecordValue(social.key);
-                  const isEditing = editingRecord === social.key;
-                  return (
-                    <div key={social.key} className={`settings-social-item ${currentValue ? '' : 'disconnected'}`}>
-                      <div style={{ opacity: currentValue ? 1 : 0.5 }}>{social.icon}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '13px', fontWeight: 600 }}>{social.label}</div>
-                        {isEditing ? (
-                          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                            <input
-                              type="text"
-                              className="dash-form-input"
-                              style={{ fontSize: '13px', padding: '6px 10px' }}
-                              value={recordValue}
-                              onChange={(e) => setRecordValue(e.target.value)}
-                              placeholder={social.placeholder}
-                              autoFocus
-                            />
-                            <button
-                              className="settings-social-btn connect"
-                              style={{ whiteSpace: 'nowrap' }}
-                              onClick={() => handleSaveRecord(social.key, recordValue)}
-                              disabled={isSettingRecord}
-                            >
-                              {isSettingRecord ? '...' : 'Save'}
-                            </button>
-                            <button
-                              className="settings-social-btn"
-                              onClick={() => { setEditingRecord(null); setRecordValue(''); }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <span className={`social-name ${currentValue ? '' : 'muted'}`} style={{ fontSize: '12px' }}>
-                            {currentValue || `Not set`}
-                          </span>
+            <div className="dash-form-group">
+              <label className="dash-form-label">Profile Records</label>
+              {textRecordsLoading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', padding: '12px' }}>
+                  <Loader2 size={16} className="animate-spin" /> Loading records...
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {socialConfig.map((social) => {
+                    const currentValue = getRecordValue(social.key);
+                    const isEditing = editingRecord === social.key;
+                    return (
+                      <div key={social.key} className={`settings-social-item ${currentValue ? '' : 'disconnected'}`}>
+                        <div style={{ opacity: currentValue ? 1 : 0.5 }}>{social.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600 }}>{social.label}</div>
+                          {isEditing ? (
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                              <input
+                                type="text"
+                                className="dash-form-input"
+                                style={{ fontSize: '13px', padding: '6px 10px' }}
+                                value={recordValue}
+                                onChange={(e) => setRecordValue(e.target.value)}
+                                placeholder={social.placeholder}
+                                autoFocus
+                              />
+                              <button
+                                className="settings-social-btn connect"
+                                style={{ whiteSpace: 'nowrap' }}
+                                onClick={() => handleSaveRecord(social.key, recordValue)}
+                                disabled={isSettingRecord}
+                              >
+                                {isSettingRecord ? '...' : 'Save'}
+                              </button>
+                              <button
+                                className="settings-social-btn"
+                                onClick={() => { setEditingRecord(null); setRecordValue(''); }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <span className={`social-name ${currentValue ? '' : 'muted'}`} style={{ fontSize: '12px' }}>
+                              {currentValue || `Not set`}
+                            </span>
+                          )}
+                        </div>
+                        {!isEditing && (
+                          <button
+                            className={`settings-social-btn ${currentValue ? '' : 'connect'}`}
+                            onClick={() => { setEditingRecord(social.key); setRecordValue(currentValue); }}
+                          >
+                            {currentValue ? 'Edit' : 'Set'}
+                          </button>
                         )}
                       </div>
-                      {!isEditing && (
-                        <button
-                          className={`settings-social-btn ${currentValue ? '' : 'connect'}`}
-                          onClick={() => { setEditingRecord(social.key); setRecordValue(currentValue); }}
-                        >
-                          {currentValue ? 'Edit' : 'Set'}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="dash-form-group">
-            <label className="dash-form-label">Wallet Address</label>
-            <div className="settings-social-item">
-              <Wallet size={20} style={{ color: '#fff' }} />
-              <span className="social-name" style={{ fontFamily: 'monospace', fontSize: '13px' }}>{address}</span>
-              <button className="settings-social-btn" onClick={() => address && copyToClipboard(address)}>
-                <Copy size={14} />
-              </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          </>
+        )}
+
+        <div className="dash-form-group">
+          <label className="dash-form-label">Wallet Address</label>
+          <div className="settings-social-item">
+            <Wallet size={20} style={{ color: '#fff' }} />
+            <span className="social-name" style={{ fontFamily: 'monospace', fontSize: '13px' }}>{address}</span>
+            <button className="settings-social-btn" onClick={() => address && copyToClipboard(address)}>
+              <Copy size={14} />
+            </button>
           </div>
         </div>
-      )}
+
+        {canExportKey && (
+          <div className="dash-form-group">
+            <label className="dash-form-label">Embedded Wallet</label>
+            <button
+              onClick={exportWallet}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 20px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '14px',
+                color: '#fff',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              <KeyRound size={18} /> Export Private Key
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 

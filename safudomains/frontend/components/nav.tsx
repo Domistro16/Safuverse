@@ -383,46 +383,8 @@ export default function Nav() {
           </button>
         </div>
 
-        {/* Mobile Navigation (< sm) */}
-        <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
-          {/* Mobile Search Button - Only show on non-homepage */}
-          {pathname !== '/' && (
-            <button
-              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: isDark ? '#222' : '#f4f4f4',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Search size={18} style={{ color: isDark ? '#fff' : '#111' }} />
-            </button>
-          )}
-          <button
-            className="dark-toggle-btn"
-            type="button"
-            onClick={toggleTheme}
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              background: isDark ? '#222' : '#eee',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-            }}
-          >
-            {isDark ? '☀️' : '🌙'}
-          </button>
+        {/* Mobile Navigation (< sm) - only hamburger */}
+        <div className="flex sm:hidden items-center flex-shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{
@@ -626,8 +588,50 @@ export default function Nav() {
                 Academy
               </a>
 
-              {/* Show Connect button only on mobile */}
-              <div className="sm:hidden" style={{ paddingTop: '8px', width: '100%', maxWidth: '280px' }}>
+              {/* Mobile-only: search, theme toggle, connect */}
+              <div className="sm:hidden" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', paddingTop: '8px', width: '100%', maxWidth: '280px' }}>
+                {pathname !== '/' && (
+                  <button
+                    onClick={() => { setMobileSearchOpen(!mobileSearchOpen); setMobileMenuOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      borderRadius: '12px',
+                      fontWeight: 600,
+                      fontSize: '15px',
+                      color: isDark ? '#f5f5f5' : '#111',
+                      background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      width: '100%',
+                      justifyContent: 'center',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Search size={16} /> Search
+                  </button>
+                )}
+                <button
+                  onClick={toggleTheme}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: isDark ? '#f5f5f5' : '#111',
+                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                    width: '100%',
+                    justifyContent: 'center',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                </button>
                 <CustomConnect />
               </div>
             </div>
