@@ -9,6 +9,8 @@ import { useReferralStats } from '../hooks/useReferralStats';
 import { useENSName } from '../hooks/getPrimaryName';
 import { usePaymentProfile } from '../hooks/usePaymentProfile';
 import { useTextRecords } from '../hooks/getTextRecords';
+import { useReputation } from '../hooks/useReputation';
+import { RISK_LABELS, TIERS, SLASH_AMOUNTS } from '../lib/reputation/constants';
 import {
   LayoutGrid,
   Fingerprint,
@@ -26,6 +28,9 @@ import {
   Github,
   Activity,
   Shield,
+  ShieldCheck,
+  AlertTriangle,
+  Search,
   MoreVertical,
   Image as ImageIcon,
   Package,
@@ -918,114 +923,241 @@ export default function Dashboard() {
     </div>
   );
 
+  // ── Reputation state ──────────────────────────────────────────────
+  const { reputation, isLoading: repLoading, error: repError, checkReputation, reset: resetReputation } = useReputation();
+  const [repSearchAddress, setRepSearchAddress] = useState('');
+  const [repAutoChecked, setRepAutoChecked] = useState(false);
+
+  // Auto-check connected wallet on tab switch
+  useEffect(() => {
+    if (activeTab === 'reputation' && address && !repAutoChecked && !reputation) {
+      checkReputation(address);
+      setRepAutoChecked(true);
+    }
+  }, [activeTab, address, repAutoChecked, reputation, checkReputation]);
+
+  const handleRepSearch = () => {
+    const target = repSearchAddress.trim() || address;
+    if (target) {
+      checkReputation(target);
+    }
+  };
+
   const renderReputation = () => {
-    // Compute reputation score from real on-chain data
-    const factors: { label: string; detail: string; score: number; icon: React.ReactNode; active: boolean }[] = [];
-
-    // Factor 1: Domains owned (0-25 points)
-    const domainScore = Math.min(domainsOwned * 5, 25);
-    factors.push({
-      label: 'Domain Identity',
-      detail: domainsOwned > 0 ? `${domainsOwned} domain${domainsOwned > 1 ? 's' : ''} owned` : 'No domains',
-      score: domainScore,
-      icon: <Fingerprint size={20} />,
-      active: domainsOwned > 0,
-    });
-
-    // Factor 2: Primary name set (0 or 15 points)
-    const primaryScore = primaryName ? 15 : 0;
-    factors.push({
-      label: 'Primary Name',
-      detail: primaryName ? `Set to ${primaryName}` : 'Not configured',
-      score: primaryScore,
-      icon: <Star size={20} />,
-      active: !!primaryName,
-    });
-
-    // Factor 3: Referrals (0-25 points)
-    const refScore = Math.min(totalReferrals * 5, 25);
-    factors.push({
-      label: 'Referral Activity',
-      detail: totalReferrals > 0 ? `${totalReferrals} referral${totalReferrals > 1 ? 's' : ''} made` : 'No referrals yet',
-      score: refScore,
-      icon: <TrendingUp size={20} />,
-      active: totalReferrals > 0,
-    });
-
-    // Factor 4: Social records linked (0-20 points, from text records on primary/first domain)
-    const socialRecordCount = textRecords.filter(r =>
-      ['com.twitter', 'com.github', 'com.discord', 'org.telegram', 'email'].includes(r.key) && r.value
-    ).length;
-    const socialScore = Math.min(socialRecordCount * 4, 20);
-    factors.push({
-      label: 'Social Verified',
-      detail: socialRecordCount > 0 ? `${socialRecordCount} account${socialRecordCount > 1 ? 's' : ''} linked` : 'No socials linked',
-      score: socialScore,
-      icon: <Twitter size={20} />,
-      active: socialRecordCount > 0,
-    });
-
-    // Factor 5: Earnings activity (0-15 points)
-    const earningsScore = earningsInUsdc > 0 ? Math.min(Math.floor(earningsInUsdc / 10) * 3, 15) : 0;
-    factors.push({
-      label: 'Earnings History',
-      detail: earningsInUsdc > 0 ? `$${earningsInUsdc.toFixed(2)} earned` : 'No earnings yet',
-      score: earningsScore,
-      icon: <Activity size={20} />,
-      active: earningsInUsdc > 0,
-    });
-
-    const totalScore = factors.reduce((sum, f) => sum + f.score, 0);
-    const maxScore = 100;
-    const scoreLabel = totalScore >= 80 ? 'Excellent' : totalScore >= 60 ? 'Good' : totalScore >= 40 ? 'Building' : totalScore >= 20 ? 'Getting Started' : 'New';
-    const scoreColor = totalScore >= 80 ? '#00C853' : totalScore >= 60 ? '#64DD17' : totalScore >= 40 ? '#FFB000' : totalScore >= 20 ? '#FF9100' : '#666';
+    const score = reputation?.score ?? 0;
+    const tier = reputation?.tier ?? 'Platinum';
+    const tierConfig = Object.values(TIERS).find(t => t.label === tier) || TIERS.PLATINUM;
+    const scoreColor = score >= 90 ? '#00C853' : score >= 70 ? '#64DD17' : score >= 40 ? '#FFB000' : '#FF3D00';
+    const tierDescription = score >= 90
+      ? 'Your identity is highly trusted by dApps.'
+      : score >= 70
+        ? 'Your identity has good standing.'
+        : score >= 40
+          ? 'Some risk flags detected on this wallet.'
+          : 'Multiple risk flags detected. Proceed with caution.';
 
     // SVG circle calculations
     const circumference = 2 * Math.PI * 45; // ~283
-    const strokeDashoffset = circumference - (totalScore / maxScore) * circumference;
+    const strokeDashoffset = reputation
+      ? circumference - (score / 100) * circumference
+      : circumference;
+
+    // All risk categories for the factors grid
+    const allRiskCategories = Object.entries(SLASH_AMOUNTS) as [string, number][];
+    const flaggedSet = new Set(reputation?.flags || []);
 
     return (
       <div className="dash-fade-in">
         <div className="dash-header">
           <div>
             <h2 className="dash-title">Reputation Score</h2>
-            <p className="dash-subtitle">Your on-chain trust metric based on real activity.</p>
+            <p className="dash-subtitle">On-chain trust metric powered by GoPlus Security.</p>
           </div>
+          {reputation && (
+            <button className="dash-refresh-btn" onClick={() => {
+              const target = repSearchAddress.trim() || address;
+              if (target) checkReputation(target);
+            }}>
+              <RefreshCw size={16} /> Refresh
+            </button>
+          )}
         </div>
 
-        <div className="rep-grid">
-          <div className="bento-card dark" style={{ textAlign: 'center' }}>
-            <div className="rep-score-big">
-              <svg viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
-                <circle cx="50" cy="50" r="45" fill="none" stroke={scoreColor} strokeWidth="8" strokeLinecap="round"
-                  strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
-                  style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }} />
-              </svg>
-              <div style={{ position: 'absolute' }}><div className="rep-val-big">{totalScore}</div></div>
-            </div>
-            <h3 style={{ fontWeight: 700, fontSize: '20px', color: 'white' }}>{scoreLabel}</h3>
-            <p style={{ fontSize: '14px', color: '#888', margin: '8px 0 24px' }}>
-              {totalScore >= 60 ? 'Your identity is trusted by dApps.' : 'Complete more actions to increase your score.'}
-            </p>
+        {/* Search bar */}
+        <div style={{
+          display: 'flex', gap: '12px', marginBottom: '32px',
+          background: '#fafafa', padding: '6px', borderRadius: '16px', border: '1px solid #eee',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '12px', color: '#888' }}>
+            <Search size={18} />
           </div>
+          <input
+            type="text"
+            value={repSearchAddress}
+            onChange={(e) => setRepSearchAddress(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleRepSearch()}
+            placeholder={address ? `${address.slice(0, 6)}...${address.slice(-4)} (your wallet)` : 'Enter wallet address...'}
+            style={{
+              flex: 1, background: 'transparent', border: 'none', padding: '12px 0',
+              fontSize: '14px', fontWeight: 500, fontFamily: 'monospace', outline: 'none',
+            }}
+          />
+          <button
+            onClick={handleRepSearch}
+            disabled={repLoading}
+            style={{
+              background: '#111', color: 'white', padding: '10px 24px', borderRadius: '12px',
+              fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer',
+              opacity: repLoading ? 0.6 : 1, whiteSpace: 'nowrap',
+            }}
+          >
+            {repLoading ? 'Checking...' : 'Check'}
+          </button>
+        </div>
 
-          <div>
-            <h3 style={{ fontWeight: 700, fontSize: '20px', marginBottom: '16px' }}>Reputation Factors</h3>
-            <div className="rep-factors-list">
-              {factors.map((factor, i) => (
-                <div className="rep-factor" key={i}>
-                  <div className="rep-factor-icon" style={{ opacity: factor.active ? 1 : 0.4 }}>{factor.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{factor.label}</h4>
-                    <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{factor.detail}</p>
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: factor.active ? scoreColor : '#555' }}>+{factor.score}</div>
+        {repError && (
+          <div style={{
+            padding: '16px', background: 'rgba(255,61,0,0.08)', borderRadius: '12px',
+            marginBottom: '24px', border: '1px solid rgba(255,61,0,0.2)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+          }}>
+            <AlertCircle size={16} style={{ color: '#FF3D00' }} />
+            <span style={{ fontWeight: 600, fontSize: '14px', color: '#FF3D00' }}>{repError}</span>
+          </div>
+        )}
+
+        {repLoading && !reputation && (
+          <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+            <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 16px' }} />
+            <p style={{ fontWeight: 600 }}>Analyzing wallet security...</p>
+          </div>
+        )}
+
+        {reputation && (
+          <>
+            {/* Checked address label */}
+            {reputation.address !== address?.toLowerCase() && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px',
+                padding: '12px 16px', background: 'rgba(255,176,0,0.08)', borderRadius: '12px',
+                border: '1px solid rgba(255,176,0,0.2)',
+              }}>
+                <Search size={14} style={{ color: '#FFB000' }} />
+                <span style={{ fontSize: '13px', color: '#888' }}>
+                  Showing results for <code style={{ fontWeight: 700, color: '#111', fontSize: '12px' }}>{reputation.address}</code>
+                </span>
+              </div>
+            )}
+
+            <div className="rep-grid">
+              {/* Score card */}
+              <div className="bento-card dark" style={{ textAlign: 'center' }}>
+                <div style={{
+                  display: 'inline-block', padding: '6px 16px', borderRadius: '100px', fontSize: '11px',
+                  fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '1px',
+                  background: `${tierConfig.color}22`, color: tierConfig.color, marginBottom: '20px',
+                }}>
+                  {tier}
                 </div>
-              ))}
+                <div className="rep-score-big">
+                  <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke={scoreColor} strokeWidth="8" strokeLinecap="round"
+                      strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                      style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }} />
+                  </svg>
+                  <div style={{ position: 'absolute' }}><div className="rep-val-big">{score}</div></div>
+                </div>
+                <h3 style={{ fontWeight: 700, fontSize: '20px', color: 'white' }}>
+                  {score >= 90 ? 'Excellent' : score >= 70 ? 'Good' : score >= 40 ? 'Moderate Risk' : 'High Risk'}
+                </h3>
+                <p style={{ fontSize: '14px', color: '#888', margin: '8px 0 24px' }}>{tierDescription}</p>
+                {reputation.isClean && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    padding: '10px', background: 'rgba(0,200,83,0.1)', borderRadius: '12px', marginBottom: '16px',
+                  }}>
+                    <ShieldCheck size={16} style={{ color: '#00C853' }} />
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#00C853' }}>No Risk Flags</span>
+                  </div>
+                )}
+                <p style={{ fontSize: '11px', color: '#555', margin: 0 }}>
+                  Checked {new Date(reputation.checkedAt).toLocaleString()}
+                </p>
+              </div>
+
+              {/* Factors */}
+              <div>
+                <h3 style={{ fontWeight: 700, fontSize: '20px', marginBottom: '16px' }}>Security Analysis</h3>
+                <div className="rep-factors-list">
+                  {allRiskCategories.map(([flag, penalty]) => {
+                    const isFlagged = flaggedSet.has(flag);
+                    const label = RISK_LABELS[flag] || flag;
+                    return (
+                      <div className="rep-factor" key={flag} style={{
+                        borderColor: isFlagged ? 'rgba(255,61,0,0.2)' : undefined,
+                        background: isFlagged ? 'rgba(255,61,0,0.03)' : undefined,
+                      }}>
+                        <div className="rep-factor-icon" style={{
+                          color: isFlagged ? '#FF3D00' : '#00C853',
+                          background: isFlagged ? 'rgba(255,61,0,0.1)' : undefined,
+                        }}>
+                          {isFlagged ? <AlertTriangle size={18} /> : <ShieldCheck size={18} />}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{label}</h4>
+                          <p style={{ fontSize: '12px', color: isFlagged ? '#FF3D00' : '#888', margin: 0 }}>
+                            {isFlagged ? `Flagged (-${penalty} pts)` : 'Clean'}
+                          </p>
+                        </div>
+                        <div style={{
+                          width: '8px', height: '8px', borderRadius: '50%',
+                          background: isFlagged ? '#FF3D00' : '#00C853',
+                        }} />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Breakdown summary */}
+                {!reputation.isClean && (
+                  <div style={{
+                    marginTop: '24px', padding: '20px', background: '#111', borderRadius: '16px',
+                    border: '1px solid #222',
+                  }}>
+                    <h4 style={{ fontWeight: 700, fontSize: '14px', color: '#fff', marginBottom: '12px' }}>Score Breakdown</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '13px' }}>
+                        <span>Starting Score</span><span style={{ color: '#fff', fontWeight: 700 }}>100</span>
+                      </div>
+                      {Object.entries(reputation.breakdown).map(([flag, penalty]) => (
+                        <div key={flag} style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '13px' }}>
+                          <span>{RISK_LABELS[flag] || flag}</span>
+                          <span style={{ color: '#FF3D00', fontWeight: 700 }}>{penalty}</span>
+                        </div>
+                      ))}
+                      <div style={{
+                        borderTop: '1px solid #333', marginTop: '4px', paddingTop: '8px',
+                        display: 'flex', justifyContent: 'space-between', fontSize: '14px',
+                      }}>
+                        <span style={{ fontWeight: 700, color: '#fff' }}>Final Score</span>
+                        <span style={{ fontWeight: 800, color: scoreColor }}>{score}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+          </>
+        )}
+
+        {!reputation && !repLoading && !repError && (
+          <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+            <Shield size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
+            <p style={{ fontWeight: 600, marginBottom: '8px' }}>Check any wallet&apos;s reputation</p>
+            <p style={{ fontSize: '13px' }}>Enter an address above or click Check to scan your connected wallet.</p>
           </div>
-        </div>
+        )}
       </div>
     );
   };
