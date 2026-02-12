@@ -339,8 +339,28 @@ export default function Nav() {
           <CustomConnect />
         </div>
 
-        {/* Tablet/Mobile Navigation (< lg) - only hamburger */}
-        <div className="flex lg:hidden items-center flex-shrink-0">
+        {/* Tablet Navigation (md to lg) */}
+        <div className="hidden sm:flex lg:hidden items-center gap-3 flex-shrink-0">
+          <button
+            className="dark-toggle-btn"
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#eee',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+          <CustomConnect />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{
@@ -359,6 +379,68 @@ export default function Nav() {
               <X size={20} style={{ color: isDark ? '#fff' : '#111' }} />
             ) : (
               <Menu size={20} style={{ color: isDark ? '#fff' : '#111' }} />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Navigation (< sm) */}
+        <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
+          {/* Mobile Search Button - Only show on non-homepage */}
+          {pathname !== '/' && (
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: isDark ? '#222' : '#f4f4f4',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Search size={18} style={{ color: isDark ? '#fff' : '#111' }} />
+            </button>
+          )}
+          <button
+            className="dark-toggle-btn"
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#eee',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: isDark ? '#222' : '#f4f4f4',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {mobileMenuOpen ? (
+              <X size={18} style={{ color: isDark ? '#fff' : '#111' }} />
+            ) : (
+              <Menu size={18} style={{ color: isDark ? '#fff' : '#111' }} />
             )}
           </button>
         </div>
@@ -544,52 +626,8 @@ export default function Nav() {
                 Academy
               </a>
 
-              {/* Search, theme toggle, connect - in dropdown for all non-desktop */}
-              {pathname !== '/' && (
-                <button
-                  onClick={() => { setMobileSearchOpen(!mobileSearchOpen); setMobileMenuOpen(false); }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 20px',
-                    borderRadius: '12px',
-                    fontWeight: 600,
-                    fontSize: '15px',
-                    color: isDark ? '#f5f5f5' : '#111',
-                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                    width: '100%',
-                    maxWidth: '280px',
-                    justifyContent: 'center',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Search size={16} /> Search
-                </button>
-              )}
-              <button
-                onClick={toggleTheme}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  borderRadius: '12px',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  color: isDark ? '#f5f5f5' : '#111',
-                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                  width: '100%',
-                  maxWidth: '280px',
-                  justifyContent: 'center',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
-              </button>
-              <div style={{ paddingTop: '8px', width: '100%', maxWidth: '280px' }}>
+              {/* Show Connect button only on mobile */}
+              <div className="sm:hidden" style={{ paddingTop: '8px', width: '100%', maxWidth: '280px' }}>
                 <CustomConnect />
               </div>
             </div>
