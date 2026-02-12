@@ -7,6 +7,8 @@ import { formatEther, namehash, keccak256, toBytes } from 'viem';
 import { useAllOwnedNames } from '../hooks/getAllNames';
 import { useReferralStats } from '../hooks/useReferralStats';
 import { useENSName } from '../hooks/getPrimaryName';
+import { usePaymentProfile } from '../hooks/usePaymentProfile';
+import { useTextRecords } from '../hooks/getTextRecords';
 import {
   LayoutGrid,
   Fingerprint,
@@ -30,6 +32,11 @@ import {
   Star,
   X,
   CheckCircle,
+  ExternalLink,
+  AlertCircle,
+  Loader2,
+  Copy,
+  Link,
 } from 'lucide-react';
 import { constants } from '../constant';
 import Modal from 'react-modal';
@@ -120,6 +127,30 @@ const addrAbi = [
   {
     inputs: [{ internalType: 'bytes32', name: 'node', type: 'bytes32' }],
     name: 'addr',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+];
+
+const setTextAbi = [
+  {
+    inputs: [
+      { internalType: 'bytes32', name: 'node', type: 'bytes32' },
+      { internalType: 'string', name: 'key', type: 'string' },
+      { internalType: 'string', name: 'value', type: 'string' },
+    ],
+    name: 'setText',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+];
+
+const resolverAbiForRead = [
+  {
+    inputs: [{ internalType: 'bytes32', name: 'node', type: 'bytes32' }],
+    name: 'resolver',
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
@@ -431,11 +462,60 @@ export default function Dashboard() {
   const [toastVisible, setToastVisible] = useState(false);
   const [payMode, setPayMode] = useState<'link' | 'invoice'>('link');
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payDescription, setPayDescription] = useState('');
+  const [payDomain, setPayDomain] = useState('');
+  const [generatedPayLink, setGeneratedPayLink] = useState('');
+  const [invoiceClient, setInvoiceClient] = useState('');
+  const [invoiceDueDate, setInvoiceDueDate] = useState('');
+  const [invoiceItems, setInvoiceItems] = useState([{ description: '', amount: '' }]);
+
+  // Settings state
+  const [editingRecord, setEditingRecord] = useState<string | null>(null);
+  const [recordValue, setRecordValue] = useState('');
+  const [settingsDomain, setSettingsDomain] = useState('');
 
   // Data hooks
   const { domains, isLoading: domainsLoading } = useAllOwnedNames(address?.toLowerCase() || '');
   const { referralCount, totalEarnings, referralPct, isLoading: referralLoading } = useReferralStats(address);
   const { name: primaryName } = useENSName({ owner: address as `0x${string}` });
+
+  // Payment profile for selected domain
+  const { profile: paymentProfile, isLoading: paymentProfileLoading } = usePaymentProfile(payDomain || '');
+
+  // Set default pay domain when domains load
+  useEffect(() => {
+    if (domains.length > 0 && !payDomain) {
+      setPayDomain(domains[0].name || '');
+    }
+  }, [domains, payDomain]);
+
+  // Set default settings domain
+  useEffect(() => {
+    if (domains.length > 0 && !settingsDomain) {
+      setSettingsDomain(domains[0].name || '');
+    }
+  }, [domains, settingsDomain]);
+
+  // Resolver for settings domain
+  const settingsLabel = settingsDomain.replace(/\.id$/, '');
+  const { data: settingsResolver } = useReadContract({
+    abi: resolverAbiForRead,
+    functionName: 'resolver',
+    address: constants.Registry,
+    args: [namehash(settingsDomain || 'placeholder.id')],
+  });
+
+  // Text records for settings domain
+  const socialKeys = ['com.twitter', 'com.github', 'com.discord', 'org.telegram', 'email', 'url', 'avatar', 'description'];
+  const { records: textRecords, isLoading: textRecordsLoading } = useTextRecords({
+    resolverAddress: (settingsResolver as `0x${string}`) || ('0x' as `0x${string}`),
+    name: settingsDomain || 'placeholder.id',
+    keys: socialKeys,
+  });
+
+  // Write contract for setting text records
+  const { writeContractAsync: writeTextRecord, isPending: isSettingRecord } = useWriteContract();
 
   // Computed
   const domainsOwned = domains.length;
@@ -645,129 +725,324 @@ export default function Dashboard() {
     </div>
   );
 
+  const handleGeneratePayLink = async () => {
+    if (!payDomain || !payAmount) return;
+    const cleanName = payDomain.replace('.id', '');
+    try {
+      const response = await fetch(`/api/x402/${encodeURIComponent(cleanName)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: payAmount,
+          token: constants.USDC,
+          chainId: 8453,
+          description: payDescription || undefined,
+        }),
+      });
+      const data = await response.json();
+      if (data.invoiceId) {
+        setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}/${data.invoiceId}`);
+      } else {
+        setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}?amount=${payAmount}`);
+      }
+      setShowInvoicePreview(true);
+    } catch {
+      setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}?amount=${payAmount}`);
+      setShowInvoicePreview(true);
+    }
+  };
+
+  const handleGenerateInvoice = () => {
+    if (!payDomain) return;
+    const cleanName = payDomain.replace('.id', '');
+    const total = invoiceItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}?amount=${total}&client=${encodeURIComponent(invoiceClient)}&due=${invoiceDueDate}`);
+    setShowInvoicePreview(true);
+  };
+
   const renderPayments = () => (
     <div className="dash-fade-in">
       <div className="dash-header">
         <div>
           <h2 className="dash-title">Payments</h2>
-          <p className="dash-subtitle">Create payment links or send invoices.</p>
+          <p className="dash-subtitle">Accept payments through your .id domain using x402.</p>
         </div>
       </div>
 
-      <div className="tabs-pill">
-        <button className={`tab-pill-btn ${payMode === 'link' ? 'active' : ''}`} onClick={() => { setPayMode('link'); setShowInvoicePreview(false); }}>Single Link</button>
-        <button className={`tab-pill-btn ${payMode === 'invoice' ? 'active' : ''}`} onClick={() => { setPayMode('invoice'); setShowInvoicePreview(false); }}>Create Invoice</button>
-      </div>
-
-      {payMode === 'link' ? (
-        <div className="pay-form">
-          <div className="dash-form-group">
-            <label className="dash-form-label">Amount (USDC)</label>
-            <input type="number" className="dash-form-input" placeholder="0.00" />
-          </div>
-          <div className="dash-form-group">
-            <label className="dash-form-label">Description (Optional)</label>
-            <input type="text" className="dash-form-input" placeholder="What is this for?" />
-          </div>
-          <button className="dash-btn-primary" onClick={() => setShowInvoicePreview(true)}>Generate Link</button>
+      {domains.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+          <p style={{ marginBottom: '16px' }}>Register a domain to enable payments.</p>
+          <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
         </div>
       ) : (
-        <div className="pay-form">
-          <div className="dash-form-group">
-            <label className="dash-form-label">Client Email / Web3 ID</label>
-            <input type="text" className="dash-form-input" placeholder="client@email.com or client.id" />
+        <>
+          <div className="dash-form-group" style={{ marginBottom: '24px' }}>
+            <label className="dash-form-label">Payment Domain</label>
+            <select
+              className="dash-form-input"
+              value={payDomain}
+              onChange={(e) => { setPayDomain(e.target.value); setShowInvoicePreview(false); }}
+            >
+              {domains.map((d: any, i: number) => (
+                <option key={i} value={d.name}>{d.name}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div className="dash-form-group">
-              <label className="dash-form-label">Invoice Number</label>
-              <input type="text" className="dash-form-input" value="#INV-001" readOnly />
-            </div>
-            <div className="dash-form-group">
-              <label className="dash-form-label">Due Date</label>
-              <input type="date" className="dash-form-input" />
-            </div>
-          </div>
-          <div style={{ padding: '16px', background: '#fafafa', borderRadius: '12px', marginBottom: '24px', border: '1px solid #eee' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
-              <span>Item</span><span>Amount</span>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-              <input type="text" className="dash-form-input" style={{ flex: 2 }} placeholder="Item Description" />
-              <input type="number" className="dash-form-input" style={{ flex: 1 }} placeholder="0.00" />
-            </div>
-            <button style={{ fontSize: '12px', fontWeight: 700, color: '#FFB000', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', background: 'none', border: 'none', cursor: 'pointer' }}>
-              <Plus size={12} /> Add Item
-            </button>
-          </div>
-          <button className="dash-btn-primary" onClick={() => setShowInvoicePreview(true)}>Send Invoice</button>
-        </div>
-      )}
 
-      {showInvoicePreview && (
-        <div className="invoice-preview">
-          <div className="invoice-preview-header">
-            <div className="invoice-preview-icon"><Check size={24} /></div>
-            <div>
-              <h4 style={{ fontWeight: 700, fontSize: '18px', color: '#33691E', margin: 0 }}>Generated Successfully</h4>
-              <p style={{ fontSize: '14px', color: '#558B2F', margin: 0 }}>Share this link to get paid.</p>
+          {paymentProfileLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', marginBottom: '24px' }}>
+              <Loader2 size={16} className="animate-spin" /> Loading payment profile...
             </div>
+          ) : paymentProfile?.paymentEnabled ? (
+            <div style={{ padding: '16px', background: 'rgba(0,200,83,0.08)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(0,200,83,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <CheckCircle size={16} style={{ color: '#00C853' }} />
+                <span style={{ fontWeight: 700, fontSize: '14px' }}>Payments Enabled</span>
+              </div>
+              <div style={{ fontSize: '13px', color: '#666' }}>
+                <div>Payment Address: <code style={{ fontSize: '12px' }}>{paymentProfile.paymentAddress.slice(0, 6)}...{paymentProfile.paymentAddress.slice(-4)}</code></div>
+                {paymentProfile.acceptedTokens.length > 0 && (
+                  <div>Accepted Tokens: {paymentProfile.acceptedTokens.length} token(s)</div>
+                )}
+                {paymentProfile.supportedChains.length > 0 && (
+                  <div>Chains: {paymentProfile.supportedChains.map(c => c === 8453 ? 'Base' : `Chain ${c}`).join(', ')}</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '16px', background: 'rgba(255,176,0,0.08)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,176,0,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={16} style={{ color: '#FFB000' }} />
+                <span style={{ fontWeight: 700, fontSize: '14px' }}>Payment profile not configured</span>
+              </div>
+              <p style={{ fontSize: '13px', color: '#666', margin: '4px 0 0' }}>Set up your resolver&apos;s x402 payment profile to accept payments.</p>
+            </div>
+          )}
+
+          <div className="tabs-pill">
+            <button className={`tab-pill-btn ${payMode === 'link' ? 'active' : ''}`} onClick={() => { setPayMode('link'); setShowInvoicePreview(false); }}>Payment Link</button>
+            <button className={`tab-pill-btn ${payMode === 'invoice' ? 'active' : ''}`} onClick={() => { setPayMode('invoice'); setShowInvoicePreview(false); }}>Invoice</button>
           </div>
-          <div className="invoice-preview-link">https://pay.nexid.com/inv/{Math.random().toString(36).slice(2, 8)}</div>
-          <button style={{ fontSize: '14px', fontWeight: 700, color: '#111', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => copyToClipboard('https://pay.nexid.com/inv/829s9a')}>Copy Link</button>
-        </div>
+
+          {payMode === 'link' ? (
+            <div className="pay-form">
+              <div className="dash-form-group">
+                <label className="dash-form-label">Amount (USDC)</label>
+                <input type="number" className="dash-form-input" placeholder="0.00" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
+              </div>
+              <div className="dash-form-group">
+                <label className="dash-form-label">Description (Optional)</label>
+                <input type="text" className="dash-form-input" placeholder="What is this for?" value={payDescription} onChange={(e) => setPayDescription(e.target.value)} />
+              </div>
+              <button className="dash-btn-primary" onClick={handleGeneratePayLink} disabled={!payAmount || !payDomain}>
+                <Link size={16} /> Generate Payment Link
+              </button>
+            </div>
+          ) : (
+            <div className="pay-form">
+              <div className="dash-form-group">
+                <label className="dash-form-label">Client Email / Web3 ID</label>
+                <input type="text" className="dash-form-input" placeholder="client@email.com or client.id" value={invoiceClient} onChange={(e) => setInvoiceClient(e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="dash-form-group">
+                  <label className="dash-form-label">Invoice Number</label>
+                  <input type="text" className="dash-form-input" value={`#INV-${String(domains.length).padStart(3, '0')}`} readOnly />
+                </div>
+                <div className="dash-form-group">
+                  <label className="dash-form-label">Due Date</label>
+                  <input type="date" className="dash-form-input" value={invoiceDueDate} onChange={(e) => setInvoiceDueDate(e.target.value)} />
+                </div>
+              </div>
+              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
+                  <span>Item</span><span>Amount (USDC)</span>
+                </div>
+                {invoiceItems.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input type="text" className="dash-form-input" style={{ flex: 2 }} placeholder="Item Description" value={item.description} onChange={(e) => {
+                      const updated = [...invoiceItems];
+                      updated[idx].description = e.target.value;
+                      setInvoiceItems(updated);
+                    }} />
+                    <input type="number" className="dash-form-input" style={{ flex: 1 }} placeholder="0.00" value={item.amount} onChange={(e) => {
+                      const updated = [...invoiceItems];
+                      updated[idx].amount = e.target.value;
+                      setInvoiceItems(updated);
+                    }} />
+                  </div>
+                ))}
+                <button style={{ fontSize: '12px', fontWeight: 700, color: '#FFB000', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onClick={() => setInvoiceItems([...invoiceItems, { description: '', amount: '' }])}>
+                  <Plus size={12} /> Add Item
+                </button>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '12px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                  <span>Total</span>
+                  <span>{invoiceItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0).toFixed(2)} USDC</span>
+                </div>
+              </div>
+              <button className="dash-btn-primary" onClick={handleGenerateInvoice} disabled={!invoiceClient || invoiceItems.every(i => !i.amount)}>
+                Generate Invoice
+              </button>
+            </div>
+          )}
+
+          {showInvoicePreview && generatedPayLink && (
+            <div className="invoice-preview">
+              <div className="invoice-preview-header">
+                <div className="invoice-preview-icon"><Check size={24} /></div>
+                <div>
+                  <h4 style={{ fontWeight: 700, fontSize: '18px', color: '#33691E', margin: 0 }}>Generated Successfully</h4>
+                  <p style={{ fontSize: '14px', color: '#558B2F', margin: 0 }}>Share this link to get paid via {payDomain}.</p>
+                </div>
+              </div>
+              <div className="invoice-preview-link">{generatedPayLink}</div>
+              <button style={{ fontSize: '14px', fontWeight: 700, color: '#111', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                onClick={() => copyToClipboard(generatedPayLink)}>
+                <Copy size={14} /> Copy Link
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 
-  const renderReputation = () => (
-    <div className="dash-fade-in">
-      <div className="dash-header">
-        <div>
-          <h2 className="dash-title">Reputation Score</h2>
-          <p className="dash-subtitle">Your on-chain trust metric.</p>
+  const renderReputation = () => {
+    // Compute reputation score from real on-chain data
+    const factors: { label: string; detail: string; score: number; icon: React.ReactNode; active: boolean }[] = [];
+
+    // Factor 1: Domains owned (0-25 points)
+    const domainScore = Math.min(domainsOwned * 5, 25);
+    factors.push({
+      label: 'Domain Identity',
+      detail: domainsOwned > 0 ? `${domainsOwned} domain${domainsOwned > 1 ? 's' : ''} owned` : 'No domains',
+      score: domainScore,
+      icon: <Fingerprint size={20} />,
+      active: domainsOwned > 0,
+    });
+
+    // Factor 2: Primary name set (0 or 15 points)
+    const primaryScore = primaryName ? 15 : 0;
+    factors.push({
+      label: 'Primary Name',
+      detail: primaryName ? `Set to ${primaryName}` : 'Not configured',
+      score: primaryScore,
+      icon: <Star size={20} />,
+      active: !!primaryName,
+    });
+
+    // Factor 3: Referrals (0-25 points)
+    const refScore = Math.min(totalReferrals * 5, 25);
+    factors.push({
+      label: 'Referral Activity',
+      detail: totalReferrals > 0 ? `${totalReferrals} referral${totalReferrals > 1 ? 's' : ''} made` : 'No referrals yet',
+      score: refScore,
+      icon: <TrendingUp size={20} />,
+      active: totalReferrals > 0,
+    });
+
+    // Factor 4: Social records linked (0-20 points, from text records on primary/first domain)
+    const socialRecordCount = textRecords.filter(r =>
+      ['com.twitter', 'com.github', 'com.discord', 'org.telegram', 'email'].includes(r.key) && r.value
+    ).length;
+    const socialScore = Math.min(socialRecordCount * 4, 20);
+    factors.push({
+      label: 'Social Verified',
+      detail: socialRecordCount > 0 ? `${socialRecordCount} account${socialRecordCount > 1 ? 's' : ''} linked` : 'No socials linked',
+      score: socialScore,
+      icon: <Twitter size={20} />,
+      active: socialRecordCount > 0,
+    });
+
+    // Factor 5: Earnings activity (0-15 points)
+    const earningsScore = earningsInUsdc > 0 ? Math.min(Math.floor(earningsInUsdc / 10) * 3, 15) : 0;
+    factors.push({
+      label: 'Earnings History',
+      detail: earningsInUsdc > 0 ? `$${earningsInUsdc.toFixed(2)} earned` : 'No earnings yet',
+      score: earningsScore,
+      icon: <Activity size={20} />,
+      active: earningsInUsdc > 0,
+    });
+
+    const totalScore = factors.reduce((sum, f) => sum + f.score, 0);
+    const maxScore = 100;
+    const scoreLabel = totalScore >= 80 ? 'Excellent' : totalScore >= 60 ? 'Good' : totalScore >= 40 ? 'Building' : totalScore >= 20 ? 'Getting Started' : 'New';
+    const scoreColor = totalScore >= 80 ? '#00C853' : totalScore >= 60 ? '#64DD17' : totalScore >= 40 ? '#FFB000' : totalScore >= 20 ? '#FF9100' : '#666';
+
+    // SVG circle calculations
+    const circumference = 2 * Math.PI * 45; // ~283
+    const strokeDashoffset = circumference - (totalScore / maxScore) * circumference;
+
+    return (
+      <div className="dash-fade-in">
+        <div className="dash-header">
+          <div>
+            <h2 className="dash-title">Reputation Score</h2>
+            <p className="dash-subtitle">Your on-chain trust metric based on real activity.</p>
+          </div>
+        </div>
+
+        <div className="rep-grid">
+          <div className="bento-card dark" style={{ textAlign: 'center' }}>
+            <div className="rep-score-big">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
+                <circle cx="50" cy="50" r="45" fill="none" stroke={scoreColor} strokeWidth="8" strokeLinecap="round"
+                  strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                  style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }} />
+              </svg>
+              <div style={{ position: 'absolute' }}><div className="rep-val-big">{totalScore}</div></div>
+            </div>
+            <h3 style={{ fontWeight: 700, fontSize: '20px', color: 'white' }}>{scoreLabel}</h3>
+            <p style={{ fontSize: '14px', color: '#888', margin: '8px 0 24px' }}>
+              {totalScore >= 60 ? 'Your identity is trusted by dApps.' : 'Complete more actions to increase your score.'}
+            </p>
+          </div>
+
+          <div>
+            <h3 style={{ fontWeight: 700, fontSize: '20px', marginBottom: '16px' }}>Reputation Factors</h3>
+            <div className="rep-factors-list">
+              {factors.map((factor, i) => (
+                <div className="rep-factor" key={i}>
+                  <div className="rep-factor-icon" style={{ opacity: factor.active ? 1 : 0.4 }}>{factor.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{factor.label}</h4>
+                    <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{factor.detail}</p>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: factor.active ? scoreColor : '#555' }}>+{factor.score}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+    );
+  };
 
-      <div className="rep-grid">
-        <div className="bento-card dark" style={{ textAlign: 'center' }}>
-          <div className="rep-score-big">
-            <svg viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#00C853" strokeWidth="8" strokeLinecap="round" strokeDasharray="283" strokeDashoffset="10" />
-            </svg>
-            <div style={{ position: 'absolute' }}><div className="rep-val-big">98</div></div>
-          </div>
-          <h3 style={{ fontWeight: 700, fontSize: '20px', color: 'white' }}>Excellent</h3>
-          <p style={{ fontSize: '14px', color: '#888', margin: '8px 0 24px' }}>Your identity is highly trusted by dApps.</p>
-          <button style={{ width: '100%', background: 'white', color: 'black', fontWeight: 700, padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', cursor: 'pointer' }}>
-            <Download size={16} /> Download Proof
-          </button>
-        </div>
-
-        <div>
-          <h3 style={{ fontWeight: 700, fontSize: '20px', marginBottom: '16px' }}>Reputation Factors</h3>
-          <div className="rep-factors-list">
-            <div className="rep-factor">
-              <div className="rep-factor-icon"><Wallet size={20} /></div>
-              <div><h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>Wallet Age</h4><p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Active &gt; 2 Years</p></div>
-            </div>
-            <div className="rep-factor">
-              <div className="rep-factor-icon"><Twitter size={20} /></div>
-              <div><h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>Social Verified</h4><p style={{ fontSize: '12px', color: '#888', margin: 0 }}>X Connected</p></div>
-            </div>
-            <div className="rep-factor">
-              <div className="rep-factor-icon"><Activity size={20} /></div>
-              <div><h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>Tx Volume</h4><p style={{ fontSize: '12px', color: '#888', margin: 0 }}>$50k+ Transacted</p></div>
-            </div>
-            <div className="rep-factor">
-              <div className="rep-factor-icon"><Shield size={20} /></div>
-              <div><h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>Clean Record</h4><p style={{ fontSize: '12px', color: '#888', margin: 0 }}>0 Flags</p></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const exportHistoryCSV = () => {
+    if (domains.length === 0) return;
+    const headers = ['Date', 'Event', 'Domain', 'Expiry', 'Status'];
+    const now = Math.floor(Date.now() / 1000);
+    const rows = domains.map((domain: any) => {
+      const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
+      return [
+        domain.createdAt ? formatDate(domain.createdAt) : '-',
+        'Registration',
+        domain.name || '-',
+        domain.expiryDate ? formatDate(domain.expiryDate) : 'Lifetime',
+        isExpired ? 'Expired' : 'Active',
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nexdomains-history-${address?.slice(0, 8)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const renderHistory = () => (
     <div className="dash-fade-in">
@@ -776,7 +1051,7 @@ export default function Dashboard() {
           <h2 className="dash-title">History</h2>
           <p className="dash-subtitle">View all your transactions and events.</p>
         </div>
-        <button className="dash-export-btn">
+        <button className="dash-export-btn" onClick={exportHistoryCSV} disabled={domains.length === 0}>
           <Download size={16} /> Export CSV
         </button>
       </div>
@@ -788,16 +1063,25 @@ export default function Dashboard() {
       ) : (
         <div className="table-container">
           <table className="d-table">
-            <thead><tr><th>Date</th><th>Description</th><th>Domain</th><th>Status</th></tr></thead>
+            <thead><tr><th>Date</th><th>Event</th><th>Domain</th><th>Expiry</th><th>Status</th></tr></thead>
             <tbody>
-              {domains.map((domain: any, i: number) => (
-                <tr key={i}>
-                  <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
-                  <td>Minted &apos;{domain.name}&apos;</td>
-                  <td style={{ fontWeight: 700 }}>{domain.name}</td>
-                  <td><span className="dash-status-pill completed">Completed</span></td>
-                </tr>
-              ))}
+              {domains.map((domain: any, i: number) => {
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
+                const isPrimary = primaryName === domain.name;
+                return (
+                  <tr key={i}>
+                    <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
+                    <td>
+                      Registration
+                      {isPrimary && <span className="dash-status-pill primary" style={{ marginLeft: 6, fontSize: '10px' }}>Primary</span>}
+                    </td>
+                    <td style={{ fontWeight: 700 }}>{domain.name}</td>
+                    <td>{domain.expiryDate ? formatDate(domain.expiryDate) : 'Lifetime'}</td>
+                    <td><span className={`dash-status-pill ${isExpired ? 'expired' : 'completed'}`}>{isExpired ? 'Expired' : 'Active'}</span></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -805,47 +1089,141 @@ export default function Dashboard() {
     </div>
   );
 
+  const socialConfig: { key: string; label: string; icon: React.ReactNode; placeholder: string }[] = [
+    { key: 'com.twitter', label: 'X (Twitter)', icon: <Twitter size={20} />, placeholder: '@username' },
+    { key: 'com.github', label: 'GitHub', icon: <Github size={20} />, placeholder: 'username' },
+    { key: 'com.discord', label: 'Discord', icon: <Activity size={20} />, placeholder: 'username#1234' },
+    { key: 'org.telegram', label: 'Telegram', icon: <ExternalLink size={20} />, placeholder: '@username' },
+    { key: 'email', label: 'Email', icon: <CreditCard size={20} />, placeholder: 'you@email.com' },
+    { key: 'url', label: 'Website', icon: <ExternalLink size={20} />, placeholder: 'https://yoursite.com' },
+    { key: 'description', label: 'Bio', icon: <Fingerprint size={20} />, placeholder: 'A short description...' },
+  ];
+
+  const getRecordValue = (key: string) => {
+    const record = textRecords.find(r => r.key === key);
+    return record?.value || '';
+  };
+
+  const handleSaveRecord = async (key: string, value: string) => {
+    if (!settingsDomain || !settingsResolver) return;
+    try {
+      await writeTextRecord({
+        abi: setTextAbi,
+        address: constants.PublicResolver,
+        functionName: 'setText',
+        args: [namehash(settingsDomain), key, value],
+      });
+      setEditingRecord(null);
+      setRecordValue('');
+    } catch (error) {
+      console.error('Failed to set text record:', error);
+    }
+  };
+
   const renderSettings = () => (
     <div className="dash-fade-in">
       <div className="dash-header">
         <div>
           <h2 className="dash-title">Settings</h2>
-          <p className="dash-subtitle">Configure your profile and security.</p>
+          <p className="dash-subtitle">Manage your on-chain profile records.</p>
         </div>
       </div>
 
-      <div className="pay-form">
-        <div className="dash-form-group">
-          <label className="dash-form-label">Linked Socials</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div className="settings-social-item disconnected">
-              <Twitter size={20} style={{ color: '#999' }} />
-              <span className="social-name muted">X not connected</span>
-              <button className="settings-social-btn connect">Connect</button>
-            </div>
-            <div className="settings-social-item disconnected">
-              <Github size={20} style={{ color: '#999' }} />
-              <span className="social-name muted">GitHub not connected</span>
-              <button className="settings-social-btn connect">Connect</button>
+      {domains.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+          <p style={{ marginBottom: '16px' }}>Register a domain to manage settings.</p>
+          <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
+        </div>
+      ) : (
+        <div className="pay-form">
+          <div className="dash-form-group">
+            <label className="dash-form-label">Domain</label>
+            <select
+              className="dash-form-input"
+              value={settingsDomain}
+              onChange={(e) => { setSettingsDomain(e.target.value); setEditingRecord(null); }}
+            >
+              {domains.map((d: any, i: number) => (
+                <option key={i} value={d.name}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="dash-form-group">
+            <label className="dash-form-label">Profile Records</label>
+            {textRecordsLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', padding: '12px' }}>
+                <Loader2 size={16} className="animate-spin" /> Loading records...
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {socialConfig.map((social) => {
+                  const currentValue = getRecordValue(social.key);
+                  const isEditing = editingRecord === social.key;
+                  return (
+                    <div key={social.key} className={`settings-social-item ${currentValue ? '' : 'disconnected'}`}>
+                      <div style={{ opacity: currentValue ? 1 : 0.5 }}>{social.icon}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600 }}>{social.label}</div>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                            <input
+                              type="text"
+                              className="dash-form-input"
+                              style={{ fontSize: '13px', padding: '6px 10px' }}
+                              value={recordValue}
+                              onChange={(e) => setRecordValue(e.target.value)}
+                              placeholder={social.placeholder}
+                              autoFocus
+                            />
+                            <button
+                              className="settings-social-btn connect"
+                              style={{ whiteSpace: 'nowrap' }}
+                              onClick={() => handleSaveRecord(social.key, recordValue)}
+                              disabled={isSettingRecord}
+                            >
+                              {isSettingRecord ? '...' : 'Save'}
+                            </button>
+                            <button
+                              className="settings-social-btn"
+                              onClick={() => { setEditingRecord(null); setRecordValue(''); }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <span className={`social-name ${currentValue ? '' : 'muted'}`} style={{ fontSize: '12px' }}>
+                            {currentValue || `Not set`}
+                          </span>
+                        )}
+                      </div>
+                      {!isEditing && (
+                        <button
+                          className={`settings-social-btn ${currentValue ? '' : 'connect'}`}
+                          onClick={() => { setEditingRecord(social.key); setRecordValue(currentValue); }}
+                        >
+                          {currentValue ? 'Edit' : 'Set'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="dash-form-group">
+            <label className="dash-form-label">Wallet Address</label>
+            <div className="settings-social-item">
+              <Wallet size={20} style={{ color: '#fff' }} />
+              <span className="social-name" style={{ fontFamily: 'monospace', fontSize: '13px' }}>{address}</span>
+              <button className="settings-social-btn" onClick={() => address && copyToClipboard(address)}>
+                <Copy size={14} />
+              </button>
             </div>
           </div>
         </div>
-
-        <div className="dash-form-group">
-          <label className="dash-form-label">Wallet Address</label>
-          <div className="settings-social-item">
-            <Wallet size={20} style={{ color: '#111' }} />
-            <span className="social-name" style={{ fontFamily: 'monospace', fontSize: '13px' }}>{address}</span>
-          </div>
-        </div>
-
-        <div className="dash-form-group">
-          <label className="dash-form-label">Wallet Connections</label>
-          <button className="settings-wallet-btn">
-            <Plus size={16} /> Connect Another Wallet
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 
