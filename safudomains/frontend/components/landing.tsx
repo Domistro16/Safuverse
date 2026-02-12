@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useReadContract } from 'wagmi'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { keccak256, toBytes, zeroAddress } from 'viem'
 import { constants } from '../constant'
 import {
   Search, X, ArrowUpRight, ArrowDownLeft, ChevronLeft,
@@ -17,6 +18,16 @@ const abi = [
     inputs: [{ internalType: 'string', name: 'name', type: 'string' }],
     name: 'available',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
+
+const reservedOwnersAbi = [
+  {
+    inputs: [{ name: '', type: 'bytes32' }],
+    name: 'reservedOwners',
+    outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -67,15 +78,25 @@ export default function Landing() {
     args: [search],
   })
 
+  const labelHash = search ? keccak256(toBytes(search)) : undefined
+  const { data: reservedOwner, isLoading: reservedLoading } = useReadContract({
+    address: constants.Controller,
+    abi: reservedOwnersAbi,
+    functionName: 'reservedOwners',
+    args: labelHash ? [labelHash] : undefined,
+  })
+  const isReserved = !!reservedOwner && reservedOwner !== zeroAddress
+
   /* availability status */
   useEffect(() => {
     if (search.includes('.')) setAvailable('Invalid')
     else if (search.length < 1) setAvailable('Too Short')
-    else if (isPending) setAvailable('Loading...')
+    else if (isPending || reservedLoading) setAvailable('Loading...')
+    else if (data === true && isReserved) setAvailable('Reserved')
     else if (data === true) setAvailable('Available')
     else if (data === false) setAvailable('Registered')
     else setAvailable('')
-  }, [search, isPending, data])
+  }, [search, isPending, data, isReserved, reservedLoading])
 
   /* recents */
   useEffect(() => {
@@ -410,6 +431,11 @@ export default function Landing() {
                     {available === 'Available' && (
                       <span className="text-xs px-3 py-1 rounded-full bg-green-500 text-white font-semibold">
                         Available
+                      </span>
+                    )}
+                    {available === 'Unavailable' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-red-500 text-white font-semibold">
+                        Unavailable
                       </span>
                     )}
                     {available === 'Registered' && (

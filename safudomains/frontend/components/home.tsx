@@ -3,10 +3,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { useReadContract } from 'wagmi'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { keccak256, toBytes, zeroAddress } from 'viem'
 import { constants } from '../constant'
 import { FaSearch } from 'react-icons/fa'
 import { FaXmark } from 'react-icons/fa6'
 import { AgentRegistrarControllerAbi as abi } from '@nexid/sdk'
+
+const reservedOwnersAbi = [
+  {
+    inputs: [{ name: '', type: 'bytes32' }],
+    name: 'reservedOwners',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
 
 const THEME_KEY = 'nexid-theme'
 
@@ -63,6 +74,15 @@ export default function Home() {
     abi: abi,
     args: [search],
   })
+
+  const labelHash = search ? keccak256(toBytes(search)) : undefined
+  const { data: reservedOwner, isLoading: reservedLoading } = useReadContract({
+    address: constants.Controller,
+    abi: reservedOwnersAbi,
+    functionName: 'reservedOwners',
+    args: labelHash ? [labelHash] : undefined,
+  })
+  const isReserved = !!reservedOwner && reservedOwner !== zeroAddress
 
   console.log(error)
   const searchParams = useSearchParams()
@@ -165,8 +185,10 @@ export default function Home() {
       setAvailable('Invalid')
     } else if (search.length < 1) {
       setAvailable('Too Short')
-    } else if (isPending) {
+    } else if (isPending || reservedLoading) {
       setAvailable('Loading...')
+    } else if (data === true && isReserved) {
+      setAvailable('Reserved')
     } else if (data === true) {
       setAvailable('Available')
     } else if (data === false) {
@@ -174,7 +196,7 @@ export default function Home() {
     } else {
       setAvailable('')
     }
-  }, [search, isPending, data])
+  }, [search, isPending, data, isReserved, reservedLoading])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault()
@@ -338,7 +360,7 @@ export default function Home() {
                         fontSize: '12px',
                         padding: '4px 12px',
                         borderRadius: '9999px',
-                        background: available === 'Available' ? '#14d46b' : available === 'Registered' ? '#f59e0b' : '#888',
+                        background: available === 'Available' ? '#14d46b' : available === 'Registered' ? '#f59e0b' : available === 'Unavailable' ? '#ef4444' : '#888',
                         color: '#fff',
                       }}
                     >
