@@ -232,7 +232,7 @@ export default function Landing() {
   const heroOpacity = Math.max(0, 1 - scrollProgress * 2.5)
   const heroScale = 1 - scrollProgress * 0.3
   const heroTranslateY = scrollProgress * -50
-  const mobileOffset = isMobile ? 25 : 40
+  const mobileOffset = isMobile ? 80 : 40
   const startY = (typeof window !== 'undefined' ? window.innerHeight / 2.4 : 375) + mobileOffset
   const endY = -50
   const currentY = startY - ((startY - endY) * scrollProgress)

@@ -2860,8 +2860,17 @@ h1 span {
     font-size: 32px;
   }
 
+  .landing-hero-h1 {
+    font-size: 2.5rem !important;
+    margin-bottom: 1.2rem;
+  }
+
+  .landing-hero-sub {
+    font-size: 1rem !important;
+  }
+
   .landing-phone-container {
-    top: 40%;
+    top: 48%;
   }
 
   .landing-phone-body {
