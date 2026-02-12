@@ -1271,9 +1271,15 @@ h1 span {
 }
 
 .nav-pill-links {
-  display: flex;
+  display: none;
   gap: 4px;
   align-items: center;
+}
+
+@media (min-width: 768px) {
+  .nav-pill-links {
+    display: flex;
+  }
 }
 
 .nav-pill-link {
