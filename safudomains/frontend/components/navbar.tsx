@@ -89,7 +89,7 @@ export default function Navbar() {
   const navLinks = [
     { label: 'Pricing', href: '/pricing', isExternal: false },
     { label: 'API', href: '/api-docs', isExternal: false },
-    { label: 'NexID Academy', href: 'https://academy.safuverse.com/courses/all', isExternal: true },
+    { label: 'NexID Academy', href: 'https://academy.nexdomains.com/courses/all', isExternal: true },
   ]
 
   const isHomepage = pathname === '/'
@@ -255,8 +255,8 @@ export default function Navbar() {
                 )
               )}
 
-              <div className="nav-pill-mob-link" onClick={() => { router.push('/profile'); setMobileMenuOpen(false) }}>
-                Profile
+              <div className="nav-pill-mob-link" onClick={() => { router.push('/dashboard'); setMobileMenuOpen(false) }}>
+                Dashboard
                 <ArrowRight className="w-4 h-4 opacity-40" />
               </div>
 

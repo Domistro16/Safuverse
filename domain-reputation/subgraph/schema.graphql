@@ -1,0 +1,62 @@
+enum OwnerType {
+  HUMAN
+  AGENT
+}
+
+type DomainOwner @entity {
+  id: ID! # Wallet address (lowercase)
+  ownerType: OwnerType!
+  domains: [Domain!]! @derivedFrom(field: "owner")
+
+  # Transaction metrics
+  totalTransactions: BigInt!
+  successfulTransactions: BigInt!
+  failedTransactions: BigInt!
+
+  # Volume metrics
+  totalVolumeUSDC: BigDecimal!
+  totalVolumeETH: BigDecimal!
+
+  # Activity metrics
+  firstTransactionAt: BigInt!
+  lastTransactionAt: BigInt!
+  uniqueContractsInteracted: BigInt!
+
+  # Reputation
+  reputationScore: Int!
+  lastScoreUpdate: BigInt!
+
+  # Internal tracking
+  interactedContracts: [Bytes!]!
+}
+
+type Domain @entity {
+  id: ID! # Domain name (e.g., "alice.id")
+  owner: DomainOwner!
+  ownerType: OwnerType!
+  registeredAt: BigInt!
+  expiresAt: BigInt!
+  isActive: Boolean!
+  cost: BigDecimal!
+}
+
+type Transaction @entity {
+  id: ID! # Transaction hash
+  owner: DomainOwner!
+  timestamp: BigInt!
+  successful: Boolean!
+  valueUSDC: BigDecimal!
+  valueETH: BigDecimal!
+  toContract: Bytes!
+  gasUsed: BigInt!
+
+  # For agents: track UserOp hash
+  userOpHash: Bytes
+}
+
+type ScoreSnapshot @entity {
+  id: ID! # owner-timestamp
+  owner: DomainOwner!
+  score: Int!
+  timestamp: BigInt!
+}

@@ -512,7 +512,7 @@ export default function Profile() {
   // Calculate stats
   const domainsOwned = domains.length;
   const totalReferrals = referralCount ? Number(referralCount) : 0;
-  const earningsInBnb = totalEarnings ? Number(formatEther(totalEarnings)) : 0;
+  const earningsInUsdc = totalEarnings ? Number(formatEther(totalEarnings)) : 0;
   const currentPct = referralPct ? Number(referralPct) : 25;
 
   // Get the primary domain for referral link (prefer primary name, fallback to first domain)
@@ -529,7 +529,7 @@ export default function Profile() {
   }, [primaryName, domains]);
 
   const referralLink = referralDomain
-    ? `https://names.safuverse.com?ref=${referralDomain}`
+    ? `https://names.nexdomains.com?ref=${referralDomain}`
     : '';
 
   const fallbackCopy = (text: string) => {
@@ -612,7 +612,7 @@ export default function Profile() {
                 <div className="avatar-inner">🧑‍🦲</div>
               </div>
               <div>
-                <h1 className="profile-title">Your SafuVerse Profile</h1>
+                <h1 className="profile-title">Your NexDomains Profile</h1>
                 <p className="profile-subline">
                   Track your .id domains, referral rewards, and on‑chain
                   identity in one clean view.
@@ -621,7 +621,7 @@ export default function Profile() {
             </div>
             <div className="pill-row">
               <div className="pill">Identity · Learning · Rewards</div>
-              <div className="pill">Live on BNB Chain · .id</div>
+              <div className="pill">Live on Base · .id</div>
             </div>
           </header>
 
@@ -633,7 +633,7 @@ export default function Profile() {
               </div>
               <p className="stat-value">{domainsOwned}</p>
               <p className="stat-caption">
-                Each name is a permanent .id identity inside the SafuVerse.
+                Each name is a permanent .id identity inside NexDomains.
               </p>
             </article>
 
@@ -643,7 +643,7 @@ export default function Profile() {
                 <span className="stat-icon-pill">💰</span>
               </div>
               <p className="stat-value">
-                {referralLoading ? '...' : `${earningsInBnb.toFixed(4)} BNB`}
+                {referralLoading ? '...' : `${earningsInUsdc.toFixed(2)} USDC`}
               </p>
               <p className="stat-caption">
                 Total rewards earned from sharing your unique mint link.
@@ -670,7 +670,7 @@ export default function Profile() {
               </div>
               <p className="section-caption">
                 Every name you mint can route to your profiles, courses, AI
-                agents, or future SafuVerse utilities.
+                agents, or future NexDomains utilities.
               </p>
 
               {domainsLoading ? (
@@ -739,7 +739,7 @@ export default function Profile() {
                 <span className="tag-pill">InfoFi ready</span>
               </div>
               <p className="section-caption">
-                Share your link, let frens mint, and watch your SafuVerse
+                Share your link, let frens mint, and watch your NexDomains
                 earnings stack over time.
               </p>
 
@@ -779,12 +779,12 @@ export default function Profile() {
           <section className="footer-promo">
             <div className="footer-promo-bg" />
             <h2 className="footer-title">
-              Explore the safuverse
+              Explore the NexDomains
               <br />
               Ecosystem
             </h2>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <a href="https://academy.safuverse.com/courses/all" target="_blank" rel="noopener noreferrer">
+              <a href="https://academy.nexdomains.com/courses/all" target="_blank" rel="noopener noreferrer">
                 <button className="footer-btn" type="button">
                   Visit Academy
                 </button>
@@ -798,19 +798,19 @@ export default function Profile() {
           </section>
 
           <div className="footer-actions">
-            <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noopener noreferrer">
+            <a href="https://nexdomains.gitbook.io/nexdomains-docs/" target="_blank" rel="noopener noreferrer">
               <button className="footer-chip" type="button">
                 📄 Documentation
               </button>
             </a>
-            <a href="https://safuverse.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://nexdomains.com" target="_blank" rel="noopener noreferrer">
               <button className="footer-chip" type="button">
                 🌐 Main Website
               </button>
             </a>
           </div>
 
-          <div className="footer-copy">safuverse 2025. All rights reserved.</div>
+          <div className="footer-copy">NexDomains 2025. All rights reserved.</div>
         </div>
       </footer>
     </>

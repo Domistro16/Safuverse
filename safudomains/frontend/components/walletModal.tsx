@@ -110,11 +110,11 @@ export function WalletModal({
             <div>Copy Address</div>
           </button>
           <button
-            onClick={() => router.push('/profile')}
+            onClick={() => router.push('/dashboard')}
             className="flex w-full flex-col items-center justify-center rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700 cursor-pointer hover:scale-105 duration-200"
           >
             <ArrowUpRightFromSquare className=" h-5 w-5 text-gray-100" />
-            <div>View Profile</div>
+            <div>Dashboard</div>
           </button>
           {canExport && (
             <button

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useReadContract } from 'wagmi'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { keccak256, toBytes, zeroAddress } from 'viem'
 import { constants } from '../constant'
 import {
   Search, X, ArrowUpRight, ArrowDownLeft, ChevronLeft,
@@ -17,6 +18,16 @@ const abi = [
     inputs: [{ internalType: 'string', name: 'name', type: 'string' }],
     name: 'available',
     outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
+
+const reservedOwnersAbi = [
+  {
+    inputs: [{ name: '', type: 'bytes32' }],
+    name: 'reservedOwners',
+    outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -67,15 +78,25 @@ export default function Landing() {
     args: [search],
   })
 
+  const labelHash = search ? keccak256(toBytes(search)) : undefined
+  const { data: reservedOwner, isLoading: reservedLoading } = useReadContract({
+    address: constants.Controller,
+    abi: reservedOwnersAbi,
+    functionName: 'reservedOwners',
+    args: labelHash ? [labelHash] : undefined,
+  })
+  const isReserved = !!reservedOwner && reservedOwner !== zeroAddress
+
   /* availability status */
   useEffect(() => {
     if (search.includes('.')) setAvailable('Invalid')
     else if (search.length < 1) setAvailable('Too Short')
-    else if (isPending) setAvailable('Loading...')
+    else if (isPending || reservedLoading) setAvailable('Loading...')
+    else if (data === true && isReserved) setAvailable('Reserved')
     else if (data === true) setAvailable('Available')
     else if (data === false) setAvailable('Registered')
     else setAvailable('')
-  }, [search, isPending, data])
+  }, [search, isPending, data, isReserved, reservedLoading])
 
   /* recents */
   useEffect(() => {
@@ -211,8 +232,8 @@ export default function Landing() {
   const heroOpacity = Math.max(0, 1 - scrollProgress * 2.5)
   const heroScale = 1 - scrollProgress * 0.3
   const heroTranslateY = scrollProgress * -50
-  const mobileOffset = isMobile ? 40 : 65
-  const startY = (typeof window !== 'undefined' ? window.innerHeight / 2 : 400) + mobileOffset
+  const mobileOffset = isMobile ? 40 : 40
+  const startY = (typeof window !== 'undefined' ? window.innerHeight / 2.4 : 375) + mobileOffset
   const endY = -50
   const currentY = startY - ((startY - endY) * scrollProgress)
   const ease = 1 - Math.pow(1 - scrollProgress, 3)
@@ -223,7 +244,7 @@ export default function Landing() {
       <div className="landing-track">
         <div className="landing-viewport">
           {/* Ambient glow */}
-          <div className="landing-ambient-glow" />
+          {/* Ambient glow removed */}
 
           {/* Hero Text */}
           <div
@@ -412,6 +433,11 @@ export default function Landing() {
                         Available
                       </span>
                     )}
+                    {available === 'Unavailable' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-red-500 text-white font-semibold">
+                        Unavailable
+                      </span>
+                    )}
                     {available === 'Registered' && (
                       <span className="text-xs px-3 py-1 rounded-full bg-amber-500 text-white font-semibold">
                         Registered
@@ -550,7 +576,7 @@ export default function Landing() {
         </div>
 
         <div className="text-center mt-20 md:mt-32 mb-10 md:mb-16">
-          <h2 className="landing-section-headline">Explore, create, and trade <br /> seamlessly in the NexID.</h2>
+          <h2 className="landing-section-headline">Explore, create, and trade <br /> seamlessly in NexID.</h2>
         </div>
 
         <div className="landing-grid-bottom max-w-6xl mx-auto">
@@ -574,9 +600,9 @@ export default function Landing() {
           <div className="landing-bento-card landing-tilted-2">
             <div className="landing-card-visual-area">
               <div className="flex items-center justify-center">
-                <div className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-orange-400 to-yellow-300 border-[3px] border-[#161616] -mr-5 z-[1]" />
-                <div className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-blue-400 to-purple-300 border-[3px] border-[#161616] -mr-5 z-[2]" />
-                <div className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-green-400 to-teal-300 border-[3px] border-[#161616] z-[3]" />
+                <img src="https://i.pravatar.cc/120?img=8" alt="Human face" className="w-[60px] h-[60px] rounded-full border-[3px] border-[#161616] -mr-5 z-[1] object-cover" />
+                <img src="https://i.pravatar.cc/120?img=21" alt="Human face" className="w-[60px] h-[60px] rounded-full border-[3px] border-[#161616] -mr-5 z-[2] object-cover" />
+                <img src="https://i.pravatar.cc/120?img=58" alt="Human face" className="w-[60px] h-[60px] rounded-full border-[3px] border-[#161616] z-[3] object-cover" />
               </div>
             </div>
             <div className="mt-auto">

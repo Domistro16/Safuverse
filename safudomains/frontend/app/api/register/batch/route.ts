@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@nexid/sdk'
+import { rateLimit } from '@/lib/rateLimit'
+import { NexDomains } from '@nexid/sdk'
 import { encodeFunctionData } from 'viem'
 import { constants } from '@/constant'
 import { AgentRegistrarControllerABI } from '@/lib/abi'
@@ -18,6 +19,8 @@ const CHAIN_ID = 8453 // Base mainnet
  * }
  */
 export async function POST(request: NextRequest) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
     let body
     try {
         body = await request.json()
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         // Check availability and calculate prices

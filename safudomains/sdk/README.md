@@ -11,7 +11,7 @@ npm install @safuverse/safudomains-sdk viem
 ## Quick Start
 
 ```typescript
-import { SafuDomainsClient } from '@safuverse/safudomains-sdk'
+import { NexDomains } from '@safuverse/safudomains-sdk'
 import { createWalletClient, http } from 'viem'
 import { base } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -25,7 +25,7 @@ const walletClient = createWalletClient({
 })
 
 // Initialize SDK
-const sdk = new SafuDomainsClient({
+const sdk = new NexDomains({
   chainId: 8453, // Base mainnet (84532 for testnet)
   walletClient,
 })

@@ -231,7 +231,7 @@ export const useRegistration = () => {
       const [account] = await wc.getAddresses()
 
       const normalizedLabel = normalize(label)
-      const resolverData = data || commitData
+      let resolverData = data && data.length > 0 ? data : commitData
 
       // Get price in USDC
       const priceResult = await publicClient.readContract({
@@ -250,6 +250,16 @@ export const useRegistration = () => {
 
       const ownerForRegistration = account as `0x${string}`
 
+      // Build minimal resolver data if none was provided (non-commit flow)
+      if (resolverData.length === 0) {
+        const addrEncoded = encodeFunctionData({
+          abi: addrResolver,
+          functionName: 'setAddr',
+          args: [namehash(`${normalizedLabel}.id`), ownerForRegistration],
+        })
+        resolverData = [addrEncoded]
+      }
+
       // Check USDC balance for registration fee
       const feePayer = ownerForRegistration
       const feeBalance = await publicClient.readContract({
@@ -261,7 +271,7 @@ export const useRegistration = () => {
 
       setHumanUsdcBalance(feeBalance)
       if (feeBalance < priceUSDC) {
-        throw new Error('EOA has insufficient USDC for the registration fee')
+        throw new Error('INSUFFICIENT_USDC')
       }
 
       // Step 2a: Sign Paymaster Permit (gas in USDC)
@@ -299,19 +309,17 @@ export const useRegistration = () => {
         walletSalt: 0n,
       }
 
-      const emptyReferralData = {
-        referrer: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-        registrant: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-        nameHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-        referrerCodeHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-        deadline: 0n,
-        nonce: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-      }
+      // Fetch referral data if referrer code is provided
+      const { referralData, signature: referralSignature } = await fetchReferralData(
+        referrer,
+        ownerForRegistration,
+        normalizedLabel,
+      )
 
       const registerCallData = encodeFunctionData({
         abi: AgentRegistrarControllerABI,
         functionName: 'registerWithUSDC',
-        args: [registerRequest, emptyReferralData, '0x'],
+        args: [registerRequest, referralData, referralSignature],
       })
 
       const callData = await smartAccount.encodeCalls([{
@@ -355,7 +363,7 @@ export const useRegistration = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [config, publicClient, constants, commitData, secret, activeChain, chainId, switchChainAsync])
+  }, [config, publicClient, constants, commitData, secret, activeChain, chainId, switchChainAsync, fetchReferralData])
 
   return {
     // State

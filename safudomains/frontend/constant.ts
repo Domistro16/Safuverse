@@ -23,10 +23,10 @@ export interface ContractAddresses {
 
 export const CONSTANTS_MAINNET: ContractAddresses = {
   // AgentRegistrarController - main registration entry point
-  Controller: '0x59cd36ada823a03A34431F0A881B9b4eAb9d70f9',
+  Controller: '0xB5f3F983368e993b5f42D1dd659e4dC36fa5C494',
 
   // AgentPriceOracle - pricing with agent name detection
-  PriceOracle: '0xA6efF1Fc115eEeB89Fa09d3aCe740c006451aa22',
+  PriceOracle: '0x15E2ccAeb4D1eeA1A7b8d839FFA30D63519D1c50',
 
   // ENS Registry
   Registry: '0xA590B208e7F2e62a3987424D2E1b00cd62986fAd',
@@ -41,7 +41,7 @@ export const CONSTANTS_MAINNET: ContractAddresses = {
   NameWrapper: '0x90d848F20589437EF2e05a91130aEEA253512736',
 
   // AgentPublicResolver - with x402/ERC-8004 support
-  PublicResolver: '0x66a779e85F762B387478b4309398b174527eE358',
+  PublicResolver: '0x0a8C0f71C3Ec3FC8cB59F27885eb52C033780b6f',
 
   // Referral Verifier
   Referral: '0x212c27756529679efBd46cb35440b2e4DC28e33C',
@@ -51,7 +51,7 @@ export const CONSTANTS_MAINNET: ContractAddresses = {
   PremiumRegistry: '0xd88dfd4E3B9a14C66E40bD931eCA713192DD2Dba',
 
   // IDDomainAuction - English auction system for premium names
-  Auction: '0x0F362C1D04F422c6C8a7A28A3e87d8E0A07766Db',
+  Auction: '0x7589b51FF60cf40046ec05247a68Eae397E37d30',
 
   // USDC on Base
   USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
