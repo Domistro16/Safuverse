@@ -227,6 +227,34 @@ export default function Navbar() {
                 </div>
               )}
 
+              {navLinks.map((link) =>
+                link.isExternal ? (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="nav-pill-mob-link"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {link.label}
+                    <ArrowRight className="w-4 h-4 opacity-40" />
+                  </a>
+                ) : (
+                  <div
+                    key={link.label}
+                    onClick={() => {
+                      router.push(link.href)
+                      setMobileMenuOpen(false)
+                    }}
+                    className="nav-pill-mob-link"
+                  >
+                    {link.label}
+                    <ArrowRight className="w-4 h-4 opacity-40" />
+                  </div>
+                )
+              )}
+
               <div className="nav-pill-mob-link" onClick={() => { router.push('/dashboard'); setMobileMenuOpen(false) }}>
                 Dashboard
                 <ArrowRight className="w-4 h-4 opacity-40" />
