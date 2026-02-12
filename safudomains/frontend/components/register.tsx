@@ -724,7 +724,7 @@ const Register = () => {
                       Register another
                     </button>
                     <button
-                      onClick={() => router.push(`/profile`)}
+                      onClick={() => router.push(`/dashboard`)}
                       className="btn-primary"
                     >
                       View My Names

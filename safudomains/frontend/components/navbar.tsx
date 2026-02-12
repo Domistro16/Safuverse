@@ -255,8 +255,8 @@ export default function Navbar() {
                 )
               )}
 
-              <div className="nav-pill-mob-link" onClick={() => { router.push('/profile'); setMobileMenuOpen(false) }}>
-                Profile
+              <div className="nav-pill-mob-link" onClick={() => { router.push('/dashboard'); setMobileMenuOpen(false) }}>
+                Dashboard
                 <ArrowRight className="w-4 h-4 opacity-40" />
               </div>
 

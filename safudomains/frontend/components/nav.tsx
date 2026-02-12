@@ -270,10 +270,10 @@ export default function Nav() {
           <div
             className="flex items-center gap-1 cursor-pointer font-semibold transition-all hover:opacity-70 text-sm xl:text-base"
             style={{ color: isDark ? '#f5f5f5' : '#111' }}
-            onClick={() => router.push(`/profile`)}
+            onClick={() => router.push(`/dashboard`)}
           >
             <IdentificationIcon className="w-4 h-4 xl:w-5 xl:h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">Profile</span>
+            <span className="whitespace-nowrap">Dashboard</span>
           </div>
 
           {navLinks.map((link) =>
@@ -551,7 +551,7 @@ export default function Nav() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
               <div
                 onClick={() => {
-                  router.push(`/profile`)
+                  router.push(`/dashboard`)
                   setMobileMenuOpen(false)
                 }}
                 style={{
@@ -571,7 +571,7 @@ export default function Nav() {
                 }}
               >
                 <IdentificationIcon style={{ width: '20px', height: '20px' }} />
-                <span>Profile</span>
+                <span>Dashboard</span>
               </div>
 
               {navLinks.map((link) => (
