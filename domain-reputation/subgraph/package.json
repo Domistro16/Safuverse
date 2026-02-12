@@ -1,0 +1,14 @@
+{
+  "name": "domain-reputation-subgraph",
+  "version": "1.0.0",
+  "description": "Goldsky subgraph for NexID domain reputation on Base",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "goldsky subgraph deploy domain-reputation/1.0.0 --path ."
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.80.0",
+    "@graphprotocol/graph-ts": "^0.35.0"
+  }
+}
