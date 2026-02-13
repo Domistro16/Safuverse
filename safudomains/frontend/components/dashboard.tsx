@@ -458,6 +458,10 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
 ];
 
+const REPUTATION_ALLOWLIST = new Set([
+  '0xd83defba240568040b39bb2c8b4db7db02d40593',
+]);
+
 // ════════════════════════════════════════════════════════════════════
 // ── Main Dashboard Component ───────────────────────────────────────
 // ════════════════════════════════════════════════════════════════════
@@ -534,6 +538,8 @@ export default function Dashboard() {
 
   // Computed
   const domainsOwned = domains.length;
+  const hasReputationAccess =
+    domainsOwned > 0 || (address ? REPUTATION_ALLOWLIST.has(address.toLowerCase()) : false);
   const totalReferrals = referralCount ? Number(referralCount) : 0;
   const earningsInUsdc = totalEarnings ? Number(formatEther(totalEarnings)) : 0;
   const currentPct = referralPct ? Number(referralPct) : 25;
@@ -944,6 +950,25 @@ export default function Dashboard() {
   };
 
   const renderReputation = () => {
+    if (!hasReputationAccess) {
+      return (
+        <div className="dash-fade-in">
+          <div className="dash-header">
+            <div>
+              <h2 className="dash-title">Reputation Score</h2>
+              <p className="dash-subtitle">Reputation is unlocked when you own a .id domain.</p>
+            </div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+            <Shield size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
+            <p style={{ fontWeight: 600, marginBottom: '8px' }}>You need a .id domain to access reputation</p>
+            <p style={{ fontSize: '13px', marginBottom: '16px' }}>Register a domain to unlock reputation and security insights.</p>
+            <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
+          </div>
+        </div>
+      );
+    }
+
     const score = reputation?.score ?? 0;
     const tier = reputation?.tier ?? 'Platinum';
     const tierConfig = Object.values(TIERS).find(t => t.label === tier) || TIERS.PLATINUM;

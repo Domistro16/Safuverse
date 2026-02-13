@@ -1,86 +1,28 @@
-import { ethers } from "hardhat";
+import hre from "hardhat";
+import { Address } from "viem";
 
-const CONTROLLER = "0xB5f3F983368e993b5f42D1dd659e4dC36fa5C494";
-const RESERVED_OWNER = "0xd83defba240568040b39bb2c8b4db7db02d40593";
+const CONTROLLER: Address = "0xB5f3F983368e993b5f42D1dd659e4dC36fa5C494";
+const RESERVED_OWNER: Address =
+  "0xd83defba240568040b39bb2c8b4db7db02d40593";
 
 const NAMES = [
-  "Jesse",
-  "drew",
-  "almond",
-  "benjamin",
-  "derrick",
-  "clintan",
-  "saumya",
-  "wyneseo",
-  "berkay",
-  "sebas",
-  "carlosjmelgar",
-  "wilson",
-  "connor",
-  "munda",
-  "sohey",
-  "xen",
-  "sarah",
-  "sumedha",
-  "kabir",
-  "Jon",
-  "John",
-  "Base",
-  "coinbase",
-  "buildonbase",
-  "baseposting",
-  "robert",
-  "shashank",
-  "ahaan",
-  "asal",
-  "sfranks",
-  "aneri",
-  "nick",
-  "reva",
-  "antidote",
-  "youssef",
-  "eric",
-  "dami",
-  "gui",
-  "clemens",
-  "circle",
-  "usdc",
-  "afonso",
-  "minseok",
-  "blockboy",
-  "david",
-  "zach",
-  "oxb",
-  "nibel",
-  "slatts",
-  "hyuckjae",
-  "avivian",
-  "Pat",
-  "simon",
-  "ryan",
-  "0xmoonlight",
-  "domistro",
-  "admiano",
-  "cz",
-  "toly",
-  "solana",
-  "usdt",
+  "intern"
 ].map((n) => n.toLowerCase());
 
 async function main() {
-  const [signer] = await ethers.getSigners();
-  console.log("Using signer:", signer.address);
+  const { viem } = hre;
+  const [walletClient] = await viem.getWalletClients();
 
-  const abi = [
-    "function reserveNamesBatch(string[] names, address[] owners) external",
-  ];
+  console.log("Using signer:", walletClient.account.address);
 
-  const controller = new ethers.Contract(CONTROLLER, abi, signer);
-  const owners = NAMES.map(() => RESERVED_OWNER);
+  const controller = await viem.getContractAt(
+    "AgentRegistrarController",
+    CONTROLLER,
+  );
+  const owners: Address[] = NAMES.map(() => RESERVED_OWNER);
 
-  const tx = await controller.reserveNamesBatch(NAMES, owners);
-  console.log("Tx:", tx.hash);
-  await tx.wait();
+  const hash = await controller.write.reserveNamesBatch([NAMES, owners]);
+  console.log("Tx:", hash);
   console.log("Reserved", NAMES.length, "names");
 }
 

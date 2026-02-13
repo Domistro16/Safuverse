@@ -16,7 +16,7 @@ export const CONFIG = {
   // Goldsky subgraph URL — update project ID after deployment
   GOLDSKY_SUBGRAPH_URL:
     process.env.GOLDSKY_SUBGRAPH_URL ||
-    "https://api.goldsky.com/api/public/project_xxx/subgraphs/domain-reputation/1.0.0/gn",
+    "https://api.goldsky.com/api/public/project_cmljmvtx91xj101zn37ok8d6c/subgraphs/domain-reputation/1.0.0/gn",
 
   // Reputation tiers
   TIERS: {

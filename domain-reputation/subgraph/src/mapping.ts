@@ -3,10 +3,10 @@ import {
   NameRegistered,
   BatchRegistered,
   AgentWalletDeployed,
-} from "../../generated/DomainRegistry/DomainRegistry";
-import { Transfer } from "../../generated/USDC/ERC20";
-import { UserOperationEvent } from "../../generated/EntryPoint/EntryPoint";
-import { DomainOwner, Domain, Transaction, ScoreSnapshot } from "../../generated/schema";
+} from "../generated/DomainRegistry/DomainRegistry";
+import { Transfer } from "../generated/USDC/ERC20";
+import { UserOperationEvent } from "../generated/EntryPoint/EntryPoint";
+import { DomainOwner, Domain, Transaction, ScoreSnapshot } from "../generated/schema";
 import {
   ZERO_BI,
   ONE_BI,
