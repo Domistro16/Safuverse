@@ -47,7 +47,7 @@ export const usePaymentProfile = (
 
         try {
             const cleanName = name.replace('.id', '')
-            const response = await fetch(`/api/x402/${encodeURIComponent(cleanName)}`)
+            const response = await fetch(`/api/x402/${encodeURIComponent(cleanName)}?t=${Date.now()}`)
             const data = await response.json()
 
             if (data.error) {

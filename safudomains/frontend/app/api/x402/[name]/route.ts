@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { NexDomains } from '@nexid/sdk'
 import { rateLimit } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 const CHAIN_ID = 8453 // Base mainnet
 
 // GET: Get payment profile for a name
