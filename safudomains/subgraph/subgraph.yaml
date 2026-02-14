@@ -17,7 +17,6 @@ dataSources:
       entities:
         - DomainOwner
         - Domain
-        - Transaction
         - PointsEvent
       abis:
         - name: AgentRegistrarController
@@ -50,7 +49,6 @@ dataSources:
       entities:
         - DomainOwner
         - Domain
-        - Transaction
       abis:
         - name: ETHRegistrarController
           file: ./abis/ETHRegistrarController.json
@@ -188,50 +186,4 @@ dataSources:
           handler: handlePremiumNameAdded
         - event: PremiumNameRemoved(indexed string)
           handler: handlePremiumNameRemoved
-      file: ./src/mapping.ts
-
-  # ── USDC Transfer Tracking ──────────────────────────────────────
-  - kind: ethereum
-    name: USDC
-    network: base
-    source:
-      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-      abi: ERC20
-      startBlock: 25000000
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      entities:
-        - DomainOwner
-        - Transaction
-      abis:
-        - name: ERC20
-          file: ./abis/ERC20.json
-      eventHandlers:
-        - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleUSDCTransfer
-      file: ./src/mapping.ts
-
-  # ── EntryPoint (Agent Detection) ────────────────────────────────
-  - kind: ethereum
-    name: EntryPoint
-    network: base
-    source:
-      address: "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
-      abi: EntryPoint
-      startBlock: 25000000
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      entities:
-        - DomainOwner
-        - Transaction
-      abis:
-        - name: EntryPoint
-          file: ./abis/EntryPoint.json
-      eventHandlers:
-        - event: UserOperationEvent(indexed bytes32,indexed address,indexed address,uint256,bool,uint256,uint256)
-          handler: handleUserOperationEvent
       file: ./src/mapping.ts

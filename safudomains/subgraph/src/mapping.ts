@@ -1,4 +1,4 @@
-import { BigInt, BigDecimal, Address, Bytes, ethereum } from "@graphprotocol/graph-ts";
+import { BigInt, Address, Bytes, ethereum } from "@graphprotocol/graph-ts";
 
 // ── Generated types ──────────────────────────────────────────────
 import {
@@ -40,14 +40,9 @@ import {
   PremiumNameRemoved,
 } from "../generated/PremiumNameRegistry/PremiumNameRegistry";
 
-import { Transfer as USDCTransfer } from "../generated/USDC/ERC20";
-import { UserOperationEvent } from "../generated/EntryPoint/EntryPoint";
-
 import {
   DomainOwner,
   Domain,
-  Transaction,
-  ScoreSnapshot,
   Referral,
   Auction,
   Bid,
@@ -63,7 +58,6 @@ import {
   ENTRYPOINT_ADDRESS,
   toUSDCDecimal,
   toETHDecimal,
-  calculateReputationScore,
   getOrCreateGlobalStats,
 } from "./utils";
 
@@ -81,22 +75,15 @@ function getOrCreateOwner(
     owner.ownerType = "HUMAN";
     owner.totalRegistrations = ZERO_BI;
     owner.totalRenewals = ZERO_BI;
-    owner.totalTransactions = ZERO_BI;
-    owner.successfulTransactions = ZERO_BI;
-    owner.failedTransactions = ZERO_BI;
     owner.totalVolumeUSDC = ZERO_BD;
     owner.totalVolumeETH = ZERO_BD;
-    owner.firstTransactionAt = timestamp;
-    owner.lastTransactionAt = timestamp;
-    owner.uniqueContractsInteracted = ZERO_BI;
-    owner.reputationScore = 0;
-    owner.lastScoreUpdate = ZERO_BI;
+    owner.firstSeenAt = timestamp;
+    owner.lastSeenAt = timestamp;
     owner.totalPoints = ZERO_BI;
     owner.referralCount = ZERO_BI;
     owner.referralEarnings = ZERO_BD;
     owner.referredBy = null;
     owner.agentWallet = null;
-    owner.interactedContracts = [];
 
     // Increment global owner count
     let stats = getOrCreateGlobalStats();
@@ -117,77 +104,6 @@ function detectOwnerType(event: ethereum.Event): string {
   return "HUMAN";
 }
 
-function trackContract(owner: DomainOwner, contractAddr: Bytes): void {
-  let contracts = owner.interactedContracts;
-  let found = false;
-  for (let i = 0; i < contracts.length; i++) {
-    if (contracts[i].equals(contractAddr)) {
-      found = true;
-      break;
-    }
-  }
-  if (!found) {
-    contracts.push(contractAddr);
-    owner.interactedContracts = contracts;
-    owner.uniqueContractsInteracted = BigInt.fromI32(contracts.length);
-  }
-}
-
-function updateReputationScore(
-  owner: DomainOwner,
-  currentTimestamp: BigInt
-): void {
-  owner.reputationScore = calculateReputationScore(
-    owner.totalTransactions,
-    owner.successfulTransactions,
-    owner.firstTransactionAt,
-    owner.lastTransactionAt,
-    owner.totalVolumeUSDC,
-    owner.uniqueContractsInteracted,
-    currentTimestamp
-  );
-  owner.lastScoreUpdate = currentTimestamp;
-}
-
-function takeScoreSnapshot(
-  owner: DomainOwner,
-  timestamp: BigInt
-): void {
-  let snapshotId = owner.id + "-" + timestamp.toString();
-  let snapshot = new ScoreSnapshot(snapshotId);
-  snapshot.owner = owner.id;
-  snapshot.score = owner.reputationScore;
-  snapshot.timestamp = timestamp;
-  snapshot.save();
-}
-
-function createTransaction(
-  txHash: Bytes,
-  suffix: string,
-  owner: DomainOwner,
-  timestamp: BigInt,
-  successful: boolean,
-  valueUSDC: BigDecimal,
-  valueETH: BigDecimal,
-  toContract: Bytes,
-  gasUsed: BigInt,
-  eventType: string,
-  userOpHash: Bytes | null
-): void {
-  let txId = txHash.toHexString() + suffix;
-  let tx = new Transaction(txId);
-  tx.owner = owner.id;
-  tx.timestamp = timestamp;
-  tx.successful = successful;
-  tx.valueUSDC = valueUSDC;
-  tx.valueETH = valueETH;
-  tx.toContract = toContract;
-  tx.gasUsed = gasUsed;
-  tx.eventType = eventType;
-  tx.userOpHash = userOpHash;
-  tx.save();
-}
-
 // ═════════════════════════════════════════════════════════════════
 // ── AgentRegistrarController Handlers ───────────────────────────
 // ═════════════════════════════════════════════════════════════════
@@ -200,17 +116,11 @@ export function handleAgentNameRegistered(
   let ownerType = detectOwnerType(event);
   owner.ownerType = ownerType;
 
-  owner.totalTransactions = owner.totalTransactions.plus(ONE_BI);
-  owner.successfulTransactions =
-    owner.successfulTransactions.plus(ONE_BI);
   owner.totalRegistrations = owner.totalRegistrations.plus(ONE_BI);
-  owner.lastTransactionAt = event.block.timestamp;
+  owner.lastSeenAt = event.block.timestamp;
 
   let costUSDC = toUSDCDecimal(event.params.cost);
   owner.totalVolumeUSDC = owner.totalVolumeUSDC.plus(costUSDC);
-
-  trackContract(owner, event.address);
-  updateReputationScore(owner, event.block.timestamp);
   owner.save();
 
   // Create domain entity
@@ -229,28 +139,11 @@ export function handleAgentNameRegistered(
   domain.resolver = null;
   domain.save();
 
-  // Transaction record
-  createTransaction(
-    event.transaction.hash,
-    "",
-    owner,
-    event.block.timestamp,
-    true,
-    costUSDC,
-    ZERO_BD,
-    event.address,
-    event.receipt ? event.receipt!.gasUsed : ZERO_BI,
-    "AgentRegistration",
-    null
-  );
-
   // Global stats
   let stats = getOrCreateGlobalStats();
   stats.totalDomains = stats.totalDomains.plus(ONE_BI);
   stats.totalVolumeUSDC = stats.totalVolumeUSDC.plus(costUSDC);
   stats.save();
-
-  takeScoreSnapshot(owner, event.block.timestamp);
 }
 
 export function handleBatchRegistered(event: BatchRegistered): void {
@@ -259,39 +152,17 @@ export function handleBatchRegistered(event: BatchRegistered): void {
   owner.ownerType = "AGENT";
 
   let count = event.params.count;
-  owner.totalTransactions = owner.totalTransactions.plus(count);
-  owner.successfulTransactions =
-    owner.successfulTransactions.plus(count);
   owner.totalRegistrations = owner.totalRegistrations.plus(count);
-  owner.lastTransactionAt = event.block.timestamp;
+  owner.lastSeenAt = event.block.timestamp;
 
   let costUSDC = toUSDCDecimal(event.params.totalCost);
   owner.totalVolumeUSDC = owner.totalVolumeUSDC.plus(costUSDC);
-
-  trackContract(owner, event.address);
-  updateReputationScore(owner, event.block.timestamp);
   owner.save();
-
-  createTransaction(
-    event.transaction.hash,
-    "-batch",
-    owner,
-    event.block.timestamp,
-    true,
-    costUSDC,
-    ZERO_BD,
-    event.address,
-    event.receipt ? event.receipt!.gasUsed : ZERO_BI,
-    "BatchRegistration",
-    null
-  );
 
   let stats = getOrCreateGlobalStats();
   stats.totalDomains = stats.totalDomains.plus(count);
   stats.totalVolumeUSDC = stats.totalVolumeUSDC.plus(costUSDC);
   stats.save();
-
-  takeScoreSnapshot(owner, event.block.timestamp);
 }
 
 export function handleAgentWalletDeployed(
@@ -337,11 +208,7 @@ export function handlePointsAwarded(event: PointsAwarded): void {
 export function handleCommitmentMade(event: CommitmentMade): void {
   let senderAddr = event.params.sender.toHexString();
   let owner = getOrCreateOwner(senderAddr, event.block.timestamp);
-  owner.totalTransactions = owner.totalTransactions.plus(ONE_BI);
-  owner.successfulTransactions =
-    owner.successfulTransactions.plus(ONE_BI);
-  owner.lastTransactionAt = event.block.timestamp;
-  trackContract(owner, event.address);
+  owner.lastSeenAt = event.block.timestamp;
   owner.save();
 }
 
@@ -357,19 +224,13 @@ export function handleETHNameRegistered(
   let ownerType = detectOwnerType(event);
   owner.ownerType = ownerType;
 
-  owner.totalTransactions = owner.totalTransactions.plus(ONE_BI);
-  owner.successfulTransactions =
-    owner.successfulTransactions.plus(ONE_BI);
   owner.totalRegistrations = owner.totalRegistrations.plus(ONE_BI);
-  owner.lastTransactionAt = event.block.timestamp;
+  owner.lastSeenAt = event.block.timestamp;
 
   // baseCost + premium = total cost in ETH (18 decimals)
   let totalCostWei = event.params.baseCost.plus(event.params.premium);
   let costETH = toETHDecimal(totalCostWei);
   owner.totalVolumeETH = owner.totalVolumeETH.plus(costETH);
-
-  trackContract(owner, event.address);
-  updateReputationScore(owner, event.block.timestamp);
   owner.save();
 
   // Create domain entity
@@ -388,26 +249,10 @@ export function handleETHNameRegistered(
   domain.resolver = null;
   domain.save();
 
-  createTransaction(
-    event.transaction.hash,
-    "",
-    owner,
-    event.block.timestamp,
-    true,
-    ZERO_BD,
-    costETH,
-    event.address,
-    event.receipt ? event.receipt!.gasUsed : ZERO_BI,
-    "ETHRegistration",
-    null
-  );
-
   let stats = getOrCreateGlobalStats();
   stats.totalDomains = stats.totalDomains.plus(ONE_BI);
   stats.totalVolumeETH = stats.totalVolumeETH.plus(costETH);
   stats.save();
-
-  takeScoreSnapshot(owner, event.block.timestamp);
 }
 
 export function handleNameRenewed(event: NameRenewed): void {
@@ -423,28 +268,9 @@ export function handleNameRenewed(event: NameRenewed): void {
     if (owner != null) {
       let costETH = toETHDecimal(event.params.cost);
       owner.totalRenewals = owner.totalRenewals.plus(ONE_BI);
-      owner.totalTransactions = owner.totalTransactions.plus(ONE_BI);
-      owner.successfulTransactions =
-        owner.successfulTransactions.plus(ONE_BI);
-      owner.lastTransactionAt = event.block.timestamp;
+      owner.lastSeenAt = event.block.timestamp;
       owner.totalVolumeETH = owner.totalVolumeETH.plus(costETH);
-      trackContract(owner, event.address);
-      updateReputationScore(owner, event.block.timestamp);
       owner.save();
-
-      createTransaction(
-        event.transaction.hash,
-        "-renew",
-        owner,
-        event.block.timestamp,
-        true,
-        ZERO_BD,
-        costETH,
-        event.address,
-        event.receipt ? event.receipt!.gasUsed : ZERO_BI,
-        "Renewal",
-        null
-      );
     }
   }
 }
@@ -457,8 +283,6 @@ export function handleDomainTransfer(
   event: DomainTransferEvent
 ): void {
   // ERC721 Transfer — update domain ownership when NFT moves
-  // We can't directly map tokenId to name in AssemblyScript,
-  // so we only track new owner creation for now
   let toAddr = event.params.to.toHexString();
   let zeroAddr = Address.zero().toHexString();
 
@@ -467,11 +291,7 @@ export function handleDomainTransfer(
 
   // Ensure the new owner is tracked
   let newOwner = getOrCreateOwner(toAddr, event.block.timestamp);
-  newOwner.totalTransactions = newOwner.totalTransactions.plus(ONE_BI);
-  newOwner.successfulTransactions =
-    newOwner.successfulTransactions.plus(ONE_BI);
-  newOwner.lastTransactionAt = event.block.timestamp;
-  trackContract(newOwner, event.address);
+  newOwner.lastSeenAt = event.block.timestamp;
   newOwner.save();
 }
 
@@ -700,87 +520,4 @@ export function handlePremiumNameRemoved(
     premium.isActive = false;
     premium.save();
   }
-}
-
-// ═════════════════════════════════════════════════════════════════
-// ── USDC Transfer Handler ───────────────────────────────────────
-// ═════════════════════════════════════════════════════════════════
-
-export function handleUSDCTransfer(event: USDCTransfer): void {
-  let fromAddr = event.params.from.toHexString();
-  let toAddr = event.params.to.toHexString();
-  let amount = toUSDCDecimal(event.params.value);
-
-  // Only track transfers for known domain owners
-  let fromOwner = DomainOwner.load(fromAddr);
-  if (fromOwner != null) {
-    fromOwner.totalTransactions =
-      fromOwner.totalTransactions.plus(ONE_BI);
-    fromOwner.successfulTransactions =
-      fromOwner.successfulTransactions.plus(ONE_BI);
-    fromOwner.lastTransactionAt = event.block.timestamp;
-    fromOwner.totalVolumeUSDC =
-      fromOwner.totalVolumeUSDC.plus(amount);
-    trackContract(fromOwner, event.address);
-    updateReputationScore(fromOwner, event.block.timestamp);
-    fromOwner.save();
-  }
-
-  let toOwner = DomainOwner.load(toAddr);
-  if (toOwner != null) {
-    toOwner.totalTransactions =
-      toOwner.totalTransactions.plus(ONE_BI);
-    toOwner.successfulTransactions =
-      toOwner.successfulTransactions.plus(ONE_BI);
-    toOwner.lastTransactionAt = event.block.timestamp;
-    toOwner.totalVolumeUSDC = toOwner.totalVolumeUSDC.plus(amount);
-    trackContract(toOwner, event.address);
-    updateReputationScore(toOwner, event.block.timestamp);
-    toOwner.save();
-  }
-}
-
-// ═════════════════════════════════════════════════════════════════
-// ── EntryPoint UserOp Handler ───────────────────────────────────
-// ═════════════════════════════════════════════════════════════════
-
-export function handleUserOperationEvent(
-  event: UserOperationEvent
-): void {
-  let senderAddr = event.params.sender.toHexString();
-  let owner = DomainOwner.load(senderAddr);
-  if (owner == null) return; // only track known domain owners
-
-  owner.ownerType = "AGENT";
-  owner.totalTransactions = owner.totalTransactions.plus(ONE_BI);
-  if (event.params.success) {
-    owner.successfulTransactions =
-      owner.successfulTransactions.plus(ONE_BI);
-  } else {
-    owner.failedTransactions = owner.failedTransactions.plus(ONE_BI);
-  }
-  owner.lastTransactionAt = event.block.timestamp;
-
-  let gasCostETH = toETHDecimal(event.params.actualGasCost);
-  owner.totalVolumeETH = owner.totalVolumeETH.plus(gasCostETH);
-
-  trackContract(owner, event.address);
-  updateReputationScore(owner, event.block.timestamp);
-  owner.save();
-
-  createTransaction(
-    event.transaction.hash,
-    "-userop",
-    owner,
-    event.block.timestamp,
-    event.params.success,
-    ZERO_BD,
-    gasCostETH,
-    event.address,
-    event.params.actualGasUsed,
-    "UserOperation",
-    event.params.userOpHash
-  );
-
-  takeScoreSnapshot(owner, event.block.timestamp);
 }
