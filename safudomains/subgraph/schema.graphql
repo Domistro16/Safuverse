@@ -276,6 +276,10 @@ type Account @entity {
   wrappedDomains: [WrappedDomain!] @derivedFrom(field: "owner")
   "The Registrations made by the account"
   registrations: [Registration!] @derivedFrom(field: "registrant")
+  "The agent wallets deployed for this account"
+  agentWallets: [AgentWallet!] @derivedFrom(field: "owner")
+  "The points awarded to this account"
+  pointsAwards: [PointsAward!] @derivedFrom(field: "account")
 }
 
 type Resolver @entity {
@@ -420,23 +424,6 @@ type InterfaceChanged implements ResolverEvent @entity {
   implementer: Bytes!
 }
 
-type AuthorisationChanged implements ResolverEvent @entity {
-  "Unique identifier for this event"
-  id: ID!
-  "The resolver associated with this event"
-  resolver: Resolver!
-  "The block number at which the event occurred"
-  blockNumber: Int!
-  "The transaction hash associated with the event"
-  transactionID: Bytes!
-  "The owner of the authorisation"
-  owner: Bytes!
-  "The target of the authorisation"
-  target: Bytes!
-  "Whether the authorisation was added or removed"
-  isAuthorized: Boolean!
-}
-
 type VersionChanged implements ResolverEvent @entity {
   "Unique identifier for this event"
   id: ID!
@@ -448,4 +435,138 @@ type VersionChanged implements ResolverEvent @entity {
   transactionID: Bytes!
   "The new version number of the resolver"
   version: BigInt!
+}
+
+# ──────────────────────────────────────────────────────────
+# NexId Agent Resolver Events
+# ──────────────────────────────────────────────────────────
+
+type PaymentAddressChanged implements ResolverEvent @entity {
+  "Unique identifier for this event"
+  id: ID!
+  "The resolver associated with this event"
+  resolver: Resolver!
+  "The block number at which this event occurred"
+  blockNumber: Int!
+  "The transaction ID for the transaction in which this event occurred"
+  transactionID: Bytes!
+  "The chain ID for the payment address"
+  chainId: BigInt!
+  "The new payment address"
+  addr: Bytes!
+}
+
+type PaymentEnabledChanged implements ResolverEvent @entity {
+  "Unique identifier for this event"
+  id: ID!
+  "The resolver associated with this event"
+  resolver: Resolver!
+  "The block number at which this event occurred"
+  blockNumber: Int!
+  "The transaction ID for the transaction in which this event occurred"
+  transactionID: Bytes!
+  "Whether payments are now enabled"
+  enabled: Boolean!
+}
+
+type X402EndpointChanged implements ResolverEvent @entity {
+  "Unique identifier for this event"
+  id: ID!
+  "The resolver associated with this event"
+  resolver: Resolver!
+  "The block number at which this event occurred"
+  blockNumber: Int!
+  "The transaction ID for the transaction in which this event occurred"
+  transactionID: Bytes!
+  "The new X402 payment endpoint URL"
+  endpoint: String!
+}
+
+type AgentMetadataChanged implements ResolverEvent @entity {
+  "Unique identifier for this event"
+  id: ID!
+  "The resolver associated with this event"
+  resolver: Resolver!
+  "The block number at which this event occurred"
+  blockNumber: Int!
+  "The transaction ID for the transaction in which this event occurred"
+  transactionID: Bytes!
+  "The new agent metadata JSON string"
+  metadata: String!
+}
+
+# ──────────────────────────────────────────────────────────
+# NexId Agent-Specific Entities
+# ──────────────────────────────────────────────────────────
+
+type AgentWallet @entity {
+  "Unique identifier: wallet address"
+  id: ID!
+  "The account that owns this agent wallet"
+  owner: Account!
+  "The wallet contract address"
+  wallet: Bytes!
+  "The domain name associated with this wallet deployment"
+  domainName: String!
+  "The block number when the wallet was deployed"
+  blockNumber: Int!
+  "The transaction hash of the deployment"
+  transactionID: Bytes!
+  "Timestamp of the deployment"
+  createdAt: BigInt!
+}
+
+type BatchRegistration @entity {
+  "Unique identifier: transaction hash + log index"
+  id: ID!
+  "The account that performed the batch registration"
+  owner: Account!
+  "The number of names registered in the batch"
+  count: BigInt!
+  "The total cost of the batch registration"
+  totalCost: BigInt!
+  "The block number of the batch registration"
+  blockNumber: Int!
+  "The transaction hash of the batch registration"
+  transactionID: Bytes!
+  "Timestamp of the batch registration"
+  createdAt: BigInt!
+}
+
+type PointsAward @entity {
+  "Unique identifier: transaction hash + log index"
+  id: ID!
+  "The account that received points"
+  account: Account!
+  "The domain name associated with the points award"
+  domainName: String!
+  "The number of points awarded"
+  points: BigInt!
+  "The total points for this user after the award"
+  totalUserPoints: BigInt!
+  "The total points distributed across all users after this award"
+  totalDistributed: BigInt!
+  "The block number of the points award"
+  blockNumber: Int!
+  "The transaction hash of the points award"
+  transactionID: Bytes!
+}
+
+type NameReservation @entity {
+  "Unique identifier: label hash"
+  id: ID!
+  "The label hash of the reserved name"
+  labelHash: Bytes!
+  "The human-readable name that was reserved"
+  name: String!
+  "The account the name is reserved for"
+  reservedFor: Account!
+  "Whether the reservation is still active (not minted or cleared)"
+  isActive: Boolean!
+  "The block number when the name was reserved"
+  blockNumber: Int!
+  "The transaction hash of the reservation"
+  transactionID: Bytes!
+  "Timestamp of the reservation"
+  createdAt: BigInt!
 }

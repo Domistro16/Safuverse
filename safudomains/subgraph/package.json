@@ -1,25 +1,18 @@
 {
-  "name": "ens-subgraph",
-  "version": "1.0.2",
-  "repository": "https://github.com/domistro16/ens-subgraph",
+  "name": "nexid-subgraph",
+  "version": "2.0.0",
+  "repository": "https://github.com/domistro16/nexid-subgraph",
   "license": "MIT",
   "scripts": {
     "codegen": "graph codegen --output-dir src/types/",
     "test": "graph test",
     "setup": "yarn codegen && yarn create-local && yarn deploy-local",
-    "create-local": "graph create graphprotocol/ens --node http://127.0.0.1:8020",
-    "deploy-local": "graph deploy graphprotocol/ens --ipfs http://localhost:5001 --node http://127.0.0.1:8020/ --version-label 0.0.1",
-    "remove-local": "graph remove graphprotocol/ens --node http://127.0.0.1:8020",
-    "docker:setup": "yarn codegen && yarn docker:create-local && yarn docker:deploy-local",
-    "docker:create-local": "graph create graphprotocol/ens --node http://ens-app_graph-node_1:8020",
-    "docker:deploy-local": "graph deploy graphprotocol/ens --ipfs http://ens-app_ipfs_1:5001 --node http://ens-app_graph-node_1:8020/ --version-label 0.0.1",
-    "docker:remove-local": "graph remove graphprotocol/ens --node http://ens-app_graph-node_1:8020",
+    "create-local": "graph create nexid/nexid --node http://127.0.0.1:8020",
+    "deploy-local": "graph deploy nexid/nexid --ipfs http://localhost:5001 --node http://127.0.0.1:8020/ --version-label 0.0.1",
+    "remove-local": "graph remove nexid/nexid --node http://127.0.0.1:8020",
     "build": "graph build",
-    "deploy": "graph deploy --network base --studio safunames",
-    "deploy:goerli": "graph deploy --network goerli --product hosted-service ensdomains/ensgoerli",
-    "deploy:sepolia": "graph deploy --network sepolia --studio enssepolia",
-    "deploy:holesky": "graph deploy --network holesky --studio ensholesky",
-    "watch-local": "graph deploy graphprotocol/ens --watch --debug --node http://127.0.0.1:8020/ --ipfs http://localhost:5001"
+    "deploy": "graph deploy --network base --studio nexid",
+    "watch-local": "graph deploy nexid/nexid --watch --debug --node http://127.0.0.1:8020/ --ipfs http://localhost:5001"
   },
   "devDependencies": {
     "@ensdomains/content-hash": "^2.5.3",
