@@ -760,51 +760,579 @@ export default function Dashboard() {
           token: constants.USDC,
           chainId: 8453,
           description: payDescription || undefined,
-        }),
+        })
       });
       const data = await response.json();
       if (data.invoiceId) {
-        setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}/${data.invoiceId}`);
+        setGeneratedPayLink(`https://names.nexid.fun/pay/${cleanName}/${data.invoiceId}`);
       } else {
-        setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}?amount=${payAmount}`);
+        setGeneratedPayLink(`https://names.nexid.fun/pay/${cleanName}?amount=${payAmount}`);
       }
       setShowInvoicePreview(true);
     } catch {
-      setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}?amount=${payAmount}`);
+      setGeneratedPayLink(`https://names.nexid.fun/pay/${cleanName}?amount=${payAmount}`);
       setShowInvoicePreview(true);
     }
   };
 
-  const handleGenerateInvoice = () => {
-    if (!payDomain) return;
-    const cleanName = payDomain.replace('.id', '');
-    const total = invoiceItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-    setGeneratedPayLink(`https://names.nexdomains.com/pay/${cleanName}?amount=${total}&client=${encodeURIComponent(invoiceClient)}&due=${invoiceDueDate}`);
-    setShowInvoicePreview(true);
-  };
+const handleGenerateAlwaysOnLink = () => {
+  if (!payDomain) return;
+  const cleanName = payDomain.replace('.id', '');
+  setGeneratedPayLink(`https://names.nexid.fun/pay/${cleanName}`);
+  setShowInvoicePreview(true);
+};
 
-  const renderPayments = () => (
+const handleGenerateInvoice = () => {
+  if (!payDomain) return;
+  const cleanName = payDomain.replace('.id', '');
+  const total = invoiceItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  setGeneratedPayLink(`https://names.nexid.fun/pay/${cleanName}?amount=${total}&client=${encodeURIComponent(invoiceClient)}&due=${invoiceDueDate}`);
+  setShowInvoicePreview(true);
+};
+
+const renderPayments = () => (
+  <div className="dash-fade-in">
+    <div className="dash-header">
+      <div>
+        <h2 className="dash-title">Payments</h2>
+        <p className="dash-subtitle">Accept payments through your .id domain using x402.</p>
+      </div>
+    </div>
+
+    {domains.length === 0 ? (
+      <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+        <p style={{ marginBottom: '16px' }}>Register a domain to enable payments.</p>
+        <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
+      </div>
+    ) : (
+      <>
+        <div className="dash-form-group" style={{ marginBottom: '24px' }}>
+          <label className="dash-form-label">Payment Domain</label>
+          <select
+            className="dash-form-input"
+            value={payDomain}
+            onChange={(e) => { setPayDomain(e.target.value); setShowInvoicePreview(false); }}
+          >
+            {domains.map((d: any, i: number) => (
+              <option key={i} value={d.name}>{d.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {paymentProfileLoading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', marginBottom: '24px' }}>
+            <Loader2 size={16} className="animate-spin" /> Loading payment profile...
+          </div>
+        ) : paymentProfile?.paymentEnabled ? (
+          <div style={{ padding: '16px', background: 'rgba(0,200,83,0.08)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(0,200,83,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <CheckCircle size={16} style={{ color: '#00C853' }} />
+              <span style={{ fontWeight: 700, fontSize: '14px' }}>Payments Enabled</span>
+            </div>
+            <div style={{ fontSize: '13px', color: '#666' }}>
+              <div>Payment Address: <code style={{ fontSize: '12px' }}>{paymentProfile.paymentAddress.slice(0, 6)}...{paymentProfile.paymentAddress.slice(-4)}</code></div>
+              {paymentProfile.acceptedTokens.length > 0 && (
+                <div>Accepted Tokens: {paymentProfile.acceptedTokens.length} token(s)</div>
+              )}
+              {paymentProfile.supportedChains.length > 0 && (
+                <div>Chains: {paymentProfile.supportedChains.map(c => c === 8453 ? 'Base' : `Chain ${c}`).join(', ')}</div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: '16px', background: 'rgba(255,176,0,0.08)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,176,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={16} style={{ color: '#FFB000' }} />
+              <span style={{ fontWeight: 700, fontSize: '14px' }}>Payment profile not configured</span>
+            </div>
+            <p style={{ fontSize: '13px', color: '#666', margin: '4px 0 0' }}>Set up your resolver&apos;s x402 payment profile to accept payments.</p>
+            <div style={{ marginTop: '12px' }}>
+              <button
+                className="dash-btn-primary"
+                onClick={() => setShowPaymentConfig(true)}
+                style={{ width: 'auto' }}
+              >
+                Configure Payments
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="tabs-pill">
+          <button className={`tab-pill-btn ${payMode === 'link' ? 'active' : ''}`} onClick={() => { setPayMode('link'); setShowInvoicePreview(false); }}>Payment Link</button>
+          <button className={`tab-pill-btn ${payMode === 'invoice' ? 'active' : ''}`} onClick={() => { setPayMode('invoice'); setShowInvoicePreview(false); }}>Invoice</button>
+        </div>
+
+        {payMode === 'link' ? (
+          <div className="pay-form">
+            <div className="dash-form-group">
+              <label className="dash-form-label">Amount (USDC)</label>
+              <input type="number" className="dash-form-input" placeholder="0.00" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
+            </div>
+            <div className="dash-form-group">
+              <label className="dash-form-label">Description (Optional)</label>
+              <input type="text" className="dash-form-input" placeholder="What is this for?" value={payDescription} onChange={(e) => setPayDescription(e.target.value)} />
+            </div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button className="dash-btn-primary" onClick={handleGeneratePayLink} disabled={!payAmount || !payDomain}>
+                <Link size={16} /> Generate Payment Link
+              </button>
+              <button className="dash-btn-primary" onClick={handleGenerateAlwaysOnLink} disabled={!payDomain} style={{ background: '#111', color: '#fff' }}>
+                <Link size={16} /> Generate Always-On Link
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="pay-form">
+            <div className="dash-form-group">
+              <label className="dash-form-label">Client Email / Web3 ID</label>
+              <input type="text" className="dash-form-input" placeholder="client@email.com or client.id" value={invoiceClient} onChange={(e) => setInvoiceClient(e.target.value)} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="dash-form-group">
+                <label className="dash-form-label">Invoice Number</label>
+                <input type="text" className="dash-form-input" value={`#INV-${String(domains.length).padStart(3, '0')}`} readOnly />
+              </div>
+              <div className="dash-form-group">
+                <label className="dash-form-label">Due Date</label>
+                <input type="date" className="dash-form-input" value={invoiceDueDate} onChange={(e) => setInvoiceDueDate(e.target.value)} />
+              </div>
+            </div>
+            <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
+                <span>Item</span><span>Amount (USDC)</span>
+              </div>
+              {invoiceItems.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <input type="text" className="dash-form-input" style={{ flex: 2 }} placeholder="Item Description" value={item.description} onChange={(e) => {
+                    const updated = [...invoiceItems];
+                    updated[idx].description = e.target.value;
+                    setInvoiceItems(updated);
+                  }} />
+                  <input type="number" className="dash-form-input" style={{ flex: 1 }} placeholder="0.00" value={item.amount} onChange={(e) => {
+                    const updated = [...invoiceItems];
+                    updated[idx].amount = e.target.value;
+                    setInvoiceItems(updated);
+                  }} />
+                </div>
+              ))}
+              <button style={{ fontSize: '12px', fontWeight: 700, color: '#FFB000', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
+                onClick={() => setInvoiceItems([...invoiceItems, { description: '', amount: '' }])}>
+                <Plus size={12} /> Add Item
+              </button>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '12px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                <span>Total</span>
+                <span>{invoiceItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0).toFixed(2)} USDC</span>
+              </div>
+            </div>
+            <button className="dash-btn-primary" onClick={handleGenerateInvoice} disabled={!invoiceClient || invoiceItems.every(i => !i.amount)}>
+              Generate Invoice
+            </button>
+          </div>
+        )}
+
+        {showInvoicePreview && generatedPayLink && (
+          <div className="invoice-preview">
+            <div className="invoice-preview-header">
+              <div className="invoice-preview-icon"><Check size={24} /></div>
+              <div>
+                <h4 style={{ fontWeight: 700, fontSize: '18px', color: '#33691E', margin: 0 }}>Generated Successfully</h4>
+                <p style={{ fontSize: '14px', color: '#558B2F', margin: 0 }}>Share this link to get paid via {payDomain}.</p>
+              </div>
+            </div>
+            <div className="invoice-preview-link">{generatedPayLink}</div>
+            <button style={{ fontSize: '14px', fontWeight: 700, color: '#111', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={() => copyToClipboard(generatedPayLink)}>
+              <Copy size={14} /> Copy Link
+            </button>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+);
+
+const closePaymentConfig = () => {
+  setShowPaymentConfig(false);
+  refetchPaymentProfile();
+};
+
+// ── Reputation state ──────────────────────────────────────────────
+const { reputation, isLoading: repLoading, error: repError, checkReputation, reset: resetReputation } = useReputation();
+const [repSearchAddress, setRepSearchAddress] = useState('');
+const [repAutoChecked, setRepAutoChecked] = useState(false);
+
+// Auto-check connected wallet on tab switch
+useEffect(() => {
+  if (activeTab === 'reputation' && address && !repAutoChecked && !reputation) {
+    checkReputation(address);
+    setRepAutoChecked(true);
+  }
+}, [activeTab, address, repAutoChecked, reputation, checkReputation]);
+
+const handleRepSearch = () => {
+  const target = repSearchAddress.trim() || address;
+  if (target) {
+    checkReputation(target);
+  }
+};
+
+const renderReputation = () => {
+  if (!hasReputationAccess) {
+    return (
+      <div className="dash-fade-in">
+        <div className="dash-header">
+          <div>
+            <h2 className="dash-title">Reputation Score</h2>
+            <p className="dash-subtitle">Reputation is unlocked when you own a .id domain.</p>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+          <Shield size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
+          <p style={{ fontWeight: 600, marginBottom: '8px' }}>You need a .id domain to access reputation</p>
+          <p style={{ fontSize: '13px', marginBottom: '16px' }}>Register a domain to unlock reputation and security insights.</p>
+          <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
+        </div>
+      </div>
+    );
+  }
+
+  const score = reputation?.score ?? 0;
+  const tier = reputation?.tier ?? 'Platinum';
+  const tierConfig = Object.values(TIERS).find(t => t.label === tier) || TIERS.PLATINUM;
+  const scoreColor = score >= 90 ? '#00C853' : score >= 70 ? '#64DD17' : score >= 40 ? '#FFB000' : '#FF3D00';
+  const tierDescription = score >= 90
+    ? 'Your identity is highly trusted by dApps.'
+    : score >= 70
+      ? 'Your identity has good standing.'
+      : score >= 40
+        ? 'Some risk flags detected on this wallet.'
+        : 'Multiple risk flags detected. Proceed with caution.';
+
+  // SVG circle calculations
+  const circumference = 2 * Math.PI * 45; // ~283
+  const strokeDashoffset = reputation
+    ? circumference - (score / 100) * circumference
+    : circumference;
+
+  // All risk categories for the factors grid
+  const allRiskCategories = Object.entries(SLASH_AMOUNTS) as [string, number][];
+  const flaggedSet = new Set(reputation?.flags || []);
+
+  return (
     <div className="dash-fade-in">
       <div className="dash-header">
         <div>
-          <h2 className="dash-title">Payments</h2>
-          <p className="dash-subtitle">Accept payments through your .id domain using x402.</p>
+          <h2 className="dash-title">Reputation Score</h2>
+          <p className="dash-subtitle">On-chain trust metric powered by GoPlus Security.</p>
         </div>
+        {reputation && (
+          <button className="dash-refresh-btn" onClick={() => {
+            const target = repSearchAddress.trim() || address;
+            if (target) checkReputation(target);
+          }}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        )}
       </div>
 
-      {domains.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-          <p style={{ marginBottom: '16px' }}>Register a domain to enable payments.</p>
-          <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
+      {/* Search bar */}
+      <div style={{
+        display: 'flex', gap: '12px', marginBottom: '32px',
+        background: '#fafafa', padding: '6px', borderRadius: '16px', border: '1px solid #eee',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '12px', color: '#888' }}>
+          <Search size={18} />
         </div>
-      ) : (
+        <input
+          type="text"
+          value={repSearchAddress}
+          onChange={(e) => setRepSearchAddress(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleRepSearch()}
+          placeholder={address ? `${address.slice(0, 6)}...${address.slice(-4)} (your wallet)` : 'Enter wallet address...'}
+          style={{
+            flex: 1, background: 'transparent', border: 'none', padding: '12px 0',
+            fontSize: '14px', fontWeight: 500, fontFamily: 'monospace', outline: 'none',
+          }}
+        />
+        <button
+          onClick={handleRepSearch}
+          disabled={repLoading}
+          style={{
+            background: '#111', color: 'white', padding: '10px 24px', borderRadius: '12px',
+            fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer',
+            opacity: repLoading ? 0.6 : 1, whiteSpace: 'nowrap',
+          }}
+        >
+          {repLoading ? 'Checking...' : 'Check'}
+        </button>
+      </div>
+
+      {repError && (
+        <div style={{
+          padding: '16px', background: 'rgba(255,61,0,0.08)', borderRadius: '12px',
+          marginBottom: '24px', border: '1px solid rgba(255,61,0,0.2)',
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}>
+          <AlertCircle size={16} style={{ color: '#FF3D00' }} />
+          <span style={{ fontWeight: 600, fontSize: '14px', color: '#FF3D00' }}>{repError}</span>
+        </div>
+      )}
+
+      {repLoading && !reputation && (
+        <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+          <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 16px' }} />
+          <p style={{ fontWeight: 600 }}>Analyzing wallet security...</p>
+        </div>
+      )}
+
+      {reputation && (
         <>
-          <div className="dash-form-group" style={{ marginBottom: '24px' }}>
-            <label className="dash-form-label">Payment Domain</label>
+          {/* Checked address label */}
+          {reputation.address !== address?.toLowerCase() && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px',
+              padding: '12px 16px', background: 'rgba(255,176,0,0.08)', borderRadius: '12px',
+              border: '1px solid rgba(255,176,0,0.2)',
+            }}>
+              <Search size={14} style={{ color: '#FFB000' }} />
+              <span style={{ fontSize: '13px', color: '#888' }}>
+                Showing results for <code style={{ fontWeight: 700, color: '#111', fontSize: '12px' }}>{reputation.address}</code>
+              </span>
+            </div>
+          )}
+
+          <div className="rep-grid">
+            {/* Score card */}
+            <div className="bento-card dark" style={{ textAlign: 'center' }}>
+              <div style={{
+                display: 'inline-block', padding: '6px 16px', borderRadius: '100px', fontSize: '11px',
+                fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '1px',
+                background: `${tierConfig.color}22`, color: tierConfig.color, marginBottom: '20px',
+              }}>
+                {tier}
+              </div>
+              <div className="rep-score-big">
+                <svg viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
+                  <circle cx="50" cy="50" r="45" fill="none" stroke={scoreColor} strokeWidth="8" strokeLinecap="round"
+                    strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                    style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }} />
+                </svg>
+                <div style={{ position: 'absolute' }}><div className="rep-val-big">{score}</div></div>
+              </div>
+              <h3 style={{ fontWeight: 700, fontSize: '20px', color: 'white' }}>
+                {score >= 90 ? 'Excellent' : score >= 70 ? 'Good' : score >= 40 ? 'Moderate Risk' : 'High Risk'}
+              </h3>
+              <p style={{ fontSize: '14px', color: '#888', margin: '8px 0 24px' }}>{tierDescription}</p>
+              {reputation.isClean && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '10px', background: 'rgba(0,200,83,0.1)', borderRadius: '12px', marginBottom: '16px',
+                }}>
+                  <ShieldCheck size={16} style={{ color: '#00C853' }} />
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#00C853' }}>No Risk Flags</span>
+                </div>
+              )}
+              <p style={{ fontSize: '11px', color: '#555', margin: 0 }}>
+                Checked {new Date(reputation.checkedAt).toLocaleString()}
+              </p>
+            </div>
+
+            {/* Factors */}
+            <div>
+              <h3 style={{ fontWeight: 700, fontSize: '20px', marginBottom: '16px' }}>Security Analysis</h3>
+              <div className="rep-factors-list">
+                {allRiskCategories.map(([flag, penalty]) => {
+                  const isFlagged = flaggedSet.has(flag);
+                  const label = RISK_LABELS[flag] || flag;
+                  return (
+                    <div className="rep-factor" key={flag} style={{
+                      borderColor: isFlagged ? 'rgba(255,61,0,0.2)' : undefined,
+                      background: isFlagged ? 'rgba(255,61,0,0.03)' : undefined,
+                    }}>
+                      <div className="rep-factor-icon" style={{
+                        color: isFlagged ? '#FF3D00' : '#00C853',
+                        background: isFlagged ? 'rgba(255,61,0,0.1)' : undefined,
+                      }}>
+                        {isFlagged ? <AlertTriangle size={18} /> : <ShieldCheck size={18} />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{label}</h4>
+                        <p style={{ fontSize: '12px', color: isFlagged ? '#FF3D00' : '#888', margin: 0 }}>
+                          {isFlagged ? `Flagged (-${penalty} pts)` : 'Clean'}
+                        </p>
+                      </div>
+                      <div style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: isFlagged ? '#FF3D00' : '#00C853',
+                      }} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Breakdown summary */}
+              {!reputation.isClean && (
+                <div style={{
+                  marginTop: '24px', padding: '20px', background: '#111', borderRadius: '16px',
+                  border: '1px solid #222',
+                }}>
+                  <h4 style={{ fontWeight: 700, fontSize: '14px', color: '#fff', marginBottom: '12px' }}>Score Breakdown</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '13px' }}>
+                      <span>Starting Score</span><span style={{ color: '#fff', fontWeight: 700 }}>100</span>
+                    </div>
+                    {Object.entries(reputation.breakdown).map(([flag, penalty]) => (
+                      <div key={flag} style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '13px' }}>
+                        <span>{RISK_LABELS[flag] || flag}</span>
+                        <span style={{ color: '#FF3D00', fontWeight: 700 }}>{penalty}</span>
+                      </div>
+                    ))}
+                    <div style={{
+                      borderTop: '1px solid #333', marginTop: '4px', paddingTop: '8px',
+                      display: 'flex', justifyContent: 'space-between', fontSize: '14px',
+                    }}>
+                      <span style={{ fontWeight: 700, color: '#fff' }}>Final Score</span>
+                      <span style={{ fontWeight: 800, color: scoreColor }}>{score}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {!reputation && !repLoading && !repError && (
+        <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+          <Shield size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
+          <p style={{ fontWeight: 600, marginBottom: '8px' }}>Check any wallet&apos;s reputation</p>
+          <p style={{ fontSize: '13px' }}>Enter an address above or click Check to scan your connected wallet.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const exportHistoryCSV = () => {
+  if (domains.length === 0) return;
+  const headers = ['Date', 'Event', 'Domain', 'Expiry', 'Status'];
+  const now = Math.floor(Date.now() / 1000);
+  const rows = domains.map((domain: any) => {
+    const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
+    return [
+      domain.createdAt ? formatDate(domain.createdAt) : '-',
+      'Registration',
+      domain.name || '-',
+      domain.expiryDate ? formatDate(domain.expiryDate) : 'Lifetime',
+      isExpired ? 'Expired' : 'Active',
+    ].join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `nexdomains-history-${address?.slice(0, 8)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+const renderHistory = () => (
+  <div className="dash-fade-in">
+    <div className="dash-header">
+      <div>
+        <h2 className="dash-title">History</h2>
+        <p className="dash-subtitle">View all your transactions and events.</p>
+      </div>
+      <button className="dash-export-btn" onClick={exportHistoryCSV} disabled={domains.length === 0}>
+        <Download size={16} /> Export CSV
+      </button>
+    </div>
+
+    {domainsLoading ? (
+      <p style={{ color: '#888' }}>Loading...</p>
+    ) : domains.length === 0 ? (
+      <p style={{ color: '#888', textAlign: 'center', padding: '40px' }}>No transaction history yet.</p>
+    ) : (
+      <div className="table-container">
+        <table className="d-table">
+          <thead><tr><th>Date</th><th>Event</th><th>Domain</th><th>Expiry</th><th>Status</th></tr></thead>
+          <tbody>
+            {domains.map((domain: any, i: number) => {
+              const now = Math.floor(Date.now() / 1000);
+              const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
+              const isPrimary = primaryName === domain.name;
+              return (
+                <tr key={i}>
+                  <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
+                  <td>
+                    Registration
+                    {isPrimary && <span className="dash-status-pill primary" style={{ marginLeft: 6, fontSize: '10px' }}>Primary</span>}
+                  </td>
+                  <td style={{ fontWeight: 700 }}>{domain.name}</td>
+                  <td>{domain.expiryDate ? formatDate(domain.expiryDate) : 'Lifetime'}</td>
+                  <td><span className={`dash-status-pill ${isExpired ? 'expired' : 'completed'}`}>{isExpired ? 'Expired' : 'Active'}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+);
+
+const socialConfig: { key: string; label: string; icon: React.ReactNode; placeholder: string }[] = [
+  { key: 'com.twitter', label: 'X (Twitter)', icon: <Twitter size={20} />, placeholder: '@username' },
+  { key: 'com.github', label: 'GitHub', icon: <Github size={20} />, placeholder: 'username' },
+  { key: 'com.discord', label: 'Discord', icon: <Activity size={20} />, placeholder: 'username#1234' },
+  { key: 'org.telegram', label: 'Telegram', icon: <ExternalLink size={20} />, placeholder: '@username' },
+  { key: 'email', label: 'Email', icon: <CreditCard size={20} />, placeholder: 'you@email.com' },
+  { key: 'url', label: 'Website', icon: <ExternalLink size={20} />, placeholder: 'https://yoursite.com' },
+  { key: 'description', label: 'Bio', icon: <Fingerprint size={20} />, placeholder: 'A short description...' },
+];
+
+const getRecordValue = (key: string) => {
+  const record = textRecords.find(r => r.key === key);
+  return record?.value || '';
+};
+
+const handleSaveRecord = async (key: string, value: string) => {
+  if (!settingsDomain || !settingsResolver) return;
+  try {
+    await writeTextRecord({
+      abi: setTextAbi,
+      address: constants.PublicResolver,
+      functionName: 'setText',
+      args: [namehash(settingsDomain), key, value],
+    });
+    setEditingRecord(null);
+    setRecordValue('');
+  } catch (error) {
+    console.error('Failed to set text record:', error);
+  }
+};
+
+const renderSettings = () => (
+  <div className="dash-fade-in">
+    <div className="dash-header">
+      <div>
+        <h2 className="dash-title">Settings</h2>
+        <p className="dash-subtitle">Manage your on-chain profile records.</p>
+      </div>
+    </div>
+
+    <div className="pay-form">
+      {domains.length > 0 && (
+        <>
+          <div className="dash-form-group">
+            <label className="dash-form-label">Domain</label>
             <select
               className="dash-form-input"
-              value={payDomain}
-              onChange={(e) => { setPayDomain(e.target.value); setShowInvoicePreview(false); }}
+              value={settingsDomain}
+              onChange={(e) => { setSettingsDomain(e.target.value); setEditingRecord(null); }}
             >
               {domains.map((d: any, i: number) => (
                 <option key={i} value={d.name}>{d.name}</option>
@@ -812,673 +1340,157 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {paymentProfileLoading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', marginBottom: '24px' }}>
-              <Loader2 size={16} className="animate-spin" /> Loading payment profile...
-            </div>
-          ) : paymentProfile?.paymentEnabled ? (
-            <div style={{ padding: '16px', background: 'rgba(0,200,83,0.08)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(0,200,83,0.2)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <CheckCircle size={16} style={{ color: '#00C853' }} />
-                <span style={{ fontWeight: 700, fontSize: '14px' }}>Payments Enabled</span>
+          <div className="dash-form-group">
+            <label className="dash-form-label">Profile Records</label>
+            {textRecordsLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', padding: '12px' }}>
+                <Loader2 size={16} className="animate-spin" /> Loading records...
               </div>
-              <div style={{ fontSize: '13px', color: '#666' }}>
-                <div>Payment Address: <code style={{ fontSize: '12px' }}>{paymentProfile.paymentAddress.slice(0, 6)}...{paymentProfile.paymentAddress.slice(-4)}</code></div>
-                {paymentProfile.acceptedTokens.length > 0 && (
-                  <div>Accepted Tokens: {paymentProfile.acceptedTokens.length} token(s)</div>
-                )}
-                {paymentProfile.supportedChains.length > 0 && (
-                  <div>Chains: {paymentProfile.supportedChains.map(c => c === 8453 ? 'Base' : `Chain ${c}`).join(', ')}</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div style={{ padding: '16px', background: 'rgba(255,176,0,0.08)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,176,0,0.2)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertCircle size={16} style={{ color: '#FFB000' }} />
-                <span style={{ fontWeight: 700, fontSize: '14px' }}>Payment profile not configured</span>
-              </div>
-              <p style={{ fontSize: '13px', color: '#666', margin: '4px 0 0' }}>Set up your resolver&apos;s x402 payment profile to accept payments.</p>
-              <div style={{ marginTop: '12px' }}>
-                <button
-                  className="dash-btn-primary"
-                  onClick={() => setShowPaymentConfig(true)}
-                  style={{ width: 'auto' }}
-                >
-                  Configure Payments
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="tabs-pill">
-            <button className={`tab-pill-btn ${payMode === 'link' ? 'active' : ''}`} onClick={() => { setPayMode('link'); setShowInvoicePreview(false); }}>Payment Link</button>
-            <button className={`tab-pill-btn ${payMode === 'invoice' ? 'active' : ''}`} onClick={() => { setPayMode('invoice'); setShowInvoicePreview(false); }}>Invoice</button>
-          </div>
-
-          {payMode === 'link' ? (
-            <div className="pay-form">
-              <div className="dash-form-group">
-                <label className="dash-form-label">Amount (USDC)</label>
-                <input type="number" className="dash-form-input" placeholder="0.00" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
-              </div>
-              <div className="dash-form-group">
-                <label className="dash-form-label">Description (Optional)</label>
-                <input type="text" className="dash-form-input" placeholder="What is this for?" value={payDescription} onChange={(e) => setPayDescription(e.target.value)} />
-              </div>
-              <button className="dash-btn-primary" onClick={handleGeneratePayLink} disabled={!payAmount || !payDomain}>
-                <Link size={16} /> Generate Payment Link
-              </button>
-            </div>
-          ) : (
-            <div className="pay-form">
-              <div className="dash-form-group">
-                <label className="dash-form-label">Client Email / Web3 ID</label>
-                <input type="text" className="dash-form-input" placeholder="client@email.com or client.id" value={invoiceClient} onChange={(e) => setInvoiceClient(e.target.value)} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="dash-form-group">
-                  <label className="dash-form-label">Invoice Number</label>
-                  <input type="text" className="dash-form-input" value={`#INV-${String(domains.length).padStart(3, '0')}`} readOnly />
-                </div>
-                <div className="dash-form-group">
-                  <label className="dash-form-label">Due Date</label>
-                  <input type="date" className="dash-form-input" value={invoiceDueDate} onChange={(e) => setInvoiceDueDate(e.target.value)} />
-                </div>
-              </div>
-              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
-                  <span>Item</span><span>Amount (USDC)</span>
-                </div>
-                {invoiceItems.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <input type="text" className="dash-form-input" style={{ flex: 2 }} placeholder="Item Description" value={item.description} onChange={(e) => {
-                      const updated = [...invoiceItems];
-                      updated[idx].description = e.target.value;
-                      setInvoiceItems(updated);
-                    }} />
-                    <input type="number" className="dash-form-input" style={{ flex: 1 }} placeholder="0.00" value={item.amount} onChange={(e) => {
-                      const updated = [...invoiceItems];
-                      updated[idx].amount = e.target.value;
-                      setInvoiceItems(updated);
-                    }} />
-                  </div>
-                ))}
-                <button style={{ fontSize: '12px', fontWeight: 700, color: '#FFB000', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
-                  onClick={() => setInvoiceItems([...invoiceItems, { description: '', amount: '' }])}>
-                  <Plus size={12} /> Add Item
-                </button>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '12px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-                  <span>Total</span>
-                  <span>{invoiceItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0).toFixed(2)} USDC</span>
-                </div>
-              </div>
-              <button className="dash-btn-primary" onClick={handleGenerateInvoice} disabled={!invoiceClient || invoiceItems.every(i => !i.amount)}>
-                Generate Invoice
-              </button>
-            </div>
-          )}
-
-          {showInvoicePreview && generatedPayLink && (
-            <div className="invoice-preview">
-              <div className="invoice-preview-header">
-                <div className="invoice-preview-icon"><Check size={24} /></div>
-                <div>
-                  <h4 style={{ fontWeight: 700, fontSize: '18px', color: '#33691E', margin: 0 }}>Generated Successfully</h4>
-                  <p style={{ fontSize: '14px', color: '#558B2F', margin: 0 }}>Share this link to get paid via {payDomain}.</p>
-                </div>
-              </div>
-              <div className="invoice-preview-link">{generatedPayLink}</div>
-              <button style={{ fontSize: '14px', fontWeight: 700, color: '#111', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                onClick={() => copyToClipboard(generatedPayLink)}>
-                <Copy size={14} /> Copy Link
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-
-  const closePaymentConfig = () => {
-    setShowPaymentConfig(false);
-    refetchPaymentProfile();
-  };
-
-  // ── Reputation state ──────────────────────────────────────────────
-  const { reputation, isLoading: repLoading, error: repError, checkReputation, reset: resetReputation } = useReputation();
-  const [repSearchAddress, setRepSearchAddress] = useState('');
-  const [repAutoChecked, setRepAutoChecked] = useState(false);
-
-  // Auto-check connected wallet on tab switch
-  useEffect(() => {
-    if (activeTab === 'reputation' && address && !repAutoChecked && !reputation) {
-      checkReputation(address);
-      setRepAutoChecked(true);
-    }
-  }, [activeTab, address, repAutoChecked, reputation, checkReputation]);
-
-  const handleRepSearch = () => {
-    const target = repSearchAddress.trim() || address;
-    if (target) {
-      checkReputation(target);
-    }
-  };
-
-  const renderReputation = () => {
-    if (!hasReputationAccess) {
-      return (
-        <div className="dash-fade-in">
-          <div className="dash-header">
-            <div>
-              <h2 className="dash-title">Reputation Score</h2>
-              <p className="dash-subtitle">Reputation is unlocked when you own a .id domain.</p>
-            </div>
-          </div>
-          <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
-            <Shield size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
-            <p style={{ fontWeight: 600, marginBottom: '8px' }}>You need a .id domain to access reputation</p>
-            <p style={{ fontSize: '13px', marginBottom: '16px' }}>Register a domain to unlock reputation and security insights.</p>
-            <button className="dash-mint-btn" onClick={() => router.push('/')}>Register a Domain</button>
-          </div>
-        </div>
-      );
-    }
-
-    const score = reputation?.score ?? 0;
-    const tier = reputation?.tier ?? 'Platinum';
-    const tierConfig = Object.values(TIERS).find(t => t.label === tier) || TIERS.PLATINUM;
-    const scoreColor = score >= 90 ? '#00C853' : score >= 70 ? '#64DD17' : score >= 40 ? '#FFB000' : '#FF3D00';
-    const tierDescription = score >= 90
-      ? 'Your identity is highly trusted by dApps.'
-      : score >= 70
-        ? 'Your identity has good standing.'
-        : score >= 40
-          ? 'Some risk flags detected on this wallet.'
-          : 'Multiple risk flags detected. Proceed with caution.';
-
-    // SVG circle calculations
-    const circumference = 2 * Math.PI * 45; // ~283
-    const strokeDashoffset = reputation
-      ? circumference - (score / 100) * circumference
-      : circumference;
-
-    // All risk categories for the factors grid
-    const allRiskCategories = Object.entries(SLASH_AMOUNTS) as [string, number][];
-    const flaggedSet = new Set(reputation?.flags || []);
-
-    return (
-      <div className="dash-fade-in">
-        <div className="dash-header">
-          <div>
-            <h2 className="dash-title">Reputation Score</h2>
-            <p className="dash-subtitle">On-chain trust metric powered by GoPlus Security.</p>
-          </div>
-          {reputation && (
-            <button className="dash-refresh-btn" onClick={() => {
-              const target = repSearchAddress.trim() || address;
-              if (target) checkReputation(target);
-            }}>
-              <RefreshCw size={16} /> Refresh
-            </button>
-          )}
-        </div>
-
-        {/* Search bar */}
-        <div style={{
-          display: 'flex', gap: '12px', marginBottom: '32px',
-          background: '#fafafa', padding: '6px', borderRadius: '16px', border: '1px solid #eee',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '12px', color: '#888' }}>
-            <Search size={18} />
-          </div>
-          <input
-            type="text"
-            value={repSearchAddress}
-            onChange={(e) => setRepSearchAddress(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleRepSearch()}
-            placeholder={address ? `${address.slice(0, 6)}...${address.slice(-4)} (your wallet)` : 'Enter wallet address...'}
-            style={{
-              flex: 1, background: 'transparent', border: 'none', padding: '12px 0',
-              fontSize: '14px', fontWeight: 500, fontFamily: 'monospace', outline: 'none',
-            }}
-          />
-          <button
-            onClick={handleRepSearch}
-            disabled={repLoading}
-            style={{
-              background: '#111', color: 'white', padding: '10px 24px', borderRadius: '12px',
-              fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer',
-              opacity: repLoading ? 0.6 : 1, whiteSpace: 'nowrap',
-            }}
-          >
-            {repLoading ? 'Checking...' : 'Check'}
-          </button>
-        </div>
-
-        {repError && (
-          <div style={{
-            padding: '16px', background: 'rgba(255,61,0,0.08)', borderRadius: '12px',
-            marginBottom: '24px', border: '1px solid rgba(255,61,0,0.2)',
-            display: 'flex', alignItems: 'center', gap: '8px',
-          }}>
-            <AlertCircle size={16} style={{ color: '#FF3D00' }} />
-            <span style={{ fontWeight: 600, fontSize: '14px', color: '#FF3D00' }}>{repError}</span>
-          </div>
-        )}
-
-        {repLoading && !reputation && (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
-            <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 16px' }} />
-            <p style={{ fontWeight: 600 }}>Analyzing wallet security...</p>
-          </div>
-        )}
-
-        {reputation && (
-          <>
-            {/* Checked address label */}
-            {reputation.address !== address?.toLowerCase() && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px',
-                padding: '12px 16px', background: 'rgba(255,176,0,0.08)', borderRadius: '12px',
-                border: '1px solid rgba(255,176,0,0.2)',
-              }}>
-                <Search size={14} style={{ color: '#FFB000' }} />
-                <span style={{ fontSize: '13px', color: '#888' }}>
-                  Showing results for <code style={{ fontWeight: 700, color: '#111', fontSize: '12px' }}>{reputation.address}</code>
-                </span>
-              </div>
-            )}
-
-            <div className="rep-grid">
-              {/* Score card */}
-              <div className="bento-card dark" style={{ textAlign: 'center' }}>
-                <div style={{
-                  display: 'inline-block', padding: '6px 16px', borderRadius: '100px', fontSize: '11px',
-                  fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '1px',
-                  background: `${tierConfig.color}22`, color: tierConfig.color, marginBottom: '20px',
-                }}>
-                  {tier}
-                </div>
-                <div className="rep-score-big">
-                  <svg viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
-                    <circle cx="50" cy="50" r="45" fill="none" stroke={scoreColor} strokeWidth="8" strokeLinecap="round"
-                      strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
-                      style={{ transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease' }} />
-                  </svg>
-                  <div style={{ position: 'absolute' }}><div className="rep-val-big">{score}</div></div>
-                </div>
-                <h3 style={{ fontWeight: 700, fontSize: '20px', color: 'white' }}>
-                  {score >= 90 ? 'Excellent' : score >= 70 ? 'Good' : score >= 40 ? 'Moderate Risk' : 'High Risk'}
-                </h3>
-                <p style={{ fontSize: '14px', color: '#888', margin: '8px 0 24px' }}>{tierDescription}</p>
-                {reputation.isClean && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    padding: '10px', background: 'rgba(0,200,83,0.1)', borderRadius: '12px', marginBottom: '16px',
-                  }}>
-                    <ShieldCheck size={16} style={{ color: '#00C853' }} />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#00C853' }}>No Risk Flags</span>
-                  </div>
-                )}
-                <p style={{ fontSize: '11px', color: '#555', margin: 0 }}>
-                  Checked {new Date(reputation.checkedAt).toLocaleString()}
-                </p>
-              </div>
-
-              {/* Factors */}
-              <div>
-                <h3 style={{ fontWeight: 700, fontSize: '20px', marginBottom: '16px' }}>Security Analysis</h3>
-                <div className="rep-factors-list">
-                  {allRiskCategories.map(([flag, penalty]) => {
-                    const isFlagged = flaggedSet.has(flag);
-                    const label = RISK_LABELS[flag] || flag;
-                    return (
-                      <div className="rep-factor" key={flag} style={{
-                        borderColor: isFlagged ? 'rgba(255,61,0,0.2)' : undefined,
-                        background: isFlagged ? 'rgba(255,61,0,0.03)' : undefined,
-                      }}>
-                        <div className="rep-factor-icon" style={{
-                          color: isFlagged ? '#FF3D00' : '#00C853',
-                          background: isFlagged ? 'rgba(255,61,0,0.1)' : undefined,
-                        }}>
-                          {isFlagged ? <AlertTriangle size={18} /> : <ShieldCheck size={18} />}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <h4 style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{label}</h4>
-                          <p style={{ fontSize: '12px', color: isFlagged ? '#FF3D00' : '#888', margin: 0 }}>
-                            {isFlagged ? `Flagged (-${penalty} pts)` : 'Clean'}
-                          </p>
-                        </div>
-                        <div style={{
-                          width: '8px', height: '8px', borderRadius: '50%',
-                          background: isFlagged ? '#FF3D00' : '#00C853',
-                        }} />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Breakdown summary */}
-                {!reputation.isClean && (
-                  <div style={{
-                    marginTop: '24px', padding: '20px', background: '#111', borderRadius: '16px',
-                    border: '1px solid #222',
-                  }}>
-                    <h4 style={{ fontWeight: 700, fontSize: '14px', color: '#fff', marginBottom: '12px' }}>Score Breakdown</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '13px' }}>
-                        <span>Starting Score</span><span style={{ color: '#fff', fontWeight: 700 }}>100</span>
-                      </div>
-                      {Object.entries(reputation.breakdown).map(([flag, penalty]) => (
-                        <div key={flag} style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontSize: '13px' }}>
-                          <span>{RISK_LABELS[flag] || flag}</span>
-                          <span style={{ color: '#FF3D00', fontWeight: 700 }}>{penalty}</span>
-                        </div>
-                      ))}
-                      <div style={{
-                        borderTop: '1px solid #333', marginTop: '4px', paddingTop: '8px',
-                        display: 'flex', justifyContent: 'space-between', fontSize: '14px',
-                      }}>
-                        <span style={{ fontWeight: 700, color: '#fff' }}>Final Score</span>
-                        <span style={{ fontWeight: 800, color: scoreColor }}>{score}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        {!reputation && !repLoading && !repError && (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
-            <Shield size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
-            <p style={{ fontWeight: 600, marginBottom: '8px' }}>Check any wallet&apos;s reputation</p>
-            <p style={{ fontSize: '13px' }}>Enter an address above or click Check to scan your connected wallet.</p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const exportHistoryCSV = () => {
-    if (domains.length === 0) return;
-    const headers = ['Date', 'Event', 'Domain', 'Expiry', 'Status'];
-    const now = Math.floor(Date.now() / 1000);
-    const rows = domains.map((domain: any) => {
-      const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
-      return [
-        domain.createdAt ? formatDate(domain.createdAt) : '-',
-        'Registration',
-        domain.name || '-',
-        domain.expiryDate ? formatDate(domain.expiryDate) : 'Lifetime',
-        isExpired ? 'Expired' : 'Active',
-      ].join(',');
-    });
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `nexdomains-history-${address?.slice(0, 8)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const renderHistory = () => (
-    <div className="dash-fade-in">
-      <div className="dash-header">
-        <div>
-          <h2 className="dash-title">History</h2>
-          <p className="dash-subtitle">View all your transactions and events.</p>
-        </div>
-        <button className="dash-export-btn" onClick={exportHistoryCSV} disabled={domains.length === 0}>
-          <Download size={16} /> Export CSV
-        </button>
-      </div>
-
-      {domainsLoading ? (
-        <p style={{ color: '#888' }}>Loading...</p>
-      ) : domains.length === 0 ? (
-        <p style={{ color: '#888', textAlign: 'center', padding: '40px' }}>No transaction history yet.</p>
-      ) : (
-        <div className="table-container">
-          <table className="d-table">
-            <thead><tr><th>Date</th><th>Event</th><th>Domain</th><th>Expiry</th><th>Status</th></tr></thead>
-            <tbody>
-              {domains.map((domain: any, i: number) => {
-                const now = Math.floor(Date.now() / 1000);
-                const isExpired = domain.expiryDate && Number(domain.expiryDate) < now;
-                const isPrimary = primaryName === domain.name;
-                return (
-                  <tr key={i}>
-                    <td>{domain.createdAt ? formatDate(domain.createdAt) : '-'}</td>
-                    <td>
-                      Registration
-                      {isPrimary && <span className="dash-status-pill primary" style={{ marginLeft: 6, fontSize: '10px' }}>Primary</span>}
-                    </td>
-                    <td style={{ fontWeight: 700 }}>{domain.name}</td>
-                    <td>{domain.expiryDate ? formatDate(domain.expiryDate) : 'Lifetime'}</td>
-                    <td><span className={`dash-status-pill ${isExpired ? 'expired' : 'completed'}`}>{isExpired ? 'Expired' : 'Active'}</span></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
-  const socialConfig: { key: string; label: string; icon: React.ReactNode; placeholder: string }[] = [
-    { key: 'com.twitter', label: 'X (Twitter)', icon: <Twitter size={20} />, placeholder: '@username' },
-    { key: 'com.github', label: 'GitHub', icon: <Github size={20} />, placeholder: 'username' },
-    { key: 'com.discord', label: 'Discord', icon: <Activity size={20} />, placeholder: 'username#1234' },
-    { key: 'org.telegram', label: 'Telegram', icon: <ExternalLink size={20} />, placeholder: '@username' },
-    { key: 'email', label: 'Email', icon: <CreditCard size={20} />, placeholder: 'you@email.com' },
-    { key: 'url', label: 'Website', icon: <ExternalLink size={20} />, placeholder: 'https://yoursite.com' },
-    { key: 'description', label: 'Bio', icon: <Fingerprint size={20} />, placeholder: 'A short description...' },
-  ];
-
-  const getRecordValue = (key: string) => {
-    const record = textRecords.find(r => r.key === key);
-    return record?.value || '';
-  };
-
-  const handleSaveRecord = async (key: string, value: string) => {
-    if (!settingsDomain || !settingsResolver) return;
-    try {
-      await writeTextRecord({
-        abi: setTextAbi,
-        address: constants.PublicResolver,
-        functionName: 'setText',
-        args: [namehash(settingsDomain), key, value],
-      });
-      setEditingRecord(null);
-      setRecordValue('');
-    } catch (error) {
-      console.error('Failed to set text record:', error);
-    }
-  };
-
-  const renderSettings = () => (
-    <div className="dash-fade-in">
-      <div className="dash-header">
-        <div>
-          <h2 className="dash-title">Settings</h2>
-          <p className="dash-subtitle">Manage your on-chain profile records.</p>
-        </div>
-      </div>
-
-      <div className="pay-form">
-        {domains.length > 0 && (
-          <>
-            <div className="dash-form-group">
-              <label className="dash-form-label">Domain</label>
-              <select
-                className="dash-form-input"
-                value={settingsDomain}
-                onChange={(e) => { setSettingsDomain(e.target.value); setEditingRecord(null); }}
-              >
-                {domains.map((d: any, i: number) => (
-                  <option key={i} value={d.name}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="dash-form-group">
-              <label className="dash-form-label">Profile Records</label>
-              {textRecordsLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', padding: '12px' }}>
-                  <Loader2 size={16} className="animate-spin" /> Loading records...
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {socialConfig.map((social) => {
-                    const currentValue = getRecordValue(social.key);
-                    const isEditing = editingRecord === social.key;
-                    return (
-                      <div key={social.key} className={`settings-social-item ${currentValue ? '' : 'disconnected'}`}>
-                        <div style={{ opacity: currentValue ? 1 : 0.5 }}>{social.icon}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600 }}>{social.label}</div>
-                          {isEditing ? (
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                              <input
-                                type="text"
-                                className="dash-form-input"
-                                style={{ fontSize: '13px', padding: '6px 10px' }}
-                                value={recordValue}
-                                onChange={(e) => setRecordValue(e.target.value)}
-                                placeholder={social.placeholder}
-                                autoFocus
-                              />
-                              <button
-                                className="settings-social-btn connect"
-                                style={{ whiteSpace: 'nowrap' }}
-                                onClick={() => handleSaveRecord(social.key, recordValue)}
-                                disabled={isSettingRecord}
-                              >
-                                {isSettingRecord ? '...' : 'Save'}
-                              </button>
-                              <button
-                                className="settings-social-btn"
-                                onClick={() => { setEditingRecord(null); setRecordValue(''); }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <span className={`social-name ${currentValue ? '' : 'muted'}`} style={{ fontSize: '12px' }}>
-                              {currentValue || `Not set`}
-                            </span>
-                          )}
-                        </div>
-                        {!isEditing && (
-                          <button
-                            className={`settings-social-btn ${currentValue ? '' : 'connect'}`}
-                            onClick={() => { setEditingRecord(social.key); setRecordValue(currentValue); }}
-                          >
-                            {currentValue ? 'Edit' : 'Set'}
-                          </button>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {socialConfig.map((social) => {
+                  const currentValue = getRecordValue(social.key);
+                  const isEditing = editingRecord === social.key;
+                  return (
+                    <div key={social.key} className={`settings-social-item ${currentValue ? '' : 'disconnected'}`}>
+                      <div style={{ opacity: currentValue ? 1 : 0.5 }}>{social.icon}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600 }}>{social.label}</div>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                            <input
+                              type="text"
+                              className="dash-form-input"
+                              style={{ fontSize: '13px', padding: '6px 10px' }}
+                              value={recordValue}
+                              onChange={(e) => setRecordValue(e.target.value)}
+                              placeholder={social.placeholder}
+                              autoFocus
+                            />
+                            <button
+                              className="settings-social-btn connect"
+                              style={{ whiteSpace: 'nowrap' }}
+                              onClick={() => handleSaveRecord(social.key, recordValue)}
+                              disabled={isSettingRecord}
+                            >
+                              {isSettingRecord ? '...' : 'Save'}
+                            </button>
+                            <button
+                              className="settings-social-btn"
+                              onClick={() => { setEditingRecord(null); setRecordValue(''); }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <span className={`social-name ${currentValue ? '' : 'muted'}`} style={{ fontSize: '12px' }}>
+                            {currentValue || `Not set`}
+                          </span>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        <div className="dash-form-group">
-          <label className="dash-form-label">Wallet Address</label>
-          <div className="settings-social-item">
-            <Wallet size={20} style={{ color: '#fff' }} />
-            <span className="social-name" style={{ fontFamily: 'monospace', fontSize: '13px' }}>{address}</span>
-            <button className="settings-social-btn" onClick={() => address && copyToClipboard(address)}>
-              <Copy size={14} />
-            </button>
+                      {!isEditing && (
+                        <button
+                          className={`settings-social-btn ${currentValue ? '' : 'connect'}`}
+                          onClick={() => { setEditingRecord(social.key); setRecordValue(currentValue); }}
+                        >
+                          {currentValue ? 'Edit' : 'Set'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
+        </>
+      )}
+
+      <div className="dash-form-group">
+        <label className="dash-form-label">Wallet Address</label>
+        <div className="settings-social-item">
+          <Wallet size={20} style={{ color: '#fff' }} />
+          <span className="social-name" style={{ fontFamily: 'monospace', fontSize: '13px' }}>{address}</span>
+          <button className="settings-social-btn" onClick={() => address && copyToClipboard(address)}>
+            <Copy size={14} />
+          </button>
         </div>
+      </div>
 
-        {canExportKey && (
-          <div className="dash-form-group">
-            <label className="dash-form-label">Embedded Wallet</label>
+      {canExportKey && (
+        <div className="dash-form-group">
+          <label className="dash-form-label">Embedded Wallet</label>
+          <button
+            onClick={exportWallet}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              fontWeight: 600,
+              fontSize: '14px',
+              color: '#fff',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <KeyRound size={18} /> Export Private Key
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const tabContent: Record<TabId, () => React.ReactNode> = {
+  overview: renderOverview,
+  identities: renderIdentities,
+  payments: renderPayments,
+  reputation: renderReputation,
+  history: renderHistory,
+  settings: renderSettings,
+};
+
+// ── Render ───────────────────────────────────────────────────────
+return (
+  <>
+    <div className="dashboard-container">
+      <div className="dash-grid">
+        <aside className="dash-sidebar">
+          {TABS.map((tab) => (
             <button
-              onClick={exportWallet}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 20px',
-                borderRadius: '12px',
-                fontWeight: 600,
-                fontSize: '14px',
-                color: '#fff',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                cursor: 'pointer',
-                width: '100%',
-              }}
+              key={tab.id}
+              className={`dash-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
             >
-              <KeyRound size={18} /> Export Private Key
+              {tab.icon} {tab.label}
             </button>
-          </div>
-        )}
+          ))}
+        </aside>
+
+        <main className="dash-content">
+          {tabContent[activeTab]()}
+        </main>
       </div>
     </div>
-  );
 
-  const tabContent: Record<TabId, () => React.ReactNode> = {
-    overview: renderOverview,
-    identities: renderIdentities,
-    payments: renderPayments,
-    reputation: renderReputation,
-    history: renderHistory,
-    settings: renderSettings,
-  };
-
-  // ── Render ───────────────────────────────────────────────────────
-  return (
-    <>
-      <div className="dashboard-container">
-        <div className="dash-grid">
-          <aside className="dash-sidebar">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                className={`dash-nav-item ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
-          </aside>
-
-          <main className="dash-content">
-            {tabContent[activeTab]()}
-          </main>
-        </div>
+    <Modal
+      isOpen={showPaymentConfig}
+      onRequestClose={closePaymentConfig}
+      closeTimeoutMS={200}
+      className="modal-content"
+      overlayClassName="modal-overlay"
+    >
+      <div className="action-modal" style={{ background: '#1a1a1a' }}>
+        <PaymentConfig name={payDomain.replace('.id', '')} onClose={closePaymentConfig} />
       </div>
+    </Modal>
 
-      <Modal
-        isOpen={showPaymentConfig}
-        onRequestClose={closePaymentConfig}
-        closeTimeoutMS={200}
-        className="modal-content"
-        overlayClassName="modal-overlay"
-      >
-        <div className="action-modal" style={{ background: '#1a1a1a' }}>
-          <PaymentConfig name={payDomain.replace('.id', '')} onClose={closePaymentConfig} />
-        </div>
-      </Modal>
-
-      <div className={`toast-notification ${toastVisible ? 'toast-active' : ''}`}>
-        <CheckCircle size={16} style={{ color: '#00C853' }} /> Link Copied
-      </div>
-    </>
-  );
+    <div className={`toast-notification ${toastVisible ? 'toast-active' : ''}`}>
+      <CheckCircle size={16} style={{ color: '#00C853' }} /> Link Copied
+    </div>
+  </>
+);
 }
