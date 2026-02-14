@@ -4,30 +4,35 @@ import {
   ABIChanged as ABIChangedEvent,
   AddrChanged as AddrChangedEvent,
   AddressChanged as AddressChangedEvent,
-  AuthorisationChanged as AuthorisationChangedEvent,
   ContenthashChanged as ContenthashChangedEvent,
   InterfaceChanged as InterfaceChangedEvent,
   NameChanged as NameChangedEvent,
   PubkeyChanged as PubkeyChangedEvent,
-  TextChanged as TextChangedEvent,
-  TextChanged1 as TextChangedWithValueEvent,
+  TextChanged as TextChangedWithValueEvent,
   VersionChanged as VersionChangedEvent,
+  PaymentAddressChanged as PaymentAddressChangedEvent,
+  PaymentEnabledChanged as PaymentEnabledChangedEvent,
+  X402EndpointChanged as X402EndpointChangedEvent,
+  AgentMetadataChanged as AgentMetadataChangedEvent,
 } from "./types/Resolver/Resolver";
 
 import {
   AbiChanged,
   Account,
   AddrChanged,
-  AuthorisationChanged,
+  AgentMetadataChanged,
   ContenthashChanged,
   Domain,
   InterfaceChanged,
   MulticoinAddrChanged,
   NameChanged,
+  PaymentAddressChanged,
+  PaymentEnabledChanged,
   PubkeyChanged,
   Resolver,
   TextChanged,
   VersionChanged,
+  X402EndpointChanged,
 } from "./types/schema";
 
 export function handleAddrChanged(event: AddrChangedEvent): void {
@@ -117,30 +122,6 @@ export function handlePubkeyChanged(event: PubkeyChangedEvent): void {
   resolverEvent.save();
 }
 
-export function handleTextChanged(event: TextChangedEvent): void {
-  let resolver = getOrCreateResolver(event.params.node, event.address, false);
-
-  let key = event.params.key;
-  if (resolver.texts == null) {
-    resolver.texts = [key];
-    resolver.save();
-  } else {
-    let texts = resolver.texts!;
-    if (!texts.includes(key)) {
-      texts.push(key);
-      resolver.texts = texts;
-      resolver.save();
-    }
-  }
-
-  let resolverEvent = new TextChanged(createEventID(event));
-  resolverEvent.resolver = resolver.id;
-  resolverEvent.blockNumber = event.block.number.toI32();
-  resolverEvent.transactionID = event.transaction.hash;
-  resolverEvent.key = event.params.key;
-  resolverEvent.save();
-}
-
 export function handleTextChangedWithValue(
   event: TextChangedWithValueEvent
 ): void {
@@ -193,21 +174,6 @@ export function handleInterfaceChanged(event: InterfaceChangedEvent): void {
   resolverEvent.save();
 }
 
-export function handleAuthorisationChanged(
-  event: AuthorisationChangedEvent
-): void {
-  const resolver = getOrCreateResolver(event.params.node, event.address, true);
-
-  let resolverEvent = new AuthorisationChanged(createEventID(event));
-  resolverEvent.blockNumber = event.block.number.toI32();
-  resolverEvent.transactionID = event.transaction.hash;
-  resolverEvent.resolver = resolver.id;
-  resolverEvent.owner = event.params.owner;
-  resolverEvent.target = event.params.target;
-  resolverEvent.isAuthorized = event.params.isAuthorised;
-  resolverEvent.save();
-}
-
 export function handleVersionChanged(event: VersionChangedEvent): void {
   let resolverEvent = new VersionChanged(createEventID(event));
   resolverEvent.blockNumber = event.block.number.toI32();
@@ -229,6 +195,67 @@ export function handleVersionChanged(event: VersionChangedEvent): void {
   resolver.coinTypes = null;
   resolver.save();
 }
+
+// ──────────────────────────────────────────────────────────
+// NexId Agent Resolver Event Handlers
+// ──────────────────────────────────────────────────────────
+
+export function handlePaymentAddressChanged(
+  event: PaymentAddressChangedEvent
+): void {
+  const resolver = getOrCreateResolver(event.params.node, event.address, true);
+
+  let resolverEvent = new PaymentAddressChanged(createEventID(event));
+  resolverEvent.resolver = resolver.id;
+  resolverEvent.blockNumber = event.block.number.toI32();
+  resolverEvent.transactionID = event.transaction.hash;
+  resolverEvent.chainId = event.params.chainId;
+  resolverEvent.addr = event.params.addr;
+  resolverEvent.save();
+}
+
+export function handlePaymentEnabledChanged(
+  event: PaymentEnabledChangedEvent
+): void {
+  const resolver = getOrCreateResolver(event.params.node, event.address, true);
+
+  let resolverEvent = new PaymentEnabledChanged(createEventID(event));
+  resolverEvent.resolver = resolver.id;
+  resolverEvent.blockNumber = event.block.number.toI32();
+  resolverEvent.transactionID = event.transaction.hash;
+  resolverEvent.enabled = event.params.enabled;
+  resolverEvent.save();
+}
+
+export function handleX402EndpointChanged(
+  event: X402EndpointChangedEvent
+): void {
+  const resolver = getOrCreateResolver(event.params.node, event.address, true);
+
+  let resolverEvent = new X402EndpointChanged(createEventID(event));
+  resolverEvent.resolver = resolver.id;
+  resolverEvent.blockNumber = event.block.number.toI32();
+  resolverEvent.transactionID = event.transaction.hash;
+  resolverEvent.endpoint = event.params.endpoint;
+  resolverEvent.save();
+}
+
+export function handleAgentMetadataChanged(
+  event: AgentMetadataChangedEvent
+): void {
+  const resolver = getOrCreateResolver(event.params.node, event.address, true);
+
+  let resolverEvent = new AgentMetadataChanged(createEventID(event));
+  resolverEvent.resolver = resolver.id;
+  resolverEvent.blockNumber = event.block.number.toI32();
+  resolverEvent.transactionID = event.transaction.hash;
+  resolverEvent.metadata = event.params.uri;
+  resolverEvent.save();
+}
+
+// ──────────────────────────────────────────────────────────
+// Helper Functions
+// ──────────────────────────────────────────────────────────
 
 function getOrCreateResolver(
   node: Bytes,

@@ -16,12 +16,10 @@ import {
   Transfer as TransferEvent,
 } from "./types/BaseRegistrar/BaseRegistrar";
 
-import { NameRegistered as ControllerNameRegisteredEventOld } from "./types/EthRegistrarControllerOld/EthRegistrarControllerOld";
-
 import {
-  NameRegistered as ControllerNameRegisteredEvent,
+  NameRegistered as ControllerNameRegisteredEventOld,
   NameRenewed as ControllerNameRenewedEvent,
-} from "./types/AgentRegistrarController/EthRegistrarController";
+} from "./types/EthRegistrarControllerOld/EthRegistrarControllerOld";
 
 // Import entity types generated from the GraphQL schema
 import {
@@ -83,12 +81,6 @@ export function handleNameRegistered(event: NameRegisteredEvent): void {
 export function handleNameRegisteredByControllerOld(
   event: ControllerNameRegisteredEventOld
 ): void {
-  setNamePreimage(event.params.name, event.params.label, event.params.cost);
-}
-
-export function handleNameRegisteredByController(
-  event: ControllerNameRegisteredEvent
-): void {
   setNamePreimage(
     event.params.name,
     event.params.label,
@@ -102,7 +94,11 @@ export function handleNameRenewedByController(
   setNamePreimage(event.params.name, event.params.label, event.params.cost);
 }
 
-function setNamePreimage(name: string, label: Bytes, cost: BigInt): void {
+export function setNamePreimage(
+  name: string,
+  label: Bytes,
+  cost: BigInt
+): void {
   if (!checkValidLabel(name)) {
     return;
   }

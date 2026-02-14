@@ -1,8 +1,7 @@
 specVersion: 0.0.4
-description: A secure & decentralized way to address resources on and off the
-  blockchain using simple, human-readable names. Access domains and transfer
-  history.
-repository: https://github.com/ensdomains/ens-subgraph
+description: NexId — decentralized identity and agent naming on Base. Register
+  .safu names, deploy agent wallets, and track on-chain identity.
+repository: https://github.com/domistro16/nexid-subgraph
 schema:
   file: ./schema.graphql
 dataSources:
@@ -79,10 +78,13 @@ dataSources:
         - NameChanged
         - AbiChanged
         - PubkeyChanged
-        - Textchanged
+        - TextChanged
         - ContenthashChanged
         - InterfaceChanged
-        - AuthorisationChanged
+        - PaymentAddressChanged
+        - PaymentEnabledChanged
+        - X402EndpointChanged
+        - AgentMetadataChanged
       abis:
         - name: Resolver
           file: ./abis/PublicResolver.json
@@ -93,9 +95,6 @@ dataSources:
           handler: handleAddrChanged
         - event: AddressChanged(indexed bytes32,uint256,bytes)
           handler: handleMulticoinAddrChanged
-        - event: AuthorisationChanged(indexed bytes32,indexed address,indexed
-            address,bool)
-          handler: handleAuthorisationChanged
         - event: ContenthashChanged(indexed bytes32,bytes)
           handler: handleContentHashChanged
         - event: InterfaceChanged(indexed bytes32,indexed bytes4,address)
@@ -104,12 +103,18 @@ dataSources:
           handler: handleNameChanged
         - event: PubkeyChanged(indexed bytes32,bytes32,bytes32)
           handler: handlePubkeyChanged
-        - event: TextChanged(indexed bytes32,indexed string,string)
-          handler: handleTextChanged
         - event: TextChanged(indexed bytes32,indexed string,string,string)
           handler: handleTextChangedWithValue
         - event: VersionChanged(indexed bytes32,uint64)
           handler: handleVersionChanged
+        - event: PaymentAddressChanged(indexed bytes32,uint256,address)
+          handler: handlePaymentAddressChanged
+        - event: PaymentEnabledChanged(indexed bytes32,bool)
+          handler: handlePaymentEnabledChanged
+        - event: X402EndpointChanged(indexed bytes32,string)
+          handler: handleX402EndpointChanged
+        - event: AgentMetadataChanged(indexed bytes32,string)
+          handler: handleAgentMetadataChanged
   - kind: ethereum/contract
     name: BaseRegistrar
     network: base
@@ -155,7 +160,7 @@ dataSources:
         - name: EthRegistrarControllerOld
           file: ./abis/EthRegistrarControllerOld.json
       eventHandlers:
-        - event: NameRegistered(string,indexed bytes32,indexed address,uint256,uint256)
+        - event: NameRegistered(string,indexed bytes32,indexed address,uint256,uint256,uint256)
           handler: handleNameRegisteredByControllerOld
         - event: NameRenewed(string,indexed bytes32,uint256,uint256)
           handler: handleNameRenewedByController
@@ -170,18 +175,30 @@ dataSources:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
-      file: ./src/ethRegistrar.ts
+      file: ./src/agentRegistrar.ts
       entities:
         - Registration
+        - AgentWallet
+        - BatchRegistration
+        - PointsAward
       abis:
         - name: AgentRegistrarController
           file: ./abis/AgentRegistrarController.json
       eventHandlers:
-        - event: NameRegistered(string,indexed bytes32,indexed
-            address,uint256,uint256,uint256)
-          handler: handleNameRegisteredByController
-        - event: NameRenewed(string,indexed bytes32,uint256,uint256)
-          handler: handleNameRenewedByController
+        - event: NameRegistered(string,indexed bytes32,indexed address,uint256,uint256)
+          handler: handleNameRegisteredByAgentController
+        - event: AgentWalletDeployed(indexed address,indexed address,string)
+          handler: handleAgentWalletDeployed
+        - event: BatchRegistered(uint256,indexed address,uint256)
+          handler: handleBatchRegistered
+        - event: PointsAwarded(indexed address,string,uint256,uint256,uint256)
+          handler: handlePointsAwarded
+        - event: NameReserved(indexed bytes32,string,indexed address)
+          handler: handleNameReserved
+        - event: ReservedNameMinted(indexed bytes32,string,indexed address)
+          handler: handleReservedNameMinted
+        - event: NameReservationCleared(indexed bytes32,string)
+          handler: handleNameReservationCleared
   - kind: ethereum/contract
     name: NameWrapper
     network: base

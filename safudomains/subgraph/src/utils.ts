@@ -59,6 +59,10 @@ export function createOrLoadDomain(node: string): Domain {
   let domain = Domain.load(node);
   if (domain == null) {
     domain = new Domain(node);
+    domain.owner = EMPTY_ADDRESS;
+    domain.isMigrated = true;
+    domain.createdAt = BigInt.fromI32(0);
+    domain.subdomainCount = 0;
     domain.save();
   }
 
