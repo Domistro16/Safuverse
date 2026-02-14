@@ -10,8 +10,8 @@ dataSources:
     network: base
     source:
       abi: EnsRegistry
-      address: "0xa886B8897814193f99A88701d70b31b4a8E27a1E"
-      startBlock: 66307135
+      address: "0xA590B208e7F2e62a3987424D2E1b00cd62986fAd"
+      startBlock: 41995022
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -38,8 +38,8 @@ dataSources:
     network: base
     source:
       abi: EnsRegistry
-      address: "0x274ac41f25bf15d5cB003a0F216EB36008A8C0E0"
-      startBlock: 66307125
+      address: "0xA590B208e7F2e62a3987424D2E1b00cd62986fAd"
+      startBlock: 41995022
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -66,7 +66,8 @@ dataSources:
     network: base
     source:
       abi: Resolver
-      startBlock: 66307563
+      address: "0x0a8C0f71C3Ec3FC8cB59F27885eb52C033780b6f"
+      startBlock: 42017642
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -120,8 +121,8 @@ dataSources:
     network: base
     source:
       abi: BaseRegistrar
-      address: "0x4c797EbaA64Cc7f1bD2a82A36bEE5Cf335D1830c"
-      startBlock: 66307144
+      address: "0xCAfd2aCA95B79Ce2De0047F2309FCaB33Da75E9C"
+      startBlock: 41995031
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -147,8 +148,8 @@ dataSources:
     network: base
     source:
       abi: EthRegistrarControllerOld
-      address: "0xF42e181d8F1e345BdC1e6D5010fc1DF601724c57"
-      startBlock: 66307485
+      address: "0x7DeCA111771082771E527Ae9A38f593a684e31FB"
+      startBlock: 41995400
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -169,8 +170,8 @@ dataSources:
     network: base
     source:
       abi: AgentRegistrarController
-      address: "0xC902396A4E49914d1266cc80e22Aa182dcF23138"
-      startBlock: 72782648
+      address: "0xB5f3F983368e993b5f42D1dd659e4dC36fa5C494"
+      startBlock: 42017628
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -204,8 +205,8 @@ dataSources:
     network: base
     source:
       abi: NameWrapper
-      address: "0xbf4B53F867dfE5A78Cf268AfBfC1f334044e61ae"
-      startBlock: 66307396
+      address: "0x90d848F20589437EF2e05a91130aEEA253512736"
+      startBlock: 41995267
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
