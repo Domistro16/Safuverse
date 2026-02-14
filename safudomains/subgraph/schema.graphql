@@ -14,23 +14,13 @@ type DomainOwner @entity {
   totalRegistrations: BigInt!
   totalRenewals: BigInt!
 
-  # Transaction metrics
-  totalTransactions: BigInt!
-  successfulTransactions: BigInt!
-  failedTransactions: BigInt!
-
   # Volume metrics
   totalVolumeUSDC: BigDecimal!
   totalVolumeETH: BigDecimal!
 
-  # Activity metrics
-  firstTransactionAt: BigInt!
-  lastTransactionAt: BigInt!
-  uniqueContractsInteracted: BigInt!
-
-  # Reputation
-  reputationScore: Int!
-  lastScoreUpdate: BigInt!
+  # Activity timestamps
+  firstSeenAt: BigInt!
+  lastSeenAt: BigInt!
 
   # Points
   totalPoints: BigInt!
@@ -42,9 +32,6 @@ type DomainOwner @entity {
 
   # Agent wallet (if AA wallet was deployed)
   agentWallet: Bytes
-
-  # Internal tracking
-  interactedContracts: [Bytes!]!
 }
 
 type Domain @entity {
@@ -66,26 +53,6 @@ type Domain @entity {
 
   # Referral
   referrer: DomainOwner
-}
-
-type Transaction @entity {
-  id: ID! # Transaction hash (+ suffix for uniqueness)
-  owner: DomainOwner!
-  timestamp: BigInt!
-  successful: Boolean!
-  valueUSDC: BigDecimal!
-  valueETH: BigDecimal!
-  toContract: Bytes!
-  gasUsed: BigInt!
-  eventType: String!
-  userOpHash: Bytes
-}
-
-type ScoreSnapshot @entity {
-  id: ID! # owner-timestamp
-  owner: DomainOwner!
-  score: Int!
-  timestamp: BigInt!
 }
 
 # ─── Referral Entities ─────────────────────────────────────────────
@@ -130,7 +97,7 @@ type Bid @entity {
 # ─── Premium Name Entities ─────────────────────────────────────────
 
 type PremiumName @entity {
-  id: ID! # name string
+  id: ID! # name hash (indexed string)
   useAuction: Boolean!
   fixedPrice: BigDecimal!
   isActive: Boolean!
