@@ -47,6 +47,7 @@ import {
 import { constants } from '../constant';
 import Modal from 'react-modal';
 import DomainImage from './DomainImage';
+import { PaymentConfig } from './PaymentConfig';
 import { usePrivy } from '@privy-io/react-auth';
 import '../app/dashboard/dashboard.css';
 
@@ -484,6 +485,7 @@ export default function Dashboard() {
   const [payAmount, setPayAmount] = useState('');
   const [payDescription, setPayDescription] = useState('');
   const [payDomain, setPayDomain] = useState('');
+  const [showPaymentConfig, setShowPaymentConfig] = useState(false);
   const [generatedPayLink, setGeneratedPayLink] = useState('');
   const [invoiceClient, setInvoiceClient] = useState('');
   const [invoiceDueDate, setInvoiceDueDate] = useState('');
@@ -500,7 +502,7 @@ export default function Dashboard() {
   const { name: primaryName } = useENSName({ owner: address as `0x${string}` });
 
   // Payment profile for selected domain
-  const { profile: paymentProfile, isLoading: paymentProfileLoading } = usePaymentProfile(payDomain || '');
+  const { profile: paymentProfile, isLoading: paymentProfileLoading, refetch: refetchPaymentProfile } = usePaymentProfile(payDomain || '');
 
   // Set default pay domain when domains load
   useEffect(() => {
@@ -837,6 +839,15 @@ export default function Dashboard() {
                 <span style={{ fontWeight: 700, fontSize: '14px' }}>Payment profile not configured</span>
               </div>
               <p style={{ fontSize: '13px', color: '#666', margin: '4px 0 0' }}>Set up your resolver&apos;s x402 payment profile to accept payments.</p>
+              <div style={{ marginTop: '12px' }}>
+                <button
+                  className="dash-btn-primary"
+                  onClick={() => setShowPaymentConfig(true)}
+                  style={{ width: 'auto' }}
+                >
+                  Configure Payments
+                </button>
+              </div>
             </div>
           )}
 
@@ -928,6 +939,11 @@ export default function Dashboard() {
       )}
     </div>
   );
+
+  const closePaymentConfig = () => {
+    setShowPaymentConfig(false);
+    refetchPaymentProfile();
+  };
 
   // ── Reputation state ──────────────────────────────────────────────
   const { reputation, isLoading: repLoading, error: repError, checkReputation, reset: resetReputation } = useReputation();
@@ -1447,6 +1463,18 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
+
+      <Modal
+        isOpen={showPaymentConfig}
+        onRequestClose={closePaymentConfig}
+        closeTimeoutMS={200}
+        className="modal-content"
+        overlayClassName="modal-overlay"
+      >
+        <div className="action-modal" style={{ background: '#1a1a1a' }}>
+          <PaymentConfig name={payDomain.replace('.id', '')} onClose={closePaymentConfig} />
+        </div>
+      </Modal>
 
       <div className={`toast-notification ${toastVisible ? 'toast-active' : ''}`}>
         <CheckCircle size={16} style={{ color: '#00C853' }} /> Link Copied
