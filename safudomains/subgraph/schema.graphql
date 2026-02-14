@@ -1,0 +1,175 @@
+enum OwnerType {
+  HUMAN
+  AGENT
+}
+
+# ─── Core Entities ─────────────────────────────────────────────────
+
+type DomainOwner @entity {
+  id: ID! # Wallet address (lowercase)
+  ownerType: OwnerType!
+  domains: [Domain!]! @derivedFrom(field: "owner")
+
+  # Registration metrics
+  totalRegistrations: BigInt!
+  totalRenewals: BigInt!
+
+  # Transaction metrics
+  totalTransactions: BigInt!
+  successfulTransactions: BigInt!
+  failedTransactions: BigInt!
+
+  # Volume metrics
+  totalVolumeUSDC: BigDecimal!
+  totalVolumeETH: BigDecimal!
+
+  # Activity metrics
+  firstTransactionAt: BigInt!
+  lastTransactionAt: BigInt!
+  uniqueContractsInteracted: BigInt!
+
+  # Reputation
+  reputationScore: Int!
+  lastScoreUpdate: BigInt!
+
+  # Points
+  totalPoints: BigInt!
+
+  # Referral metrics
+  referralCount: BigInt!
+  referralEarnings: BigDecimal!
+  referredBy: DomainOwner
+
+  # Agent wallet (if AA wallet was deployed)
+  agentWallet: Bytes
+
+  # Internal tracking
+  interactedContracts: [Bytes!]!
+}
+
+type Domain @entity {
+  id: ID! # Domain name (e.g., "alice.id")
+  labelHash: Bytes!
+  owner: DomainOwner!
+  ownerType: OwnerType!
+  registeredAt: BigInt!
+  expiresAt: BigInt!
+  isActive: Boolean!
+  cost: BigDecimal!
+  registrationTx: Bytes!
+
+  # Resolver
+  resolver: Bytes
+
+  # Registration type
+  registeredVia: String! # "agent" or "eth"
+
+  # Referral
+  referrer: DomainOwner
+}
+
+type Transaction @entity {
+  id: ID! # Transaction hash (+ suffix for uniqueness)
+  owner: DomainOwner!
+  timestamp: BigInt!
+  successful: Boolean!
+  valueUSDC: BigDecimal!
+  valueETH: BigDecimal!
+  toContract: Bytes!
+  gasUsed: BigInt!
+  eventType: String!
+  userOpHash: Bytes
+}
+
+type ScoreSnapshot @entity {
+  id: ID! # owner-timestamp
+  owner: DomainOwner!
+  score: Int!
+  timestamp: BigInt!
+}
+
+# ─── Referral Entities ─────────────────────────────────────────────
+
+type Referral @entity {
+  id: ID! # tx hash + log index
+  referrer: DomainOwner!
+  registrant: DomainOwner!
+  nameHash: Bytes!
+  amount: BigDecimal!
+  token: Bytes!
+  isFiat: Boolean!
+  timestamp: BigInt!
+}
+
+# ─── Auction Entities ──────────────────────────────────────────────
+
+type Auction @entity {
+  id: ID! # auction ID
+  name: String!
+  reservePrice: BigDecimal!
+  startTime: BigInt!
+  endTime: BigInt!
+  isUSDC: Boolean!
+  highestBidder: Bytes
+  highestBid: BigDecimal!
+  settled: Boolean!
+  cancelled: Boolean!
+  winner: Bytes
+  winningAmount: BigDecimal
+  bids: [Bid!]! @derivedFrom(field: "auction")
+}
+
+type Bid @entity {
+  id: ID! # tx hash + log index
+  auction: Auction!
+  bidder: Bytes!
+  amount: BigDecimal!
+  timestamp: BigInt!
+}
+
+# ─── Premium Name Entities ─────────────────────────────────────────
+
+type PremiumName @entity {
+  id: ID! # name string
+  useAuction: Boolean!
+  fixedPrice: BigDecimal!
+  isActive: Boolean!
+  addedAt: BigInt!
+}
+
+# ─── Points Entities ───────────────────────────────────────────────
+
+type PointsEvent @entity {
+  id: ID! # tx hash + log index
+  user: DomainOwner!
+  name: String!
+  points: BigInt!
+  totalUserPoints: BigInt!
+  totalDistributed: BigInt!
+  timestamp: BigInt!
+}
+
+# ─── Registry Events ──────────────────────────────────────────────
+
+type RegistryEvent @entity {
+  id: ID! # tx hash + log index
+  node: Bytes!
+  eventType: String! # "NewOwner", "Transfer", "NewResolver"
+  owner: Bytes
+  resolver: Bytes
+  timestamp: BigInt!
+}
+
+# ─── Global Stats ─────────────────────────────────────────────────
+
+type GlobalStats @entity {
+  id: ID! # "global"
+  totalDomains: BigInt!
+  totalOwners: BigInt!
+  totalVolumeUSDC: BigDecimal!
+  totalVolumeETH: BigDecimal!
+  totalReferralsPaid: BigDecimal!
+  totalAuctions: BigInt!
+  totalBids: BigInt!
+  totalPointsDistributed: BigInt!
+}
