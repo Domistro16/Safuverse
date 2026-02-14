@@ -538,6 +538,26 @@ export default function Dashboard() {
   // Write contract for setting text records
   const { writeContractAsync: writeTextRecord, isPending: isSettingRecord } = useWriteContract();
 
+  // ── Reputation state ──────────────────────────────────────────────
+  const { reputation, isLoading: repLoading, error: repError, checkReputation, reset: resetReputation } = useReputation();
+  const [repSearchAddress, setRepSearchAddress] = useState('');
+  const [repAutoChecked, setRepAutoChecked] = useState(false);
+
+  // Auto-check connected wallet on tab switch
+  useEffect(() => {
+    if (activeTab === 'reputation' && address && !repAutoChecked && !reputation) {
+      checkReputation(address);
+      setRepAutoChecked(true);
+    }
+  }, [activeTab, address, repAutoChecked, reputation, checkReputation]);
+
+  const handleRepSearch = () => {
+    const target = repSearchAddress.trim() || address;
+    if (target) {
+      checkReputation(target);
+    }
+  };
+
   // Computed
   const domainsOwned = domains.length;
   const hasReputationAccess =
@@ -976,25 +996,7 @@ export default function Dashboard() {
     refetchPaymentProfile();
   };
 
-  // ── Reputation state ──────────────────────────────────────────────
-  const { reputation, isLoading: repLoading, error: repError, checkReputation, reset: resetReputation } = useReputation();
-  const [repSearchAddress, setRepSearchAddress] = useState('');
-  const [repAutoChecked, setRepAutoChecked] = useState(false);
 
-  // Auto-check connected wallet on tab switch
-  useEffect(() => {
-    if (activeTab === 'reputation' && address && !repAutoChecked && !reputation) {
-      checkReputation(address);
-      setRepAutoChecked(true);
-    }
-  }, [activeTab, address, repAutoChecked, reputation, checkReputation]);
-
-  const handleRepSearch = () => {
-    const target = repSearchAddress.trim() || address;
-    if (target) {
-      checkReputation(target);
-    }
-  };
 
   const renderReputation = () => {
     if (!hasReputationAccess) {
