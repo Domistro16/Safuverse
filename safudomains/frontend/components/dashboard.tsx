@@ -851,9 +851,6 @@ export default function Dashboard() {
               </div>
               <div style={{ fontSize: '13px', color: '#666' }}>
                 <div>Payment Address: <code style={{ fontSize: '12px' }}>{paymentProfile.paymentAddress.slice(0, 6)}...{paymentProfile.paymentAddress.slice(-4)}</code></div>
-                {paymentProfile.acceptedTokens.length > 0 && (
-                  <div>Accepted Tokens: {paymentProfile.acceptedTokens.length} token(s)</div>
-                )}
                 {paymentProfile.supportedChains.length > 0 && (
                   <div>Chains: {paymentProfile.supportedChains.map(c => c === 8453 ? 'Base' : `Chain ${c}`).join(', ')}</div>
                 )}

@@ -267,28 +267,6 @@ export const AgentPublicResolverAbi = [
         stateMutability: 'nonpayable',
         type: 'function',
     },
-    // Accepted Tokens
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-        ],
-        name: 'acceptedTokens',
-        outputs: [{ name: '', type: 'address[]' }],
-        stateMutability: 'view',
-        type: 'function',
-    },
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-            { name: 'tokens', type: 'address[]' },
-        ],
-        name: 'setAcceptedTokens',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-    },
     // Agent Metadata
     {
         inputs: [{ name: 'node', type: 'bytes32' }],
@@ -321,32 +299,6 @@ export const AgentPublicResolverAbi = [
             { name: 'enabled', type: 'bool' },
         ],
         name: 'setPaymentEnabled',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-    },
-    // Payment Limits
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-        ],
-        name: 'paymentLimits',
-        outputs: [
-            { name: 'minAmount', type: 'uint256' },
-            { name: 'maxAmount', type: 'uint256' },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-    },
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-            { name: 'minAmount', type: 'uint256' },
-            { name: 'maxAmount', type: 'uint256' },
-        ],
-        name: 'setPaymentLimits',
         outputs: [],
         stateMutability: 'nonpayable',
         type: 'function',

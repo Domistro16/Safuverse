@@ -588,17 +588,6 @@ export const AgentPublicResolverABI = [
         stateMutability: 'view',
         type: 'function',
     },
-    // Accepted tokens
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-        ],
-        name: 'acceptedTokens',
-        outputs: [{ type: 'address[]' }],
-        stateMutability: 'view',
-        type: 'function',
-    },
     // Agent metadata
     {
         inputs: [{ name: 'node', type: 'bytes32' }],
@@ -633,20 +622,6 @@ export const AgentPublicResolverABI = [
         name: 'setPaymentEnabled',
         outputs: [],
         stateMutability: 'nonpayable',
-        type: 'function',
-    },
-    // Payment limits
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-        ],
-        name: 'paymentLimits',
-        outputs: [
-            { name: 'minAmount', type: 'uint256' },
-            { name: 'maxAmount', type: 'uint256' },
-        ],
-        stateMutability: 'view',
         type: 'function',
     },
     // Standard resolver functions

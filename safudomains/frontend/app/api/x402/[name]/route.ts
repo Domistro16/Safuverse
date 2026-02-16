@@ -30,10 +30,9 @@ export async function GET(
             name: `${cleanName}.id`,
             paymentAddress: profile.paymentAddress,
             supportedChains: profile.supportedChains,
-            acceptedTokens: profile.acceptedTokens,
-            limits: profile.paymentLimits,
-            metadata: profile.agentMetadata,
             x402Endpoint: profile.x402Endpoint,
+            paymentEnabled: profile.paymentEnabled,
+            agentMetadata: profile.agentMetadata,
         })
     } catch (error) {
         console.error('Failed to resolve payment profile:', error)
@@ -84,23 +83,6 @@ export async function POST(
                     headers: { 'X-Payment-Required': 'true' }
                 }
             )
-        }
-
-        // Validate amount against limits
-        if (amount) {
-            const amountBigInt = BigInt(amount)
-            if (profile.paymentLimits.minAmount > 0n && amountBigInt < profile.paymentLimits.minAmount) {
-                return NextResponse.json(
-                    { error: `Minimum payment: ${profile.paymentLimits.minAmount.toString()}` },
-                    { status: 400 }
-                )
-            }
-            if (profile.paymentLimits.maxAmount > 0n && amountBigInt > profile.paymentLimits.maxAmount) {
-                return NextResponse.json(
-                    { error: `Maximum payment: ${profile.paymentLimits.maxAmount.toString()}` },
-                    { status: 400 }
-                )
-            }
         }
 
         // Return payment instructions

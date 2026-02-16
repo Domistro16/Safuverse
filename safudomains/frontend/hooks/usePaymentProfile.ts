@@ -7,13 +7,8 @@ export interface PaymentProfile {
     x402Endpoint: string
     paymentAddress: `0x${string}`
     supportedChains: number[]
-    acceptedTokens: `0x${string}`[]
     agentMetadata: string
     paymentEnabled: boolean
-    paymentLimits: {
-        minAmount: bigint
-        maxAmount: bigint
-    }
 }
 
 interface UsePaymentProfileResult {
@@ -58,13 +53,8 @@ export const usePaymentProfile = (
                 x402Endpoint: data.x402Endpoint || '',
                 paymentAddress: data.paymentAddress || '0x0000000000000000000000000000000000000000',
                 supportedChains: data.supportedChains || [],
-                acceptedTokens: data.acceptedTokens || [],
                 agentMetadata: data.agentMetadata || '',
                 paymentEnabled: data.paymentEnabled ?? false,
-                paymentLimits: {
-                    minAmount: data.paymentLimits?.minAmount ? BigInt(data.paymentLimits.minAmount) : 0n,
-                    maxAmount: data.paymentLimits?.maxAmount ? BigInt(data.paymentLimits.maxAmount) : 0n,
-                },
             })
         } catch (err) {
             console.error('Error fetching payment profile:', err)

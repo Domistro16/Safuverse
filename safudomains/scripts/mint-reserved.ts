@@ -11,8 +11,8 @@ const PUBLIC_RESOLVER: Address = "0x0a8C0f71C3Ec3FC8cB59F27885eb52C033780b6f";
 const MINTS: { name: string; to: Address }[] = [
   
   {
-    name: "domistro",
-    to: "0xd83defba240568040b39bb2c8b4db7db02d40593",
+    name: "alice",
+    to: "0x639DB8EA5529083DDDAf4A87816B395691a26a5f",
   },
 ];
 
@@ -47,7 +47,7 @@ async function main() {
       secret: zeroHash,
       resolver: PUBLIC_RESOLVER,
       data: [] as `0x${string}`[],
-      reverseRecord: true,
+      reverseRecord: false,
       ownerControlledFuses: 0,
       deployWallet: false,
       walletSalt: 0n,
@@ -56,7 +56,24 @@ async function main() {
     console.log("Mint tx:", mintHash);
 
     const tokenId = namehash(fullName);
-  
+    console.log(`Transferring ${fullName} -> ${to}`);
+    const transferHash = await nameWrapper.write.safeTransferFrom([
+      OWNER,
+      to,
+      BigInt(tokenId),
+      1n,
+      "0x",
+    ]);
+    console.log("Transfer tx:", transferHash);
+
+    console.log(`Setting primary name for ${to}: ${fullName}`);
+    const reverseHash = await reverseRegistrar.write.setNameForAddr([
+      to,
+      to,
+      PUBLIC_RESOLVER,
+      fullName,
+    ]);
+    console.log("Reverse tx:", reverseHash);
   }
 }
 

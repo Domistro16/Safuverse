@@ -6,7 +6,7 @@ const RESERVED_OWNER: Address =
   "0xd83defba240568040b39bb2c8b4db7db02d40593";
 
 const NAMES = [
-  "nadya"
+  "alice"
 ].map((n) => n.toLowerCase());
 
 async function main() {

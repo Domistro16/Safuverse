@@ -46,37 +46,38 @@ import {
     AgentAccountFactoryAbi,
     EntryPointAbi,
 } from './abis'
-
 /**
- * SafuDomains SDK Client
+ * NexDomains SDK Client
  *
- * Main entry point for interacting with SafuDomains v2.
- * Supports both direct on-chain calls and API-based registration.
+ * Main entry point for interacting with NexDomains v2.
+ * Supports both direct on-chain interactions and API-based registration.
  *
  * @example
  * ```typescript
- * import { NexDomains } from '@safuverse/safudomains-sdk'
+ * import { NexDomains } from '@nexid/sdk'
  *
- * // API-based usage (for agents - no wallet needed for reads)
+ * // API-based usage (no wallet required for read operations)
  * const sdk = new NexDomains({
- *   chainId: 84532,
- *   apiBaseUrl: 'https://safudomains.com',
+ *   chainId: 84532, // Base Sepolia
+ *   apiBaseUrl: 'https://names.nexid.fun',
  * })
  *
- * // Check price via API
+ * // Fetch domain price via API
  * const price = await sdk.apiGetPrice('my-trading-agent')
  *
- * // Register via API (returns tx to sign)
- * const result = await sdk.apiRegister('my-trading-agent', '0x...')
+ * // Register via API (returns unsigned transaction data to sign)
+ * const { tx } = await sdk.apiRegister('my-trading-agent', '0x...')
  *
- * // Direct on-chain usage (needs wallet client)
+ * // Direct on-chain usage (requires wallet client)
  * const sdk2 = new NexDomains({
  *   chainId: 84532,
  *   walletClient,
  * })
+ *
  * await sdk2.register('my-agent')
  * ```
  */
+
 export class NexDomains {
     public readonly chainId: number
     public readonly config: ChainConfig
@@ -432,44 +433,6 @@ export class NexDomains {
     /**
      * Set accepted tokens for a domain on a specific chain
      */
-    async setAcceptedTokens(name: string, chainId: number, tokens: Address[]): Promise<Hash> {
-        if (!this.walletClient) {
-            throw new Error('WalletClient required for write operations')
-        }
-
-        const [account] = await this.walletClient.getAddresses()
-        const node = this.namehash(name)
-
-        return await this.walletClient.writeContract({
-            address: this.config.resolver,
-            abi: AgentPublicResolverAbi,
-            functionName: 'setAcceptedTokens',
-            args: [node, BigInt(chainId), tokens],
-            account,
-            chain: this.chainId === 8453 ? base : baseSepolia,
-        })
-    }
-
-    /**
-     * Set payment limits for a domain on a specific chain
-     */
-    async setPaymentLimits(name: string, chainId: number, minAmount: bigint, maxAmount: bigint): Promise<Hash> {
-        if (!this.walletClient) {
-            throw new Error('WalletClient required for write operations')
-        }
-
-        const [account] = await this.walletClient.getAddresses()
-        const node = this.namehash(name)
-
-        return await this.walletClient.writeContract({
-            address: this.config.resolver,
-            abi: AgentPublicResolverAbi,
-            functionName: 'setPaymentLimits',
-            args: [node, BigInt(chainId), minAmount, maxAmount],
-            account,
-            chain: this.chainId === 8453 ? base : baseSepolia,
-        })
-    }
 
     /**
      * Get full payment profile for a domain (on-chain)
@@ -481,41 +444,22 @@ export class NexDomains {
             x402Endpoint,
             paymentAddress,
             supportedChains,
-            acceptedTokens,
             agentMetadata,
             paymentEnabled,
-            paymentLimits,
         ] = await Promise.all([
             this.getX402Endpoint(name),
             this.getPaymentAddress(name, chainId),
             this.getSupportedChains(name),
-            this.publicClient.readContract({
-                address: this.config.resolver,
-                abi: AgentPublicResolverAbi,
-                functionName: 'acceptedTokens',
-                args: [node, BigInt(chainId)],
-            }).catch(() => [] as Address[]), // Default strict to empty if not implemented
             this.getAgentMetadata(name),
             this.isPaymentEnabled(name),
-            this.publicClient.readContract({
-                address: this.config.resolver,
-                abi: AgentPublicResolverAbi,
-                functionName: 'paymentLimits',
-                args: [node, BigInt(chainId)],
-            }).catch(() => [0n, 0n] as const), // Default strict to 0 limits if not implemented
         ])
 
         return {
             x402Endpoint,
             paymentAddress,
             supportedChains: supportedChains.map(Number),
-            acceptedTokens: [...acceptedTokens],
             agentMetadata,
             paymentEnabled,
-            paymentLimits: {
-                minAmount: paymentLimits[0],
-                maxAmount: paymentLimits[1],
-            },
         }
     }
 

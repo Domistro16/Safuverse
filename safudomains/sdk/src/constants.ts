@@ -1,5 +1,4 @@
 import type { Address } from 'viem'
-import type { Address } from 'viem'
 import type { ChainConfig } from './types'
 
 /**

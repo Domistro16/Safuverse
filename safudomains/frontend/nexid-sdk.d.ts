@@ -18,13 +18,8 @@ declare module '@nexid/sdk' {
     ): Promise<{
       paymentAddress: `0x${string}`
       supportedChains: number[]
-      acceptedTokens: `0x${string}`[]
       agentMetadata: string
       paymentEnabled: boolean
-      paymentLimits: {
-        minAmount: bigint
-        maxAmount: bigint
-      }
       x402Endpoint: string
     }>
   }

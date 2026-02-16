@@ -341,10 +341,9 @@ curl -X POST /api/register/relay \\
   "name": "my-agent.id",
   "paymentAddress": "0x71C9...8A21",
   "supportedChains": [8453, 1],
-  "acceptedTokens": ["0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"],
-  "limits": { "minAmount": "0", "maxAmount": "0" },
-  "metadata": "ipfs://Qm...",
-  "x402Endpoint": "https://api.myagent.com/x402"
+  "x402Endpoint": "https://api.myagent.com/x402",
+  "paymentEnabled": true,
+  "agentMetadata": "ipfs://Qm..."
 }`}</pre>
             </div>
           </div>

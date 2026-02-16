@@ -18,8 +18,6 @@ async function main() {
 
     const calls: { name: string; args: readonly any[] }[] = [
         { name: 'paymentAddress', args: [NODE, 8453n] },
-        { name: 'acceptedTokens', args: [NODE, 8453n] },
-        { name: 'paymentLimits', args: [NODE, 8453n] },
     ];
 
     for (const call of calls) {
