@@ -1,6 +1,7 @@
 declare module '@nexid/sdk' {
   export class NexDomains {
     constructor(config: { chainId: number; walletClient?: any })
+    publicClient: any
     available(name: string): Promise<boolean>
     getPrice(name: string): Promise<{
       priceWei: bigint
