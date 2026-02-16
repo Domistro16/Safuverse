@@ -13,6 +13,7 @@ interface PaymentConfigProps {
 export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
     const { data: walletClient } = useWalletClient()
     const [x402Endpoint, setX402Endpoint] = useState('')
+    const [paymentAddress, setPaymentAddress] = useState('')
     const [paymentEnabled, setPaymentEnabled] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [isFetching, setIsFetching] = useState(true)
@@ -29,6 +30,12 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
                 ])
                 setX402Endpoint(endpoint)
                 setPaymentEnabled(enabled)
+                try {
+                    const addr = await sdk.getPaymentAddress(name, CHAIN_ID)
+                    setPaymentAddress(addr)
+                } catch {
+                    setPaymentAddress('')
+                }
             } catch (error) {
                 console.error('Failed to fetch payment config:', error)
             } finally {
@@ -58,6 +65,11 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
             if (x402Endpoint) {
                 const hash = await sdk.setX402Endpoint(name, x402Endpoint)
                 // We should ideally wait for receipt here too, but prioritized enable
+            }
+
+            // Set payment address for Base if provided
+            if (paymentAddress) {
+                await sdk.setPaymentAddress(name, CHAIN_ID, paymentAddress as `0x${string}`)
             }
 
             // Set payment enabled status
@@ -117,6 +129,22 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
             </p>
 
             <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Payment Address (Base)
+                    </label>
+                    <input
+                        type="text"
+                        value={paymentAddress}
+                        onChange={(e) => setPaymentAddress(e.target.value)}
+                        placeholder="0x..."
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                        Where payments will be sent on Base
+                    </p>
+                </div>
+
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                         x402 Endpoint URL
