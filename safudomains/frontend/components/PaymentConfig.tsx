@@ -56,13 +56,26 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
 
             // Set x402 endpoint if provided
             if (x402Endpoint) {
-                await sdk.setX402Endpoint(name, x402Endpoint)
+                const hash = await sdk.setX402Endpoint(name, x402Endpoint)
+                // We should ideally wait for receipt here too, but prioritized enable
             }
 
             // Set payment enabled status
-            await sdk.setPaymentEnabled(name, paymentEnabled)
+            const hash = await sdk.setPaymentEnabled(name, paymentEnabled)
+
+            setMessage({ type: 'success', text: 'Transaction submitted. Waiting for confirmation...' })
+
+            // Wait for transaction receipt
+            const publicClient = sdk.publicClient
+            await publicClient.waitForTransactionReceipt({ hash })
 
             setMessage({ type: 'success', text: 'Payment configuration saved!' })
+
+            // Allow time for user to see success message
+            setTimeout(() => {
+                if (onClose) onClose()
+            }, 1000)
+
         } catch (error) {
             console.error('Failed to save payment config:', error)
             setMessage({ type: 'error', text: 'Failed to save configuration' })

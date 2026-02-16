@@ -22,12 +22,8 @@ export async function GET(
     try {
         const profile = await sdk.getPaymentProfile(cleanName, CHAIN_ID)
 
-        if (!profile.paymentEnabled) {
-            return NextResponse.json(
-                { error: 'Payments not enabled for this name' },
-                { status: 404 }
-            )
-        }
+        // Return x402 compatible response regardless of enabled status for dashboard visibility
+        // Clients should check paymentEnabled flag
 
         // Return x402 compatible response
         return NextResponse.json({

@@ -494,7 +494,7 @@ export class NexDomains {
                 abi: AgentPublicResolverAbi,
                 functionName: 'acceptedTokens',
                 args: [node, BigInt(chainId)],
-            }),
+            }).catch(() => [] as Address[]), // Default strict to empty if not implemented
             this.getAgentMetadata(name),
             this.isPaymentEnabled(name),
             this.publicClient.readContract({
@@ -502,7 +502,7 @@ export class NexDomains {
                 abi: AgentPublicResolverAbi,
                 functionName: 'paymentLimits',
                 args: [node, BigInt(chainId)],
-            }),
+            }).catch(() => [0n, 0n] as const), // Default strict to 0 limits if not implemented
         ])
 
         return {
