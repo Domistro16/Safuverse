@@ -10,6 +10,8 @@ declare module '@nexid/sdk' {
     }>
     getX402Endpoint(name: string): Promise<string>
     isPaymentEnabled(name: string): Promise<boolean>
+    getPaymentAddress(name: string, chainId: number): Promise<`0x${string}`>
+    setPaymentAddress(name: string, chainId: number, addr: `0x${string}`): Promise<void>
     setX402Endpoint(name: string, endpoint: string): Promise<void>
     setPaymentEnabled(name: string, enabled: boolean): Promise<void>
     getPaymentProfile(
