@@ -675,7 +675,7 @@ export default function CourseDetailPage() {
               <div className={`text-[11px] uppercase tracking-[0.16em] mb-1 ${isDark ? 'text-[#ffb000]' : 'text-[#a16207]'
                 }`}>Course track</div>
               <div className={`text-[13px] font-semibold mb-2 ${isDark ? 'text-white' : 'text-safuDeep'}`}>
-                {displayLessons.length} lessons &middot; {courseDuration}
+                {courseDuration}
               </div>
               {/* Progress Bar */}
               {isEnrolled && (
@@ -734,65 +734,14 @@ export default function CourseDetailPage() {
                   )}
                 </div>
               )}
-              <div className="space-y-2 max-h-48 overflow-auto pr-1">
-                {displayLessons.map((lesson, index) => {
-                  const isActive = selectedLessonIndex === index;
-                  const isVideoWatched = completedLessons.includes(index);
-                  const isAccessible = isLessonAccessible(index);
-                  const isLocked = isEnrolled && !isAccessible;
-                  // Check lesson completion from API progress
-                  const lessonProg = courseProgress?.lessonProgress?.find(lp => lp.lessonId === lesson.id);
-                  const hasQuiz = lesson.hasQuiz;
-                  const quizPassed = lessonProg?.quizPassed ?? false;
-                  const isFullyComplete = hasQuiz ? (isVideoWatched && quizPassed) : isVideoWatched;
-                  const isPartialComplete = hasQuiz && isVideoWatched && !quizPassed;
-                  return (
-                    <button
-                      key={lesson.id}
-                      onClick={() => handleSelectLesson(index)}
-                      disabled={!isEnrolled || isLocked}
-                      title={isLocked ? 'Complete previous lesson first' : undefined}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl text-[12px] text-left border transition ${isActive
-                        ? isDark
-                          ? "bg-[#ffb000] text-black border-[#ffb000] font-semibold"
-                          : "bg-[#111] text-[#fef3c7] border-[#111]"
-                        : isEnrolled && isAccessible
-                          ? isDark
-                            ? "bg-[#1a1a24] hover:bg-[#252530] text-gray-300 border-[#2a2a3a] cursor-pointer"
-                            : "bg-white hover:bg-[#fefce8] text-[#444] border-black/5 cursor-pointer"
-                          : isDark
-                            ? "bg-[#1a1a24] text-gray-600 border-[#2a2a3a] cursor-not-allowed opacity-60"
-                            : "bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed opacity-60"
-                        }`}
-                    >
-                      <span className="truncate flex items-center gap-2">
-                        {isFullyComplete ? (
-                          <span className={isDark ? 'text-[#ffb000]' : 'text-green-500'}>&#10003;</span>
-                        ) : isPartialComplete ? (
-                          <span className="text-orange-400" title="Video watched, quiz pending">&#9684;</span>
-                        ) : isLocked ? (
-                          <span className="text-gray-500">&#128274;</span>
-                        ) : null}
-                        {lesson.title}
-                      </span>
-                      <span className="text-[11px] opacity-80 flex items-center gap-1">
-                        {hasQuiz && (
-                          quizPassed
-                            ? <span className="text-green-400" title="Quiz passed">&#10003;&#128221;</span>
-                            : <span title="Quiz available">&#128221;</span>
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+
               {!isEnrolled && (
                 <div className="mt-3 space-y-2">
                   {!address ? (
                     <p className={`text-[11px] text-center ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
                       Connect wallet to enroll
                     </p>
-                  ) : canEnroll ? (
+                  ) : (
                     <button
                       onClick={handleEnroll}
                       disabled={enrolling}
@@ -805,10 +754,6 @@ export default function CourseDetailPage() {
                     >
                       {enrolling ? 'Enrolling...' : 'Enroll Now'}
                     </button>
-                  ) : (
-                    <p className={`text-[11px] text-center ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                      Insufficient points to enroll
-                    </p>
                   )}
                   {enrollError && (
                     <p className="text-[11px] text-center text-red-500">
@@ -908,8 +853,8 @@ export default function CourseDetailPage() {
             <ul className="space-y-3">
               {courseKeyTakeaways.map((item, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <span className={`mt-0.5 text-[14px] ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`}>&#10003;</span>
-                  <span className={`text-[13px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-[#444]'}`}>{item}</span>
+                  <span className={`mt-0.5 shrink-0 text-[14px] ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`}>&#10003;</span>
+                  <p className={`text-[13px] leading-relaxed whitespace-pre-wrap break-words min-w-0 ${isDark ? 'text-gray-300' : 'text-[#444]'}`}>{item}</p>
                 </li>
               ))}
             </ul>

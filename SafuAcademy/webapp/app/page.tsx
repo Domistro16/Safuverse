@@ -23,6 +23,7 @@ interface FeaturedCourse {
   completionPoints: number;
   minPointsToAccess: number;
   enrollmentCost: number;
+  isIncentivized: boolean;
   _count?: {
     lessons: number;
   };
@@ -92,11 +93,12 @@ function FeaturedCourses() {
       thumbnailUrl: c.thumbnailUrl || '',
       duration: c.duration,
       totalLessons: BigInt(c._count?.lessons ?? 0),
-      minPointsToAccess: BigInt(c.minPointsToAccess),
-      enrollmentCost: BigInt(c.enrollmentCost),
+      minPointsToAccess: BigInt(c.minPointsToAccess ?? 0),
+      enrollmentCost: BigInt(c.enrollmentCost ?? 0),
       objectives: [],
       prerequisites: [],
       longDescription: c.description,
+      isIncentivized: c.isIncentivized ?? false,
     } as OnChainCourse))
     : (contractCourses?.slice(0, 3) ?? []);
 

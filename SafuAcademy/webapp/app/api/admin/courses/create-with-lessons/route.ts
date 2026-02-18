@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
             }
 
             return { course, lessons: createdLessons };
-        });
+        }, { timeout: 30000 });
 
         return NextResponse.json({
             course: result.course,

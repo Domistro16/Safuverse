@@ -17,17 +17,30 @@ interface AuthState {
     domainName: string | null;
 }
 
+// Read existing auth from localStorage synchronously at init time
+function getInitialAuthState(): AuthState {
+    if (typeof window === 'undefined') {
+        return { isAuthenticated: false, token: null, user: null, domainName: null };
+    }
+    try {
+        const token = localStorage.getItem('auth_token');
+        const userStr = localStorage.getItem('auth_user');
+        if (token && userStr) {
+            const user = JSON.parse(userStr);
+            return { isAuthenticated: true, token, user, domainName: null };
+        }
+    } catch {
+        // ignore
+    }
+    return { isAuthenticated: false, token: null, user: null, domainName: null };
+}
+
 export function CustomConnect() {
     const { login, ready, authenticated } = usePrivy();
     const { address, isConnected, chainId } = useAccount();
     const { signMessageAsync } = useSignMessage();
     const { switchChain } = useSwitchChain();
-    const [authState, setAuthState] = useState<AuthState>({
-        isAuthenticated: false,
-        token: null,
-        user: null,
-        domainName: null,
-    });
+    const [authState, setAuthState] = useState<AuthState>(getInitialAuthState);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [showWalletModal, setShowWalletModal] = useState(false);
     const hasAttemptedAuth = useRef(false);
@@ -39,6 +52,7 @@ export function CustomConnect() {
         }
     }, [isConnected, chainId, switchChain]);
 
+    // Clear auth when wallet disconnects
     useEffect(() => {
         if (!isConnected || !authenticated) {
             localStorage.removeItem('auth_token');
@@ -103,36 +117,37 @@ export function CustomConnect() {
         }
     }, [address, isAuthenticating, signMessageAsync]);
 
+    // Only trigger sign-message flow when truly not authenticated
+    // (i.e. no valid token in localStorage for this wallet)
     useEffect(() => {
         if (
             isConnected &&
             authenticated &&
             address &&
-            !authState.isAuthenticated &&
             !isAuthenticating &&
             !hasAttemptedAuth.current
         ) {
-            const token = localStorage.getItem('auth_token');
-            const user = localStorage.getItem('auth_user');
+            // If already authenticated for this wallet, nothing to do
+            if (
+                authState.isAuthenticated &&
+                authState.user?.walletAddress?.toLowerCase() === address.toLowerCase()
+            ) {
+                return;
+            }
 
-            if (token && user) {
-                try {
-                    const parsedUser = JSON.parse(user);
-                    if (
-                        parsedUser.walletAddress?.toLowerCase() ===
-                        address?.toLowerCase()
-                    ) {
-                        setAuthState({
-                            isAuthenticated: true,
-                            token,
-                            user: parsedUser,
-                            domainName: null,
-                        });
+            // Check localStorage one more time in case state is stale
+            try {
+                const token = localStorage.getItem('auth_token');
+                const userStr = localStorage.getItem('auth_user');
+                if (token && userStr) {
+                    const parsedUser = JSON.parse(userStr);
+                    if (parsedUser.walletAddress?.toLowerCase() === address.toLowerCase()) {
+                        setAuthState({ isAuthenticated: true, token, user: parsedUser, domainName: null });
                         return;
                     }
-                } catch {
-                    // continue to wallet sign-in
                 }
+            } catch {
+                // fall through to sign
             }
 
             hasAttemptedAuth.current = true;
@@ -143,6 +158,7 @@ export function CustomConnect() {
         authenticated,
         address,
         authState.isAuthenticated,
+        authState.user,
         isAuthenticating,
         authenticate,
     ]);
