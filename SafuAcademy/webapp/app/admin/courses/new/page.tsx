@@ -116,7 +116,7 @@ export default function CreateCoursePage() {
     const linkedRef = useRef(false);
 
     useEffect(() => {
-        if (!txSuccess || !hash || !createdCourseId || linkedRef.current) return;
+        if (!txSuccess || !hash || createdCourseId == null || linkedRef.current) return;
         linkedRef.current = true;
         (async () => {
             try {
@@ -349,6 +349,10 @@ export default function CreateCoursePage() {
         linkedRef.current = false;
 
         try {
+            if (!CONTRACT_ADDRESS) {
+                throw new Error('Contract address is not configured. Set NEXT_PUBLIC_LEVEL3_COURSE_ADDRESS.');
+            }
+
             const backendCourseId = await uploadToBackend();
             if (backendCourseId == null) throw new Error('Invalid backend response.');
             setCreatedCourseId(backendCourseId);
@@ -694,16 +698,18 @@ export default function CreateCoursePage() {
                                 rows={2}
                                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"
                             />
-                            <input
-                                type="number"
-                                min="0"
-                                value={lesson.watchPoints}
-                                onChange={(e) =>
-                                    updateLesson(lessonIndex, 'watchPoints', parseInt(e.target.value || '0', 10))
-                                }
-                                placeholder="Watch points"
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"
-                            />
+                            {formData.isIncentivized && (
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={lesson.watchPoints}
+                                    onChange={(e) =>
+                                        updateLesson(lessonIndex, 'watchPoints', parseInt(e.target.value || '0', 10))
+                                    }
+                                    placeholder="Watch points"
+                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"
+                                />
+                            )}
 
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">

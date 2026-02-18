@@ -413,7 +413,9 @@ export default function EditCoursePage() {
                         <h2 className="text-xl font-semibold">Add Lesson</h2>
                         <input value={newLessonTitle} onChange={(e) => setNewLessonTitle(e.target.value)} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" placeholder="Lesson title" />
                         <textarea value={newLessonDescription} onChange={(e) => setNewLessonDescription(e.target.value)} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" rows={2} placeholder="Lesson description" />
-                        <input type="number" min="0" value={newLessonWatchPoints} onChange={(e) => setNewLessonWatchPoints(parseInt(e.target.value || '0', 10))} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" placeholder="Watch points" />
+                        {course.isIncentivized && (
+                            <input type="number" min="0" value={newLessonWatchPoints} onChange={(e) => setNewLessonWatchPoints(parseInt(e.target.value || '0', 10))} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" placeholder="Watch points" />
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                             <select value={newLessonLanguage} onChange={(e) => { const code = e.target.value; const found = LANGUAGES.find((l) => l.code === code); setNewLessonLanguage(code); setNewLessonLabel(found?.label || 'English'); }} className="px-3 py-2 bg-gray-700 rounded-lg border border-gray-600">
                                 {LANGUAGES.map((lang) => <option key={lang.code} value={lang.code}>{lang.label}</option>)}
@@ -435,7 +437,9 @@ export default function EditCoursePage() {
                             </div>
                             <input value={lesson.title} onChange={(e) => setCourse({ ...course, lessons: course.lessons.map((l) => l.id === lesson.id ? { ...l, title: e.target.value } : l) })} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" />
                             <textarea value={lesson.description || ''} onChange={(e) => setCourse({ ...course, lessons: course.lessons.map((l) => l.id === lesson.id ? { ...l, description: e.target.value } : l) })} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" rows={2} />
-                            <input type="number" min="0" value={lesson.watchPoints} onChange={(e) => setCourse({ ...course, lessons: course.lessons.map((l) => l.id === lesson.id ? { ...l, watchPoints: parseInt(e.target.value || '0', 10) } : l) })} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" />
+                            {course.isIncentivized && (
+                                <input type="number" min="0" value={lesson.watchPoints} onChange={(e) => setCourse({ ...course, lessons: course.lessons.map((l) => l.id === lesson.id ? { ...l, watchPoints: parseInt(e.target.value || '0', 10) } : l) })} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" />
+                            )}
 
                             <div className="space-y-2">
                                 {lesson.videos.map((video) => (

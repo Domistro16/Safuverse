@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount, useSignMessage } from 'wagmi';
+import { useAccount, useSignMessage, useSwitchChain } from 'wagmi';
 import { usePrivy } from '@privy-io/react-auth';
+import { base } from 'viem/chains';
 import Link from 'next/link';
 
 interface AdminLayoutProps {
@@ -11,19 +12,29 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-    const { address, isConnected } = useAccount();
+    const { address, isConnected, chainId } = useAccount();
     const { authenticated, login, ready } = usePrivy();
     const { signMessageAsync } = useSignMessage();
+    const { switchChain } = useSwitchChain();
     const router = useRouter();
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Auto-switch to Base mainnet if on wrong chain
+    useEffect(() => {
+        if (isConnected && chainId && chainId !== base.id) {
+            switchChain({ chainId: base.id });
+        }
+    }, [isConnected, chainId, switchChain]);
 
     useEffect(() => {
         // Don't check anything until Privy has finished initializing
         if (!ready) return;
 
         async function checkAdmin() {
+            // Reset loading state for each check to avoid showing stale UI
+            setLoading(true);
             try {
                 // 1. If we already have a token, try it immediately (no wallet needed)
                 const existingToken = localStorage.getItem('auth_token');
