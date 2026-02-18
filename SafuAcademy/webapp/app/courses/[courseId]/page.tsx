@@ -5,14 +5,8 @@ import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { useReadContract, useAccount } from "wagmi";
 import { abi, Deploy, OnChainCourse } from "@/lib/constants";
-import VideoPlayer from "@/components/VideoPlayer";
 import { getProgress, updateProgress } from "@/hooks/progress";
 import { useTheme } from "@/app/providers";
-interface VideoSource {
-  url: string;
-  language: string;
-  label: string;
-}
 // Backend lesson type (from database)
 interface BackendLesson {
   id: string;
@@ -54,9 +48,8 @@ export default function CourseDetailPage() {
   const [activeTab, setActiveTab] = useState("Transcript");
   const [notesHtml, setNotesHtml] = useState("");
   const notesRef = useRef<HTMLDivElement>(null);
-  const [videos, setVideos] = useState<VideoSource[]>([]);
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
-  const [_videoError, setVideoError] = useState<string | null>(null);
   // Lesson player state
   const [selectedLessonIndex, setSelectedLessonIndex] = useState(0);
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
@@ -282,22 +275,20 @@ export default function CourseDetailPage() {
       setNotesSaving(false);
     }
   }, []);
-  // Fetch video for selected lesson (only when enrolled and not incentivized/SCORM)
-  // Videos are always fetched from backend API
+  // Fetch embed URL for selected lesson (only when enrolled and not incentivized/SCORM)
   useEffect(() => {
     let cancelled = false;
     async function getVideo() {
       if (!isEnrolled || backendCourse?.isIncentivized) {
-        setVideos([]);
+        setEmbedUrl(null);
         return;
       }
       const lesson = displayLessons[selectedLessonIndex];
       if (!lesson) {
-        setVideos([]);
+        setEmbedUrl(null);
         return;
       }
       setVideoLoading(true);
-      setVideoError(null);
       setIsWatched(false);
       setWatchedPercentage(0);
       try {
@@ -307,25 +298,17 @@ export default function CourseDetailPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.videos && data.videos.length > 0) {
-            const newVideos: VideoSource[] = data.videos.map((v: { signedUrl: string; language: string; label: string }) => ({
-              url: v.signedUrl,
-              language: v.language,
-              label: v.label,
-            }));
-            if (!cancelled) setVideos(newVideos);
-          } else if (data.signedUrl) {
-            // Legacy single video support
-            if (!cancelled) setVideos([{ url: data.signedUrl, language: 'en', label: 'English' }]);
-          } else {
-            if (!cancelled) setVideos([]);
-          }
+          const url =
+            data?.videos?.[0]?.signedUrl ||
+            data?.signedUrl ||
+            null;
+          if (!cancelled) setEmbedUrl(url);
         } else {
-          if (!cancelled) setVideoError("Video unavailable");
+          if (!cancelled) setEmbedUrl(null);
         }
       } catch (err) {
         console.error("Failed to fetch video from backend:", err);
-        if (!cancelled) setVideoError("Video unavailable");
+        if (!cancelled) setEmbedUrl(null);
       } finally {
         if (!cancelled) setVideoLoading(false);
       }
@@ -335,22 +318,20 @@ export default function CourseDetailPage() {
       cancelled = true;
     };
   }, [isEnrolled, selectedLessonIndex, displayLessons, backendCourse?.isIncentivized]);
-  // Handle video watch progress
-  const handleWatchedChange = useCallback(async (watched: boolean, percentage: number) => {
-    setWatchedPercentage(percentage);
-    if (watched && !isWatched) {
+  // Auto-complete lesson after viewing the iframe for 60 seconds
+  useEffect(() => {
+    if (!isEnrolled || !embedUrl || isWatched) return;
+    const timer = setTimeout(async () => {
       setIsWatched(true);
+      setWatchedPercentage(100);
       const lesson = displayLessons[selectedLessonIndex];
-      // Update completed lessons locally
       if (!completedLessons.includes(selectedLessonIndex)) {
         const newCompleted = [...completedLessons, selectedLessonIndex];
         setCompletedLessons(newCompleted);
-        // Save to localStorage
         if (address) {
           updateProgress(address, Number(courseId!), selectedLessonIndex);
         }
       }
-      // Save to database via API
       if (lesson) {
         try {
           const token = localStorage.getItem('auth_token');
@@ -361,10 +342,9 @@ export default function CourseDetailPage() {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({ videoProgressPercent: percentage }),
+              body: JSON.stringify({ videoProgressPercent: 100 }),
             });
             if (res.ok) {
-              // Refresh course progress to get updated quiz-based calculation
               const progressRes = await fetch(`/api/courses/${courseId}/progress`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
@@ -378,8 +358,9 @@ export default function CourseDetailPage() {
           console.error('Failed to save lesson completion:', err);
         }
       }
-    }
-  }, [isWatched, selectedLessonIndex, completedLessons, address, courseId, displayLessons]);
+    }, 60_000);
+    return () => clearTimeout(timer);
+  }, [isEnrolled, embedUrl, isWatched, selectedLessonIndex, completedLessons, address, courseId, displayLessons]);
   const handleNotesInput = (e: React.FormEvent<HTMLDivElement>) => {
     const value = e.currentTarget.innerHTML;
     setNotesHtml(value);
@@ -589,9 +570,14 @@ export default function CourseDetailPage() {
                   {courseDuration}
                 </div>
               </div>
-            ) : isEnrolled && videos.length > 0 && !videoLoading ? (
-              <div className="rounded-3xl overflow-hidden">
-                <VideoPlayer videos={videos} onWatchedChange={handleWatchedChange} />
+            ) : isEnrolled && embedUrl && !videoLoading ? (
+              <div className="rounded-3xl overflow-hidden border border-black/10">
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-[520px]"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
               </div>
             ) : (
               <div className={`aspect-video rounded-3xl relative overflow-hidden flex items-center justify-center ${isDark
