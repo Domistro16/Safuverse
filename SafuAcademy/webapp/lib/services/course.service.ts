@@ -50,6 +50,7 @@ export class CourseService {
                         description: true,
                         orderIndex: true,
                         watchPoints: true,
+                        videoStorageKey: true,
                         videos: {
                             orderBy: { orderIndex: 'asc' },
                             select: {
@@ -111,12 +112,12 @@ export class CourseService {
                 ? scormComplete
                     ? 100
                     : Math.min(
-                          99,
-                          calculateEngagementTimeScore(
-                              runtime.totalTimeSeconds || 0,
-                              parseCourseDurationToSeconds(course.duration)
-                          )
-                      )
+                        99,
+                        calculateEngagementTimeScore(
+                            runtime.totalTimeSeconds || 0,
+                            parseCourseDurationToSeconds(course.duration)
+                        )
+                    )
                 : 0;
 
             return {

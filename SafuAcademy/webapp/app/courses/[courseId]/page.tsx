@@ -14,6 +14,7 @@ interface BackendLesson {
   description: string | null;
   orderIndex: number;
   watchPoints: number;
+  videoStorageKey: string | null;
   quiz?: { id: string; passingScore: number; passPoints: number } | null;
 }
 // Backend course type (from database)
@@ -49,7 +50,6 @@ export default function CourseDetailPage() {
   const [notesHtml, setNotesHtml] = useState("");
   const notesRef = useRef<HTMLDivElement>(null);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
-  const [videoLoading, setVideoLoading] = useState(false);
   // Lesson player state
   const [selectedLessonIndex, setSelectedLessonIndex] = useState(0);
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
@@ -156,6 +156,7 @@ export default function CourseDetailPage() {
       orderIndex: bl.orderIndex ?? index,
       hasQuiz: !!bl.quiz,
       quiz: bl.quiz || null,
+      videoStorageKey: bl.videoStorageKey || null,
     }));
   }, [backendCourse]);
   // Load progress from API - always attempt (not dependent on isEnrolled to break circular dependency)
@@ -275,48 +276,16 @@ export default function CourseDetailPage() {
       setNotesSaving(false);
     }
   }, []);
-  // Fetch embed URL for selected lesson (only when enrolled and not incentivized/SCORM)
+  // Set embed URL directly from lesson's videoStorageKey — no API call needed
   useEffect(() => {
-    let cancelled = false;
-    async function getVideo() {
-      if (!isEnrolled || backendCourse?.isIncentivized) {
-        setEmbedUrl(null);
-        return;
-      }
-      const lesson = displayLessons[selectedLessonIndex];
-      if (!lesson) {
-        setEmbedUrl(null);
-        return;
-      }
-      setVideoLoading(true);
-      setIsWatched(false);
-      setWatchedPercentage(0);
-      try {
-        const token = localStorage.getItem('auth_token');
-        const res = await fetch(`/api/lessons/${lesson.id}/video`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const url =
-            data?.videos?.[0]?.signedUrl ||
-            data?.signedUrl ||
-            null;
-          if (!cancelled) setEmbedUrl(url);
-        } else {
-          if (!cancelled) setEmbedUrl(null);
-        }
-      } catch (err) {
-        console.error("Failed to fetch video from backend:", err);
-        if (!cancelled) setEmbedUrl(null);
-      } finally {
-        if (!cancelled) setVideoLoading(false);
-      }
+    if (!isEnrolled || backendCourse?.isIncentivized) {
+      setEmbedUrl(null);
+      return;
     }
-    getVideo();
-    return () => {
-      cancelled = true;
-    };
+    const lesson = displayLessons[selectedLessonIndex];
+    setEmbedUrl(lesson?.videoStorageKey || null);
+    setIsWatched(false);
+    setWatchedPercentage(0);
   }, [isEnrolled, selectedLessonIndex, displayLessons, backendCourse?.isIncentivized]);
   // Auto-complete lesson after viewing the iframe for 60 seconds
   useEffect(() => {
@@ -570,7 +539,7 @@ export default function CourseDetailPage() {
                   {courseDuration}
                 </div>
               </div>
-            ) : isEnrolled && embedUrl && !videoLoading ? (
+            ) : isEnrolled && embedUrl ? (
               <div className="rounded-3xl overflow-hidden border border-black/10">
                 <iframe
                   src={embedUrl}
@@ -596,14 +565,10 @@ export default function CourseDetailPage() {
                 {!isEnrolled && backendCourse?.thumbnailUrl && (
                   <div className="absolute inset-0 bg-black/40" />
                 )}
-                {videoLoading ? (
-                  <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin z-10" />
-                ) : (
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-xl z-10 ${isDark ? 'bg-[#ffb000] text-black' : 'bg-safuDeep/90'
-                    }`}>
-                    {isEnrolled ? "▶" : "🔒"}
-                  </div>
-                )}
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-xl z-10 ${isDark ? 'bg-[#ffb000] text-black' : 'bg-safuDeep/90'
+                  }`}>
+                  {isEnrolled ? "▶" : "🔒"}
+                </div>
                 <div className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7] z-10">
                   Safu Academy &middot; On-chain Education
                 </div>
