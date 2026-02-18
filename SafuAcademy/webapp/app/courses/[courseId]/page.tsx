@@ -15,6 +15,7 @@ interface BackendLesson {
   orderIndex: number;
   watchPoints: number;
   videoStorageKey: string | null;
+  videos?: { id: string; language: string; label: string; storageKey: string; orderIndex: number }[];
   quiz?: { id: string; passingScore: number; passPoints: number } | null;
 }
 // Backend course type (from database)
@@ -156,7 +157,7 @@ export default function CourseDetailPage() {
       orderIndex: bl.orderIndex ?? index,
       hasQuiz: !!bl.quiz,
       quiz: bl.quiz || null,
-      videoStorageKey: bl.videoStorageKey || null,
+      videoUrl: bl.videos?.[0]?.storageKey || bl.videoStorageKey || null,
     }));
   }, [backendCourse]);
   // Load progress from API - always attempt (not dependent on isEnrolled to break circular dependency)
@@ -283,7 +284,7 @@ export default function CourseDetailPage() {
       return;
     }
     const lesson = displayLessons[selectedLessonIndex];
-    setEmbedUrl(lesson?.videoStorageKey || null);
+    setEmbedUrl(lesson?.videoUrl || null);
     setIsWatched(false);
     setWatchedPercentage(0);
   }, [isEnrolled, selectedLessonIndex, displayLessons, backendCourse?.isIncentivized]);
