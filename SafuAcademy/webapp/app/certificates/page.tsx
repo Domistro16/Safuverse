@@ -60,7 +60,7 @@ const Certificates: React.FC = () => {
           Your Certificates
         </h1>
         <p className={`text-sm sm:text-base mb-6 max-w-xl ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-          Download and share your on‑chain verified Safu Academy certificates.
+          Download and share your on-chain verified Nex Academy certificates.
         </p>
 
         {coursesLoading ? (
@@ -155,7 +155,7 @@ function CertificateCard({ course, userAddress, isDark }: { course: OnChainCours
       }`}>
       <div>
         <div className={`text-xs mb-2 uppercase tracking-[0.18em] ${isDark ? 'text-[#ffb000]' : 'text-[#92400e]'}`}>
-          ✓ Safu Certificate
+          Completed Nex Certificate
         </div>
         <h2 className={`font-semibold text-lg mb-1 ${isDark ? 'text-white' : 'text-[#111]'}`}>{course.title}</h2>
         <p className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>Completed on-chain</p>

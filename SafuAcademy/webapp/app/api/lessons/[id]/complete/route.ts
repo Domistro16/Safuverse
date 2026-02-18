@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { LessonService, RelayerService, ProgressService } from '@/lib/services';
+import { RelayerService, ProgressService } from '@/lib/services';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth';
 
 const relayerService = new RelayerService(prisma);
@@ -10,7 +10,6 @@ const progressService = new ProgressService(prisma, relayerService);
 const completeLessonSchema = z.object({
     videoProgressPercent: z.number().min(0).max(100).optional(),
     timeSpentSeconds: z.number().min(0).optional(),
-    quizPassed: z.boolean().optional(),
 });
 
 export async function POST(

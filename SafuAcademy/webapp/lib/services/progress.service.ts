@@ -1,5 +1,14 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { RelayerService } from './relayer.service';
+import {
+    buildCompletionFlags,
+    calculateBaseScore,
+    calculateEngagementTimeScore,
+    calculateFinalScore,
+    getActionBoostMultiplier,
+    isScormCompleted,
+    parseCourseDurationToSeconds,
+} from '../scorm/scoring';
 
 export class ProgressService {
     private prisma: PrismaClient;
@@ -10,65 +19,63 @@ export class ProgressService {
         this.relayerService = relayerService;
     }
 
-    /**
-     * Recalculate course progress based on watched lessons and passed quizzes
-     * Progress = (watched lessons + passed quizzes) / (total lessons + total quizzes) * 100
-     */
     async recalculateProgress(userId: string, courseId: number): Promise<number> {
         const course = await this.prisma.course.findUnique({
             where: { id: courseId },
-            include: {
-                lessons: {
-                    include: { quiz: true }
-                }
-            }
+            include: { lessons: true },
         });
 
         if (!course) return 0;
 
-        // Count watched lessons
-        const watchedCount = await this.prisma.userLesson.count({
-            where: {
-                userId,
-                lesson: { courseId },
-                isWatched: true,
-            },
-        });
+        let progress = 0;
 
-        // Get quiz IDs for this course
-        const quizIds = course.lessons
-            .filter((l: { quiz: { id: string } | null }) => l.quiz)
-            .map((l: { quiz: { id: string } | null }) => l.quiz!.id);
+        if (course.isIncentivized) {
+            const runtime = await this.prisma.scormRun.findUnique({
+                where: { userId_courseId: { userId, courseId } },
+            });
 
-        // Count passed quizzes (distinct quizzes passed)
-        const passedQuizCount = await this.prisma.quizAttempt.findMany({
-            where: {
-                userId,
-                quizId: { in: quizIds },
-                isPassed: true
-            },
-            distinct: ['quizId'],
-            select: { id: true }
-        });
+            const durationSeconds = parseCourseDurationToSeconds(course.duration);
+            const isComplete = runtime
+                ? isScormCompleted(runtime.completionStatus, runtime.successStatus)
+                : false;
 
-        const totalItems = course.lessons.length + quizIds.length;
-        const completedItems = watchedCount + passedQuizCount.length;
-        const progress = totalItems > 0 ? Math.floor((completedItems / totalItems) * 100) : 0;
+            progress = isComplete
+                ? 100
+                : runtime
+                ? Math.min(
+                      99,
+                      calculateEngagementTimeScore(
+                          runtime.totalTimeSeconds || 0,
+                          durationSeconds
+                      )
+                  )
+                : 0;
+        } else {
+            const watchedCount = await this.prisma.userLesson.count({
+                where: {
+                    userId,
+                    lesson: { courseId },
+                    isWatched: true,
+                },
+            });
+
+            const totalLessons = course.lessons.length;
+            progress = totalLessons > 0 ? Math.floor((watchedCount / totalLessons) * 100) : 0;
+        }
 
         await this.prisma.userCourse.update({
-            where: {
-                userId_courseId: { userId, courseId },
-            },
+            where: { userId_courseId: { userId, courseId } },
             data: { progressPercent: progress },
         });
 
         return progress;
     }
 
-    /**
-     * Update watch progress for a lesson
-     */
-    async updateLessonWatchProgress(userId: string, lessonId: string, progressPercent: number): Promise<{
+    async updateLessonWatchProgress(
+        userId: string,
+        lessonId: string,
+        progressPercent: number
+    ): Promise<{
         saved: boolean;
         pointsAwarded: boolean;
         newTotalPoints?: number;
@@ -76,127 +83,109 @@ export class ProgressService {
         completed?: boolean;
         txHash?: string;
     }> {
-        // Get lesson to find courseId
         const lesson = await this.prisma.lesson.findUnique({
-            where: { id: lessonId }
+            where: { id: lessonId },
+            include: {
+                course: {
+                    select: {
+                        id: true,
+                        isIncentivized: true,
+                    },
+                },
+            },
         });
+
         if (!lesson) throw new Error('Lesson not found');
 
-        let pointsAwarded = false;
-        let newTotalPoints: number | undefined;
-
-        // Transaction to update progress and potentially award points
-        await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-            // First, try to get existing userLesson
-            const existingUserLesson = await tx.userLesson.findUnique({
-                where: { userId_lessonId: { userId, lessonId } }
-            });
-
-            const isAlreadyWatched = existingUserLesson?.isWatched ?? false;
-            const pointsAlreadyAwarded = existingUserLesson?.watchPointsAwarded ?? false;
-
-            // Upsert userLesson
-            await tx.userLesson.upsert({
-                where: { userId_lessonId: { userId, lessonId } },
-                create: {
-                    userId,
-                    lessonId,
-                    watchProgressPercent: progressPercent,
-                    lastWatchedAt: new Date()
-                },
-                update: {
-                    watchProgressPercent: Math.max(existingUserLesson?.watchProgressPercent ?? 0, progressPercent),
-                    lastWatchedAt: new Date()
-                }
-            });
-
-            // Check if >= 50% video watched (Prompt rule)
-            if (progressPercent >= 50 && !isAlreadyWatched) {
-                // Mark as watched
-                await tx.userLesson.update({
-                    where: { userId_lessonId: { userId, lessonId } },
-                    data: {
-                        isWatched: true,
-                        watchedAt: new Date()
-                    }
-                });
-
-                // Award points if not already awarded
-                if (!pointsAlreadyAwarded) {
-                    await tx.userLesson.update({
-                        where: { userId_lessonId: { userId, lessonId } },
-                        data: { watchPointsAwarded: true }
-                    });
-
-                    const user = await tx.user.update({
-                        where: { id: userId },
-                        data: { totalPoints: { increment: lesson.watchPoints } }
-                    });
-
-                    pointsAwarded = true;
-                    newTotalPoints = user.totalPoints;
-                }
-            }
+        await this.prisma.userLesson.upsert({
+            where: { userId_lessonId: { userId, lessonId } },
+            create: {
+                userId,
+                lessonId,
+                watchProgressPercent: progressPercent,
+                isWatched: progressPercent >= 50,
+                watchedAt: progressPercent >= 50 ? new Date() : null,
+                lastWatchedAt: new Date(),
+            },
+            update: {
+                watchProgressPercent: progressPercent,
+                isWatched: progressPercent >= 50,
+                watchedAt: progressPercent >= 50 ? new Date() : null,
+                lastWatchedAt: new Date(),
+            },
         });
 
-        // Recalculate course progress
         const courseProgress = await this.recalculateProgress(userId, lesson.courseId);
 
+        if (lesson.course.isIncentivized) {
+            return {
+                saved: true,
+                pointsAwarded: false,
+                courseProgress,
+                completed: false,
+            };
+        }
+
         let completionResult: { completed: boolean; txHash?: string } = { completed: false };
-        if (courseProgress === 100) {
+        if (courseProgress >= 100) {
             completionResult = await this.checkAndCompleteCourse(userId, lesson.courseId);
         }
 
         return {
             saved: true,
-            pointsAwarded,
-            newTotalPoints,
+            pointsAwarded: false,
             courseProgress,
             completed: completionResult.completed,
-            txHash: completionResult.txHash
+            txHash: completionResult.txHash,
         };
     }
 
-    /**
-     * Check and Complete Course
-     */
-    async checkAndCompleteCourse(userId: string, courseId: number): Promise<{ completed: boolean; txHash?: string }> {
+    async checkAndCompleteCourse(
+        userId: string,
+        courseId: number
+    ): Promise<{ completed: boolean; txHash?: string }> {
         const userCourse = await this.prisma.userCourse.findUnique({
-            where: { userId_courseId: { userId, courseId } }
+            where: { userId_courseId: { userId, courseId } },
+            include: {
+                course: {
+                    select: {
+                        isIncentivized: true,
+                    },
+                },
+            },
         });
 
-        if (!userCourse || userCourse.isCompleted) {
-            return { completed: !!userCourse?.isCompleted };
+        if (!userCourse) {
+            return { completed: false };
         }
 
-        // Double check progress is 100 (which it should be if called after recalculate)
+        if (userCourse.isCompleted) {
+            return { completed: true, txHash: userCourse.completionTxHash || undefined };
+        }
+
+        if (userCourse.course.isIncentivized) {
+            return { completed: false };
+        }
+
         if (userCourse.progressPercent < 100) {
             return { completed: false };
         }
 
-        // Get course for completion points
-        const course = await this.prisma.course.findUnique({ where: { id: courseId } });
-        if (!course) throw new Error('Course not found');
+        await this.prisma.userCourse.update({
+            where: { userId_courseId: { userId, courseId } },
+            data: {
+                isCompleted: true,
+                completedAt: new Date(),
+                completionPointsAwarded: true,
+                quizScore: null,
+                engagementTimeScore: null,
+                baseScore: null,
+                finalScore: 0,
+                leaderboardEligible: false,
+                completionFlags: 0,
+            },
+        });
 
-        // Award completion points if not already
-        if (!userCourse.completionPointsAwarded) {
-            await this.prisma.$transaction([
-                this.prisma.userCourse.update({
-                    where: { userId_courseId: { userId, courseId } },
-                    data: {
-                        isCompleted: true,
-                        completedAt: new Date(),
-                        completionPointsAwarded: true
-                    }
-                }),
-                this.prisma.user.update({
-                    where: { id: userId },
-                    data: { totalPoints: { increment: course.completionPoints } }
-                })
-            ]);
-        }
-
-        // Sync to Blockchain
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new Error('User not found');
 
@@ -204,7 +193,8 @@ export class ProgressService {
             userId,
             user.walletAddress,
             courseId,
-            user.totalPoints
+            0,
+            0
         );
 
         if (txResult.success && txResult.txHash) {
@@ -212,33 +202,161 @@ export class ProgressService {
                 where: { userId_courseId: { userId, courseId } },
                 data: {
                     onChainCompletionSynced: true,
-                    completionTxHash: txResult.txHash
-                }
+                    completionTxHash: txResult.txHash,
+                },
             });
         }
 
         return { completed: true, txHash: txResult.txHash };
     }
 
-    /**
-     * Alias for checkAndCompleteCourse (for API compatibility)
-     */
-    async checkAndAwardCourseCompletion(userId: string, courseId: number): Promise<{ completed: boolean; txHash?: string }> {
+    async finalizeIncentivizedCourse(
+        userId: string,
+        courseId: number
+    ): Promise<{
+        completed: boolean;
+        finalScore?: number;
+        leaderboardEligible?: boolean;
+        txHash?: string;
+        error?: string;
+    }> {
+        const enrollment = await this.prisma.userCourse.findUnique({
+            where: { userId_courseId: { userId, courseId } },
+            include: {
+                course: true,
+                user: true,
+            },
+        });
+
+        if (!enrollment) {
+            return { completed: false, error: 'Not enrolled in this course' };
+        }
+
+        if (!enrollment.course.isIncentivized) {
+            return { completed: false, error: 'Course is not incentivized' };
+        }
+
+        if (enrollment.isCompleted) {
+            return {
+                completed: true,
+                finalScore: enrollment.finalScore,
+                leaderboardEligible: enrollment.leaderboardEligible,
+                txHash: enrollment.completionTxHash || undefined,
+            };
+        }
+
+        const runtime = await this.prisma.scormRun.findUnique({
+            where: { userId_courseId: { userId, courseId } },
+        });
+
+        if (!runtime) {
+            return { completed: false, error: 'No SCORM runtime found' };
+        }
+
+        const scormComplete = isScormCompleted(runtime.completionStatus, runtime.successStatus);
+        if (!scormComplete) {
+            return { completed: false, error: 'SCORM completion not reached' };
+        }
+
+        if (runtime.normalizedScore === null || runtime.normalizedScore === undefined) {
+            return { completed: false, error: 'SCORM quiz score is unavailable' };
+        }
+
+        if (!enrollment.proofSigned) {
+            return { completed: false, error: 'Signature proof is required' };
+        }
+
+        const quizScore = runtime.normalizedScore;
+        const durationSeconds = parseCourseDurationToSeconds(enrollment.course.duration);
+        const engagementTimeScore = calculateEngagementTimeScore(
+            runtime.totalTimeSeconds || 0,
+            durationSeconds
+        );
+        const baseScore = calculateBaseScore(quizScore, engagementTimeScore);
+        const actionMultiplier = getActionBoostMultiplier(
+            enrollment.proofSigned,
+            enrollment.dappVisitTracked
+        );
+        const idMultiplier = await this.getIdMultiplier(enrollment.user.walletAddress);
+        const finalScore = calculateFinalScore(baseScore, actionMultiplier, idMultiplier);
+        const leaderboardEligible = enrollment.proofSigned && scormComplete;
+        const completionFlags = buildCompletionFlags(
+            enrollment.proofSigned,
+            enrollment.dappVisitTracked,
+            scormComplete
+        );
+
+        await this.prisma.$transaction([
+            this.prisma.userCourse.update({
+                where: { userId_courseId: { userId, courseId } },
+                data: {
+                    isCompleted: true,
+                    completedAt: new Date(),
+                    completionPointsAwarded: true,
+                    quizScore,
+                    engagementTimeScore,
+                    baseScore,
+                    actionBoostMultiplier: actionMultiplier,
+                    idMultiplier,
+                    finalScore,
+                    leaderboardEligible,
+                    completionFlags,
+                },
+            }),
+            this.prisma.user.update({
+                where: { id: userId },
+                data: {
+                    totalPoints: {
+                        increment: finalScore,
+                    },
+                },
+            }),
+        ]);
+
+        const txResult = await this.relayerService.completeCourse(
+            userId,
+            enrollment.user.walletAddress,
+            courseId,
+            finalScore,
+            completionFlags
+        );
+
+        if (txResult.success && txResult.txHash) {
+            await this.prisma.userCourse.update({
+                where: { userId_courseId: { userId, courseId } },
+                data: {
+                    onChainCompletionSynced: true,
+                    completionTxHash: txResult.txHash,
+                },
+            });
+        }
+
+        return {
+            completed: true,
+            finalScore,
+            leaderboardEligible,
+            txHash: txResult.txHash,
+        };
+    }
+
+    async checkAndAwardCourseCompletion(
+        userId: string,
+        courseId: number
+    ): Promise<{ completed: boolean; txHash?: string }> {
         return this.checkAndCompleteCourse(userId, courseId);
     }
 
-    /**
-     * Retry syncing a completed course to blockchain.
-     * Use this for courses that were marked complete in DB but failed to sync on-chain.
-     */
-    async retrySyncCompletion(userId: string, courseId: number): Promise<{
+    async retrySyncCompletion(
+        userId: string,
+        courseId: number
+    ): Promise<{
         success: boolean;
         txHash?: string;
         error?: string;
         alreadySynced?: boolean;
     }> {
         const userCourse = await this.prisma.userCourse.findUnique({
-            where: { userId_courseId: { userId, courseId } }
+            where: { userId_courseId: { userId, courseId } },
         });
 
         if (!userCourse) {
@@ -253,22 +371,21 @@ export class ProgressService {
             return {
                 success: true,
                 alreadySynced: true,
-                txHash: userCourse.completionTxHash ?? undefined
+                txHash: userCourse.completionTxHash ?? undefined,
             };
         }
 
-        // Get user for wallet address and points
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             return { success: false, error: 'User not found' };
         }
 
-        // Attempt to sync to blockchain
         const txResult = await this.relayerService.completeCourse(
             userId,
             user.walletAddress,
             courseId,
-            user.totalPoints
+            userCourse.finalScore || 0,
+            userCourse.completionFlags || 0
         );
 
         if (txResult.success && txResult.txHash) {
@@ -276,14 +393,16 @@ export class ProgressService {
                 where: { userId_courseId: { userId, courseId } },
                 data: {
                     onChainCompletionSynced: true,
-                    completionTxHash: txResult.txHash
-                }
+                    completionTxHash: txResult.txHash,
+                },
             });
-            console.log(`Retry sync successful: Course ${courseId} for user ${userId}, txHash: ${txResult.txHash}`);
             return { success: true, txHash: txResult.txHash };
         }
 
         return { success: false, error: txResult.error || 'Blockchain sync failed' };
     }
-}
 
+    private async getIdMultiplier(_walletAddress: string): Promise<number> {
+        return 1;
+    }
+}

@@ -133,7 +133,12 @@ export function WalletModal({
 
                     {/* Disconnect */}
                     <button
-                        onClick={logout}
+                        onClick={async () => {
+                            localStorage.removeItem('auth_token');
+                            localStorage.removeItem('auth_user');
+                            await logout();
+                            window.location.reload();
+                        }}
                         className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-red-900/20 border border-gray-700 hover:border-red-900/50 transition-all hover:scale-105 group col-span-2 sm:col-span-1"
                     >
                         <LogOut className="mb-2 text-red-500 group-hover:text-red-400 transition-colors" size={20} />

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-1.0.x", "debian-openssl-1.1.x", "linux-musl"]
@@ -11,49 +8,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============ USERS ============
-
 model User {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique
-  nonce         String   // For wallet auth
-  totalPoints   Int      @default(0)
-  isAdmin       Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  walletAddress    String   @unique
+  nonce            String
+  totalPoints      Int      @default(0)
+  isAdmin          Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  enrollments   UserCourse[]
-  lessonProgress UserLesson[]
-  quizAttempts  QuizAttempt[]
-  notes         UserNote[]
-  transactions  BlockchainTx[] // Keeping for now, though not explicitly in new prompt schema, it's useful
+  enrollments      UserCourse[]
+  lessonProgress   UserLesson[]
+
+  notes            UserNote[]
+  scormRuns        ScormRun[]
+  scoreActionNonces ScoreActionNonce[]
+  transactions     BlockchainTx[]
 }
 
-// ============ COURSES ============
-
 model Course {
-  id                 Int      @id // Matches on-chain course ID
-  title              String
-  description        String
-  longDescription    String   @db.Text
-  instructor         String
-  category           String
-  level              CourseLevel
-  thumbnailUrl       String?
-  duration           String   // e.g., "2 hours"
-  objectives         String[] // Array of learning objectives
-  prerequisites      String[] // Array of prerequisites
-  completionPoints   Int      // Bonus points for completing (50, 100, or 150)
-  minPointsToAccess  Int      @default(0) // Min points to ACCESS (NOT deducted) - for ADVANCED
-  enrollmentCost     Int      @default(0) // Points DEDUCTED on enrollment - for PREMIUM
-  isPublished        Boolean  @default(false)
-  onChainSynced      Boolean  @default(false)
-  onChainTxHash      String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                  Int      @id
+  title               String
+  description         String
+  longDescription     String   @db.Text
+  instructor          String
+  category            String
+  level               CourseLevel
+  thumbnailUrl        String?
+  duration            String
+  objectives          String[]
+  prerequisites       String[]
+  completionPoints    Int
+  keyTakeaways        String[]
+  isIncentivized      Boolean  @default(false)
+  scormVersion        ScormVersion?
+  scormLaunchUrl      String?
+  scormManifestPath   String?
+  scormPackageVersion Int      @default(1)
+  isPublished         Boolean  @default(false)
+  onChainSynced       Boolean  @default(false)
+  onChainTxHash       String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  lessons     Lesson[]
-  enrollments UserCourse[]
+  lessons             Lesson[]
+  enrollments         UserCourse[]
+  scormRuns           ScormRun[]
+  scoreActionNonces   ScoreActionNonce[]
+
+  @@index([isIncentivized])
 }
 
 enum CourseLevel {
@@ -62,134 +65,158 @@ enum CourseLevel {
   ADVANCED
 }
 
-// ============ LESSONS ============
+enum ScormVersion {
+  SCORM_12
+  SCORM_2004
+}
 
 model Lesson {
   id              String   @id @default(cuid())
   courseId        Int
   title           String
   description     String?
-  orderIndex      Int      // Order within course (0, 1, 2...)
-  videoStorageKey String?  // Legacy field - deprecated, use videos relation
-  videoDuration   Int      // Duration in seconds
-  watchPoints     Int      @default(10) // Points for watching
+  orderIndex      Int
+  videoStorageKey String?
+  videoDuration   Int
+  watchPoints     Int      @default(10)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  course         Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  quiz           Quiz?
-  userProgress   UserLesson[]
-  videos         LessonVideo[] // Multiple videos for different languages
-  notes          UserNote[]
+  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  userProgress    UserLesson[]
+  videos          LessonVideo[]
+  notes           UserNote[]
 
   @@unique([courseId, orderIndex])
 }
 
-// Lesson videos for multi-language support
 model LessonVideo {
   id           String   @id @default(cuid())
   lessonId     String
-  language     String   // e.g., "en", "zh", "es"
-  label        String   // Display label, e.g., "English", "中文", "Español"
-  storageKey   String   // S3/R2/Pinata CID for the video
-  duration     Int?     // Optional duration in seconds
-  orderIndex   Int      @default(0) // Order for display (primary language first)
+  language     String
+  label        String
+  storageKey   String
+  duration     Int?
+  orderIndex   Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
-  @@unique([lessonId, language]) // Only one video per language per lesson
+  @@unique([lessonId, language])
 }
-
-
-// ============ USER NOTES ============
 
 model UserNote {
   id        String   @id @default(cuid())
   userId    String
   lessonId  String
-  content   String   @db.Text  // HTML content from contentEditable
+  content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])  // One note per user per lesson
-}
-
-// ============ QUIZZES ============
-
-model Quiz {
-  id           String   @id @default(cuid())
-  lessonId     String   @unique
-  questions    Json     // Array of { question, options, correctIndex }
-  passingScore Int      @default(70) // Percentage needed to pass
-  passPoints   Int      @default(20) // Points for passing
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  lesson   Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  attempts QuizAttempt[]
-}
-
-// ============ USER PROGRESS ============
-
-model UserCourse {
-  id                      String    @id @default(cuid())
-  userId                  String
-  courseId                Int
-  enrolledAt              DateTime  @default(now())
-  pointsSpent             Int       @default(0) // Points deducted on enrollment
-  progressPercent         Int       @default(0)
-  isCompleted             Boolean   @default(false)
-  completedAt             DateTime?
-  completionPointsAwarded Boolean   @default(false)
-  onChainSynced           Boolean   @default(false) // For enrollment
-  onChainCompletionSynced Boolean   @default(false) // For completion
-  enrollTxHash            String?
-  completionTxHash        String?
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, courseId])
-}
-
-model UserLesson {
-  id                  String    @id @default(cuid())
-  userId              String
-  lessonId            String
-  watchProgressPercent Int      @default(0)
-  isWatched           Boolean   @default(false) // True when >= 50%
-  watchPointsAwarded  Boolean   @default(false)
-  quizPassed          Boolean   @default(false) // True when user passed quiz (if lesson has one)
-  watchedAt           DateTime?
-  lastWatchedAt       DateTime?
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
 }
 
-model QuizAttempt {
-  id              String   @id @default(cuid())
-  userId          String
-  quizId          String
-  answers         Json     // Array of selected indices
-  scorePercent    Int
-  isPassed        Boolean
-  passPointsAwarded Boolean @default(false)
-  attemptNumber   Int
-  createdAt       DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+model UserCourse {
+  id                      String   @id @default(cuid())
+  userId                  String
+  courseId                Int
+  enrolledAt              DateTime @default(now())
+  pointsSpent             Int      @default(0)
+  progressPercent         Int      @default(0)
+  isCompleted             Boolean  @default(false)
+  completedAt             DateTime?
+  completionPointsAwarded Boolean  @default(false)
+  onChainSynced           Boolean  @default(false)
+  onChainCompletionSynced Boolean  @default(false)
+  enrollTxHash            String?
+  completionTxHash        String?
+
+  engagementTimeScore     Int?
+  baseScore               Int?
+  actionBoostMultiplier   Float    @default(1)
+  idMultiplier            Float    @default(1)
+  finalScore              Int      @default(0)
+  leaderboardEligible     Boolean  @default(false)
+  completionFlags         Int      @default(0)
+  proofSigned             Boolean  @default(false)
+  proofSignedAt           DateTime?
+  dappVisitTracked        Boolean  @default(false)
+  dappVisitedAt           DateTime?
+
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course                  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId, leaderboardEligible])
+  @@index([courseId, finalScore])
 }
 
-// Keeping BlockchainTx for transaction tracking as it is useful, adapted to fit new schema references
+model UserLesson {
+  id                   String   @id @default(cuid())
+  userId               String
+  lessonId             String
+  watchProgressPercent Int      @default(0)
+  isWatched            Boolean  @default(false)
+  watchPointsAwarded   Boolean  @default(false)
+
+  watchedAt            DateTime?
+  lastWatchedAt        DateTime?
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson               Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
+
+
+
+model ScormRun {
+  id               String   @id @default(cuid())
+  userId           String
+  courseId         Int
+  cmiState         Json
+  completionStatus String?
+  successStatus    String?
+  rawScore         Float?
+  scaledScore      Float?
+  normalizedScore  Int?
+  totalTimeSeconds Int      @default(0)
+  initializedAt    DateTime @default(now())
+  lastCommitAt     DateTime?
+  terminatedAt     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId, normalizedScore])
+}
+
+model ScoreActionNonce {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   Int
+  nonce      String   @unique
+  actionType String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, courseId])
+}
+
 model BlockchainTx {
   id        String   @id @default(uuid())
   txHash    String   @unique
@@ -216,5 +243,6 @@ enum TxStatus {
 
 enum TxType {
   ENROLL
+  COMPLETE
   PROGRESS_UPDATE
 }

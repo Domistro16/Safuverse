@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
                 const name = await nameResolver.name(node);
 
-                if (name && name.endsWith('.safu')) {
+                if (name && name.endsWith('.id')) {
                     hasDomain = true;
                     domainName = name;
                 }
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
             hasDomain,
             domainName,
             walletAddress: auth.walletAddress,
-            registerUrl: hasDomain ? null : 'https://names.safuverse.com',
+            registerUrl: hasDomain ? null : 'https://names.idverse.com',
         });
     } catch (error) {
         console.error('Domain status error:', error);

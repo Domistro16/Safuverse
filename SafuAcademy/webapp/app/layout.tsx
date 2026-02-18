@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Safu Academy - Web3 Learning Platform",
-  description: "AI-Powered development, blockchain, and cryptocurrency with Safu Academy",
+  title: "Nex Academy - Web3 Learning Platform",
+  description: "AI-Powered development, blockchain, and cryptocurrency with Nex Academy",
 };
 
 export default function RootLayout({

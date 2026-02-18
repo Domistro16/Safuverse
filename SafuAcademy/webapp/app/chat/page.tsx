@@ -37,7 +37,7 @@ export default function ChatAgent() {
                             {[
                                 "Explain smart contracts",
                                 "What is a wallet?",
-                                "How do quizzes work?",
+                                "How do lesson activities work?",
                             ].map((q) => (
                                 <button
                                     key={q}

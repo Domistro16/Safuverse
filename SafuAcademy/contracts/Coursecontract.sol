@@ -13,11 +13,8 @@ import "./INameResolver.sol";
  * @dev Course content (videos, quizzes) is stored off-chain in PostgreSQL for privacy
  *      Only metadata and completion status is stored on-chain
  *
- * Course Access Types:
- * - BEGINNER/INTERMEDIATE: Open to all (minPointsToAccess = 0, enrollmentCost = 0)
- * - ADVANCED: Requires minimum points to access (minPointsToAccess > 0, NOT deducted)
- * - PREMIUM: Costs points to enroll (enrollmentCost > 0, DEDUCTED from user)
- * - ADVANCED + PREMIUM: Both requirements apply
+ * Enrollment model:
+ * - All courses are free to enroll (no point gates, no enrollment cost)
  */
 contract Level3Course is ILevel3Course, Ownable {
     IReverseRegistrar public reverse;
@@ -34,6 +31,15 @@ contract Level3Course is ILevel3Course, Ownable {
     mapping(address => mapping(uint256 => bool)) public completedCourses;
     mapping(address => uint256) public points;
 
+    struct CompletionRecord {
+        bool completed;
+        uint256 score;
+        uint256 flags;
+        uint256 completedAt;
+    }
+
+    mapping(address => mapping(uint256 => CompletionRecord)) public completionRecords;
+
     // Participant tracking
     mapping(uint256 => address[]) public participants;
 
@@ -42,20 +48,20 @@ contract Level3Course is ILevel3Course, Ownable {
         uint256 indexed courseId,
         string title,
         string level,
-        uint256 minPointsToAccess,
-        uint256 enrollmentCost
+        bool isIncentivized
     );
     event CourseUpdated(uint256 indexed courseId, string title);
     event CourseDeleted(uint256 indexed courseId);
     event UserEnrolled(
         address indexed user,
-        uint256 indexed courseId,
-        uint256 pointsSpent
+        uint256 indexed courseId
     );
     event CourseCompleted(
         address indexed user,
         uint256 indexed courseId,
-        uint256 totalPoints
+        uint256 score,
+        uint256 flags,
+        uint256 timestamp
     );
     event RelayerUpdated(
         address indexed oldRelayer,
@@ -74,8 +80,6 @@ contract Level3Course is ILevel3Course, Ownable {
     error AlreadyEnrolled();
     error NotEnrolled();
     error AlreadyCompleted();
-    error InsufficientPointsToAccess(uint256 required, uint256 available);
-    error InsufficientPointsForCost(uint256 cost, uint256 available);
 
     modifier domainOwner(address user) {
         bytes32 node = reverse.node(user);
@@ -114,8 +118,6 @@ contract Level3Course is ILevel3Course, Ownable {
     }
 
     /// @notice Create a new course (metadata only)
-    /// @param _minPointsToAccess Minimum points user must HAVE to enroll (NOT deducted) - for ADVANCED courses
-    /// @param _enrollmentCost Points DEDUCTED on enrollment - for PREMIUM courses
     function createCourse(
         string memory _title,
         string memory _description,
@@ -128,8 +130,7 @@ contract Level3Course is ILevel3Course, Ownable {
         string memory _thumbnailUrl,
         string memory _duration,
         uint256 _totalLessons,
-        uint256 _minPointsToAccess,
-        uint256 _enrollmentCost
+        bool _isIncentivized
     ) external onlyOwner returns (uint256) {
         uint256 courseId = courseCounter;
 
@@ -146,8 +147,7 @@ contract Level3Course is ILevel3Course, Ownable {
         c.thumbnailUrl = _thumbnailUrl;
         c.duration = _duration;
         c.totalLessons = _totalLessons;
-        c.minPointsToAccess = _minPointsToAccess;
-        c.enrollmentCost = _enrollmentCost;
+        c.isIncentivized = _isIncentivized;
 
         courseCounter++;
 
@@ -155,8 +155,7 @@ contract Level3Course is ILevel3Course, Ownable {
             courseId,
             _title,
             _level,
-            _minPointsToAccess,
-            _enrollmentCost
+            _isIncentivized
         );
         return courseId;
     }
@@ -175,8 +174,7 @@ contract Level3Course is ILevel3Course, Ownable {
         string memory _thumbnailUrl,
         string memory _duration,
         uint256 _totalLessons,
-        uint256 _minPointsToAccess,
-        uint256 _enrollmentCost
+        bool _isIncentivized
     ) external onlyOwner {
         if (_courseId >= courseCounter) revert CourseNotFound();
 
@@ -192,8 +190,7 @@ contract Level3Course is ILevel3Course, Ownable {
         c.thumbnailUrl = _thumbnailUrl;
         c.duration = _duration;
         c.totalLessons = _totalLessons;
-        c.minPointsToAccess = _minPointsToAccess;
-        c.enrollmentCost = _enrollmentCost;
+        c.isIncentivized = _isIncentivized;
 
         emit CourseUpdated(_courseId, _title);
     }
@@ -208,72 +205,82 @@ contract Level3Course is ILevel3Course, Ownable {
     // ============ RELAYER FUNCTIONS ============
 
     /// @notice Enroll a user in a course
-    /// @dev Checks minPointsToAccess (gate) and deducts enrollmentCost (cost)
     function enroll(
         uint256 _courseId,
         address _user
-    ) external onlyRelayer domainOwner(_user) {
+    ) external {
         if (_courseId >= courseCounter) revert CourseNotFound();
         if (isEnrolled[_user][_courseId]) revert AlreadyEnrolled();
-
-        Course storage course = courses[_courseId];
-        uint256 userPoints = points[_user];
-
-        // CHECK 1: Does user have minimum points to ACCESS? (ADVANCED courses)
-        // This is a gate check - points are NOT deducted
-        if (course.minPointsToAccess > 0) {
-            if (userPoints < course.minPointsToAccess) {
-                revert InsufficientPointsToAccess(
-                    course.minPointsToAccess,
-                    userPoints
-                );
-            }
-        }
-
-        // CHECK 2: Does user have enough points to PAY enrollment cost? (PREMIUM courses)
-        // These points WILL BE deducted
-        if (course.enrollmentCost > 0) {
-            if (userPoints < course.enrollmentCost) {
-                revert InsufficientPointsForCost(
-                    course.enrollmentCost,
-                    userPoints
-                );
-            }
-
-            // Deduct enrollment cost
-            uint256 oldPoints = userPoints;
-            points[_user] = userPoints - course.enrollmentCost;
-
-            emit PointsUpdated(_user, oldPoints, points[_user]);
-        }
+        if (completedCourses[_user][_courseId]) revert AlreadyCompleted();
 
         isEnrolled[_user][_courseId] = true;
         participants[_courseId].push(_user);
 
-        emit UserEnrolled(_user, _courseId, course.enrollmentCost);
+        emit UserEnrolled(_user, _courseId);
     }
 
     /// @notice Mark a course as completed and update points
-    /// @dev Called by backend when user completes all lessons and quizzes off-chain
+    /// @dev Called by relayer when user completes all lessons off-chain
     function completeCourse(
         uint256 _courseId,
         address _user,
-        uint256 _totalPoints
-    ) external onlyRelayer domainOwner(_user) {
+        uint256 _score,
+        uint256 _flags
+    ) external onlyRelayer {
         if (_courseId >= courseCounter) revert CourseNotFound();
         if (!isEnrolled[_user][_courseId]) revert NotEnrolled();
         if (completedCourses[_user][_courseId]) revert AlreadyCompleted();
 
+        Course storage course = courses[_courseId];
+
         // Mark as completed
         isEnrolled[_user][_courseId] = false;
         completedCourses[_user][_courseId] = true;
+        completionRecords[_user][_courseId] = CompletionRecord({
+            completed: true,
+            score: _score,
+            flags: _flags,
+            completedAt: block.timestamp
+        });
 
-        // Update total points
         uint256 oldPoints = points[_user];
-        points[_user] = _totalPoints;
+        if (course.isIncentivized && _score > 0) {
+            points[_user] = oldPoints + _score;
+        }
 
-        emit PointsUpdated(_user, oldPoints, _totalPoints);
-        emit CourseCompleted(_user, _courseId, _totalPoints);
+        emit PointsUpdated(_user, oldPoints, points[_user]);
+        emit CourseCompleted(_user, _courseId, _score, _flags, block.timestamp);
+    }
+
+    /// @notice Relayer-only points update utility
+    function updateUserPoints(
+        address _user,
+        uint256 _newPoints
+    ) external onlyRelayer {
+        uint256 oldPoints = points[_user];
+        points[_user] = _newPoints;
+        emit PointsUpdated(_user, oldPoints, _newPoints);
+    }
+
+    /// @notice Relayer-only completion status update utility
+    function setCourseCompletionStatus(
+        uint256 _courseId,
+        address _user,
+        bool _completed
+    ) external onlyRelayer {
+        if (_courseId >= courseCounter) revert CourseNotFound();
+
+        completedCourses[_user][_courseId] = _completed;
+        if (_completed) {
+            isEnrolled[_user][_courseId] = false;
+            CompletionRecord storage record = completionRecords[_user][_courseId];
+            record.completed = true;
+            if (record.completedAt == 0) {
+                record.completedAt = block.timestamp;
+            }
+        } else {
+            delete completionRecords[_user][_courseId];
+        }
     }
 
     // ============ VIEW FUNCTIONS ============
@@ -303,24 +310,7 @@ contract Level3Course is ILevel3Course, Ownable {
         course = courses[_courseId];
         enrolled = isEnrolled[_user][_courseId];
         completed = completedCourses[_user][_courseId];
-
-        uint256 userPoints = points[_user];
-
-        // User can enroll if:
-        // - Not already enrolled
-        // - Not already completed
-        // - Has enough points for ACCESS requirement (minPointsToAccess)
-        // - Has enough points for COST requirement (enrollmentCost)
-        bool meetsAccessRequirement = course.minPointsToAccess == 0 ||
-            userPoints >= course.minPointsToAccess;
-        bool meetsCostRequirement = course.enrollmentCost == 0 ||
-            userPoints >= course.enrollmentCost;
-
-        canEnroll =
-            !enrolled &&
-            !completed &&
-            meetsAccessRequirement &&
-            meetsCostRequirement;
+        canEnroll = !enrolled && !completed;
     }
 
     function getAllCourses() external view returns (Course[] memory) {
@@ -329,47 +319,6 @@ contract Level3Course is ILevel3Course, Ownable {
             allCourses[i] = courses[i];
         }
         return allCourses;
-    }
-
-    /// @notice Detailed check if user can enroll in a course
-    function canUserEnroll(
-        address _user,
-        uint256 _courseId
-    )
-        external
-        view
-        returns (
-            bool canEnroll,
-            uint256 userPoints,
-            uint256 minPointsToAccess,
-            uint256 enrollmentCost,
-            bool meetsAccessRequirement,
-            bool meetsCostRequirement,
-            bool alreadyEnrolled,
-            bool alreadyCompleted
-        )
-    {
-        if (_courseId >= courseCounter) revert CourseNotFound();
-
-        Course storage course = courses[_courseId];
-        userPoints = points[_user];
-        minPointsToAccess = course.minPointsToAccess;
-        enrollmentCost = course.enrollmentCost;
-
-        meetsAccessRequirement =
-            minPointsToAccess == 0 ||
-            userPoints >= minPointsToAccess;
-        meetsCostRequirement =
-            enrollmentCost == 0 ||
-            userPoints >= enrollmentCost;
-        alreadyEnrolled = isEnrolled[_user][_courseId];
-        alreadyCompleted = completedCourses[_user][_courseId];
-
-        canEnroll =
-            !alreadyEnrolled &&
-            !alreadyCompleted &&
-            meetsAccessRequirement &&
-            meetsCostRequirement;
     }
 
     function getUserPoints(address _user) external view returns (uint256) {
@@ -390,6 +339,23 @@ contract Level3Course is ILevel3Course, Ownable {
         return completedCourses[_user][_courseId];
     }
 
+    function getCompletionRecord(
+        address _user,
+        uint256 _courseId
+    )
+        external
+        view
+        returns (
+            bool completed,
+            uint256 score,
+            uint256 flags,
+            uint256 completedAt
+        )
+    {
+        CompletionRecord memory record = completionRecords[_user][_courseId];
+        return (record.completed, record.score, record.flags, record.completedAt);
+    }
+
     function getParticipantCount(
         uint256 _courseId
     ) external view returns (uint256) {
@@ -402,18 +368,5 @@ contract Level3Course is ILevel3Course, Ownable {
 
     function getRelayer() external view returns (address) {
         return relayer;
-    }
-
-    /// @notice Get access requirements for a course
-    function getCourseRequirements(
-        uint256 _courseId
-    )
-        external
-        view
-        returns (uint256 minPointsToAccess, uint256 enrollmentCost)
-    {
-        if (_courseId >= courseCounter) revert CourseNotFound();
-        minPointsToAccess = courses[_courseId].minPointsToAccess;
-        enrollmentCost = courses[_courseId].enrollmentCost;
     }
 }

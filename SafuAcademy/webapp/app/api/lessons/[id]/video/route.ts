@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { getStorageService } from '@/lib/services/storage.service';
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -17,11 +16,11 @@ interface LessonVideoType {
 }
 
 /**
- * GET /api/lessons/[id]/video - Get signed video URL(s) for streaming
+ * GET /api/lessons/[id]/video - Get lesson video URL(s) for streaming
  * Requires user to be enrolled in the lesson's course
  * 
  * Returns:
- * - videos: Array of video objects with signedUrl, language, label (for multi-language)
+ * - videos: Array of video objects with signedUrl, language, label
  * - signedUrl: Legacy single video URL (for backward compatibility)
  */
 export async function GET(request: NextRequest, context: RouteContext) {
@@ -63,61 +62,36 @@ export async function GET(request: NextRequest, context: RouteContext) {
             );
         }
 
-        // Get storage service
-        const storageService = getStorageService();
-        if (!storageService.isAvailable()) {
-            return NextResponse.json(
-                { error: 'Video storage is not configured' },
-                { status: 503 }
-            );
-        }
-
-        const expiresIn = 7200; // 2 hours
-
         // Check for multi-language videos first
         if (lesson.videos && lesson.videos.length > 0) {
-            const videosWithUrls = await Promise.all(
-                lesson.videos.map(async (video: LessonVideoType) => {
-                    const signedUrl = await storageService.getSignedVideoUrl(
-                        video.storageKey,
-                        expiresIn
-                    );
-                    return {
-                        id: video.id,
-                        language: video.language,
-                        label: video.label,
-                        signedUrl,
-                        duration: video.duration,
-                    };
-                })
-            );
+            const videosWithUrls = lesson.videos.map((video: LessonVideoType) => ({
+                id: video.id,
+                language: video.language,
+                label: video.label,
+                signedUrl: video.storageKey,
+                duration: video.duration,
+            }));
 
             return NextResponse.json({
                 videos: videosWithUrls,
-                expiresIn,
                 duration: lesson.videoDuration,
             });
         }
 
-        // Fallback to legacy single video (videoStorageKey)
+        // Fallback to legacy single video field
         if (!lesson.videoStorageKey) {
             return NextResponse.json({
                 videos: [],
                 signedUrl: null,
-                expiresIn,
                 duration: lesson.videoDuration,
             });
         }
 
-        const signedUrl = await storageService.getSignedVideoUrl(
-            lesson.videoStorageKey,
-            expiresIn
-        );
+        const signedUrl = lesson.videoStorageKey;
 
         return NextResponse.json({
             videos: [{ signedUrl, language: 'en', label: 'English' }],
             signedUrl, // Legacy support
-            expiresIn,
             duration: lesson.videoDuration,
         });
     } catch (error) {

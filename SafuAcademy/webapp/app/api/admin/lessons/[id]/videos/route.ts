@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/lib/middleware/admin.middleware';
 import prisma from '@/lib/prisma';
-import { getStorageService } from '@/lib/services/storage.service';
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -16,9 +15,6 @@ interface LessonVideoType {
     orderIndex: number;
 }
 
-/**
- * GET /api/admin/lessons/[id]/videos - Get all videos for a lesson
- */
 export async function GET(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
     if (!authResult.authorized) {
@@ -27,22 +23,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     try {
         const { id: lessonId } = await context.params;
-
         const videos = await prisma.lessonVideo.findMany({
             where: { lessonId },
             orderBy: { orderIndex: 'asc' },
         });
 
-        const storageService = getStorageService();
-        const videosWithUrls = await Promise.all(
-            videos.map(async (video: LessonVideoType) => {
-                let signedUrl: string | null = null;
-                if (storageService.isAvailable()) {
-                    signedUrl = await storageService.getSignedVideoUrl(video.storageKey);
-                }
-                return { ...video, signedUrl };
-            })
-        );
+        const videosWithUrls = videos.map((video: LessonVideoType) => ({
+            ...video,
+            signedUrl: video.storageKey,
+        }));
 
         return NextResponse.json({ videos: videosWithUrls });
     } catch (error) {
@@ -51,9 +40,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 }
 
-/**
- * POST /api/admin/lessons/[id]/videos - Add a video for a specific language
- */
 export async function POST(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
     if (!authResult.authorized) {
@@ -72,71 +58,74 @@ export async function POST(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
         }
 
-        const formData = await request.formData();
-        const videoFile = formData.get('video') as File | null;
-        const language = formData.get('language') as string | null;
-        const label = formData.get('label') as string | null;
+        let language: string | null = null;
+        let label: string | null = null;
+        let synthesiaUrl: string | null = null;
 
-        if (!videoFile || !language || !label) {
+        const contentType = request.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const body = await request.json();
+            language = body.language || null;
+            label = body.label || null;
+            synthesiaUrl = body.synthesiaUrl || body.url || null;
+        } else {
+            const formData = await request.formData();
+            language = (formData.get('language') as string | null) || null;
+            label = (formData.get('label') as string | null) || null;
+            synthesiaUrl =
+                (formData.get('synthesiaUrl') as string | null) ||
+                (formData.get('url') as string | null) ||
+                null;
+        }
+
+        if (!language || !label || !synthesiaUrl) {
             return NextResponse.json(
-                { error: 'Video file, language code, and label are required' },
+                { error: 'language, label and synthesiaUrl are required' },
                 { status: 400 }
             );
         }
 
-        // Check if language already exists for this lesson
-        const existingVideo = lesson.videos.find((v: LessonVideoType) => v.language === language);
+        if (!synthesiaUrl.startsWith('https://share.synthesia.io/')) {
+            return NextResponse.json(
+                { error: 'Invalid Synthesia URL format' },
+                { status: 400 }
+            );
+        }
+
+        const existingVideo = lesson.videos.find(
+            (v: LessonVideoType) => v.language === language
+        );
         if (existingVideo) {
             return NextResponse.json(
-                { error: `A video for language "${language}" already exists. Delete it first to replace.` },
+                {
+                    error: `A video for language "${language}" already exists. Delete it first to replace.`,
+                },
                 { status: 400 }
             );
         }
 
-        const storageService = getStorageService();
-        if (!storageService.isAvailable()) {
-            return NextResponse.json(
-                { error: 'Video storage is not configured' },
-                { status: 503 }
-            );
-        }
-
-        // Upload video with language suffix
-        const buffer = Buffer.from(await videoFile.arrayBuffer());
-        const storageKey = await storageService.uploadVideo(
-            lesson.courseId,
-            buffer,
-            `${language}_${videoFile.name}`,
-            videoFile.type
+        const maxOrderIndex = lesson.videos.reduce(
+            (max: number, v: LessonVideoType) => Math.max(max, v.orderIndex),
+            -1
         );
 
-        // Get next order index
-        const maxOrderIndex = lesson.videos.reduce((max: number, v: LessonVideoType) => Math.max(max, v.orderIndex), -1);
-
-        // Create video record
         const video = await prisma.lessonVideo.create({
             data: {
                 lessonId,
                 language,
                 label,
-                storageKey,
+                storageKey: synthesiaUrl,
                 orderIndex: maxOrderIndex + 1,
             },
         });
 
-        // Get signed URL for response
-        const signedUrl = await storageService.getSignedVideoUrl(storageKey);
-
-        return NextResponse.json({ video: { ...video, signedUrl } });
+        return NextResponse.json({ video: { ...video, signedUrl: synthesiaUrl } });
     } catch (error) {
         console.error('Error adding lesson video:', error);
         return NextResponse.json({ error: 'Failed to add video' }, { status: 500 });
     }
 }
 
-/**
- * DELETE /api/admin/lessons/[id]/videos - Delete a video by language or videoId
- */
 export async function DELETE(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
     if (!authResult.authorized) {
@@ -167,15 +156,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Video not found' }, { status: 404 });
         }
 
-        // Delete from storage
-        const storageService = getStorageService();
-        if (storageService.isAvailable()) {
-            await storageService.deleteVideo(video.storageKey);
-        }
-
-        // Delete from database
         await prisma.lessonVideo.delete({ where: { id: video.id } });
-
         return NextResponse.json({ deleted: true });
     } catch (error) {
         console.error('Error deleting lesson video:', error);

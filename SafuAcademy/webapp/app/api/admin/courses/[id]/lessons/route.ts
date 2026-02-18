@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/lib/middleware/admin.middleware';
 import prisma from '@/lib/prisma';
-import { getStorageService } from '@/lib/services/storage.service';
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
 /**
- * GET /api/admin/courses/[id]/lessons - List lessons with video URLs
+ * GET /api/admin/courses/[id]/lessons - List lessons
  */
 export async function GET(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -24,7 +23,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
             where: { courseId },
             orderBy: { orderIndex: 'asc' },
             include: {
-                quiz: { select: { id: true, passingScore: true, passPoints: true } },
+                videos: {
+                    orderBy: { orderIndex: 'asc' },
+                },
             },
         });
 
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 /**
  * POST /api/admin/courses/[id]/lessons - Create a new lesson
- * Supports multipart form data for video upload
+ * Supports JSON and FormData payloads.
  */
 export async function POST(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -49,7 +50,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
         const { id } = await context.params;
         const courseId = parseInt(id, 10);
 
-        // Check course exists
         const course = await prisma.course.findUnique({
             where: { id: courseId },
             include: { _count: { select: { lessons: true } } },
@@ -59,53 +59,69 @@ export async function POST(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Course not found' }, { status: 404 });
         }
 
-        const formData = await request.formData();
-        const title = formData.get('title') as string;
-        const description = formData.get('description') as string | null;
-        const videoFile = formData.get('video') as File | null;
-        const watchPoints = parseInt(formData.get('watchPoints') as string || '10', 10);
+        let title: string | null = null;
+        let description: string | null = null;
+        let watchPoints = 10;
+        let synthesiaUrl: string | null = null;
+        let language = 'en';
+        let label = 'English';
 
-        if (!title) {
+        const contentType = request.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const body = await request.json();
+            title = body.title ?? null;
+            description = body.description ?? null;
+            watchPoints = parseInt((body.watchPoints ?? 10).toString(), 10) || 10;
+            synthesiaUrl = body.synthesiaUrl || body.url || null;
+            language = body.language || 'en';
+            label = body.label || 'English';
+        } else {
+            const formData = await request.formData();
+            title = (formData.get('title') as string | null) || null;
+            description = (formData.get('description') as string | null) || null;
+            watchPoints = parseInt((formData.get('watchPoints') as string) || '10', 10) || 10;
+            synthesiaUrl =
+                (formData.get('synthesiaUrl') as string | null) ||
+                (formData.get('url') as string | null) ||
+                null;
+            language = (formData.get('language') as string | null) || 'en';
+            label = (formData.get('label') as string | null) || 'English';
+        }
+
+        if (!title || title.trim() === '') {
             return NextResponse.json({ error: 'Title is required' }, { status: 400 });
         }
 
-        // Get next order index
-        const orderIndex = course._count.lessons;
-
-        // Handle video upload if provided
-        let videoStorageKey: string | null = null;
-        let videoDuration = 0;
-
-        if (videoFile && videoFile.size > 0) {
-            const storageService = getStorageService();
-            if (!storageService.isAvailable()) {
-                return NextResponse.json(
-                    { error: 'Video storage is not configured' },
-                    { status: 503 }
-                );
-            }
-
-            const buffer = Buffer.from(await videoFile.arrayBuffer());
-            videoStorageKey = await storageService.uploadVideo(
-                courseId,
-                buffer,
-                videoFile.name,
-                videoFile.type
-            );
+        if (synthesiaUrl && !synthesiaUrl.startsWith('https://share.synthesia.io/')) {
+            return NextResponse.json({ error: 'Invalid Synthesia URL format' }, { status: 400 });
         }
 
-        // Create lesson
+        const orderIndex = course._count.lessons;
+
         const lesson = await prisma.lesson.create({
             data: {
                 courseId,
-                title,
+                title: title.trim(),
                 description,
                 orderIndex,
-                videoStorageKey: videoStorageKey || '',
-                videoDuration,
+                videoStorageKey: synthesiaUrl || null,
+                videoDuration: 0,
                 watchPoints,
             },
         });
+
+        if (synthesiaUrl) {
+            await prisma.lessonVideo.create({
+                data: {
+                    lessonId: lesson.id,
+                    language,
+                    label,
+                    storageKey: synthesiaUrl,
+                    orderIndex: 0,
+                    duration: 0,
+                },
+            });
+        }
 
         return NextResponse.json({ lesson });
     } catch (error) {

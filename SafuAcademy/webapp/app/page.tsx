@@ -140,7 +140,7 @@ const Home: React.FC = () => {
     {
       name: "Ada",
       role: "Web3 Designer",
-      quote: "The courses are clear, modern and not overloaded. Safu Academy helped me become job-ready fast",
+      quote: "The courses are clear, modern and not overloaded. Nex Academy helped me become job-ready fast",
       color: "from-[#ffbdf2] to-[#cbb8ff]",
     },
     {
@@ -177,12 +177,12 @@ const Home: React.FC = () => {
   ];
 
   const faqItems = [
-    { q: "What is Safu Academy?", a: "Safu Academy is a next-generation learning platform offering interactive, skill-based courses designed for real-world application." },
-    { q: "Who is SafuAcademy for?", a: "Safu Academy is built for learners at any level who want practical skills, clear learning paths, and modern education experiences." },
-    { q: "What kind of courses does SafuAcademy offer?", a: "Safu Academy offers micro-courses and deeper learning tracks focused on building practical, job-ready skills." },
-    { q: "How is Safu Academy different from traditional learning platforms?", a: "Safu Academy focuses on interactive, skill-first learning instead of passive videos and static content." },
-    { q: "Do I need technical knowledge to use Safu Academy?", a: "No. The learning experience is designed to feel simple and familiar, without technical barriers." },
-    { q: "How do I access Safu Academy?", a: "Safu Academy is accessible through the SafuVerse ecosystem, with learning unlocked through digital identity." },
+    { q: "What is Nex Academy?", a: "Nex Academy is a next-generation learning platform offering interactive, skill-based courses designed for real-world application." },
+    { q: "Who is SafuAcademy for?", a: "Nex Academy is built for learners at any level who want practical skills, clear learning paths, and modern education experiences." },
+    { q: "What kind of courses does SafuAcademy offer?", a: "Nex Academy offers micro-courses and deeper learning tracks focused on building practical, job-ready skills." },
+    { q: "How is Nex Academy different from traditional learning platforms?", a: "Nex Academy focuses on interactive, skill-first learning instead of passive videos and static content." },
+    { q: "Do I need technical knowledge to use Nex Academy?", a: "No. The learning experience is designed to feel simple and familiar, without technical barriers." },
+    { q: "How do I access Nex Academy?", a: "Nex Academy is accessible through NexID ecosystem, with learning unlocked through digital identity." },
   ];
 
   const [openFAQ, setOpenFAQ] = React.useState<number | null>(0);
@@ -241,7 +241,7 @@ const Home: React.FC = () => {
 
               <p className={`mt-5 text-sm sm:text-base lg:text-[15px] max-w-xl leading-relaxed ${isDark ? 'text-gray-300' : 'text-[#333]'
                 }`}>
-                Multilingual, interactive AI learning that turns practice into real skills, and learning into earning, powered by .safu - a unique digital identity across the Web
+                Multilingual, interactive AI learning that turns practice into real skills, and learning into earning, powered by .id - a unique digital identity across the Web
               </p>
 
               <div className="flex flex-wrap gap-3 sm:gap-4 mt-7">
@@ -270,10 +270,10 @@ const Home: React.FC = () => {
                 </div>
                 <div>
                   <div className={`font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                    20,000+ Safu learners
+                    20,000+ NexID Learners
                   </div>
                   <div className={`text-[10px] sm:text-[11px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
-                    From Growing, learning and earning in the SafuVerse
+                    From Growing, learning and earning in NexID
                   </div>
                 </div>
               </div>
@@ -294,12 +294,12 @@ const Home: React.FC = () => {
 
                 <h3 className={`text-base sm:text-lg font-semibold mb-2 leading-snug ${isDark ? 'text-white' : 'text-[#111]'
                   }`}>
-                  See a full Safu Academy lesson in action.
+                  See a full Nex Academy lesson in action.
                 </h3>
                 <p className={`text-xs sm:text-sm mb-5 leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'
                   }`}>
                   Follow a real walkthrough of on-chain dashboards, agents and
-                  transactions. No fluff — just the exact flows you'll use in the SafuVerse.
+                  transactions. No fluff — just the exact flows you'll use in NexID.
                 </p>
 
                 <div className="mb-5">
@@ -363,14 +363,14 @@ const Home: React.FC = () => {
               <div className={`inline-flex items-center gap-2 px-4 py-1 mb-5 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-xs sm:text-sm ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#555]'
                 }`}>
                 <span className="w-5 h-5 rounded-full bg-[#f4e8ff] flex items-center justify-center text-[10px]">🎓</span>
-                <span>Safu Academy · What We Offer</span>
+                <span>Nex Academy · What We Offer</span>
               </div>
 
               <h2 className={`text-3xl md:text-4xl font-bold mb-3 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
                 Build Real Skills
               </h2>
               <p className={`max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                From guided learning to hands-on mastery, Safu Academy helps you grow, practice, and progress with confidence.
+                From guided learning to hands-on mastery, Nex Academy helps you grow, practice, and progress with confidence.
               </p>
             </div>
 
@@ -397,7 +397,7 @@ const Home: React.FC = () => {
             </div>
 
             <div className={`mt-12 text-center text-[11px] ${isDark ? 'text-gray-600' : 'text-[#999]'}`}>
-              Built on BNB Chain.
+              Built on Base.
               <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
                 On-chain experience that feels like Web2
               </span>
@@ -447,10 +447,10 @@ const Home: React.FC = () => {
                   <span>Testimonials</span>
                 </div>
                 <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                  What Safu Learners Are Saying
+                  What NexID Learners Are Saying
                 </h2>
                 <p className={`mt-3 text-sm sm:text-base max-w-md leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                  Real learners from around the world using Safu Academy to build real skills.
+                  Real learners from around the world using Nex Academy to build real skills.
 
                 </p>
               </div>
@@ -570,7 +570,7 @@ const Home: React.FC = () => {
           <h2 className={`text-3xl md:text-4xl font-bold mb-4 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
             Level Up Your Skills & Knowledge
             <br />
-            with Safu Academy Today          </h2>
+            with Nex Academy Today          </h2>
 
           <Link href="/courses">
             <button className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark ? 'bg-[#ffb000] text-black hover:bg-[#ffa000]' : 'bg-[#111] text-white hover:bg-[#222]'
@@ -591,12 +591,12 @@ const Home: React.FC = () => {
             </a>
 
             <a
-              href="https://names.safuverse.com"
+              href="https://names.idverse.com"
               target="_blank"
               rel="noopener noreferrer"
             >
               <button className="px-8 py-3 rounded-full shadow-sm border flex font-bold items-center gap-2 font-semibold transition text-sm bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5] dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10">
-                Mint .safu
+                Mint .id
               </button>
             </a>
 
@@ -623,7 +623,7 @@ const Home: React.FC = () => {
 
 
           <p className={`mt-12 text-[11px] tracking-[0.18em] uppercase ${isDark ? 'text-gray-600' : 'text-[#777]'}`}>
-            Safu Academy © 2025 · Designed by Level3 Labs
+            Nex Academy © 2025 · Designed by Level3 Labs
           </p>
         </footer>
 

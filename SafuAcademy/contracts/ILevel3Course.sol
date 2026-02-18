@@ -25,8 +25,7 @@ interface ILevel3Course {
         string thumbnailUrl;      // Course thumbnail (public, OK to be on-chain)
         string duration;          // Estimated total duration
         uint256 totalLessons;     // Number of lessons (for display)
-        uint256 minPointsToAccess; // Min points user must HAVE to enroll (NOT deducted) - for ADVANCED courses
-        uint256 enrollmentCost;    // Points DEDUCTED on enrollment (for PREMIUM courses)
+        bool isIncentivized;      // Incentivized courses use SCORM + score submission
         // Removed: Lesson[] lessons (lesson content is off-chain)
     }
 }

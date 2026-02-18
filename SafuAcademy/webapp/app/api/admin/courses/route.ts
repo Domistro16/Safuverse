@@ -55,8 +55,12 @@ export async function POST(request: NextRequest) {
             objectives = [],
             prerequisites = [],
             completionPoints = 50,
-            minPointsToAccess = 0, // Gate check for ADVANCED courses
-            enrollmentCost = 0,    // Deducted for PREMIUM courses
+            keyTakeaways = [],
+            isIncentivized = false,
+            scormVersion = null,
+            scormLaunchUrl = null,
+            scormManifestPath = null,
+            scormPackageVersion = 1,
             onChainTxHash, // Transaction hash from frontend's MetaMask signing
         } = body;
 
@@ -87,14 +91,18 @@ export async function POST(request: NextRequest) {
                 longDescription,
                 instructor,
                 category,
-                level: level || 'Beginner',
+                level: level || 'BEGINNER',
                 thumbnailUrl,
                 duration,
                 objectives,
                 prerequisites,
-                completionPoints,
-                minPointsToAccess,
-                enrollmentCost,
+                completionPoints: isIncentivized ? completionPoints : 0,
+                keyTakeaways,
+                isIncentivized,
+                scormVersion,
+                scormLaunchUrl,
+                scormManifestPath,
+                scormPackageVersion,
                 isPublished: false,
                 onChainSynced: !!onChainTxHash,
                 onChainTxHash,

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
+import { useAccount, useSignMessage } from 'wagmi';
+import { usePrivy } from '@privy-io/react-auth';
 import Link from 'next/link';
 
 interface AdminLayoutProps {
@@ -11,32 +12,75 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const { address, isConnected } = useAccount();
+    const { authenticated, login, ready } = usePrivy();
+    const { signMessageAsync } = useSignMessage();
     const router = useRouter();
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
-        async function checkAdmin() {
-            if (!isConnected || !address) {
-                setIsAdmin(false);
-                setLoading(false);
-                return;
-            }
+        // Don't check anything until Privy has finished initializing
+        if (!ready) return;
 
+        async function checkAdmin() {
             try {
-                const token = localStorage.getItem('auth_token');
-                if (!token) {
+                // 1. If we already have a token, try it immediately (no wallet needed)
+                const existingToken = localStorage.getItem('auth_token');
+                if (existingToken) {
+                    const res = await fetch('/api/admin/stats', {
+                        headers: { Authorization: `Bearer ${existingToken}` },
+                    });
+                    if (res.ok) {
+                        setIsAdmin(true);
+                        setLoading(false);
+                        return;
+                    }
+                    // Token expired or invalid — clear it
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('auth_user');
+                }
+
+                // 2. No valid token — need wallet to sign in
+                if (!isConnected || !address || !authenticated) {
                     setIsAdmin(false);
                     setLoading(false);
                     return;
                 }
 
-                const res = await fetch('/api/admin/stats', {
-                    headers: { Authorization: `Bearer ${token}` },
+                // 3. Run the sign-in flow: nonce → sign → verify
+                const nonceRes = await fetch('/api/auth/nonce', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress: address }),
                 });
+                if (!nonceRes.ok) {
+                    setIsAdmin(false);
+                    setLoading(false);
+                    return;
+                }
+                const { message } = await nonceRes.json();
+                const signature = await signMessageAsync({ message });
 
-                setIsAdmin(res.ok);
+                const verifyRes = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress: address, signature, message }),
+                });
+                if (!verifyRes.ok) {
+                    setIsAdmin(false);
+                    setLoading(false);
+                    return;
+                }
+                const verifyData = await verifyRes.json();
+                localStorage.setItem('auth_token', verifyData.token);
+                localStorage.setItem('auth_user', JSON.stringify(verifyData.user));
+
+                // 4. Check admin with new token
+                const adminRes = await fetch('/api/admin/stats', {
+                    headers: { Authorization: `Bearer ${verifyData.token}` },
+                });
+                setIsAdmin(adminRes.ok);
             } catch {
                 setIsAdmin(false);
             } finally {
@@ -45,7 +89,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         }
 
         checkAdmin();
-    }, [address, isConnected]);
+    }, [address, isConnected, authenticated, ready, signMessageAsync]);
 
     if (loading) {
         return (
@@ -55,12 +99,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         );
     }
 
-    if (!isConnected) {
+    if (!isConnected || !authenticated) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-white mb-4">Connect Wallet</h1>
-                    <p className="text-gray-400">Please connect your wallet to access the admin dashboard.</p>
+                    <p className="text-gray-400 mb-4">Please connect your wallet to access the admin dashboard.</p>
+                    <button
+                        onClick={login}
+                        className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-500 transition-colors"
+                    >
+                        Connect Wallet
+                    </button>
                 </div>
             </div>
         );
@@ -71,7 +121,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <div className="min-h-screen bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-red-500 mb-4">Access Denied</h1>
-                    <p className="text-gray-400">You don't have admin permissions.</p>
+                    <p className="text-gray-400">You don&apos;t have admin permissions.</p>
                     <Link href="/" className="text-blue-400 hover:underline mt-4 inline-block">
                         Go back home
                     </Link>
@@ -85,7 +135,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Mobile Header */}
             <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-gray-800 px-4 py-3 flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-bold text-white">SafuAcademy</h1>
+                    <h1 className="text-lg font-bold text-white">Nex Academy</h1>
                     <p className="text-xs text-gray-400">Admin</p>
                 </div>
                 <button
@@ -119,7 +169,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 lg:translate-x-0
             `}>
                 <div className="mb-8 hidden lg:block">
-                    <h1 className="text-xl font-bold text-white">SafuAcademy</h1>
+                    <h1 className="text-xl font-bold text-white">Nex Academy</h1>
                     <p className="text-sm text-gray-400">Admin Dashboard</p>
                 </div>
                 <div className="mb-8 lg:hidden mt-14">
@@ -132,21 +182,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         onClick={() => setSidebarOpen(false)}
                         className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                     >
-                        📊 Dashboard
+                        [D] Dashboard
                     </Link>
                     <Link
                         href="/admin/courses"
                         onClick={() => setSidebarOpen(false)}
                         className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                     >
-                        📚 Courses
+                        [C] Courses
                     </Link>
                     <Link
                         href="/admin/courses/new"
                         onClick={() => setSidebarOpen(false)}
                         className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                     >
-                        ➕ Create Course
+                        [+] Create Course
                     </Link>
                     <hr className="border-gray-700 my-4" />
                     <Link
@@ -154,7 +204,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         onClick={() => setSidebarOpen(false)}
                         className="block px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                     >
-                        🏠 Back to Site
+                        [Home] Back to Site
                     </Link>
                 </nav>
             </aside>

@@ -3,7 +3,7 @@
 import React from "react";
 import { Layout } from "@/components/Layout";
 import { useReadContract, useAccount } from "wagmi";
-import { abi, Deploy } from "@/lib/constants";
+import { abi, BASESCAN_URL, Deploy } from "@/lib/constants";
 import { useTheme } from "@/app/providers";
 
 const PointsHistory: React.FC = () => {
@@ -49,7 +49,7 @@ const PointsHistory: React.FC = () => {
           Safu Points
         </h1>
         <p className={`text-sm sm:text-base mb-6 max-w-xl ${isDark ? "text-gray-400" : "text-[#555]"}`}>
-          Earn Safu Points from completing lessons, quizzes, and courses across the SafuVerse.
+          Earn Safu Points from completing lessons and courses across the NexID.
         </p>
 
         {/* Points Balance Card */}
@@ -79,7 +79,7 @@ const PointsHistory: React.FC = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className={`flex items-start gap-3 p-4 rounded-2xl ${isDark ? "bg-[#1a1a24] border border-[#2a2a3a]" : "bg-[#fefce8] border border-[#fcd34d]/20"}`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${isDark ? "bg-[#ffb000]" : "bg-[#fbbf24]"}`}>
-                  📚
+                  L
                 </div>
                 <div>
                   <h3 className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111]"}`}>Complete Lessons</h3>
@@ -88,16 +88,16 @@ const PointsHistory: React.FC = () => {
               </div>
               <div className={`flex items-start gap-3 p-4 rounded-2xl ${isDark ? "bg-[#1a1a24] border border-[#2a2a3a]" : "bg-[#fefce8] border border-[#fcd34d]/20"}`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${isDark ? "bg-[#ffb000]" : "bg-[#fbbf24]"}`}>
-                  ✅
+                  V
                 </div>
                 <div>
-                  <h3 className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111]"}`}>Pass Quizzes</h3>
-                  <p className={`text-[12px] ${isDark ? "text-gray-400" : "text-[#555]"}`}>Test your knowledge and earn bonus points</p>
+                  <h3 className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111]"}`}>Track Progress</h3>
+                  <p className={`text-[12px] ${isDark ? "text-gray-400" : "text-[#555]"}`}>Complete embedded lesson activities and keep learning</p>
                 </div>
               </div>
               <div className={`flex items-start gap-3 p-4 rounded-2xl ${isDark ? "bg-[#1a1a24] border border-[#2a2a3a]" : "bg-[#fefce8] border border-[#fcd34d]/20"}`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${isDark ? "bg-[#ffb000]" : "bg-[#fbbf24]"}`}>
-                  🎓
+                  C
                 </div>
                 <div>
                   <h3 className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111]"}`}>Earn Certificates</h3>
@@ -110,12 +110,12 @@ const PointsHistory: React.FC = () => {
 
         {/* On-chain verification note */}
         <div className={`mt-6 text-center text-[12px] ${isDark ? "text-gray-500" : "text-[#777]"}`}>
-          <p>
-            Your points balance is verified on-chain at contract address:{" "}
-            <a
-              href={`https://bscscan.com/address/${Deploy}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              <p>
+                Your points balance is verified on-chain at contract address:{" "}
+                <a
+                  href={`${BASESCAN_URL}/address/${Deploy}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
               className={`hover:underline font-mono ${isDark ? "text-[#ffb000]" : "text-[#92400e]"}`}
             >
               {Deploy.slice(0, 10)}...{Deploy.slice(-8)}

@@ -4,7 +4,7 @@ import { useState, useEffect, createContext, useContext, ReactNode, useRef } fro
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { WagmiProvider, createConfig } from "@privy-io/wagmi";
-import { bsc } from "viem/chains";
+import { base } from "viem/chains";
 import { http } from "viem";
 
 // Theme Context
@@ -28,11 +28,11 @@ export function useTheme() {
   return context;
 }
 
-// Wagmi Config
+// Wagmi Config - Base mainnet only
 const config = createConfig({
-  chains: [bsc],
+  chains: [base],
   transports: {
-    [bsc.id]: http(),
+    [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org'),
   },
 });
 
@@ -105,7 +105,8 @@ export function Providers({ children }: { children: ReactNode }) {
               },
             },
             loginMethods: ["wallet", "email", "google", "twitter"],
-            supportedChains: [bsc],
+            defaultChain: base,
+            supportedChains: [base],
           }}
         >
           <QueryClientProvider client={queryClient}>

@@ -43,7 +43,7 @@ export class AuthService {
     }
 
     createSignMessage(walletAddress: string, nonce: string, timestamp: number): string {
-        return `Welcome to SafuAcademy!\n\nSign this message to verify your wallet.\n\nWallet: ${walletAddress}\nNonce: ${nonce}\nTimestamp: ${timestamp}`;
+        return `Welcome to Nex Academy!\n\nSign this message to verify your wallet.\n\nWallet: ${walletAddress}\nNonce: ${nonce}\nTimestamp: ${timestamp}`;
     }
 
     async verifySignature(

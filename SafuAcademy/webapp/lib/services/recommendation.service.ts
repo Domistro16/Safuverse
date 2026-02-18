@@ -12,8 +12,6 @@ interface Course {
     thumbnailUrl: string | null;
     duration: string | null;
     completionPoints: number;
-    minPointsToAccess: number;
-    enrollmentCost: number;
     _count?: {
         lessons: number;
     };

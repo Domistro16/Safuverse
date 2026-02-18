@@ -50,17 +50,17 @@ export default function AllCoursesPage() {
           <div>
             <h1 className={`text-[24px] sm:text-[30px] font-bold tracking-[-0.06em] ${isDark ? 'text-white' : 'text-safuDeep'
               }`}>
-              All Safu Academy courses
+              All Nex Academy courses
             </h1>
             <p className={`text-[13px] max-w-xl mt-1 ${isDark ? 'text-gray-400' : 'text-[#555]'
               }`}>
-              Human‑curated, AI‑presented courses designed to be finished — not abandoned. Filter by category or level
+              Human-curated, AI-presented courses designed to be finished - not abandoned. Filter by category or level
               and pick your next unlock Skill-based Education.
             </p>
           </div>
           <div className={`flex flex-col sm:items-end gap-2 text-[11px] ${isDark ? 'text-gray-500' : 'text-[#777]'
             }`}>
-            <span>Real learners from different sectors using Safu Academy to level up.</span>
+            <span>Real learners from different sectors using Nex Academy to level up.</span>
             <span className={`font-semibold ${isDark ? 'text-white' : 'text-safuDeep'}`}>
               Adopted by builders across <strong>Blockchain, Marketing, AI, and more.</strong>
             </span>

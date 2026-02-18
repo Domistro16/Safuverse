@@ -11,7 +11,6 @@ interface Course {
     isPublished: boolean;
     isActive: boolean;
     totalLessons: number;
-    minPointsToAccess: number;
     onChainSynced: boolean;
     _count: {
         lessons: number;
@@ -117,7 +116,7 @@ export default function AdminCoursesPage() {
                             <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-sm hidden md:table-cell">Level</th>
                             <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden sm:table-cell">Lessons</th>
                             <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden lg:table-cell">Enrolled</th>
-                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden xl:table-cell">Points</th>
+                            <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden xl:table-cell">Enrollment</th>
                             <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm">Status</th>
                             <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-center text-sm hidden xl:table-cell">Chain</th>
                             <th className="px-3 md:px-6 py-3 md:py-4 text-gray-300 font-medium text-sm">Actions</th>
@@ -131,9 +130,7 @@ export default function AdminCoursesPage() {
                                 <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-sm hidden md:table-cell">{course.level || 'N/A'}</td>
                                 <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-center text-sm hidden sm:table-cell">{course._count.lessons}</td>
                                 <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-center text-sm hidden lg:table-cell">{course._count.enrollments}</td>
-                                <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-center text-sm hidden xl:table-cell">
-                                    {course.minPointsToAccess > 0 ? course.minPointsToAccess : 'Free'}
-                                </td>
+                                <td className="px-3 md:px-6 py-3 md:py-4 text-gray-300 text-center text-sm hidden xl:table-cell">Open</td>
                                 <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                                     <span className={`px-2 py-1 rounded text-xs ${course.isPublished
                                         ? 'bg-green-500/20 text-green-400'

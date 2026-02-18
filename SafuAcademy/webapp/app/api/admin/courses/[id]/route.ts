@@ -25,9 +25,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
                 lessons: {
                     orderBy: { orderIndex: 'asc' },
                     include: {
-                        quiz: {
-                            select: { id: true, passingScore: true, passPoints: true, questions: true },
-                        },
                         videos: {
                             orderBy: { orderIndex: 'asc' },
                         },
@@ -85,8 +82,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             objectives,
             prerequisites,
             completionPoints,
-            minPointsToAccess,
-            enrollmentCost,
+            keyTakeaways,
+            isIncentivized,
+            scormVersion,
+            scormLaunchUrl,
+            scormManifestPath,
+            scormPackageVersion,
             isPublished,
             onChainTxHash, // From frontend after MetaMask signing
         } = body;
@@ -105,9 +106,17 @@ export async function PUT(request: NextRequest, context: RouteContext) {
                 ...(duration !== undefined && { duration }),
                 ...(objectives !== undefined && { objectives }),
                 ...(prerequisites !== undefined && { prerequisites }),
-                ...(completionPoints !== undefined && { completionPoints }),
-                ...(minPointsToAccess !== undefined && { minPointsToAccess }),
-                ...(enrollmentCost !== undefined && { enrollmentCost }),
+                ...(keyTakeaways !== undefined && { keyTakeaways }),
+                ...(completionPoints !== undefined && {
+                    completionPoints: (isIncentivized === false || (!isIncentivized && !existingCourse.isIncentivized))
+                        ? 0
+                        : completionPoints,
+                }),
+                ...(isIncentivized !== undefined && { isIncentivized }),
+                ...(scormVersion !== undefined && { scormVersion }),
+                ...(scormLaunchUrl !== undefined && { scormLaunchUrl }),
+                ...(scormManifestPath !== undefined && { scormManifestPath }),
+                ...(scormPackageVersion !== undefined && { scormPackageVersion }),
                 ...(isPublished !== undefined && { isPublished }),
                 ...(onChainTxHash && { onChainSynced: true, onChainTxHash }),
             },
@@ -143,7 +152,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Course not found' }, { status: 404 });
         }
 
-        // Delete from database (cascade will delete lessons, quizzes, etc.)
+        // Delete from database (cascade deletes lessons and related records)
         await prisma.course.delete({ where: { id: courseId } });
 
         return NextResponse.json({

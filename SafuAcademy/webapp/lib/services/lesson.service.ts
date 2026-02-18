@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ProgressService } from './progress.service';
 import { RelayerService } from './relayer.service';
-import { WATCH_THRESHOLD_PERCENT } from '../points';
 
 export class LessonService {
     private prisma: PrismaClient;
@@ -17,13 +16,6 @@ export class LessonService {
             where: { id: lessonId },
             include: {
                 course: true,
-                quiz: {
-                    select: {
-                        id: true,
-                        passingScore: true,
-                        passPoints: true,
-                    },
-                },
             },
         });
     }
@@ -98,10 +90,14 @@ export class LessonService {
         const userLesson = await this.prisma.userLesson.findUnique({
             where: { userId_lessonId: { userId, lessonId } },
         });
+        const lesson = await this.prisma.lesson.findUnique({
+            where: { id: lessonId },
+            select: { watchPoints: true },
+        });
 
         return {
             userLesson,
-            pointsAwarded: result.pointsAwarded ? 10 : 0,
+            pointsAwarded: result.pointsAwarded ? lesson?.watchPoints || 0 : 0,
             isNewlyWatched: result.pointsAwarded,
             courseProgress: result.courseProgress || 0,
         };
@@ -154,7 +150,7 @@ export class LessonService {
                 orderIndex: lesson.orderIndex,
                 videoDuration: lesson.videoDuration,
                 watchPoints: lesson.watchPoints,
-                hasQuiz: !!lesson.quiz,
+                hasQuiz: false,
             },
             progress: userLesson
                 ? {

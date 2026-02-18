@@ -49,7 +49,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
         >
           Level Up Your Skills & Knowledge
           <br />
-          with Safu Academy Today        </h2>
+          with Nex Academy Today        </h2>
 
         <Link href="/courses">
           <button
@@ -74,14 +74,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
             </button>
           </a>
 
-          <a href="https://names.safuverse.com" target="_blank" rel="noopener noreferrer">
+          <a href="https://names.idverse.com" target="_blank" rel="noopener noreferrer">
             <button
               className={`px-8 py-3 rounded-full shadow-sm border flex items-center gap-2 font-medium transition text-sm ${isDark
                 ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
                 : "bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5]"
                 }`}
             >
-              Mint .safu
+              Mint .id
             </button>
           </a>
 
@@ -112,7 +112,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
           className={`mt-12 text-[11px] tracking-[0.18em] uppercase ${isDark ? "text-gray-500" : "text-[#777]"
             }`}
         >
-          Safu Academy © 2025 · Designed by Level3 Labs
+          Nex Academy (c) 2025 - Designed by Level3 Labs
         </p>
       </footer>
     </div>

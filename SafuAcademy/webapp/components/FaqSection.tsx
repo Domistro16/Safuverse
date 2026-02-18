@@ -13,19 +13,19 @@ import Link from "next/link";
 
 const faqData = [
   {
-    question: "What is a .safu domain?",
+    question: "What is a .id domain?",
     answer:
-      "A .safu domain is a new top-level domain (TLD) specifically designed for content creators, artists, and innovators. It helps you establish a unique online identity and provides access to exclusive tools and communities within our ecosystem.",
+      "A .id domain is a new top-level domain (TLD) specifically designed for content creators, artists, and innovators. It helps you establish a unique online identity and provides access to exclusive tools and communities within our ecosystem.",
   },
   {
-    question: "How do I mint a .safu domain?",
+    question: "How do I mint a .id domain?",
     answer:
-      "You can mint your .safu domain directly through our platform. Navigate to the 'Mint .safu Domain' section, search for your desired name, and follow the simple steps. It's a quick process integrated with blockchain technology.",
+      "You can mint your .id domain directly through our platform. Navigate to the 'Mint .id Domain' section, search for your desired name, and follow the simple steps. It's a quick process integrated with blockchain technology.",
   },
   {
-    question: "What are the benefits of SafuAcademy courses?",
+    question: "What are the benefits of Nex Academy courses?",
     answer:
-      "Our courses are AI-powered and tailored for Web3 creators. You get personalized learning paths, practical skills applicable in the creator economy, and access to a supportive community. Plus, many courses offer exclusive content for .safu domain holders.",
+      "Our courses are AI-powered and tailored for Web3 creators. You get personalized learning paths, practical skills applicable in the creator economy, and access to a supportive community. Plus, many courses offer exclusive content for .id domain holders.",
   },
   {
     question: "Is there a refund policy for courses?",

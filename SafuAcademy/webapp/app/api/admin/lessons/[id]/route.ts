@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/lib/middleware/admin.middleware';
 import prisma from '@/lib/prisma';
-import { getStorageService } from '@/lib/services/storage.service';
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
-interface LessonVideoType {
-    id: string;
-    storageKey: string;
-    language: string;
-    label: string;
-    duration: number | null;
-    orderIndex: number;
-}
-
 /**
- * GET /api/admin/lessons/[id] - Get lesson details
+ * GET /api/admin/lessons/[id] - Get lesson details (no quiz, Synthesia URLs only)
  */
 export async function GET(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -32,10 +22,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
             where: { id: lessonId },
             include: {
                 course: { select: { id: true, title: true } },
-                quiz: true,
-                videos: {
-                    orderBy: { orderIndex: 'asc' },
-                },
+                videos: { orderBy: { orderIndex: 'asc' } },
             },
         });
 
@@ -43,31 +30,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
         }
 
-        const storageService = getStorageService();
-
-        // Generate signed URLs for all videos
-        const videosWithUrls = await Promise.all(
-            lesson.videos.map(async (video: LessonVideoType) => {
-                let signedUrl: string | null = null;
-                if (storageService.isAvailable()) {
-                    signedUrl = await storageService.getSignedVideoUrl(video.storageKey);
-                }
-                return {
-                    ...video,
-                    signedUrl,
-                };
-            })
-        );
-
-        // Legacy: include signed URL for old videoStorageKey if exists
-        let signedVideoUrl: string | null = null;
-        if (lesson.videoStorageKey && storageService.isAvailable()) {
-            signedVideoUrl = await storageService.getSignedVideoUrl(lesson.videoStorageKey);
-        }
+        const videos = lesson.videos.map((video) => ({
+            ...video,
+            signedUrl: video.storageKey,
+        }));
 
         return NextResponse.json({
-            lesson: { ...lesson, videos: videosWithUrls },
-            signedVideoUrl, // Legacy support
+            lesson: { ...lesson, videos },
+            signedVideoUrl: videos[0]?.signedUrl || lesson.videoStorageKey || null,
         });
     } catch (error) {
         console.error('Error fetching lesson:', error);
@@ -76,7 +46,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 /**
- * PUT /api/admin/lessons/[id] - Update lesson
+ * PUT /api/admin/lessons/[id] - Update lesson metadata
  */
 export async function PUT(request: NextRequest, context: RouteContext) {
     const authResult = await verifyAdmin(request);
@@ -95,47 +65,33 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
         }
 
-        const formData = await request.formData();
-        const title = formData.get('title') as string | null;
-        const description = formData.get('description') as string | null;
-        const videoFile = formData.get('video') as File | null;
-        const watchPoints = formData.get('watchPoints') as string | null;
-        const videoDuration = formData.get('videoDuration') as string | null;
+        let title: string | null = null;
+        let description: string | null = null;
+        let watchPoints: string | null = null;
+        let videoDuration: string | null = null;
 
-        // Handle video replacement
-        let videoStorageKey = existingLesson.videoStorageKey;
-        if (videoFile && videoFile.size > 0) {
-            const storageService = getStorageService();
-            if (!storageService.isAvailable()) {
-                return NextResponse.json(
-                    { error: 'Video storage is not configured' },
-                    { status: 503 }
-                );
-            }
-
-            // Delete old video if exists
-            if (existingLesson.videoStorageKey) {
-                await storageService.deleteVideo(existingLesson.videoStorageKey);
-            }
-
-            // Upload new video
-            const buffer = Buffer.from(await videoFile.arrayBuffer());
-            videoStorageKey = await storageService.uploadVideo(
-                existingLesson.courseId,
-                buffer,
-                videoFile.name,
-                videoFile.type
-            );
+        const contentType = request.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const body = await request.json();
+            title = body.title ?? null;
+            description = body.description ?? null;
+            watchPoints = body.watchPoints?.toString() ?? null;
+            videoDuration = body.videoDuration?.toString() ?? null;
+        } else {
+            const formData = await request.formData();
+            title = (formData.get('title') as string | null) || null;
+            description = (formData.get('description') as string | null) || null;
+            watchPoints = (formData.get('watchPoints') as string | null) || null;
+            videoDuration = (formData.get('videoDuration') as string | null) || null;
         }
 
         const lesson = await prisma.lesson.update({
             where: { id: lessonId },
             data: {
-                ...(title && { title }),
+                ...(title !== null && { title }),
                 ...(description !== null && { description }),
-                ...(videoStorageKey && { videoStorageKey }),
-                ...(watchPoints && { watchPoints: parseInt(watchPoints, 10) }),
-                ...(videoDuration && { videoDuration: parseInt(videoDuration, 10) }),
+                ...(watchPoints !== null && { watchPoints: parseInt(watchPoints, 10) || 0 }),
+                ...(videoDuration !== null && { videoDuration: parseInt(videoDuration, 10) || 0 }),
             },
         });
 
@@ -166,17 +122,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
             return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
         }
 
-        // Delete video from storage if exists
-        if (lesson.videoStorageKey) {
-            const storageService = getStorageService();
-            if (storageService.isAvailable()) {
-                await storageService.deleteVideo(lesson.videoStorageKey);
-            }
-        }
-
-        // Delete lesson (cascade deletes quiz)
         await prisma.lesson.delete({ where: { id: lessonId } });
-
         return NextResponse.json({ deleted: true });
     } catch (error) {
         console.error('Error deleting lesson:', error);
