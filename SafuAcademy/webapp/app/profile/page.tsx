@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
-import { useReadContract, useAccount } from "wagmi";
+import { useReadContract, useReadContracts, useAccount } from "wagmi";
 import { abi, Deploy, OnChainCourse } from "@/lib/constants";
 import { useENSName } from "@/hooks/getPrimaryName";
 import { useTheme } from "@/app/providers";
@@ -38,7 +38,21 @@ export default function Profile() {
 
     const points = userPoints ? Number(userPoints) : 0;
     const displayName = ensName || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Guest");
-    const isLoading = pointsLoading || coursesLoading || nameLoading;
+
+    // Batch-check completion status for all courses
+    const { data: completionResults, isPending: completionLoading } = useReadContracts({
+        contracts: (courses ?? []).map((course) => ({
+            abi: abi,
+            address: Deploy,
+            functionName: 'hasCompletedCourse' as const,
+            args: [address as `0x${string}`, course.id] as [`0x${string}`, bigint],
+        })),
+        query: { enabled: !!address && !!courses && courses.length > 0 },
+    });
+    const completedCount = (completionResults ?? []).filter((r) => r.status === 'success' && r.result === true).length;
+    console.log('Profile Debug:', { address, coursesCount: courses?.length, completionResults, completedCount });
+
+    const isLoading = pointsLoading || coursesLoading || nameLoading || completionLoading;
 
     if (!isConnected) {
         return (
@@ -125,7 +139,11 @@ export default function Profile() {
                                     <div className={isDark ? 'text-gray-500' : 'text-[#777]'}>Available</div>
                                 </div>
                                 <div>
-                                    <div className={`text-lg font-semibold ${isDark ? 'text-white' : ''}`}>—</div>
+                                    {isLoading ? (
+                                        <div className={`h-6 w-8 mx-auto rounded animate-pulse ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
+                                    ) : (
+                                        <div className={`text-lg font-semibold ${isDark ? 'text-white' : ''}`}>{completedCount}</div>
+                                    )}
                                     <div className={isDark ? 'text-gray-500' : 'text-[#777]'}>Certificates</div>
                                 </div>
                                 <div>

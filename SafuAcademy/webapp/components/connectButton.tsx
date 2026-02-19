@@ -75,7 +75,7 @@ export function CustomConnect() {
 
     // Resolve primary .id domain name via the SafuDomains reverse lookup chain
     const { name: domainName } = useENSName({ owner: address as `0x${string}` });
-
+    console.log(domainName);
     const authenticate = useCallback(async () => {
         if (!address || isAuthenticating) return;
 
@@ -207,7 +207,7 @@ export function CustomConnect() {
 
     const displayText = (domainName as string | undefined)
         || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
-
+        console.log(displayText);
     return (
         <>
             <button

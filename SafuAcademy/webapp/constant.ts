@@ -5,8 +5,8 @@ interface ChainConstants {
 }
 
 const BASE_MAINNET: ChainConstants = {
-    ReverseRegistrar: '0x1D0831eA9486Fada3887a737E8d6f8C6Ad72a125',
-    Registry: '0xa886B8897814193f99A88701d70b31b4a8E27a1E',
+    ReverseRegistrar: '0x38171C9Dc51c5F9b2Be96b8fde3D0CA8C6050eAA',
+    Registry: '0xA590B208e7F2e62a3987424D2E1b00cd62986fAd',
 };
 
 export function getConstants(chainId: number): ChainConstants {
