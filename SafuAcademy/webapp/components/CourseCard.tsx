@@ -22,6 +22,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
   return (
     <motion.div
+      className="h-full"
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: animationDelay, ease: "easeOut" }}
@@ -29,7 +30,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     >
       <Link
         href={`/courses/${course.id}`}
-        className={`group relative block rounded-[28px] border overflow-hidden transition duration-500 hover:-translate-y-3 ${isDark
+        className={`group relative flex flex-col h-full rounded-[28px] border overflow-hidden transition duration-500 hover:-translate-y-3 ${isDark
           ? 'bg-[#12121a] border-[#2a2a3a] shadow-[0_18px_55px_rgba(0,0,0,0.4)] hover:shadow-[0_40px_110px_rgba(255,251,0,0.15)] hover:border-[#ffb000]/50'
           : 'bg-white/70 border-black/5 shadow-[0_18px_55px_rgba(15,23,42,0.10)] hover:shadow-[0_40px_110px_rgba(15,23,42,0.32)] hover:border-[#fcd34d]'
           }`}
@@ -65,7 +66,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         </div>
 
         {/* Course Content */}
-        <div className={`p-5 flex flex-col gap-2 ${isDark ? 'bg-[#12121a]' : ''}`}>
+        <div className={`p-5 flex flex-col flex-1 gap-2 ${isDark ? 'bg-[#12121a]' : ''}`}>
           {/* Category and Level Badge */}
           <div className="flex items-center justify-between text-[11px]">
             <span className={`px-2 py-1 font-semibold rounded-full ${isDark ? 'bg-[#ffb000]/10 text-[#ffb000] border border-[#ffb000]/30' : 'bg-[#fef3c7] text-[#92400e]'

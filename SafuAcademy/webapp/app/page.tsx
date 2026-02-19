@@ -227,7 +227,7 @@ const Home: React.FC = () => {
                 }`}>
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
                   }`}>
-                  SA
+                  NA
                 </span>
                 <span className="tracking-[-0.01em]">Next Generation EduFi</span>
               </div>

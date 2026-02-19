@@ -297,6 +297,12 @@ export default function EditCoursePage() {
                     <input value={course.title} onChange={(e) => setCourse({ ...course, title: e.target.value })} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" placeholder="Title" />
                     <textarea value={course.description} onChange={(e) => setCourse({ ...course, description: e.target.value })} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" rows={3} placeholder="Description" />
                     <textarea value={course.longDescription || ''} onChange={(e) => setCourse({ ...course, longDescription: e.target.value })} className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" rows={4} placeholder="Long description" />
+                    <input
+                        value={course.thumbnailUrl || ''}
+                        onChange={(e) => setCourse({ ...course, thumbnailUrl: e.target.value || null })}
+                        className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600"
+                        placeholder="Thumbnail URL (https://...)"
+                    />
                     {course.isIncentivized && (
                         <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
                             <input type="number" min="0" value={course.completionPoints} onChange={(e) => setCourse({ ...course, completionPoints: parseInt(e.target.value || '0', 10) })} className="px-3 py-2 bg-gray-700 rounded-lg border border-gray-600" placeholder="Completion points" />
