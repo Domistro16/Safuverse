@@ -57,12 +57,16 @@ export async function GET(
             select: {
                 finalScore: true,
                 baseScore: true,
-                quizScore: true,
                 engagementTimeScore: true,
                 completedAt: true,
                 user: {
                     select: {
                         walletAddress: true,
+                        scormRuns: {
+                            where: { courseId },
+                            select: { normalizedScore: true },
+                            take: 1,
+                        },
                     },
                 },
             },
@@ -75,7 +79,7 @@ export async function GET(
                 toCsvCell(entry.user.walletAddress),
                 entry.finalScore,
                 entry.baseScore,
-                entry.quizScore,
+                entry.user.scormRuns[0]?.normalizedScore ?? '',
                 entry.engagementTimeScore,
                 entry.completedAt ? toCsvCell(entry.completedAt.toISOString()) : '',
             ].join(',')),
