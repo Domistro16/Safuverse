@@ -79,6 +79,7 @@ export default function CourseDetailPage() {
   // Notes sync state
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(true);
+  const notesSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Blockchain sync retry state
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; txHash?: string } | null>(null);
@@ -339,8 +340,28 @@ export default function CourseDetailPage() {
       const lessonId = displayLessons[selectedLessonIndex].id;
       // Save to localStorage immediately
       window.localStorage.setItem("safu_notes_" + lessonId, value);
+      // Debounced auto-save to API (1.5s after last keystroke)
+      if (notesSaveTimerRef.current) clearTimeout(notesSaveTimerRef.current);
+      notesSaveTimerRef.current = setTimeout(() => {
+        saveNotesToApi(lessonId, value);
+      }, 1500);
     }
   };
+  // Flush any pending debounced save when switching lessons or unmounting
+  useEffect(() => {
+    return () => {
+      if (notesSaveTimerRef.current) {
+        clearTimeout(notesSaveTimerRef.current);
+        notesSaveTimerRef.current = null;
+        // Flush: save current notes immediately
+        if (displayLessons[selectedLessonIndex]) {
+          const lessonId = displayLessons[selectedLessonIndex].id;
+          const content = window.localStorage.getItem("safu_notes_" + lessonId);
+          if (content) saveNotesToApi(lessonId, content);
+        }
+      }
+    };
+  }, [selectedLessonIndex, displayLessons, saveNotesToApi]);
   // Handle key down to ensure space works properly
   const handleNotesKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Prevent any parent handlers from interfering with typing
@@ -772,24 +793,13 @@ export default function CourseDetailPage() {
                     <div className="flex items-center justify-between">
                       <div className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-[#aaa]'}`}>
                         {notesSaving ? (
-                          <span>Saving to cloud...</span>
+                          <span>Saving...</span>
                         ) : notesSaved ? (
-                          <span>Synced to cloud</span>
+                          <span>Saved</span>
                         ) : (
-                          <span>Saved locally</span>
+                          <span>Unsaved changes</span>
                         )}
                       </div>
-                      {!notesSaved && !notesSaving && (
-                        <button
-                          onClick={handleSaveToCloud}
-                          className={`text-[11px] px-3 py-1 rounded-full font-medium transition ${isDark
-                            ? 'bg-[#ffb000] text-black hover:bg-[#e6e200]'
-                            : 'bg-[#111] text-white hover:bg-[#333]'
-                            }`}
-                        >
-                          Save to Cloud
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
