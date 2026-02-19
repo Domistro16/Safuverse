@@ -82,6 +82,17 @@ export default function CourseDetailPage() {
   // Blockchain sync retry state
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; txHash?: string } | null>(null);
+  // Listen for messages from Synthesia videos for debugging/tracking
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin.includes("synthesia.io")) {
+        console.log("Synthesia Message:", event.data);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   // Fetch course from backend API (primary source)
   useEffect(() => {
     async function fetchFromBackend() {
