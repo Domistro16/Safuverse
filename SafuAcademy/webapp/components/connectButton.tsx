@@ -228,9 +228,8 @@ export function CustomConnect() {
         );
     }
 
-    const displayText = address
-        ? `${address.slice(0, 6)}...${address.slice(-4)}`
-        : 'Connected';
+    const displayText = authState.domainName
+        || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
 
     return (
         <>
