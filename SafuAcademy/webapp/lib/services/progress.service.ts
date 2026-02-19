@@ -292,7 +292,6 @@ export class ProgressService {
                     isCompleted: true,
                     completedAt: new Date(),
                     completionPointsAwarded: true,
-                    quizScore,
                     engagementTimeScore,
                     baseScore,
                     actionBoostMultiplier: actionMultiplier,
