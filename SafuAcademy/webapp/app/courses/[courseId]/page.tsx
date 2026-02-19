@@ -288,7 +288,7 @@ export default function CourseDetailPage() {
     setIsWatched(false);
     setWatchedPercentage(0);
   }, [isEnrolled, selectedLessonIndex, displayLessons, backendCourse?.isIncentivized]);
-  // Auto-complete lesson after viewing the iframe for 60 seconds
+  // Auto-complete lesson after viewing the iframe for 3 minutes
   useEffect(() => {
     if (!isEnrolled || !embedUrl || isWatched) return;
     const timer = setTimeout(async () => {
@@ -328,7 +328,7 @@ export default function CourseDetailPage() {
           console.error('Failed to save lesson completion:', err);
         }
       }
-    }, 60_000);
+    }, 180_000); // 3 minutes
     return () => clearTimeout(timer);
   }, [isEnrolled, embedUrl, isWatched, selectedLessonIndex, completedLessons, address, courseId, displayLessons]);
   const handleNotesInput = (e: React.FormEvent<HTMLDivElement>) => {

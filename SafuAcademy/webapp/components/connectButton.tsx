@@ -54,6 +54,11 @@ export function CustomConnect() {
 
     // Clear auth when wallet disconnects
     useEffect(() => {
+        // Wait for Privy to finish initialising before deciding to clear.
+        // During initialisation, `authenticated` is always false, so without
+        // this guard the stored token would be wiped on every page load,
+        // causing a sign-message prompt on every navigation / reload.
+        if (!ready) return;
         if (!isConnected || !authenticated) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_user');
@@ -65,7 +70,7 @@ export function CustomConnect() {
             });
             hasAttemptedAuth.current = false;
         }
-    }, [isConnected, authenticated]);
+    }, [ready, isConnected, authenticated]);
 
     const authenticate = useCallback(async () => {
         if (!address || isAuthenticating) return;
