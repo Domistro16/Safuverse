@@ -150,7 +150,6 @@ export class ScormService {
             },
             data: {
                 progressPercent,
-                quizScore: metrics.quizScore,
             },
         });
 

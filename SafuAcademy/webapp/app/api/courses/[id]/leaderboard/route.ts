@@ -41,7 +41,6 @@ export async function GET(
             select: {
                 finalScore: true,
                 baseScore: true,
-                quizScore: true,
                 engagementTimeScore: true,
                 actionBoostMultiplier: true,
                 idMultiplier: true,
@@ -49,6 +48,11 @@ export async function GET(
                 user: {
                     select: {
                         walletAddress: true,
+                        scormRuns: {
+                            where: { courseId },
+                            select: { normalizedScore: true },
+                            take: 1,
+                        },
                     },
                 },
             },
@@ -66,7 +70,7 @@ export async function GET(
                 walletAddress: entry.user.walletAddress,
                 finalScore: entry.finalScore,
                 baseScore: entry.baseScore,
-                quizScore: entry.quizScore,
+                quizScore: entry.user.scormRuns[0]?.normalizedScore ?? null,
                 engagementTimeScore: entry.engagementTimeScore,
                 actionBoostMultiplier: entry.actionBoostMultiplier,
                 idMultiplier: entry.idMultiplier,
