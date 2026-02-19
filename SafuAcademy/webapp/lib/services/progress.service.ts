@@ -42,14 +42,14 @@ export class ProgressService {
             progress = isComplete
                 ? 100
                 : runtime
-                ? Math.min(
-                      99,
-                      calculateEngagementTimeScore(
-                          runtime.totalTimeSeconds || 0,
-                          durationSeconds
-                      )
-                  )
-                : 0;
+                    ? Math.min(
+                        99,
+                        calculateEngagementTimeScore(
+                            runtime.totalTimeSeconds || 0,
+                            durationSeconds
+                        )
+                    )
+                    : 0;
         } else {
             const watchedCount = await this.prisma.userLesson.count({
                 where: {
@@ -177,7 +177,6 @@ export class ProgressService {
                 isCompleted: true,
                 completedAt: new Date(),
                 completionPointsAwarded: true,
-                quizScore: null,
                 engagementTimeScore: null,
                 baseScore: null,
                 finalScore: 0,
