@@ -12,7 +12,7 @@ export default function Profile() {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
 
-    // Fetch user's ENS/Safu name
+    // Fetch user's ENS/Nex name
     const { name: ensName, loading: nameLoading } = useENSName({ owner: address as `0x${string}` });
 
     // Fetch user's points
@@ -129,7 +129,7 @@ export default function Profile() {
                             }`}>
                             <h2 className={`text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-[#111]'}`}>Profile overview</h2>
                             <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                                Your completed courses, certificates, and Safu points synced from on-chain data.
+                                Your completed courses, certificates, and Nex points synced from on-chain data.
                             </p>
                             <div className="mt-4 grid grid-cols-3 gap-3 text-center text-xs">
                                 <div>
@@ -203,7 +203,7 @@ export default function Profile() {
                                         : 'bg-[#fef3c7] text-[#92400e] hover:bg-[#fde68a]'
                                         }`}
                                 >
-                                    Ask Safu Tutor
+                                    Ask Nex Tutor
                                 </Link>
                             </div>
                         </div>

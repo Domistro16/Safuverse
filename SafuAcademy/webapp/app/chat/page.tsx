@@ -12,7 +12,7 @@ export default function ChatAgent() {
                             🤖
                         </div>
                         <div>
-                            <h1 className="text-sm font-semibold text-[#111]">Safu Tutor Agent</h1>
+                            <h1 className="text-sm font-semibold text-[#111]">Nex Tutor Agent</h1>
                             <p className="text-[11px] text-[#777]">Ask questions as you learn.</p>
                         </div>
                     </header>
@@ -24,7 +24,7 @@ export default function ChatAgent() {
                                 <div className="w-16 h-16 rounded-full bg-[#fef3c7] flex items-center justify-center text-3xl mx-auto mb-4">
                                     🤖
                                 </div>
-                                <p className="text-sm text-[#555] mb-2">Welcome to Safu Tutor!</p>
+                                <p className="text-sm text-[#555] mb-2">Welcome to Nex Tutor!</p>
                                 <p className="text-xs text-[#777] max-w-sm">
                                     I'm here to help you learn. Ask me anything about the courses, Web3 concepts,
                                     or your current lessons.
@@ -70,7 +70,7 @@ export default function ChatAgent() {
                     </form>
 
                     <p className="text-[10px] text-[#999] text-center">
-                        Safu Tutor is powered by AI. Responses are for educational purposes only.
+                        Nex Tutor is powered by AI. Responses are for educational purposes only.
                     </p>
                 </section>
             </main>

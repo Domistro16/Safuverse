@@ -26,7 +26,7 @@ export const ChatWidget: React.FC = () => {
                   🤖
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-[#111]">Safu Tutor Agent</div>
+                  <div className="text-sm font-semibold text-[#111]">Nex Tutor Agent</div>
                   <div className="text-[11px] text-[#777]">Ask questions as you learn</div>
                 </div>
               </div>
@@ -40,7 +40,7 @@ export const ChatWidget: React.FC = () => {
 
             <div className="flex-1 min-h-[160px] max-h-[260px] rounded-2xl bg-[#fff9ea] border border-black/5 p-3 text-[13px] text-[#555] overflow-y-auto">
               <p>
-                This is a UI stub for the Safu Tutor Agent. Plug your chatbot backend here to
+                This is a UI stub for the Nex Tutor Agent. Plug your chatbot backend here to
                 stream answers, hints, and explanations while learners move through lessons.
               </p>
             </div>

@@ -335,7 +335,7 @@ const Home: React.FC = () => {
               {/* Floating XP card */}
               <div className="absolute -top-4 -right-4 w-28 rounded-2xl bg-[#111] text-white text-[10px] sm:text-[11px] shadow-[0_22px_60px_rgba(15,23,42,0.55)] p-3 flex flex-col gap-1">
                 <span className="text-[9px] uppercase tracking-[0.18em] text-[#ffb000]">XP EARNED</span>
-                <span className="text-sm font-semibold">+320 Safu Points</span>
+                <span className="text-sm font-semibold">+320 Nex Points</span>
                 <span className="text-[9px] text-[#ccccff]">This week</span>
               </div>
 
@@ -345,7 +345,7 @@ const Home: React.FC = () => {
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ffb5e8] via-[#c9b8ff] to-[#9ad4ff]" />
                 <div>
                   <div className={`font-semibold leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                    Safu Agents Lab
+                    Nex Agents Lab
                   </div>
                   <div className={`text-[9px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
                     New cohort starts in 3 days

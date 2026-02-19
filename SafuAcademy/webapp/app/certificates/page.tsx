@@ -127,7 +127,7 @@ function CertificateCard({ course, userAddress, isDark }: { course: OnChainCours
         }`}>
         <div>
           <div className={`text-xs mb-2 uppercase tracking-[0.18em] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
-            Safu Certificate
+            Nex Certificate
           </div>
           <h2 className={`font-semibold text-lg mb-1 ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>{course.title}</h2>
           <p className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-[#999]'}`}>

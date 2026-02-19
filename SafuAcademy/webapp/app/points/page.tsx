@@ -29,12 +29,12 @@ const PointsHistory: React.FC = () => {
       <Layout>
         <section className="pt-8 pb-20">
           <h1 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] mb-6 ${isDark ? "text-white" : "text-[#111]"}`}>
-            Safu Points
+            Nex Points
           </h1>
           <div className={`rounded-3xl p-8 text-center ${isDark ? "bg-[#1a1a24] border border-[#2a2a3a]" : "bg-[#fefce8] border border-[#fcd34d]/30"}`}>
             <p className={`font-medium mb-2 ${isDark ? "text-[#ffb000]" : "text-[#92400e]"}`}>Connect your wallet</p>
             <p className={`text-sm ${isDark ? "text-gray-400" : "text-[#555]"}`}>
-              Connect your wallet to view your Safu Points balance.
+              Connect your wallet to view your Nex Points balance.
             </p>
           </div>
         </section>
@@ -46,10 +46,10 @@ const PointsHistory: React.FC = () => {
     <Layout>
       <section className="pt-8 pb-20">
         <h1 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] mb-6 ${isDark ? "text-white" : "text-[#111]"}`}>
-          Safu Points
+          Nex Points
         </h1>
         <p className={`text-sm sm:text-base mb-6 max-w-xl ${isDark ? "text-gray-400" : "text-[#555]"}`}>
-          Earn Safu Points from completing lessons and courses across the NexID.
+          Earn Nex Points from completing lessons and courses across the NexID.
         </p>
 
         {/* Points Balance Card */}
@@ -110,12 +110,12 @@ const PointsHistory: React.FC = () => {
 
         {/* On-chain verification note */}
         <div className={`mt-6 text-center text-[12px] ${isDark ? "text-gray-500" : "text-[#777]"}`}>
-              <p>
-                Your points balance is verified on-chain at contract address:{" "}
-                <a
-                  href={`${BASESCAN_URL}/address/${Deploy}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+          <p>
+            Your points balance is verified on-chain at contract address:{" "}
+            <a
+              href={`${BASESCAN_URL}/address/${Deploy}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`hover:underline font-mono ${isDark ? "text-[#ffb000]" : "text-[#92400e]"}`}
             >
               {Deploy.slice(0, 10)}...{Deploy.slice(-8)}

@@ -571,7 +571,7 @@ export default function CourseDetailPage() {
                   {isEnrolled ? "▶" : "🔒"}
                 </div>
                 <div className="absolute bottom-4 left-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7] z-10">
-                  Safu Academy &middot; On-chain Education
+                  Nex Academy &middot; On-chain Education
                 </div>
                 <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-black/60 text-[11px] text-[#fef3c7] z-10">
                   {courseDuration}
