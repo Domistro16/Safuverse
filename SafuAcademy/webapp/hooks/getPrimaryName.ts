@@ -1,58 +1,128 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
-import { createPublicClient, http } from 'viem';
-import { base } from 'viem/chains';
+import { useReadContract, useChainId } from 'wagmi'
+import { getConstants } from '../constant'
+import { useMemo } from 'react'
 
-interface UseENSNameOptions {
-    owner?: `0x${string}`;
+interface UseENSNameProps {
+  owner: `0x${string}`
 }
 
-const REVERSE_REGISTRAR = '0x38171C9Dc51c5F9b2Be96b8fde3D0CA8C6050eAA' as const;
-const REVERSE_REGISTRAR_ABI = [{
-    inputs: [{ name: 'addr', type: 'address' }],
-    name: 'getName',
-    outputs: [{ name: '', type: 'string' }],
+const resolveAbi = [
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'node',
+        type: 'bytes32',
+      },
+    ],
+    name: 'resolver',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
-}] as const;
+  },
+]
 
-/**
- * Hook to get the user's primary .id name from the SafuDomains ReverseRegistrar.
- */
-export function useENSName(options?: UseENSNameOptions) {
-    const { address, isConnected } = useAccount();
-    const resolveAddress = options?.owner || address;
-    const [name, setName] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+const nodeAbi = [
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'addr',
+        type: 'address',
+      },
+    ],
+    name: 'node',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+]
 
-    useEffect(() => {
-        if (!resolveAddress) {
-            setName(null);
-            return;
-        }
-        setIsLoading(true);
-        const client = createPublicClient({ chain: base, transport: http() });
-        client.readContract({
-            address: REVERSE_REGISTRAR,
-            abi: REVERSE_REGISTRAR_ABI,
-            functionName: 'getName',
-            args: [resolveAddress],
-        }).then((result) => {
-            setName(result || null);
-        }).catch(() => {
-            setName(null);
-        }).finally(() => {
-            setIsLoading(false);
-        });
-    }, [resolveAddress]);
+const nameAbi = [
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'node',
+        type: 'bytes32',
+      },
+    ],
+    name: 'name',
+    outputs: [
+      {
+        internalType: 'string',
+        name: '',
+        type: 'string',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+]
 
-    return {
-        name,
-        loading: isLoading,
-        isLoading,
-        address: resolveAddress,
-        isConnected,
-    };
+export function useENSName({ owner }: UseENSNameProps) {
+  const chainId = useChainId()
+  const constants = getConstants(chainId)
+
+  // 1️⃣ ReverseRegistrar.node(address) → bytes32
+  const {
+    data: node,
+    isPending: nodeLoading,
+    error: nodeError,
+  } = useReadContract({
+    address: constants.ReverseRegistrar,
+    abi: nodeAbi as any,
+    functionName: 'node',
+    args: owner ? [owner] : undefined,
+  })
+
+  // 2️⃣ Registry.resolver(node) → resolver address
+  const { data: resolverResponse, isPending: resolverLoading } =
+    useReadContract({
+      abi: resolveAbi,
+      functionName: 'resolver',
+      address: constants.Registry,
+      args: [node],
+    })
+
+  const resolver = useMemo(() => {
+    if (!resolverLoading && resolverResponse) {
+      return resolverResponse as `0x${string}`
+    } else {
+      return '' as `0x${string}`
+    }
+  }, [resolverLoading, resolverResponse])
+
+  // 3️⃣ PublicResolver.name(node) → primary name string
+  const {
+    data: resolvedName,
+    isPending: nameLoading,
+    error: nameError,
+  } = useReadContract({
+    address: resolver,
+    abi: nameAbi as any,
+    functionName: 'name',
+    args: node ? [node] : undefined,
+  })
+
+  return {
+    address: owner,
+    name: resolvedName,
+    loading: nodeLoading || nameLoading,
+    error: nodeError || nameError,
+  }
 }
