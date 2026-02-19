@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount, useSignMessage, useSwitchChain } from 'wagmi';
 import { base } from 'viem/chains';
-import { createPublicClient, http } from 'viem';
 import { WalletModal } from './WalletModal';
+import { useENSName } from '@/hooks/getPrimaryName';
 
 interface AuthState {
     isAuthenticated: boolean;
@@ -73,31 +73,8 @@ export function CustomConnect() {
         }
     }, [ready, isConnected, authenticated]);
 
-    // Resolve primary .id domain name from SafuDomains ReverseRegistrar
-    useEffect(() => {
-        if (!authState.isAuthenticated || !address) return;
-        const REVERSE_REGISTRAR = '0x38171C9Dc51c5F9b2Be96b8fde3D0CA8C6050eAA' as const;
-        const REVERSE_REGISTRAR_ABI = [{
-            inputs: [{ name: 'addr', type: 'address' }],
-            name: 'getName',
-            outputs: [{ name: '', type: 'string' }],
-            stateMutability: 'view',
-            type: 'function',
-        }] as const;
-        const client = createPublicClient({ chain: base, transport: http() });
-        client.readContract({
-            address: REVERSE_REGISTRAR,
-            abi: REVERSE_REGISTRAR_ABI,
-            functionName: 'getName',
-            args: [address],
-        }).then((name) => {
-            if (name) {
-                setAuthState((prev) => ({ ...prev, domainName: name }));
-            }
-        }).catch(() => {
-            // No primary name set — silently ignore
-        });
-    }, [authState.isAuthenticated, address]);
+    // Resolve primary .id domain name via the SafuDomains reverse lookup chain
+    const { name: domainName } = useENSName({ owner: address as `0x${string}` });
 
     const authenticate = useCallback(async () => {
         if (!address || isAuthenticating) return;
@@ -228,9 +205,8 @@ export function CustomConnect() {
         );
     }
 
-    const displayText = address
-        ? `${address.slice(0, 6)}...${address.slice(-4)}`
-        : 'Connected';
+    const displayText = (domainName as string | undefined)
+        || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
 
     return (
         <>
@@ -246,7 +222,7 @@ export function CustomConnect() {
                 isOpen={showWalletModal}
                 onRequestClose={() => setShowWalletModal(false)}
                 address={address || ''}
-                name={authState.domainName || ''}
+                name={(domainName as string | undefined) || ''}
             />
         </>
     );
