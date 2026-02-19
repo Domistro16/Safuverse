@@ -39,18 +39,20 @@ export default function Profile() {
     const points = userPoints ? Number(userPoints) : 0;
     const displayName = ensName || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Guest");
 
-    // Batch-check completion status for all courses
+    // Batch-check completion status using getCourseWithUserStatus (same as certificates page)
     const { data: completionResults, isPending: completionLoading } = useReadContracts({
         contracts: (courses ?? []).map((course) => ({
             abi: abi,
             address: Deploy,
-            functionName: 'hasCompletedCourse' as const,
-            args: [address as `0x${string}`, course.id] as [`0x${string}`, bigint],
+            functionName: 'getCourseWithUserStatus' as const,
+            args: [course.id, address as `0x${string}`] as [bigint, `0x${string}`],
         })),
         query: { enabled: !!address && !!courses && courses.length > 0 },
     });
-    const completedCount = (completionResults ?? []).filter((r) => r.status === 'success' && r.result === true).length;
-    console.log('Profile Debug:', { address, coursesCount: courses?.length, completionResults, completedCount });
+    // getCourseWithUserStatus returns [course, enrolled, completed, canEnroll] — index 2 is completed
+    const completedCount = (completionResults ?? []).filter(
+        (r) => r.status === 'success' && (r.result as [unknown, boolean, boolean, boolean])?.[2] === true
+    ).length;
 
     const isLoading = pointsLoading || coursesLoading || nameLoading || completionLoading;
 
