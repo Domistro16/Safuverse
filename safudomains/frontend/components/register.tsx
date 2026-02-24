@@ -11,7 +11,6 @@ import { Controller } from '../constants/registerAbis'
 import { useRegistrationPrice } from '../hooks/useRegistrationPrice'
 import { useRegistration, type RegistrationStep } from '../hooks/useRegistration'
 import { usePremiumCheck } from '../hooks/usePremiumCheck'
-import SetupModal from './register/SetupModal'
 import ConfirmDetailsModal from './register/ConfirmDetailsModal'
 import RegisterDetailsModal from './register/RegisterDetailsModal'
 import RegistrationSteps from './register/RegistrationSteps'
@@ -66,14 +65,6 @@ const Register = () => {
     address || ('0x0000000000000000000000000000000000000000' as `0x${string}`),
   )
 
-  const [description, setDescription] = useState('')
-  const [email, setEmail] = useState('')
-  const [twitter, setTwitter] = useState('')
-  const [website, setWebsite] = useState('')
-  const [github, setGithub] = useState('')
-  const [discord, setDiscord] = useState('')
-  const [phone, setPhone] = useState('')
-  const [avatar, setAvatar] = useState('')
   const [referrer, setReferrer] = useState('')
   const [referralValid, setReferralValid] = useState<boolean | null>(null)
   const [referralValidating, setReferralValidating] = useState(false)
@@ -144,21 +135,6 @@ const Register = () => {
   useEffect(() => {
     document.title = `Register – ${label}.id`
   }, [label])
-
-  const buildCommitData = () => {
-    const textRecords = [
-      { key: 'description', value: description },
-      { key: 'avatar', value: avatar },
-      { key: 'com.twitter', value: twitter },
-      { key: 'com.github', value: github },
-      { key: 'com.discord', value: discord },
-      { key: 'email', value: email },
-      { key: 'url', value: website },
-      { key: 'phone', value: phone },
-    ]
-
-    buildCommitDataFn(textRecords, newRecords, label as string, owner)
-  }
 
   // Step 1: Commit transaction + 60s countdown
   const handleCommit = async () => {
@@ -420,7 +396,7 @@ const Register = () => {
                 {!isDisconnected && (
                   <button
                     className="btn-primary"
-                    onClick={() => setNext(1)}
+                    onClick={() => setNext(2)}
                     disabled={isLoading || loading}
                   >
                     Continue
@@ -435,23 +411,6 @@ const Register = () => {
                 </p>
               )}
             </div>
-          ) : next == 1 ? (
-            <SetupModal
-              owner={owner}
-              setOwner={setOwner}
-              setDescription={setDescription}
-              setEmail={setEmail}
-              setTwitter={setTwitter}
-              setWebsite={setWebsite}
-              setGithub={setGithub}
-              setDiscord={setDiscord}
-              setPhone={setPhone}
-              setAvatar={setAvatar}
-              setNext={setNext}
-              textRecords={newRecords}
-              setTextRecords={setNewRecords}
-              buildCommitData={buildCommitData}
-            />
           ) : next == 2 ? (
             <div className="page-card mt-5 p-8">
               <RegistrationSteps requiresCommit={requiresCommit} />
@@ -671,7 +630,23 @@ const Register = () => {
                     Registration Error
                   </h2>
                   <p className="text-muted-foreground mb-6">
-                    {regError?.message || 'There was an error while registering your name.'}
+                    {regError?.message === 'INSUFFICIENT_USDC' ? (
+                      <>
+                        You need USDC to proceed with this request. Get USDC on{' '}
+                        <a
+                          href="https://www.coinbase.com/buy-crypto"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold"
+                          style={{ color: '#FFB000' }}
+                        >
+                          Coinbase
+                        </a>
+                        .
+                      </>
+                    ) : (
+                      regError?.message || 'There was an error while registering your name.'
+                    )}
                   </p>
                   <button
                     className="btn-primary"
@@ -749,7 +724,7 @@ const Register = () => {
                       Register another
                     </button>
                     <button
-                      onClick={() => router.push(`/profile`)}
+                      onClick={() => router.push(`/dashboard`)}
                       className="btn-primary"
                     >
                       View My Names

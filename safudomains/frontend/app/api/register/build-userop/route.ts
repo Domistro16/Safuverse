@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 import {
   createPublicClient,
   http,
@@ -24,6 +25,8 @@ const publicClient = createPublicClient({
  * Returns everything needed for the agent's wallet to sign and submit.
  */
 export async function POST(request: NextRequest) {
+  const rl = rateLimit(request)
+  if (!rl.ok) return rl.response!
   try {
     const body = await request.json()
     const {

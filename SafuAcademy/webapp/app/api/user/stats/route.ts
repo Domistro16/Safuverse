@@ -30,12 +30,8 @@ export async function GET(request: NextRequest) {
                     isWatched: true,
                 },
             }),
-            prisma.quizAttempt.count({
-                where: {
-                    userId: auth.userId,
-                    isPassed: true,
-                },
-            }),
+            // QuizAttempt model not yet in schema — return 0 until it is added
+            Promise.resolve(0),
         ]);
 
         const user = await prisma.user.findUnique({

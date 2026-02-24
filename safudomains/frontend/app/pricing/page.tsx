@@ -50,7 +50,7 @@ export default function PricingPage() {
               </div>
               <div className="pl-item">
                 <span className="pl-name">Rate Limit</span>
-                <span className="pl-price">100/min</span>
+                <span className="pl-price">50/min</span>
               </div>
               <div className="pl-item">
                 <span className="pl-name">Transferable</span>

@@ -35,6 +35,13 @@ export const AgentPriceOracleAbi = [
 // ============ AgentRegistrarController ABI ============
 export const AgentRegistrarControllerAbi = [
     {
+        inputs: [],
+        name: 'owner',
+        outputs: [{ name: '', type: 'address' }],
+        stateMutability: 'view',
+        type: 'function',
+    },
+    {
         inputs: [{ name: 'name', type: 'string' }],
         name: 'available',
         outputs: [{ name: '', type: 'bool' }],
@@ -148,6 +155,56 @@ export const AgentRegistrarControllerAbi = [
         stateMutability: 'view',
         type: 'function',
     },
+    {
+        inputs: [
+            { name: 'name', type: 'string' },
+            { name: 'owner', type: 'address' },
+        ],
+        name: 'reserveName',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            { name: 'names', type: 'string[]' },
+            { name: 'owners', type: 'address[]' },
+        ],
+        name: 'reserveNamesBatch',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [{ name: 'name', type: 'string' }],
+        name: 'clearReservation',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
+    {
+        inputs: [
+            {
+                components: [
+                    { name: 'name', type: 'string' },
+                    { name: 'owner', type: 'address' },
+                    { name: 'secret', type: 'bytes32' },
+                    { name: 'resolver', type: 'address' },
+                    { name: 'data', type: 'bytes[]' },
+                    { name: 'reverseRecord', type: 'bool' },
+                    { name: 'ownerControlledFuses', type: 'uint16' },
+                    { name: 'deployWallet', type: 'bool' },
+                    { name: 'walletSalt', type: 'uint256' },
+                ],
+                name: 'req',
+                type: 'tuple',
+            },
+        ],
+        name: 'mintReserved',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+    },
 ] as const
 
 // ============ AgentPublicResolver ABI (x402 / ERC-8004) ============
@@ -210,28 +267,6 @@ export const AgentPublicResolverAbi = [
         stateMutability: 'nonpayable',
         type: 'function',
     },
-    // Accepted Tokens
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-        ],
-        name: 'acceptedTokens',
-        outputs: [{ name: '', type: 'address[]' }],
-        stateMutability: 'view',
-        type: 'function',
-    },
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-            { name: 'tokens', type: 'address[]' },
-        ],
-        name: 'setAcceptedTokens',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-    },
     // Agent Metadata
     {
         inputs: [{ name: 'node', type: 'bytes32' }],
@@ -264,32 +299,6 @@ export const AgentPublicResolverAbi = [
             { name: 'enabled', type: 'bool' },
         ],
         name: 'setPaymentEnabled',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-    },
-    // Payment Limits
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-        ],
-        name: 'paymentLimits',
-        outputs: [
-            { name: 'minAmount', type: 'uint256' },
-            { name: 'maxAmount', type: 'uint256' },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-    },
-    {
-        inputs: [
-            { name: 'node', type: 'bytes32' },
-            { name: 'chainId', type: 'uint256' },
-            { name: 'minAmount', type: 'uint256' },
-            { name: 'maxAmount', type: 'uint256' },
-        ],
-        name: 'setPaymentLimits',
         outputs: [],
         stateMutability: 'nonpayable',
         type: 'function',

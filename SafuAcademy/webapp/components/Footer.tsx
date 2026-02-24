@@ -6,7 +6,7 @@ import { FaDiscord, FaTiktok } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 
 const Footer = () => {
-   const socialLinks = [
+  const socialLinks = [
     { icon: FaXTwitter, href: "https://x.com/safuverse", label: "Twitter" },
     {
       icon: FaTiktok,
@@ -26,7 +26,7 @@ const Footer = () => {
       links: [
         "AI Courses",
         "Earn Crypto",
-        ".safu Domains",
+        ".id Domains",
         "Community Hub",
         "Leaderboards",
       ],
@@ -59,7 +59,7 @@ const Footer = () => {
     <footer className="py-16 md:py-20  border-t-[0.2px] border-gray-500 px-4 sm:px-6 lg:px-8 rounded-t-full bg-gradient-to-b from-purple-950/20 to-background/70">
       <div className="flex flex-col gap-9 items-center pb-10">
         <div className="flex justify-center">
-          <img src="/Safuverse.png" className="h-10" />
+          <img src="/nexid_logo.png" className="h-10" />
         </div>
         <p className="text-center w md:w-[40%] font-semibold">
           Empowering the next generation of Web3 content creators with AI-driven
@@ -80,7 +80,7 @@ const Footer = () => {
         </div>
         <div className=" flex flex-col md:flex-row justify-between pt-3 md:gap-5 items-center">
           <p className="text-sm text-whit mb-4 md:mb-0">
-            © {new Date().getFullYear()} SafuAcademy Labs
+            (c) {new Date().getFullYear()} Nex Academy Labs
           </p>
           <p className="text-sm text-white">
             Product of{" "}

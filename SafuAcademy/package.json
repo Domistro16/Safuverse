@@ -1,12 +1,14 @@
 {
   "name": "safuacademy",
   "version": "2.0.0",
-  "description": "SafuAcademy - Web3 Course Platform (Next.js)",
+  "description": "SafuAcademy - Web3 Campaign Platform (Next.js)",
   "scripts": {
     "build": "hardhat build",
     "local:start": "hardhat node",
     "local:deploy": "hardhat run scripts/deploy.ts --network local",
+    "local:deploy:campaign-escrow": "hardhat run scripts/deploy-campaign-escrow.ts --network local",
     "deploy:contracts": "npx hardhat run scripts/deploy.ts --network bsc",
+    "deploy:campaign-escrow": "npx hardhat run scripts/deploy-campaign-escrow.ts --network baseSepolia",
     "test": "NODE_ENV=test hardhat test"
   },
   "devDependencies": {

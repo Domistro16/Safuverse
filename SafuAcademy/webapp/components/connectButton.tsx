@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { useAccount, useSignMessage } from 'wagmi';
+import { useAccount, useSignMessage, useSwitchChain } from 'wagmi';
+import { base } from 'viem/chains';
 import { WalletModal } from './WalletModal';
+import { useENSName } from '@/hooks/getPrimaryName';
 
 interface AuthState {
     isAuthenticated: boolean;
@@ -13,54 +15,73 @@ interface AuthState {
         totalPoints: number;
         isAdmin: boolean;
     } | null;
-    hasDomain: boolean;
     domainName: string | null;
 }
 
+// Read existing auth from localStorage synchronously at init time
+function getInitialAuthState(): AuthState {
+    if (typeof window === 'undefined') {
+        return { isAuthenticated: false, token: null, user: null, domainName: null };
+    }
+    try {
+        const token = localStorage.getItem('auth_token');
+        const userStr = localStorage.getItem('auth_user');
+        if (token && userStr) {
+            const user = JSON.parse(userStr);
+            return { isAuthenticated: true, token, user, domainName: null };
+        }
+    } catch {
+        // ignore
+    }
+    return { isAuthenticated: false, token: null, user: null, domainName: null };
+}
+
 export function CustomConnect() {
-    const { login, logout, ready, authenticated } = usePrivy();
-    const { address, isConnected } = useAccount();
+    const { login, ready, authenticated } = usePrivy();
+    const { address, isConnected, chainId } = useAccount();
     const { signMessageAsync } = useSignMessage();
-    const [authState, setAuthState] = useState<AuthState>({
-        isAuthenticated: false,
-        token: null,
-        user: null,
-        hasDomain: false,
-        domainName: null,
-    });
+    const { switchChain } = useSwitchChain();
+    const [authState, setAuthState] = useState<AuthState>(getInitialAuthState);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
-    const [showDomainModal, setShowDomainModal] = useState(false);
     const [showWalletModal, setShowWalletModal] = useState(false);
     const hasAttemptedAuth = useRef(false);
 
+    // Auto-switch to Base mainnet if on wrong chain
+    useEffect(() => {
+        if (isConnected && chainId && chainId !== base.id) {
+            switchChain({ chainId: base.id });
+        }
+    }, [isConnected, chainId, switchChain]);
+
     // Clear auth when wallet disconnects
     useEffect(() => {
+        // Wait for Privy to finish initialising before deciding to clear.
+        // During initialisation, `authenticated` is always false, so without
+        // this guard the stored token would be wiped on every page load,
+        // causing a sign-message prompt on every navigation / reload.
+        if (!ready) return;
         if (!isConnected || !authenticated) {
-            clearAuth();
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            setAuthState({
+                isAuthenticated: false,
+                token: null,
+                user: null,
+                domainName: null,
+            });
             hasAttemptedAuth.current = false;
         }
-    }, [isConnected, authenticated]);
+    }, [ready, isConnected, authenticated]);
 
-    const clearAuth = () => {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
-        localStorage.removeItem('safu_domain');
-        setAuthState({
-            isAuthenticated: false,
-            token: null,
-            user: null,
-            hasDomain: false,
-            domainName: null,
-        });
-    };
-
+    // Resolve primary .id domain name via the SafuDomains reverse lookup chain
+    const { name: domainName } = useENSName({ owner: address as `0x${string}` });
+    console.log(domainName);
     const authenticate = useCallback(async () => {
         if (!address || isAuthenticating) return;
 
         setIsAuthenticating(true);
 
         try {
-            // Step 1: Request nonce
             const nonceRes = await fetch('/api/auth/nonce', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -72,11 +93,8 @@ export function CustomConnect() {
             }
 
             const { message } = await nonceRes.json();
-
-            // Step 2: Sign the message
             const signature = await signMessageAsync({ message });
 
-            // Step 3: Verify signature and get JWT
             const verifyRes = await fetch('/api/auth/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -92,82 +110,68 @@ export function CustomConnect() {
             }
 
             const { token, user } = await verifyRes.json();
-
-            // Store auth data
             localStorage.setItem('auth_token', token);
             localStorage.setItem('auth_user', JSON.stringify(user));
-
-            // Step 4: Check for .safu domain
-            const domainRes = await fetch('/api/user/domain-status', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            let hasDomain = false;
-            let domainName = null;
-
-            if (domainRes.ok) {
-                const domainData = await domainRes.json();
-                hasDomain = domainData.hasDomain;
-                domainName = domainData.domainName;
-
-                if (domainName) {
-                    localStorage.setItem('safu_domain', domainName);
-                }
-            }
 
             setAuthState({
                 isAuthenticated: true,
                 token,
                 user,
-                hasDomain,
-                domainName,
+                domainName: null,
             });
-
-            // Show domain modal if no .safu domain
-            if (!hasDomain) {
-                setShowDomainModal(true);
-            }
         } catch (error) {
             console.error('Authentication error:', error);
-            // Don't clear auth on error - user may have rejected signature
         } finally {
             setIsAuthenticating(false);
         }
     }, [address, isAuthenticating, signMessageAsync]);
 
-    // Auto-authenticate when wallet connects
+    // Only trigger sign-message flow when truly not authenticated
+    // (i.e. no valid token in localStorage for this wallet)
     useEffect(() => {
-        if (isConnected && authenticated && address && !authState.isAuthenticated && !isAuthenticating && !hasAttemptedAuth.current) {
-            // Check for existing token first
-            const token = localStorage.getItem('auth_token');
-            const user = localStorage.getItem('auth_user');
-            const domainName = localStorage.getItem('safu_domain');
-
-            if (token && user) {
-                try {
-                    const parsedUser = JSON.parse(user);
-                    if (parsedUser.walletAddress?.toLowerCase() === address?.toLowerCase()) {
-                        setAuthState({
-                            isAuthenticated: true,
-                            token,
-                            user: parsedUser,
-                            hasDomain: !!domainName,
-                            domainName,
-                        });
-                        return;
-                    }
-                } catch {
-                    // Invalid stored data - continue to authenticate
-                }
+        if (
+            isConnected &&
+            authenticated &&
+            address &&
+            !isAuthenticating &&
+            !hasAttemptedAuth.current
+        ) {
+            // If already authenticated for this wallet, nothing to do
+            if (
+                authState.isAuthenticated &&
+                authState.user?.walletAddress?.toLowerCase() === address.toLowerCase()
+            ) {
+                return;
             }
 
-            // No valid token - trigger authentication
+            // Check localStorage one more time in case state is stale
+            try {
+                const token = localStorage.getItem('auth_token');
+                const userStr = localStorage.getItem('auth_user');
+                if (token && userStr) {
+                    const parsedUser = JSON.parse(userStr);
+                    if (parsedUser.walletAddress?.toLowerCase() === address.toLowerCase()) {
+                        setAuthState({ isAuthenticated: true, token, user: parsedUser, domainName: null });
+                        return;
+                    }
+                }
+            } catch {
+                // fall through to sign
+            }
+
             hasAttemptedAuth.current = true;
             authenticate();
         }
-    }, [isConnected, authenticated, address, authState.isAuthenticated, isAuthenticating, authenticate]);
+    }, [
+        isConnected,
+        authenticated,
+        address,
+        authState.isAuthenticated,
+        authState.user,
+        isAuthenticating,
+        authenticate,
+    ]);
 
-    // Not ready - show loading state
     if (!ready) {
         return (
             <button
@@ -179,7 +183,6 @@ export function CustomConnect() {
         );
     }
 
-    // Not connected - show Login button
     if (!authenticated || !isConnected) {
         return (
             <button
@@ -191,7 +194,6 @@ export function CustomConnect() {
         );
     }
 
-    // Authenticating - show loading state
     if (isAuthenticating) {
         return (
             <button
@@ -203,9 +205,9 @@ export function CustomConnect() {
         );
     }
 
-    // Connected and authenticated - show name/address
-    const displayText = authState.domainName || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
-
+    const displayText = (domainName as string | undefined)
+        || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
+        console.log(displayText);
     return (
         <>
             <button
@@ -220,39 +222,8 @@ export function CustomConnect() {
                 isOpen={showWalletModal}
                 onRequestClose={() => setShowWalletModal(false)}
                 address={address || ''}
-                name={authState.domainName || ''}
+                name={(domainName as string | undefined) || ''}
             />
-
-            {/* Domain Required Modal */}
-            {showDomainModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-3xl max-w-md w-full p-8 text-center shadow-2xl">
-                        <div className="text-5xl mb-4">🔒</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                            .safu Domain Required
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            To access SafuAcademy courses and earn points, you need a .safu domain name.
-                        </p>
-                        <div className="flex flex-col gap-3">
-                            <a
-                                href="https://names.safuverse.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-6 py-3 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
-                            >
-                                Get Your .safu Domain →
-                            </a>
-                            <button
-                                onClick={() => setShowDomainModal(false)}
-                                className="px-6 py-3 text-gray-500 hover:text-gray-700 transition-colors"
-                            >
-                                Continue without domain
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 }

@@ -1,5 +1,5 @@
 // ============ Main Exports ============
-export { SafuDomainsClient } from './client'
+export { NexDomains } from './client'
 
 // ============ Types ============
 export type {
