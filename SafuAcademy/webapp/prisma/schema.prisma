@@ -271,6 +271,16 @@ enum CampaignRequestStatus {
   REJECTED
 }
 
+enum CampaignOwnerType {
+  NEXID
+  PARTNER
+}
+
+enum CampaignContractType {
+  NEXID_CAMPAIGNS
+  PARTNER_CAMPAIGNS
+}
+
 model Campaign {
   id                  Int            @id @default(autoincrement())
   slug                String         @unique
@@ -278,10 +288,10 @@ model Campaign {
   objective           String         @db.Text
   sponsorName         String
   sponsorNamespace    String?
-  category            String?
   tier                CampaignTier   @default(STANDARD)
+  ownerType           CampaignOwnerType @default(PARTNER)
+  contractType        CampaignContractType @default(PARTNER_CAMPAIGNS)
   prizePoolUsdc       Decimal        @db.Decimal(18, 6)
-  additionalRewards   String?
   keyTakeaways        String[]       @default([])
   status              CampaignStatus @default(DRAFT)
   isPublished         Boolean        @default(false)
@@ -299,6 +309,7 @@ model Campaign {
 
   @@index([status, isPublished])
   @@index([sponsorName])
+  @@index([ownerType, contractType])
 }
 
 model CampaignRequest {
@@ -312,6 +323,10 @@ model CampaignRequest {
   tier               CampaignTier
   prizePoolUsdc      Decimal               @db.Decimal(18, 6)
   briefFileName      String?
+  callBookedFor      DateTime?
+  callTimeSlot       String?
+  callTimezone       String?
+  callBookingNotes   String?               @db.Text
   status             CampaignRequestStatus @default(PENDING)
   reviewNotes        String?               @db.Text
   createdAt          DateTime              @default(now())

@@ -11,12 +11,12 @@ export async function GET(request: NextRequest) {
     const statusFilter = statusParam && VALID_STATUSES.has(statusParam) ? statusParam : null;
 
     const whereStatus = statusFilter
-      ? Prisma.sql`AND "status" = ${statusFilter}::"CampaignStatus"`
+      ? Prisma.sql`AND c."status" = ${statusFilter}::"CampaignStatus"`
       : Prisma.empty;
 
     const whereVisibility = includeDraft
       ? Prisma.sql`WHERE 1 = 1`
-      : Prisma.sql`WHERE "isPublished" = true AND "status" IN ('LIVE'::"CampaignStatus", 'ENDED'::"CampaignStatus")`;
+      : Prisma.sql`WHERE c."isPublished" = true AND c."status" IN ('LIVE'::"CampaignStatus", 'ENDED'::"CampaignStatus")`;
 
     const campaigns = await prisma.$queryRaw<
       Array<{
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
         objective: string;
         sponsorName: string;
         sponsorNamespace: string | null;
-        category: string | null;
         tier: string;
+        ownerType: string;
+        contractType: string;
         prizePoolUsdc: string;
-        additionalRewards: string | null;
         keyTakeaways: string[];
         status: string;
         isPublished: boolean;
@@ -39,29 +39,77 @@ export async function GET(request: NextRequest) {
     >(
       Prisma.sql`
         SELECT
-          "id",
-          "slug",
-          "title",
-          "objective",
-          "sponsorName",
-          "sponsorNamespace",
-          "category",
-          "tier",
-          "prizePoolUsdc"::text AS "prizePoolUsdc",
-          "additionalRewards",
-          "keyTakeaways",
-          "status",
-          "isPublished",
-          "startAt",
-          "endAt"
-        FROM "Campaign"
+          c."id",
+          c."slug",
+          c."title",
+          c."objective",
+          c."sponsorName",
+          c."sponsorNamespace",
+          c."tier",
+          c."ownerType",
+          c."contractType",
+          c."prizePoolUsdc"::text AS "prizePoolUsdc",
+          c."keyTakeaways",
+          c."status",
+          c."isPublished",
+          c."startAt",
+          c."endAt"
+        FROM "Campaign" c
         ${whereVisibility}
         ${whereStatus}
-        ORDER BY "createdAt" DESC
+        ORDER BY c."createdAt" DESC
       `,
     );
 
-    return NextResponse.json({ campaigns });
+    const campaignIds = campaigns.map((campaign) => campaign.id);
+    let metricsMap = new Map<number, { participantCount: number; topScore: number; totalScore: number }>();
+
+    if (campaignIds.length > 0) {
+      const metrics = await prisma.$queryRaw<
+        Array<{
+          campaignId: number;
+          participantCount: number;
+          topScore: number;
+          totalScore: number;
+        }>
+      >(
+        Prisma.sql`
+          SELECT
+            "campaignId",
+            COUNT(*)::int AS "participantCount",
+            COALESCE(MAX("score"), 0)::int AS "topScore",
+            COALESCE(SUM("score"), 0)::int AS "totalScore"
+          FROM "CampaignParticipant"
+          WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+          GROUP BY "campaignId"
+        `,
+      );
+
+      metricsMap = new Map(
+        metrics.map((metric) => [
+          metric.campaignId,
+          {
+            participantCount: metric.participantCount,
+            topScore: metric.topScore,
+            totalScore: metric.totalScore,
+          },
+        ]),
+      );
+    }
+
+    return NextResponse.json({
+      campaigns: campaigns.map((campaign) => {
+        const metrics = metricsMap.get(campaign.id) ?? {
+          participantCount: 0,
+          topScore: 0,
+          totalScore: 0,
+        };
+        return {
+          ...campaign,
+          ...metrics,
+        };
+      }),
+    });
   } catch (error) {
     console.error("GET /api/campaigns error", error);
     return NextResponse.json({ error: "Failed to fetch campaigns" }, { status: 500 });

@@ -6,6 +6,8 @@ import { verifyAdmin } from "@/lib/middleware/admin.middleware";
 const VALID_DECISIONS = new Set(["APPROVE", "REJECT"]);
 const VALID_TIERS = new Set(["STANDARD", "PREMIUM", "ECOSYSTEM"]);
 const VALID_CAMPAIGN_STATUS = new Set(["DRAFT", "LIVE", "ENDED", "ARCHIVED"]);
+const VALID_OWNER_TYPES = new Set(["NEXID", "PARTNER"]);
+const VALID_CONTRACT_TYPES = new Set(["NEXID_CAMPAIGNS", "PARTNER_CAMPAIGNS"]);
 
 type CampaignRequestRow = {
   id: string;
@@ -15,6 +17,10 @@ type CampaignRequestRow = {
   primaryObjective: string;
   tier: string;
   prizePoolUsdc: string;
+  callBookedFor: Date | null;
+  callTimeSlot: string | null;
+  callTimezone: string | null;
+  callBookingNotes: string | null;
   status: string;
 };
 
@@ -76,14 +82,22 @@ export async function PATCH(
         : null;
 
     const createCampaign = decision === "APPROVE" ? body.createCampaign !== false : false;
-    const category = body.category ? String(body.category).trim() : null;
-    const additionalRewards = body.additionalRewards
-      ? String(body.additionalRewards).trim()
-      : null;
     const statusInput = body.campaignStatus
       ? String(body.campaignStatus).toUpperCase()
       : "DRAFT";
     const campaignStatus = VALID_CAMPAIGN_STATUS.has(statusInput) ? statusInput : "DRAFT";
+    const ownerTypeInput = body.ownerType
+      ? String(body.ownerType).toUpperCase()
+      : "PARTNER";
+    const ownerType = VALID_OWNER_TYPES.has(ownerTypeInput) ? ownerTypeInput : "PARTNER";
+    const fallbackContractType =
+      ownerType === "NEXID" ? "NEXID_CAMPAIGNS" : "PARTNER_CAMPAIGNS";
+    const contractTypeInput = body.contractType
+      ? String(body.contractType).toUpperCase()
+      : fallbackContractType;
+    const contractType = VALID_CONTRACT_TYPES.has(contractTypeInput)
+      ? contractTypeInput
+      : fallbackContractType;
     const isPublished =
       typeof body.isPublished === "boolean"
         ? body.isPublished
@@ -104,6 +118,10 @@ export async function PATCH(
           "primaryObjective",
           "tier",
           "prizePoolUsdc"::text AS "prizePoolUsdc",
+          "callBookedFor",
+          "callTimeSlot",
+          "callTimezone",
+          "callBookingNotes",
           "status"
         FROM "CampaignRequest"
         WHERE "id" = ${id}
@@ -152,10 +170,10 @@ export async function PATCH(
           "objective",
           "sponsorName",
           "sponsorNamespace",
-          "category",
           "tier",
+          "ownerType",
+          "contractType",
           "prizePoolUsdc",
-          "additionalRewards",
           "status",
           "isPublished",
           "startAt",
@@ -170,10 +188,10 @@ export async function PATCH(
           ${existing.primaryObjective},
           ${existing.partnerName},
           ${existing.partnerNamespace},
-          ${category},
           ${tier}::"CampaignTier",
+          ${ownerType}::"CampaignOwnerType",
+          ${contractType}::"CampaignContractType",
           ${Number(existing.prizePoolUsdc)},
-          ${additionalRewards},
           ${campaignStatus}::"CampaignStatus",
           ${isPublished},
           ${startAt},

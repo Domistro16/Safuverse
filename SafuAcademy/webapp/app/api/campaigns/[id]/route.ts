@@ -1,6 +1,90 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { Contract, JsonRpcProvider } from "ethers";
 import prisma from "@/lib/prisma";
+
+type CampaignRow = {
+  id: number;
+  slug: string;
+  title: string;
+  objective: string;
+  sponsorName: string;
+  sponsorNamespace: string | null;
+  tier: string;
+  ownerType: string;
+  contractType: string;
+  prizePoolUsdc: string;
+  keyTakeaways: string[];
+  status: string;
+  isPublished: boolean;
+  startAt: Date | null;
+  endAt: Date | null;
+  onChainCampaignId: number | null;
+};
+
+type OnChainSnapshot = {
+  contractType: "PARTNER_CAMPAIGNS" | "NEXID_CAMPAIGNS";
+  contractAddress: string;
+  campaignId: number;
+  participantCount: number;
+  sponsorAddress: string | null;
+};
+
+async function getOnChainSnapshot(campaign: CampaignRow): Promise<OnChainSnapshot | null> {
+  if (campaign.onChainCampaignId === null) {
+    return null;
+  }
+
+  const rpcUrl =
+    process.env.RPC_URL ||
+    process.env.NEXT_PUBLIC_RPC_URL ||
+    "https://mainnet.base.org";
+
+  const contractType =
+    campaign.contractType === "NEXID_CAMPAIGNS"
+      ? "NEXID_CAMPAIGNS"
+      : "PARTNER_CAMPAIGNS";
+
+  const contractAddress =
+    contractType === "NEXID_CAMPAIGNS"
+      ? process.env.NEXID_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_NEXID_CAMPAIGNS_ADDRESS
+      : process.env.PARTNER_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_PARTNER_CAMPAIGNS_ADDRESS;
+
+  if (!contractAddress) {
+    return null;
+  }
+
+  try {
+    const provider = new JsonRpcProvider(rpcUrl);
+    const abi =
+      contractType === "PARTNER_CAMPAIGNS"
+        ? [
+            "function getParticipantCount(uint256) view returns (uint256)",
+            "function getCampaignSponsor(uint256) view returns (address)",
+          ]
+        : ["function getParticipantCount(uint256) view returns (uint256)"];
+
+    const contract = new Contract(contractAddress, abi, provider);
+    const participantCountValue = await contract.getParticipantCount(campaign.onChainCampaignId);
+    const participantCount = Number(participantCountValue ?? 0n);
+
+    let sponsorAddress: string | null = null;
+    if (contractType === "PARTNER_CAMPAIGNS") {
+      sponsorAddress = await contract.getCampaignSponsor(campaign.onChainCampaignId);
+    }
+
+    return {
+      contractType,
+      contractAddress,
+      campaignId: campaign.onChainCampaignId,
+      participantCount,
+      sponsorAddress,
+    };
+  } catch (error) {
+    console.error("Failed to fetch on-chain snapshot", error);
+    return null;
+  }
+}
 
 export async function GET(
   _request: NextRequest,
@@ -15,25 +99,7 @@ export async function GET(
       ? Prisma.sql`WHERE "id" = ${campaignId}`
       : Prisma.sql`WHERE "slug" = ${id}`;
 
-    const [campaign] = await prisma.$queryRaw<
-      Array<{
-        id: number;
-        slug: string;
-        title: string;
-        objective: string;
-        sponsorName: string;
-        sponsorNamespace: string | null;
-        category: string | null;
-        tier: string;
-        prizePoolUsdc: string;
-        additionalRewards: string | null;
-        keyTakeaways: string[];
-        status: string;
-        isPublished: boolean;
-        startAt: Date | null;
-        endAt: Date | null;
-      }>
-    >(
+    const [campaign] = await prisma.$queryRaw<CampaignRow[]>(
       Prisma.sql`
         SELECT
           "id",
@@ -42,15 +108,16 @@ export async function GET(
           "objective",
           "sponsorName",
           "sponsorNamespace",
-          "category",
           "tier",
+          "ownerType",
+          "contractType",
           "prizePoolUsdc"::text AS "prizePoolUsdc",
-          "additionalRewards",
           "keyTakeaways",
           "status",
           "isPublished",
           "startAt",
-          "endAt"
+          "endAt",
+          "onChainCampaignId"
         FROM "Campaign"
         ${whereClause}
         LIMIT 1
@@ -81,7 +148,9 @@ export async function GET(
       LIMIT 100
     `;
 
-    return NextResponse.json({ campaign, leaderboard });
+    const onChain = await getOnChainSnapshot(campaign);
+
+    return NextResponse.json({ campaign, leaderboard, onChain });
   } catch (error) {
     console.error("GET /api/campaigns/[id] error", error);
     return NextResponse.json({ error: "Failed to fetch campaign" }, { status: 500 });

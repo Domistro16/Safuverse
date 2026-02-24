@@ -5,6 +5,8 @@ import { verifyAdmin } from "@/lib/middleware/admin.middleware";
 
 const VALID_TIERS = new Set(["STANDARD", "PREMIUM", "ECOSYSTEM"]);
 const VALID_STATUSES = new Set(["DRAFT", "LIVE", "ENDED", "ARCHIVED"]);
+const VALID_OWNER_TYPES = new Set(["NEXID", "PARTNER"]);
+const VALID_CONTRACT_TYPES = new Set(["NEXID_CAMPAIGNS", "PARTNER_CAMPAIGNS"]);
 
 function slugify(input: string): string {
   const normalized = input
@@ -43,10 +45,10 @@ type CampaignRow = {
   objective: string;
   sponsorName: string;
   sponsorNamespace: string | null;
-  category: string | null;
   tier: string;
+  ownerType: string;
+  contractType: string;
   prizePoolUsdc: string;
-  additionalRewards: string | null;
   keyTakeaways: string[];
   status: string;
   isPublished: boolean;
@@ -82,10 +84,10 @@ export async function GET(request: NextRequest) {
           "objective",
           "sponsorName",
           "sponsorNamespace",
-          "category",
           "tier",
+          "ownerType",
+          "contractType",
           "prizePoolUsdc"::text AS "prizePoolUsdc",
-          "additionalRewards",
           "keyTakeaways",
           "status",
           "isPublished",
@@ -122,11 +124,16 @@ export async function POST(request: NextRequest) {
     const objective = String(body.objective || "").trim();
     const sponsorName = String(body.sponsorName || "").trim();
     const sponsorNamespace = body.sponsorNamespace ? String(body.sponsorNamespace).trim() : null;
-    const category = body.category ? String(body.category).trim() : null;
     const tierRaw = String(body.tier || "").toUpperCase();
     const tier = VALID_TIERS.has(tierRaw) ? tierRaw : "STANDARD";
+    const ownerTypeRaw = String(body.ownerType || "PARTNER").toUpperCase();
+    const ownerType = VALID_OWNER_TYPES.has(ownerTypeRaw) ? ownerTypeRaw : "PARTNER";
+    const fallbackContractType = ownerType === "NEXID" ? "NEXID_CAMPAIGNS" : "PARTNER_CAMPAIGNS";
+    const contractTypeRaw = String(body.contractType || fallbackContractType).toUpperCase();
+    const contractType = VALID_CONTRACT_TYPES.has(contractTypeRaw)
+      ? contractTypeRaw
+      : fallbackContractType;
     const prizePoolUsdc = Number(body.prizePoolUsdc);
-    const additionalRewards = body.additionalRewards ? String(body.additionalRewards).trim() : null;
     const statusRaw = String(body.status || "DRAFT").toUpperCase();
     const status = VALID_STATUSES.has(statusRaw) ? statusRaw : "DRAFT";
     const isPublished =
@@ -168,10 +175,10 @@ export async function POST(request: NextRequest) {
         "objective",
         "sponsorName",
         "sponsorNamespace",
-        "category",
         "tier",
+        "ownerType",
+        "contractType",
         "prizePoolUsdc",
-        "additionalRewards",
         "status",
         "isPublished",
         "startAt",
@@ -185,10 +192,10 @@ export async function POST(request: NextRequest) {
         ${objective},
         ${sponsorName},
         ${sponsorNamespace},
-        ${category},
         ${tier}::"CampaignTier",
+        ${ownerType}::"CampaignOwnerType",
+        ${contractType}::"CampaignContractType",
         ${prizePoolUsdc},
-        ${additionalRewards},
         ${status}::"CampaignStatus",
         ${isPublished},
         ${startAt},

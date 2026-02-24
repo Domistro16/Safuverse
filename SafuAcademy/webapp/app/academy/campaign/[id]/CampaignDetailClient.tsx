@@ -1,46 +1,179 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import type { Campaign } from "../../_data";
+import { useEffect, useState } from "react";
 
-interface CampaignDetailClientProps {
+type Campaign = {
+  id: number;
+  slug: string;
+  title: string;
+  objective: string;
+  sponsorName: string;
+  sponsorNamespace: string | null;
+  tier: string;
+  ownerType: string;
+  contractType: string;
+  prizePoolUsdc: string;
+  keyTakeaways: string[];
+  status: string;
+  isPublished: boolean;
+  startAt: string | null;
+  endAt: string | null;
+  onChainCampaignId: number | null;
+};
+
+type LeaderboardRow = {
+  rank: number | null;
+  score: number;
+  rewardAmountUsdc: string | null;
+  walletAddress: string;
+};
+
+type OnChainSnapshot = {
+  contractType: "PARTNER_CAMPAIGNS" | "NEXID_CAMPAIGNS";
+  contractAddress: string;
+  campaignId: number;
+  participantCount: number;
+  sponsorAddress: string | null;
+} | null;
+
+type CampaignResponse = {
   campaign: Campaign;
+  leaderboard: LeaderboardRow[];
+  onChain: OnChainSnapshot;
+};
+
+type Module = {
+  type: "video" | "task" | "locked";
+  title: string;
+};
+
+const DEFAULT_MODULES: Module[] = [
+  { type: "video", title: "Campaign Briefing" },
+  { type: "task", title: "Protocol Verification Task" },
+  { type: "video", title: "Advanced Execution Walkthrough" },
+  { type: "task", title: "On-Chain Completion Task" },
+  { type: "locked", title: "Final Review" },
+];
+
+function shortAddress(value: string) {
+  if (value.length < 12) return value;
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
-export default function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
+function formatUsdc(value: string | null) {
+  if (!value) return "-";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return value;
+  return amount.toLocaleString();
+}
+
+interface CampaignDetailClientProps {
+  campaignId: string;
+}
+
+export default function CampaignDetailClient({ campaignId }: CampaignDetailClientProps) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<CampaignResponse | null>(null);
   const [activeModule, setActiveModule] = useState(0);
   const [completedUntil, setCompletedUntil] = useState(-1);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCampaign() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/campaigns/${campaignId}`, { cache: "no-store" });
+        const body = await res.json();
+        if (!res.ok) {
+          throw new Error(body?.error || "Failed to load campaign");
+        }
+        if (active) {
+          setData(body);
+        }
+      } catch (err) {
+        if (active) {
+          setError(err instanceof Error ? err.message : "Failed to load campaign");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCampaign();
+    return () => {
+      active = false;
+    };
+  }, [campaignId]);
+
+  const modules = DEFAULT_MODULES;
+
+  if (loading) {
+    return (
+      <section className="mx-auto w-full max-w-[1200px] px-6 pb-12 pt-10 text-sm text-nexid-muted">
+        Loading campaign...
+      </section>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <section className="mx-auto w-full max-w-[1200px] px-6 pb-12 pt-10">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+          {error || "Campaign not found"}
+        </div>
+        <Link href="/academy" className="mt-4 inline-block text-sm text-nexid-muted hover:text-white">
+          {"<-"} Back to Academy
+        </Link>
+      </section>
+    );
+  }
+
+  const { campaign, leaderboard, onChain } = data;
+  const isEnded = campaign.status === "ENDED";
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-6 pb-12 pt-8 lg:px-12">
       <Link href="/academy" className="mb-6 inline-block text-sm font-medium text-nexid-muted hover:text-white">
-        {"<-"} Back to Gallery
+        {"<-"} Back to Academy
       </Link>
 
       <div className="mb-8 flex flex-col gap-8 border-b border-[#1a1a1a] pb-8 lg:flex-row">
         <div className="flex-1">
           <h1 className="font-display mb-4 text-4xl font-bold text-white md:text-5xl">{campaign.title}</h1>
+          <p className="max-w-4xl text-sm leading-relaxed text-nexid-muted">{campaign.objective}</p>
         </div>
-        <div className="premium-panel w-full shrink-0 bg-[#0a0a0a] p-6 lg:w-72">
+        <div className="premium-panel w-full shrink-0 bg-[#0a0a0a] p-6 lg:w-80">
           <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-muted">Sponsored By</div>
-          <div className="font-display mb-4 text-xl text-white">{campaign.sponsor}</div>
-          <div className="text-sm font-bold text-white">{campaign.pool}</div>
+          <div className="font-display mb-3 text-xl text-white">{campaign.sponsorName}</div>
+          <div className="mb-1 text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
+          <div className="text-[11px] text-nexid-muted">
+            {campaign.tier} · {campaign.status}
+          </div>
         </div>
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">
         <div className="flex-1">
           <div className="premium-panel mb-6 min-h-[420px] overflow-hidden border border-[#1a1a1a] bg-[#050505]">
-            {!campaign.ended ? (
+            {!isEnded ? (
               <div className="flex h-full flex-col">
                 <div className="relative h-[300px] bg-black">
-                  <img src={campaign.img} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-luminosity" />
+                  <img
+                    src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200"
+                    alt={campaign.title}
+                    className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-luminosity"
+                  />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 p-6">
                     <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
-                      {campaign.modules[activeModule]?.type ?? "module"}
+                      {modules[activeModule]?.type ?? "module"}
                     </div>
-                    <h3 className="font-display text-2xl text-white">{campaign.modules[activeModule]?.title}</h3>
+                    <h3 className="font-display text-2xl text-white">{modules[activeModule]?.title}</h3>
                   </div>
                 </div>
                 <div className="p-6">
@@ -49,7 +182,7 @@ export default function CampaignDetailClient({ campaign }: CampaignDetailClientP
                     onClick={() => {
                       setCompletedUntil((prev) => Math.max(prev, activeModule));
                       const next = activeModule + 1;
-                      if (next < campaign.modules.length && campaign.modules[next]?.type !== "locked") {
+                      if (next < modules.length && modules[next]?.type !== "locked") {
                         setActiveModule(next);
                       }
                     }}
@@ -62,60 +195,83 @@ export default function CampaignDetailClient({ campaign }: CampaignDetailClientP
             ) : (
               <div className="flex h-full flex-col items-center justify-center p-10 text-center">
                 <h3 className="font-display mb-2 text-3xl text-white">Campaign Concluded</h3>
-                <p className="mb-6 text-sm text-nexid-muted">Review your reward eligibility.</p>
-                {campaign.claimState === "claimable" ? (
-                  <button type="button" className="rounded bg-green-500 px-8 py-3 text-sm font-bold text-black">
-                    Sign & Claim {campaign.claimAmount}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="cursor-not-allowed rounded border border-[#222] bg-[#111] px-8 py-3 text-sm font-bold text-nexid-muted"
-                  >
-                    Reward Dispensed
-                  </button>
-                )}
+                <p className="mb-6 text-sm text-nexid-muted">Rewards are distributed by campaign ranking.</p>
+                <button
+                  type="button"
+                  className="cursor-not-allowed rounded border border-[#222] bg-[#111] px-8 py-3 text-sm font-bold text-nexid-muted"
+                >
+                  Claim Window Managed By Sponsor
+                </button>
               </div>
             )}
           </div>
 
-          <div className="premium-panel bg-[#0a0a0a] p-6">
+          <div className="premium-panel mb-6 bg-[#0a0a0a] p-6">
             <h3 className="font-display mb-4 text-lg text-white">Key Takeaways</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {campaign.takeaways.map((takeaway) => (
+              {(campaign.keyTakeaways.length > 0 ? campaign.keyTakeaways : ["No key takeaways published yet."]).map((takeaway) => (
                 <div key={takeaway} className="rounded-lg border border-[#222] bg-[#111] p-3 text-xs leading-relaxed text-nexid-muted">
                   {takeaway}
                 </div>
               ))}
             </div>
           </div>
+
+          <div className="premium-panel bg-[#0a0a0a] p-6">
+            <h3 className="font-display mb-3 text-lg text-white">On-Chain Snapshot</h3>
+            {onChain ? (
+              <div className="space-y-2 text-xs text-white/80">
+                <div>
+                  Contract: <span className="font-mono text-nexid-gold">{onChain.contractType}</span>
+                </div>
+                <div>
+                  Address: <span className="font-mono text-nexid-muted">{shortAddress(onChain.contractAddress)}</span>
+                </div>
+                <div>
+                  On-chain Campaign ID: <span className="font-mono">{onChain.campaignId}</span>
+                </div>
+                <div>
+                  On-chain Participants: <span className="font-mono">{onChain.participantCount}</span>
+                </div>
+                {onChain.sponsorAddress ? (
+                  <div>
+                    Sponsor Wallet: <span className="font-mono">{shortAddress(onChain.sponsorAddress)}</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="text-xs text-nexid-muted">
+                On-chain mapping not configured for this campaign yet.
+              </div>
+            )}
+          </div>
         </div>
 
-        <aside className="premium-panel w-full shrink-0 border border-[#1a1a1a] bg-[#0a0a0a] lg:w-[400px]">
-          <div className="border-b border-[#1a1a1a] bg-[#111] p-4 text-xs font-bold text-white">Campaign Ledger</div>
-          <div className="custom-scroll max-h-[580px] overflow-y-auto">
-            {!campaign.ended ? (
-              campaign.modules.map((module, idx) => {
-                const isCompleted = idx <= completedUntil;
-                const isActive = idx === activeModule && !isCompleted;
-                const isLocked = idx > completedUntil + 1 || module.type === "locked";
+        <aside className="premium-panel w-full shrink-0 border border-[#1a1a1a] bg-[#0a0a0a] lg:w-[420px]">
+          <div className="border-b border-[#1a1a1a] bg-[#111] p-4 text-xs font-bold text-white">
+            Campaign Leaderboard
+          </div>
+          <div className="custom-scroll max-h-[680px] overflow-y-auto">
+            {leaderboard.length === 0 ? (
+              <div className="p-6 text-sm text-nexid-muted">No leaderboard entries yet.</div>
+            ) : (
+              leaderboard.map((row, idx) => {
+                const rank = row.rank ?? idx + 1;
                 return (
-                  <button
-                    key={`${module.title}-${idx}`}
-                    type="button"
-                    disabled={isLocked}
-                    onClick={() => setActiveModule(idx)}
-                    className={`syllabus-item w-full border-b border-[#1a1a1a] p-4 text-left ${
-                      isLocked ? "locked" : isCompleted ? "completed" : isActive ? "active" : ""
-                    }`}
-                  >
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-muted">{module.type}</div>
-                    <div className="text-sm font-medium text-white">{module.title}</div>
-                  </button>
+                  <div key={`${row.walletAddress}-${rank}`} className="border-b border-[#1a1a1a] p-4 text-sm">
+                    <div className="mb-1 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="w-8 text-center font-mono text-xs text-nexid-gold">{rank}</span>
+                        <span className="font-mono text-white/90">{shortAddress(row.walletAddress)}</span>
+                      </div>
+                      <span className="font-mono text-xs text-white">{row.score.toLocaleString()} pts</span>
+                    </div>
+                    <div className="pl-11 text-[11px] text-nexid-muted">
+                      Reward: {row.rewardAmountUsdc ? `$${formatUsdc(row.rewardAmountUsdc)} USDC` : "TBD"}
+                    </div>
+                  </div>
                 );
               })
-            ) : (
-              <div className="p-6 text-sm text-nexid-muted">Campaign ended. Modules locked. Check claim status.</div>
             )}
           </div>
         </aside>

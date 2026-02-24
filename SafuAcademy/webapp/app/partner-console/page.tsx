@@ -39,6 +39,8 @@ const ANALYTICS = {
   },
 };
 
+const CALL_TIME_SLOTS = ["10:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"];
+
 function leaderboard(size: number) {
   return Array.from({ length: size }, (_, i) => ({
     rank: i + 1,
@@ -64,6 +66,11 @@ export default function PartnerConsolePage() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
   const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [callBookingOpen, setCallBookingOpen] = useState(false);
+  const [callBookedFor, setCallBookedFor] = useState("");
+  const [callTimeSlot, setCallTimeSlot] = useState("");
+  const [callTimezone, setCallTimezone] = useState("EST");
+  const [callBookingNotes, setCallBookingNotes] = useState("");
   const [rewardOpen, setRewardOpen] = useState(false);
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [pin, setPin] = useState<{ percent: number; time: string } | null>(null);
@@ -96,6 +103,14 @@ export default function PartnerConsolePage() {
       setRequestError("Minimum deployment pool is $15,000.");
       return;
     }
+    if (!callBookedFor) {
+      setRequestError("Strategy call date is required.");
+      return;
+    }
+    if (!callTimeSlot) {
+      setRequestError("Strategy call time slot is required.");
+      return;
+    }
 
     setSubmittingRequest(true);
     try {
@@ -110,6 +125,10 @@ export default function PartnerConsolePage() {
           tier: tier.toUpperCase(),
           prizePoolUsdc: prizePool,
           briefFileName,
+          callBookedFor: `${callBookedFor}T00:00:00.000Z`,
+          callTimeSlot,
+          callTimezone,
+          callBookingNotes: callBookingNotes.trim() || null,
         }),
       });
 
@@ -128,6 +147,10 @@ export default function PartnerConsolePage() {
       setBriefFileName(null);
       setPrizePool(15000);
       setTier("standard");
+      setCallBookedFor("");
+      setCallTimeSlot("");
+      setCallTimezone("EST");
+      setCallBookingNotes("");
       goView("dashboard");
     } catch {
       setRequestError("Failed to submit campaign request.");
@@ -517,7 +540,13 @@ export default function PartnerConsolePage() {
                   </div>
                   <div className="flex justify-between border-t border-[#1a1a1a] pt-6">
                     <button type="button" onClick={() => setWizardStep(1)} className="rounded-lg border border-[#333] px-6 py-3 text-sm text-white">Back</button>
-                    <button type="button" onClick={() => prizePool >= 15000 && setWizardStep(3)} className="rounded-lg bg-white px-8 py-3 text-sm font-bold text-black">Finalize & Book Call</button>
+                    <button
+                      type="button"
+                      onClick={() => prizePool >= 15000 && setCallBookingOpen(true)}
+                      className="rounded-lg bg-white px-8 py-3 text-sm font-bold text-black"
+                    >
+                      Finalize & Book Call
+                    </button>
                   </div>
                 </div>
               ) : null}
@@ -526,6 +555,22 @@ export default function PartnerConsolePage() {
                 <div className="premium-panel bg-[#0a0a0a] p-6 lg:p-8">
                   <h3 className="font-display mb-2 text-2xl text-white">Schedule Strategy Call</h3>
                   <p className="mb-8 text-sm text-nexid-muted">Finalize smart contract integrations with the curriculum team.</p>
+                  <div className="mb-6 rounded-lg border border-[#222] bg-[#050505] p-4 text-xs text-white/80">
+                    <div className="mb-1 font-mono uppercase tracking-wider text-nexid-gold">Booked Slot</div>
+                    <div>
+                      {callBookedFor || "No date"} at {callTimeSlot || "No time"} ({callTimezone})
+                    </div>
+                    {callBookingNotes.trim() ? (
+                      <div className="mt-2 text-nexid-muted">Notes: {callBookingNotes.trim()}</div>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="mt-3 rounded border border-[#333] px-3 py-1 text-[10px] uppercase tracking-widest text-white hover:bg-[#111]"
+                      onClick={() => setCallBookingOpen(true)}
+                    >
+                      Edit Call
+                    </button>
+                  </div>
                   {requestError ? <p className="mb-4 text-xs text-red-500">{requestError}</p> : null}
                   {requestSuccess ? <p className="mb-4 text-xs text-green-400">{requestSuccess}</p> : null}
                   <div className="flex justify-between">
@@ -533,7 +578,7 @@ export default function PartnerConsolePage() {
                     <button
                       type="button"
                       onClick={submitCampaignRequest}
-                      disabled={submittingRequest}
+                      disabled={submittingRequest || !callBookedFor || !callTimeSlot}
                       className="rounded-lg bg-nexid-gold px-8 py-3 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {submittingRequest ? "Submitting..." : "Submit Campaign Request"}
@@ -614,6 +659,99 @@ export default function PartnerConsolePage() {
                 <span className="font-mono text-nexid-muted">{row.score.toLocaleString()} pts</span>
               </div>
             ))}
+          </div>
+        </Modal>
+      ) : null}
+
+      {callBookingOpen ? (
+        <Modal onClose={() => setCallBookingOpen(false)} title="Book Strategy Call">
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-nexid-muted">
+                Call Date
+              </label>
+              <input
+                type="date"
+                value={callBookedFor}
+                onChange={(e) => setCallBookedFor(e.target.value)}
+                className="b2b-input w-full px-4 py-3 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-nexid-muted">
+                Time Slot
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {CALL_TIME_SLOTS.map((slot) => (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => setCallTimeSlot(slot)}
+                    className={`rounded border px-3 py-2 text-xs ${
+                      callTimeSlot === slot
+                        ? "border-nexid-gold bg-nexid-gold/10 text-nexid-gold"
+                        : "border-[#333] bg-[#111] text-white"
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-nexid-muted">
+                Timezone
+              </label>
+              <select
+                value={callTimezone}
+                onChange={(e) => setCallTimezone(e.target.value)}
+                className="b2b-input w-full px-4 py-3 text-sm"
+              >
+                <option value="EST">EST (UTC-5)</option>
+                <option value="UTC">UTC</option>
+                <option value="PST">PST (UTC-8)</option>
+                <option value="CET">CET (UTC+1)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-nexid-muted">
+                Call Notes (Optional)
+              </label>
+              <textarea
+                value={callBookingNotes}
+                onChange={(e) => setCallBookingNotes(e.target.value)}
+                className="b2b-input h-24 w-full resize-none px-4 py-3 text-sm"
+                placeholder="What should we focus on during the call?"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-[#1a1a1a] pt-4">
+              <button
+                type="button"
+                onClick={() => setCallBookingOpen(false)}
+                className="rounded border border-[#333] px-4 py-2 text-xs text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!callBookedFor || !callTimeSlot) {
+                    setRequestError("Select date and time slot to continue.");
+                    return;
+                  }
+                  setRequestError(null);
+                  setCallBookingOpen(false);
+                  setWizardStep(3);
+                }}
+                className="rounded bg-nexid-gold px-4 py-2 text-xs font-bold text-black"
+              >
+                Save Booking
+              </button>
+            </div>
           </div>
         </Modal>
       ) : null}

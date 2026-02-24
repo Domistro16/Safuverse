@@ -16,7 +16,6 @@ export default function AcademyLayout({ children }: AcademyLayoutProps) {
   const pathname = usePathname();
 
   const inBrowse = pathname === "/academy" || pathname.startsWith("/academy/campaign/");
-  const inLeaderboard = pathname.startsWith("/academy/leaderboard");
   const inFaq = pathname.startsWith("/academy/faq");
 
   return (
@@ -37,9 +36,6 @@ export default function AcademyLayout({ children }: AcademyLayoutProps) {
           <nav className="hidden gap-6 text-sm font-medium md:flex">
             <Link href="/academy" className={navClass(inBrowse)}>
               Academy
-            </Link>
-            <Link href="/academy/leaderboard" className={navClass(inLeaderboard)}>
-              Global Leaderboard
             </Link>
             <Link href="/academy/faq" className={navClass(inFaq)}>
               Protocol FAQ

@@ -24,6 +24,10 @@ type CampaignRequest = {
   tier: string;
   prizePoolUsdc: string;
   briefFileName: string | null;
+  callBookedFor: string | null;
+  callTimeSlot: string | null;
+  callTimezone: string | null;
+  callBookingNotes: string | null;
   status: string;
 };
 
@@ -219,6 +223,19 @@ export default function AdminProjectsPage() {
                   <p className="mb-3 line-clamp-2 text-xs text-white/80">
                     {request.primaryObjective}
                   </p>
+                  <div className="mb-3 rounded border border-[#222] bg-[#050505] px-3 py-2 text-[11px] text-white/70">
+                    <span className="font-mono uppercase tracking-wider text-nexid-gold">
+                      Strategy Call:
+                    </span>{" "}
+                    {request.callBookedFor
+                      ? `${new Date(request.callBookedFor).toLocaleDateString()} at ${request.callTimeSlot ?? "TBD"} (${request.callTimezone ?? "UTC"})`
+                      : "Not booked"}
+                    {request.callBookingNotes ? (
+                      <div className="mt-1 text-nexid-muted">
+                        Notes: {request.callBookingNotes}
+                      </div>
+                    ) : null}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       type="button"

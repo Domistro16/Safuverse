@@ -1,97 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdmin } from '@/lib/middleware/admin.middleware';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { verifyAdmin } from "@/lib/middleware/admin.middleware";
+import prisma from "@/lib/prisma";
 
 /**
- * GET /api/admin/stats - Dashboard statistics
+ * GET /api/admin/stats - Campaign-first dashboard statistics
  */
 export async function GET(request: NextRequest) {
-    const authResult = await verifyAdmin(request);
-    if (!authResult.authorized) {
-        return NextResponse.json({ error: authResult.error }, { status: 401 });
-    }
+  const authResult = await verifyAdmin(request);
+  if (!authResult.authorized) {
+    return NextResponse.json({ error: authResult.error }, { status: 401 });
+  }
 
-    try {
-        // Get total counts
-        const [totalUsers, totalEnrollments, totalCompletions, totalCourses] = await Promise.all([
-            prisma.user.count(),
-            prisma.userCourse.count(),
-            prisma.userCourse.count({ where: { completedAt: { not: null } } }),
-            prisma.course.count(),
-        ]);
-        const [campaignCounts] = await prisma.$queryRaw<
-            Array<{ totalCampaigns: number; pendingCampaignRequests: number }>
-        >`
-            SELECT
-                (SELECT COUNT(*)::int FROM "Campaign") AS "totalCampaigns",
-                (SELECT COUNT(*)::int FROM "CampaignRequest" WHERE "status" = 'PENDING'::"CampaignRequestStatus") AS "pendingCampaignRequests"
-        `;
+  try {
+    const [totalUsers, totalCampaignParticipants, totalCompletedParticipants] = await Promise.all([
+      prisma.user.count(),
+      prisma.campaignParticipant.count(),
+      prisma.campaignParticipant.count({ where: { completedAt: { not: null } } }),
+    ]);
 
-        // Get course-level stats
-        const courseStats = await prisma.course.findMany({
-            select: {
-                id: true,
-                title: true,
-                isPublished: true,
-                _count: {
-                    select: {
-                        enrollments: true,
-                        lessons: true,
-                    },
-                },
-            },
-        });
+    const [campaignCounts] = await prisma.$queryRaw<
+      Array<{ totalCampaigns: number; pendingCampaignRequests: number }>
+    >`
+      SELECT
+        (SELECT COUNT(*)::int FROM "Campaign") AS "totalCampaigns",
+        (SELECT COUNT(*)::int FROM "CampaignRequest" WHERE "status" = 'PENDING'::"CampaignRequestStatus") AS "pendingCampaignRequests"
+    `;
 
-        // Get completions per course
-        const completionsPerCourse = await prisma.userCourse.groupBy({
-            by: ['courseId'],
-            where: { completedAt: { not: null } },
-            _count: true,
-        });
+    const campaignStats = await prisma.$queryRaw<
+      Array<{
+        campaignId: number;
+        title: string;
+        status: string;
+        participants: number;
+        completions: number;
+      }>
+    >(Prisma.sql`
+      SELECT
+        c."id" AS "campaignId",
+        c."title",
+        c."status"::text AS "status",
+        COUNT(cp."id")::int AS "participants",
+        COUNT(cp."completedAt")::int AS "completions"
+      FROM "Campaign" c
+      LEFT JOIN "CampaignParticipant" cp ON cp."campaignId" = c."id"
+      GROUP BY c."id", c."title", c."status"
+      ORDER BY c."id" DESC
+      LIMIT 50
+    `);
 
-        const completionMap = new Map(
-            completionsPerCourse.map((c: { courseId: number; _count: number }) => [c.courseId, c._count])
-        );
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        const coursesWithStats = courseStats.map((course: {
-            id: number;
-            title: string;
-            isPublished: boolean;
-            _count: { enrollments: number; lessons: number };
-        }) => ({
-            courseId: course.id,
-            title: course.title,
-            isPublished: course.isPublished,
-            lessons: course._count.lessons,
-            enrollments: course._count.enrollments,
-            completions: completionMap.get(course.id) || 0,
-        }));
+    const [recentEnrollments, recentCompletions] = await Promise.all([
+      prisma.campaignParticipant.count({ where: { enrolledAt: { gte: sevenDaysAgo } } }),
+      prisma.campaignParticipant.count({ where: { completedAt: { gte: sevenDaysAgo } } }),
+    ]);
 
-        // Recent enrollments (last 7 days)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-        const recentEnrollments = await prisma.userCourse.count({
-            where: { enrolledAt: { gte: sevenDaysAgo } },
-        });
-
-        const recentCompletions = await prisma.userCourse.count({
-            where: { completedAt: { gte: sevenDaysAgo } },
-        });
-
-        return NextResponse.json({
-            totalUsers,
-            totalCourses,
-            totalCampaigns: campaignCounts?.totalCampaigns ?? 0,
-            pendingCampaignRequests: campaignCounts?.pendingCampaignRequests ?? 0,
-            totalEnrollments,
-            totalCompletions,
-            recentEnrollments,
-            recentCompletions,
-            courseStats: coursesWithStats,
-        });
-    } catch (error) {
-        console.error('Error fetching stats:', error);
-        return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
-    }
+    return NextResponse.json({
+      totalUsers,
+      totalCampaigns: campaignCounts?.totalCampaigns ?? 0,
+      pendingCampaignRequests: campaignCounts?.pendingCampaignRequests ?? 0,
+      totalCampaignParticipants,
+      totalCompletedParticipants,
+      recentEnrollments,
+      recentCompletions,
+      campaignStats,
+    });
+  } catch (error) {
+    console.error("Error fetching campaign stats:", error);
+    return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
+  }
 }

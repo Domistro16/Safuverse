@@ -25,7 +25,7 @@ export default function AcademyFaqPage() {
             >
               <div className="flex items-center justify-between p-6">
                 <h3 className="font-medium text-white">{item.q}</h3>
-                <span className="faq-icon text-nexid-muted">{open ? "▲" : "▼"}</span>
+                <span className="faq-icon text-nexid-muted">{open ? "-" : "+"}</span>
               </div>
               <div className="faq-content border-t border-[#1a1a1a] bg-[#050505]">
                 <div className="p-6 text-sm leading-relaxed text-nexid-muted">{item.a}</div>

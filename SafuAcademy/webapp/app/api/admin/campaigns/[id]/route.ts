@@ -4,6 +4,8 @@ import { verifyAdmin } from "@/lib/middleware/admin.middleware";
 
 const VALID_TIERS = new Set(["STANDARD", "PREMIUM", "ECOSYSTEM"]);
 const VALID_STATUSES = new Set(["DRAFT", "LIVE", "ENDED", "ARCHIVED"]);
+const VALID_OWNER_TYPES = new Set(["NEXID", "PARTNER"]);
+const VALID_CONTRACT_TYPES = new Set(["NEXID_CAMPAIGNS", "PARTNER_CAMPAIGNS"]);
 
 function parseDate(value: unknown): Date | null {
   if (!value) return null;
@@ -36,10 +38,10 @@ export async function GET(
         objective: string;
         sponsorName: string;
         sponsorNamespace: string | null;
-        category: string | null;
         tier: string;
+        ownerType: string;
+        contractType: string;
         prizePoolUsdc: string;
-        additionalRewards: string | null;
         keyTakeaways: string[];
         status: string;
         isPublished: boolean;
@@ -59,10 +61,10 @@ export async function GET(
         "objective",
         "sponsorName",
         "sponsorNamespace",
-        "category",
         "tier",
+        "ownerType",
+        "contractType",
         "prizePoolUsdc"::text AS "prizePoolUsdc",
-        "additionalRewards",
         "keyTakeaways",
         "status",
         "isPublished",
@@ -113,18 +115,20 @@ export async function PATCH(
     const sponsorNamespace = body.sponsorNamespace
       ? String(body.sponsorNamespace).trim()
       : null;
-    const category = body.category ? String(body.category).trim() : null;
     const tierInput = body.tier ? String(body.tier).toUpperCase() : null;
     const tier = tierInput && VALID_TIERS.has(tierInput) ? tierInput : null;
+    const ownerTypeInput = body.ownerType ? String(body.ownerType).toUpperCase() : null;
+    const ownerType = ownerTypeInput && VALID_OWNER_TYPES.has(ownerTypeInput) ? ownerTypeInput : null;
+    const contractTypeInput = body.contractType ? String(body.contractType).toUpperCase() : null;
+    const contractType = contractTypeInput && VALID_CONTRACT_TYPES.has(contractTypeInput)
+      ? contractTypeInput
+      : null;
     const statusInput = body.status ? String(body.status).toUpperCase() : null;
     const status = statusInput && VALID_STATUSES.has(statusInput) ? statusInput : null;
     const prizePoolUsdc =
       body.prizePoolUsdc !== undefined && body.prizePoolUsdc !== null
         ? Number(body.prizePoolUsdc)
         : null;
-    const additionalRewards = body.additionalRewards
-      ? String(body.additionalRewards).trim()
-      : null;
     const isPublished = typeof body.isPublished === "boolean" ? body.isPublished : null;
     const startAt = body.startAt !== undefined ? parseDate(body.startAt) : undefined;
     const endAt = body.endAt !== undefined ? parseDate(body.endAt) : undefined;
@@ -139,10 +143,10 @@ export async function PATCH(
         "objective" = COALESCE(${objective}, "objective"),
         "sponsorName" = COALESCE(${sponsorName}, "sponsorName"),
         "sponsorNamespace" = COALESCE(${sponsorNamespace}, "sponsorNamespace"),
-        "category" = COALESCE(${category}, "category"),
         "tier" = COALESCE(${tier}::"CampaignTier", "tier"),
+        "ownerType" = COALESCE(${ownerType}::"CampaignOwnerType", "ownerType"),
+        "contractType" = COALESCE(${contractType}::"CampaignContractType", "contractType"),
         "prizePoolUsdc" = COALESCE(${prizePoolUsdc}, "prizePoolUsdc"),
-        "additionalRewards" = COALESCE(${additionalRewards}, "additionalRewards"),
         "status" = COALESCE(${status}::"CampaignStatus", "status"),
         "isPublished" = COALESCE(${isPublished}, "isPublished"),
         "startAt" = COALESCE(${startAt === undefined ? null : startAt}, "startAt"),

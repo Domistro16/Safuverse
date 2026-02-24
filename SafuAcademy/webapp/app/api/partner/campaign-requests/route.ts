@@ -16,6 +16,14 @@ export async function POST(request: NextRequest) {
     const tier = String(body.tier || "").toUpperCase();
     const briefFileName = body.briefFileName ? String(body.briefFileName).trim() : null;
     const prizePoolUsdc = Number(body.prizePoolUsdc);
+    const callBookedForRaw = body.callBookedFor ? String(body.callBookedFor).trim() : "";
+    const callTimeSlot = String(body.callTimeSlot || "").trim();
+    const callTimezone = body.callTimezone ? String(body.callTimezone).trim() : "UTC";
+    const callBookingNotes =
+      body.callBookingNotes && String(body.callBookingNotes).trim()
+        ? String(body.callBookingNotes).trim()
+        : null;
+    const callBookedFor = callBookedForRaw ? new Date(callBookedForRaw) : null;
 
     if (!partnerName) {
       return NextResponse.json({ error: "partnerName is required" }, { status: 400 });
@@ -35,6 +43,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!callBookedFor || Number.isNaN(callBookedFor.getTime())) {
+      return NextResponse.json({ error: "callBookedFor is required" }, { status: 400 });
+    }
+    if (!callTimeSlot) {
+      return NextResponse.json({ error: "callTimeSlot is required" }, { status: 400 });
+    }
 
     const id = randomUUID();
     const now = new Date();
@@ -49,6 +63,10 @@ export async function POST(request: NextRequest) {
         "tier",
         "prizePoolUsdc",
         "briefFileName",
+        "callBookedFor",
+        "callTimeSlot",
+        "callTimezone",
+        "callBookingNotes",
         "status",
         "createdAt",
         "updatedAt"
@@ -61,6 +79,10 @@ export async function POST(request: NextRequest) {
         ${tier}::"CampaignTier",
         ${prizePoolUsdc},
         ${briefFileName},
+        ${callBookedFor},
+        ${callTimeSlot},
+        ${callTimezone},
+        ${callBookingNotes},
         'PENDING'::"CampaignRequestStatus",
         ${now},
         ${now}
@@ -74,10 +96,13 @@ export async function POST(request: NextRequest) {
         campaignTitle: string;
         tier: string;
         prizePoolUsdc: string;
+        callBookedFor: Date | null;
+        callTimeSlot: string | null;
+        callTimezone: string | null;
         status: string;
         createdAt: Date;
       }>
-    >`SELECT "id","partnerName","campaignTitle","tier","prizePoolUsdc","status","createdAt" FROM "CampaignRequest" WHERE "id" = ${id}`;
+    >`SELECT "id","partnerName","campaignTitle","tier","prizePoolUsdc","callBookedFor","callTimeSlot","callTimezone","status","createdAt" FROM "CampaignRequest" WHERE "id" = ${id}`;
 
     return NextResponse.json({ request: created }, { status: 201 });
   } catch (error) {

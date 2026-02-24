@@ -14,6 +14,10 @@ type CampaignRequestRow = {
   tier: string;
   prizePoolUsdc: string;
   briefFileName: string | null;
+  callBookedFor: Date | null;
+  callTimeSlot: string | null;
+  callTimezone: string | null;
+  callBookingNotes: string | null;
   status: string;
   reviewNotes: string | null;
   createdAt: Date;
@@ -45,6 +49,10 @@ export async function GET(request: NextRequest) {
           "tier",
           "prizePoolUsdc"::text AS "prizePoolUsdc",
           "briefFileName",
+          "callBookedFor",
+          "callTimeSlot",
+          "callTimezone",
+          "callBookingNotes",
           "status",
           "reviewNotes",
           "createdAt",
