@@ -50,6 +50,8 @@ type CampaignRow = {
   contractType: string;
   prizePoolUsdc: string;
   keyTakeaways: string[];
+  coverImageUrl: string | null;
+  modules: unknown;
   status: string;
   isPublished: boolean;
   startAt: Date | null;
@@ -89,6 +91,8 @@ export async function GET(request: NextRequest) {
           "contractType",
           "prizePoolUsdc"::text AS "prizePoolUsdc",
           "keyTakeaways",
+          "coverImageUrl",
+          "modules",
           "status",
           "isPublished",
           "startAt",
@@ -104,7 +108,36 @@ export async function GET(request: NextRequest) {
       `,
     );
 
-    return NextResponse.json({ campaigns });
+    const campaignIds = campaigns.map((c) => c.id);
+    let metricsMap = new Map<number, { participantCount: number; topScore: number; totalScore: number }>();
+
+    if (campaignIds.length > 0) {
+      const metrics = await prisma.$queryRaw<
+        Array<{ campaignId: number; participantCount: number; topScore: number; totalScore: number }>
+      >(
+        Prisma.sql`
+          SELECT
+            "campaignId",
+            COUNT(*)::int AS "participantCount",
+            COALESCE(MAX("score"), 0)::int AS "topScore",
+            COALESCE(SUM("score"), 0)::int AS "totalScore"
+          FROM "CampaignParticipant"
+          WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+          GROUP BY "campaignId"
+        `,
+      );
+
+      metricsMap = new Map(
+        metrics.map((m) => [m.campaignId, { participantCount: m.participantCount, topScore: m.topScore, totalScore: m.totalScore }]),
+      );
+    }
+
+    return NextResponse.json({
+      campaigns: campaigns.map((c) => ({
+        ...c,
+        ...(metricsMap.get(c.id) ?? { participantCount: 0, topScore: 0, totalScore: 0 }),
+      })),
+    });
   } catch (error) {
     console.error("GET /api/admin/campaigns error", error);
     return NextResponse.json({ error: "Failed to fetch campaigns" }, { status: 500 });
@@ -143,6 +176,8 @@ export async function POST(request: NextRequest) {
       : [];
     const startAt = parseDate(body.startAt);
     const endAt = parseDate(body.endAt);
+    const coverImageUrl = body.coverImageUrl ? String(body.coverImageUrl).trim() : null;
+    const modules = Array.isArray(body.modules) ? body.modules : [];
 
     if (!title) {
       return NextResponse.json({ error: "title is required" }, { status: 400 });
@@ -179,6 +214,8 @@ export async function POST(request: NextRequest) {
         "ownerType",
         "contractType",
         "prizePoolUsdc",
+        "coverImageUrl",
+        "modules",
         "status",
         "isPublished",
         "startAt",
@@ -196,6 +233,8 @@ export async function POST(request: NextRequest) {
         ${ownerType}::"CampaignOwnerType",
         ${contractType}::"CampaignContractType",
         ${prizePoolUsdc},
+        ${coverImageUrl},
+        ${JSON.stringify(modules)}::jsonb,
         ${status}::"CampaignStatus",
         ${isPublished},
         ${startAt},

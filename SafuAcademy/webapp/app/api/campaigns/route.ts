@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         contractType: string;
         prizePoolUsdc: string;
         keyTakeaways: string[];
+        coverImageUrl: string | null;
         status: string;
         isPublished: boolean;
         startAt: Date | null;
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
           c."contractType",
           c."prizePoolUsdc"::text AS "prizePoolUsdc",
           c."keyTakeaways",
+          c."coverImageUrl",
           c."status",
           c."isPublished",
           c."startAt",

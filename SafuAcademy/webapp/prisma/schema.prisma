@@ -293,6 +293,8 @@ model Campaign {
   contractType        CampaignContractType @default(PARTNER_CAMPAIGNS)
   prizePoolUsdc       Decimal        @db.Decimal(18, 6)
   keyTakeaways        String[]       @default([])
+  coverImageUrl       String?
+  modules             Json           @default("[]")
   status              CampaignStatus @default(DRAFT)
   isPublished         Boolean        @default(false)
   startAt             DateTime?
