@@ -20,19 +20,21 @@ const config: HardhatUserConfig = {
       },
     ],
   },
-  defaultNetwork: 'base',
+  defaultNetwork: 'hardhat',
   networks: {
     hardhat: {},
-    bsc: {
-      url: API_URL,
-      chainId: 56,
-      accounts: [`${PRIVATE_KEY}`],
-    },
-    bscTestnet: {
-      url: API_URL,
-      chainId: 97,
-      accounts: [`${PRIVATE_KEY}`],
-    },
+    ...(API_URL && PRIVATE_KEY ? {
+      bsc: {
+        url: API_URL,
+        chainId: 56,
+        accounts: [PRIVATE_KEY],
+      },
+      bscTestnet: {
+        url: API_URL,
+        chainId: 97,
+        accounts: [PRIVATE_KEY],
+      },
+    } : {}),
     base: {
       url: BASE_RPC_URL || 'https://mainnet.base.org',
       chainId: 8453,
