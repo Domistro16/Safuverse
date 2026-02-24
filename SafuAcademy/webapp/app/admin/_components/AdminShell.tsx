@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useAccount } from "wagmi";
+import { useENSName } from "@/hooks/getPrimaryName";
 
 type AdminSection = "overview" | "projects" | "matrix" | "builder" | "analytics";
 
@@ -29,6 +33,25 @@ function navClasses(isActive: boolean, withTopMargin = false) {
 }
 
 export default function AdminShell({ active, children }: AdminShellProps) {
+  const { address } = useAccount();
+  const { name: domainName } = useENSName({ owner: address as `0x${string}` });
+  const [adminLabel, setAdminLabel] = useState<string>("...");
+  const [adminInitial, setAdminInitial] = useState<string>("N");
+
+  useEffect(() => {
+    if (domainName && typeof domainName === "string" && domainName.length > 0) {
+      setAdminLabel(domainName);
+      setAdminInitial(domainName.charAt(0).toUpperCase());
+    } else if (address) {
+      setAdminLabel(`${address.slice(0, 6)}...${address.slice(-4)}`);
+      setAdminInitial(address.slice(2, 3).toUpperCase());
+    }
+  }, [domainName, address]);
+
+  const displayParts = adminLabel.includes(".id")
+    ? { name: adminLabel.replace(".id", ""), suffix: ".id" }
+    : { name: adminLabel, suffix: "" };
+
   return (
     <div className="h-screen w-full flex overflow-hidden text-sm bg-black">
       <aside className="w-16 hover:w-64 border-r border-[#1a1a1a] bg-[#050505] flex flex-col shrink-0 z-50 transition-all duration-300 overflow-hidden group absolute md:relative h-full">
@@ -46,18 +69,15 @@ export default function AdminShell({ active, children }: AdminShellProps) {
 
         <div className="p-4 border-b border-[#1a1a1a] min-w-[256px]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border border-nexid-gold p-0.5 shrink-0">
-              <img
-                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80"
-                className="w-full h-full rounded-full object-cover"
-                alt="Admin avatar"
-              />
+            <div className="w-8 h-8 rounded-full border border-nexid-gold flex items-center justify-center bg-[#111] text-nexid-gold font-bold text-xs shrink-0">
+              {adminInitial}
             </div>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="text-xs font-bold text-white leading-tight">
-                founder<span className="text-nexid-gold">.id</span>
+                {displayParts.name}
+                {displayParts.suffix ? <span className="text-nexid-gold">{displayParts.suffix}</span> : null}
               </div>
-              <div className="text-[9px] font-mono text-nexid-muted">Superadmin Auth</div>
+              <div className="text-[9px] font-mono text-nexid-muted">Admin</div>
             </div>
           </div>
         </div>
@@ -99,9 +119,8 @@ export default function AdminShell({ active, children }: AdminShellProps) {
               </button>
             </div>
             <div className="h-4 w-px bg-[#222]" />
-            <div className="flex items-center gap-2 text-[10px] font-mono text-green-400">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]" />{" "}
-              99.99% Uptime
+            <div className="flex items-center gap-2 text-[10px] font-mono text-nexid-muted">
+              {adminLabel}
             </div>
           </div>
         </header>
