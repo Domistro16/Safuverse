@@ -5,17 +5,19 @@ import AdminShell from "../_components/AdminShell";
 
 type OwnerMode = "NEXID" | "PARTNER";
 
+type ModuleItem = { type: "video" | "task" | "locked"; title: string };
+
 export default function AdminBuilderPage() {
   const [ownerMode, setOwnerMode] = useState<OwnerMode>("PARTNER");
-  const [title, setTitle] = useState("Advanced Web3 Economics");
-  const [objective, setObjective] = useState("Educate users on tokenomics and protocol participation.");
-  const [sponsorName, setSponsorName] = useState("NexID Core");
-  const [sponsorNamespace, setSponsorNamespace] = useState("founder.id");
+  const [title, setTitle] = useState("");
+  const [objective, setObjective] = useState("");
+  const [sponsorName, setSponsorName] = useState("");
+  const [sponsorNamespace, setSponsorNamespace] = useState("");
   const [tier, setTier] = useState("STANDARD");
   const [prizePoolUsdc, setPrizePoolUsdc] = useState(15000);
-  const [keyTakeaways, setKeyTakeaways] = useState(
-    "Understand tokenomics models.\nAnalyze liquidity bootstrapping.\nImplement vesting schedules safely.",
-  );
+  const [keyTakeaways, setKeyTakeaways] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [modules, setModules] = useState<ModuleItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,8 @@ export default function AdminBuilderPage() {
           contractType: ownerMode === "NEXID" ? "NEXID_CAMPAIGNS" : "PARTNER_CAMPAIGNS",
           prizePoolUsdc,
           keyTakeaways: takeaways,
+          coverImageUrl: coverImageUrl.trim() || null,
+          modules,
           status,
           isPublished: status === "LIVE",
         }),
@@ -204,6 +208,69 @@ export default function AdminBuilderPage() {
                 onChange={(e) => setKeyTakeaways(e.target.value)}
                 className="admin-input h-28 resize-none"
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-mono text-nexid-muted uppercase mb-1.5">
+                Cover Image URL
+              </label>
+              <input
+                type="url"
+                value={coverImageUrl}
+                onChange={(e) => setCoverImageUrl(e.target.value)}
+                placeholder="https://..."
+                className="admin-input"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-mono text-nexid-muted uppercase mb-1.5">
+                Campaign Modules
+              </label>
+              <div className="space-y-2">
+                {modules.map((mod, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <select
+                      value={mod.type}
+                      onChange={(e) => {
+                        const updated = [...modules];
+                        updated[idx] = { ...mod, type: e.target.value as ModuleItem["type"] };
+                        setModules(updated);
+                      }}
+                      className="admin-input w-32 text-white"
+                    >
+                      <option value="video">Video</option>
+                      <option value="task">Task</option>
+                      <option value="locked">Locked</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={mod.title}
+                      onChange={(e) => {
+                        const updated = [...modules];
+                        updated[idx] = { ...mod, title: e.target.value };
+                        setModules(updated);
+                      }}
+                      placeholder="Module title"
+                      className="admin-input flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setModules(modules.filter((_, i) => i !== idx))}
+                      className="rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] text-red-500 hover:bg-red-500/20"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setModules([...modules, { type: "video", title: "" }])}
+                  className="rounded border border-[#333] px-3 py-1.5 text-xs text-white hover:bg-[#111]"
+                >
+                  + Add Module
+                </button>
+              </div>
             </div>
           </div>
 

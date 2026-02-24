@@ -15,6 +15,8 @@ type CampaignRow = {
   contractType: string;
   prizePoolUsdc: string;
   keyTakeaways: string[];
+  coverImageUrl: string | null;
+  modules: unknown;
   status: string;
   isPublished: boolean;
   startAt: Date | null;
@@ -113,6 +115,8 @@ export async function GET(
           "contractType",
           "prizePoolUsdc"::text AS "prizePoolUsdc",
           "keyTakeaways",
+          "coverImageUrl",
+          "modules",
           "status",
           "isPublished",
           "startAt",

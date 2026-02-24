@@ -15,6 +15,8 @@ type Campaign = {
   contractType: string;
   prizePoolUsdc: string;
   keyTakeaways: string[];
+  coverImageUrl: string | null;
+  modules: Module[];
   status: string;
   isPublished: boolean;
   startAt: string | null;
@@ -48,13 +50,8 @@ type Module = {
   title: string;
 };
 
-const DEFAULT_MODULES: Module[] = [
-  { type: "video", title: "Campaign Briefing" },
-  { type: "task", title: "Protocol Verification Task" },
-  { type: "video", title: "Advanced Execution Walkthrough" },
-  { type: "task", title: "On-Chain Completion Task" },
-  { type: "locked", title: "Final Review" },
-];
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200";
 
 function shortAddress(value: string) {
   if (value.length < 12) return value;
@@ -66,6 +63,13 @@ function formatUsdc(value: string | null) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return value;
   return amount.toLocaleString();
+}
+
+function formatDate(value: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 interface CampaignDetailClientProps {
@@ -111,8 +115,6 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
     };
   }, [campaignId]);
 
-  const modules = DEFAULT_MODULES;
-
   if (loading) {
     return (
       <section className="mx-auto w-full max-w-[1200px] px-6 pb-12 pt-10 text-sm text-nexid-muted">
@@ -136,6 +138,14 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
 
   const { campaign, leaderboard, onChain } = data;
   const isEnded = campaign.status === "ENDED";
+  const modules: Module[] =
+    Array.isArray(campaign.modules) && campaign.modules.length > 0
+      ? campaign.modules
+      : [];
+  const hasModules = modules.length > 0;
+  const campaignImage = campaign.coverImageUrl || FALLBACK_IMAGE;
+  const startDate = formatDate(campaign.startAt);
+  const endDate = formatDate(campaign.endAt);
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-6 pb-12 pt-8 lg:px-12">
@@ -150,11 +160,23 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
         </div>
         <div className="premium-panel w-full shrink-0 bg-[#0a0a0a] p-6 lg:w-80">
           <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-muted">Sponsored By</div>
-          <div className="font-display mb-3 text-xl text-white">{campaign.sponsorName}</div>
+          <div className="font-display mb-1 text-xl text-white">{campaign.sponsorName}</div>
+          {campaign.sponsorNamespace ? (
+            <div className="mb-3 font-mono text-[10px] text-nexid-muted">{campaign.sponsorNamespace}</div>
+          ) : (
+            <div className="mb-3" />
+          )}
           <div className="mb-1 text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
           <div className="text-[11px] text-nexid-muted">
-            {campaign.tier} · {campaign.status}
+            {campaign.tier} · {campaign.ownerType} · {campaign.status}
           </div>
+          {(startDate || endDate) ? (
+            <div className="mt-2 text-[11px] text-nexid-muted">
+              {startDate ? `Start: ${startDate}` : null}
+              {startDate && endDate ? " · " : null}
+              {endDate ? `End: ${endDate}` : null}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -165,31 +187,76 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
               <div className="flex h-full flex-col">
                 <div className="relative h-[300px] bg-black">
                   <img
-                    src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200"
+                    src={campaignImage}
                     alt={campaign.title}
                     className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-luminosity"
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 p-6">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
-                      {modules[activeModule]?.type ?? "module"}
-                    </div>
-                    <h3 className="font-display text-2xl text-white">{modules[activeModule]?.title}</h3>
+                    {hasModules ? (
+                      <>
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
+                          {modules[activeModule]?.type ?? "module"}
+                        </div>
+                        <h3 className="font-display text-2xl text-white">{modules[activeModule]?.title}</h3>
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
+                          campaign
+                        </div>
+                        <h3 className="font-display text-2xl text-white">{campaign.title}</h3>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="p-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCompletedUntil((prev) => Math.max(prev, activeModule));
-                      const next = activeModule + 1;
-                      if (next < modules.length && modules[next]?.type !== "locked") {
-                        setActiveModule(next);
-                      }
-                    }}
-                    className="rounded bg-nexid-gold px-6 py-2.5 text-sm font-bold text-black"
-                  >
-                    Mark Complete
-                  </button>
+                  {hasModules ? (
+                    <>
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        {modules.map((mod, idx) => {
+                          const isCompleted = idx <= completedUntil;
+                          const isActive = idx === activeModule;
+                          const isLocked = mod.type === "locked" && idx > completedUntil + 1;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              disabled={isLocked}
+                              onClick={() => !isLocked && setActiveModule(idx)}
+                              className={`rounded border px-3 py-1.5 text-xs ${
+                                isActive
+                                  ? "border-nexid-gold bg-nexid-gold/10 text-nexid-gold"
+                                  : isCompleted
+                                    ? "border-green-500/30 bg-green-500/10 text-green-400"
+                                    : isLocked
+                                      ? "cursor-not-allowed border-[#222] bg-[#111] text-nexid-muted opacity-50"
+                                      : "border-[#333] bg-[#111] text-white"
+                              }`}
+                            >
+                              {mod.title}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCompletedUntil((prev) => Math.max(prev, activeModule));
+                          const next = activeModule + 1;
+                          if (next < modules.length && modules[next]?.type !== "locked") {
+                            setActiveModule(next);
+                          }
+                        }}
+                        className="rounded bg-nexid-gold px-6 py-2.5 text-sm font-bold text-black"
+                      >
+                        Mark Complete
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-sm text-nexid-muted">
+                      Campaign modules have not been configured yet.
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

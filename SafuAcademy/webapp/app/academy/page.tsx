@@ -15,6 +15,7 @@ type Campaign = {
   contractType: string;
   prizePoolUsdc: string;
   keyTakeaways: string[];
+  coverImageUrl: string | null;
   status: string;
   isPublished: boolean;
   startAt: string | null;
@@ -23,6 +24,11 @@ type Campaign = {
   topScore: number;
   totalScore: number;
 };
+
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=900";
+const FALLBACK_FEATURED_IMAGE =
+  "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&q=80&w=1600";
 
 type StatusFilter = "all" | "live" | "ended";
 
@@ -148,7 +154,7 @@ export default function AcademyBrowsePage() {
         >
           <div className="course-image-wrapper relative h-64 border-b border-[#1a1a1a] md:h-80">
             <img
-              src="https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&q=80&w=1600"
+              src={featuredCampaign.coverImageUrl || FALLBACK_FEATURED_IMAGE}
               alt={featuredCampaign.title}
               className="absolute inset-0 h-full w-full object-cover opacity-50 mix-blend-luminosity"
             />
@@ -213,7 +219,7 @@ export default function AcademyBrowsePage() {
             >
               <div className="course-image-wrapper relative h-48 border-b border-[#1a1a1a]">
                 <img
-                  src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=900"
+                  src={campaign.coverImageUrl || FALLBACK_IMAGE}
                   alt={campaign.title}
                   className="absolute inset-0 h-full w-full object-cover opacity-35 mix-blend-luminosity"
                 />

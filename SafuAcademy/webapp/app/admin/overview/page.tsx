@@ -1,132 +1,216 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import AdminShell from "../_components/AdminShell";
 
+interface Stats {
+  escrowTvlUsdc: number;
+  escrowError: string | null;
+  totalPrizePoolUsdc: string;
+  totalCampaigns: number;
+  liveCampaigns: number;
+  pendingCampaignRequests: number;
+  totalCampaignParticipants: number;
+  totalCompletedParticipants: number;
+  recentEnrollments: number;
+  recentCompletions: number;
+  campaignStats: Array<{
+    campaignId: number;
+    title: string;
+    status: string;
+    participants: number;
+    completions: number;
+  }>;
+}
+
+interface ActivityEvent {
+  type: string;
+  label: string;
+  createdAt: string;
+}
+
+const EVENT_COLORS: Record<string, string> = {
+  ENROLLMENT: "text-blue-500",
+  COMPLETION: "text-green-500",
+  CAMPAIGN_REQUEST: "text-nexid-gold",
+  DISTRIBUTION: "text-purple-500",
+};
+
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function formatTime(dateStr: string) {
+  const d = new Date(dateStr);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  const ss = String(d.getUTCSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
 export default function AdminOverviewPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const logRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    const log = document.getElementById("network-log");
-    if (!log) return;
+    const headers = authHeaders();
 
-    const interval = window.setInterval(() => {
-      const lines = Array.from(log.children);
-      if (lines.length > 5) lines[0]?.remove();
-
-      const actions = ["API_SYNC", "RPC_CALL", "TX_CONFIRM", "SCORECARD_MINT", "MODULE_FINISH"];
-      const colors = ["text-blue-500", "text-nexid-muted", "text-green-500", "text-nexid-gold", "text-purple-500"];
-      const idx = Math.floor(Math.random() * actions.length);
-
-      const d = new Date();
-      const hh = String(d.getUTCHours()).padStart(2, "0");
-      const mm = String(d.getUTCMinutes()).padStart(2, "0");
-      const ss = String(d.getUTCSeconds()).padStart(2, "0");
-
-      const div = document.createElement("div");
-      div.className = "new-entry";
-      div.innerHTML = `<span class="${colors[idx]}">[${hh}:${mm}:${ss}]</span> ${actions[idx]}: System execution OK.`;
-
-      lines.forEach((line) => line.classList.remove("new-entry"));
-      log.appendChild(div);
-      log.scrollTop = log.scrollHeight;
-    }, 2500);
-
-    return () => window.clearInterval(interval);
+    Promise.all([
+      fetch("/api/admin/stats", { headers }).then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/admin/activity", { headers }).then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([statsData, activityData]) => {
+        if (statsData) setStats(statsData);
+        if (activityData?.events) setEvents(activityData.events);
+      })
+      .catch((err) => console.error("Overview fetch error:", err))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [events]);
+
+  const tvlDisplay = stats
+    ? stats.escrowTvlUsdc > 0
+      ? `$${stats.escrowTvlUsdc.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+      : "$0"
+    : "...";
+
+  const prizePoolDisplay = stats
+    ? `$${Number(stats.totalPrizePoolUsdc).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+    : "...";
 
   return (
     <AdminShell active="overview">
       <section className="space-y-6 max-w-[1600px] mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="admin-panel p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-            <div className="absolute right-0 top-0 w-32 h-32 bg-[radial-gradient(circle_at_top_right,rgba(255,176,0,0.15),transparent_70%)] pointer-events-none" />
-            <div className="text-[10px] font-mono text-nexid-gold uppercase tracking-widest">Escrow Treasury (TVL)</div>
-            <div>
-              <div className="text-3xl font-display text-white tracking-tight">$450,000</div>
-              <div className="text-[10px] font-mono text-green-400">+12.4% MoM</div>
-            </div>
-          </div>
-          <div className="admin-panel p-4 flex flex-col justify-between h-28">
-            <div className="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">Protocol Setup Fees</div>
-            <div>
-              <div className="text-3xl font-display text-white tracking-tight">$45,000</div>
-              <div className="text-[10px] font-mono text-nexid-muted">Realized Revenue</div>
-            </div>
-          </div>
-          <div className="admin-panel p-4 flex flex-col justify-between h-28">
-            <div className="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">Active Partner Campaigns</div>
-            <div>
-              <div className="text-3xl font-display text-white tracking-tight">14</div>
-              <div className="text-[10px] font-mono text-nexid-gold border border-nexid-gold/30 px-1.5 py-0.5 rounded inline-block bg-nexid-gold/10">
-                3 Pending Launch
+        {loading ? (
+          <div className="flex items-center justify-center h-40 text-nexid-muted text-sm">Loading stats...</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="admin-panel p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+                <div className="absolute right-0 top-0 w-32 h-32 bg-[radial-gradient(circle_at_top_right,rgba(255,176,0,0.15),transparent_70%)] pointer-events-none" />
+                <div className="text-[10px] font-mono text-nexid-gold uppercase tracking-widest">Escrow Treasury (TVL)</div>
+                <div>
+                  <div className="text-3xl font-display text-white tracking-tight">{tvlDisplay}</div>
+                  {stats?.escrowError ? (
+                    <div className="text-[10px] font-mono text-red-500">{stats.escrowError}</div>
+                  ) : (
+                    <div className="text-[10px] font-mono text-nexid-muted">On-chain USDC balance</div>
+                  )}
+                </div>
+              </div>
+              <div className="admin-panel p-4 flex flex-col justify-between h-28">
+                <div className="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">Total Prize Pools (DB)</div>
+                <div>
+                  <div className="text-3xl font-display text-white tracking-tight">{prizePoolDisplay}</div>
+                  <div className="text-[10px] font-mono text-nexid-muted">Live + Draft campaigns</div>
+                </div>
+              </div>
+              <div className="admin-panel p-4 flex flex-col justify-between h-28">
+                <div className="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">Active Partner Campaigns</div>
+                <div>
+                  <div className="text-3xl font-display text-white tracking-tight">
+                    {stats?.totalCampaigns ?? 0}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-green-400">{stats?.liveCampaigns ?? 0} Live</span>
+                    {(stats?.pendingCampaignRequests ?? 0) > 0 ? (
+                      <span className="text-[10px] font-mono text-nexid-gold border border-nexid-gold/30 px-1.5 py-0.5 rounded inline-block bg-nexid-gold/10">
+                        {stats!.pendingCampaignRequests} Pending
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+              <div className="admin-panel p-4 flex flex-col justify-between h-28">
+                <div className="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">Global Enrollments</div>
+                <div>
+                  <div className="text-3xl font-display text-white tracking-tight">
+                    {(stats?.totalCampaignParticipants ?? 0).toLocaleString()}
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[10px] font-mono text-green-400">
+                      {stats?.totalCompletedParticipants ?? 0} completed
+                    </span>
+                    <span className="text-[10px] font-mono text-nexid-muted">
+                      +{stats?.recentEnrollments ?? 0} this week
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="admin-panel p-4 flex flex-col justify-between h-28">
-            <div className="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">Global Enrollments</div>
-            <div>
-              <div className="text-3xl font-display text-white tracking-tight">84,210</div>
-              <div className="w-full h-1 bg-[#111] rounded mt-2 overflow-hidden">
-                <div className="h-full bg-blue-500 w-[60%]" />
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 admin-panel p-5 flex flex-col h-[350px]">
-            <div className="flex justify-between items-center mb-4 shrink-0">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-nexid-muted">Treasury Flow & Escrow TVL</h3>
-              <select className="admin-input px-2 py-1 bg-transparent border-none w-auto text-[10px]">
-                <option>Last 30 Days</option>
-                <option>Last 7 Days</option>
-              </select>
-            </div>
-            <div className="flex-1 relative w-full">
-              <div className="absolute inset-0 flex flex-col justify-between z-0 pointer-events-none">
-                <div className="border-t border-[#1a1a1a] w-full h-0" />
-                <div className="border-t border-[#1a1a1a] w-full h-0" />
-                <div className="border-t border-[#1a1a1a] w-full h-0" />
-                <div className="border-t border-[#1a1a1a] w-full h-0" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 admin-panel p-5 flex flex-col h-[350px]">
+                <div className="flex justify-between items-center mb-4 shrink-0">
+                  <h3 className="text-xs font-mono uppercase tracking-widest text-nexid-muted">Campaign Performance</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scroll">
+                  {stats?.campaignStats && stats.campaignStats.length > 0 ? (
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-[#222] text-nexid-muted font-mono text-[10px] uppercase tracking-widest">
+                          <th className="text-left py-2 px-2">Campaign</th>
+                          <th className="text-center py-2 px-2">Status</th>
+                          <th className="text-right py-2 px-2">Enrolled</th>
+                          <th className="text-right py-2 px-2">Completed</th>
+                          <th className="text-right py-2 px-2">Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.campaignStats.map((c) => (
+                          <tr key={c.campaignId} className="border-b border-[#111]">
+                            <td className="py-2 px-2 text-white">{c.title}</td>
+                            <td className="py-2 px-2 text-center">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase ${c.status === "LIVE" ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-[#222] text-nexid-muted border border-[#333]"}`}>
+                                {c.status}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-nexid-muted">{c.participants}</td>
+                            <td className="py-2 px-2 text-right font-mono text-green-400">{c.completions}</td>
+                            <td className="py-2 px-2 text-right font-mono text-nexid-gold">
+                              {c.participants > 0 ? `${Math.round((c.completions / c.participants) * 100)}%` : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-nexid-muted text-sm">No campaigns yet</div>
+                  )}
+                </div>
               </div>
-              <svg viewBox="0 0 1000 200" preserveAspectRatio="none" className="absolute inset-0 w-full h-full z-10 overflow-visible">
-                <defs>
-                  <linearGradient id="adminChart" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(255,176,0,0.2)" />
-                    <stop offset="100%" stopColor="rgba(255,176,0,0)" />
-                  </linearGradient>
-                </defs>
-                <path d="M0,180 L100,160 L200,120 L300,140 L400,90 L500,110 L600,60 L700,80 L800,40 L900,50 L1000,20 L1000,200 L0,200 Z" fill="url(#adminChart)" />
-                <path d="M0,180 L100,160 L200,120 L300,140 L400,90 L500,110 L600,60 L700,80 L800,40 L900,50 L1000,20" fill="none" stroke="#ffb000" strokeWidth="2" />
-              </svg>
-            </div>
-          </div>
 
-          <div className="admin-panel p-5 flex flex-col h-[350px]">
-            <h3 className="text-xs font-mono uppercase tracking-widest text-nexid-muted mb-4 shrink-0 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-nexid-success rounded-full animate-pulse" /> Network Log
-            </h3>
-            <div
-              className="flex-1 overflow-y-auto custom-scroll bg-[#030303] border border-[#111] rounded p-3 matrix-log space-y-2 flex flex-col justify-end"
-              id="network-log"
-            >
-              <div>
-                <span className="text-green-500">[22:40:11]</span> VERIFY: On-chain task success.
-              </div>
-              <div>
-                <span className="text-blue-500">[22:40:14]</span> API_REQ: Soar protocol metadata sync.
-              </div>
-              <div>
-                <span className="text-nexid-gold">[22:40:15]</span> ESCROW: Locked 15,000 USDC.
-              </div>
-              <div>
-                <span className="text-green-500">[22:40:18]</span> TX_MINT: Scorecard deployed to whale.id.
-              </div>
-              <div className="new-entry">
-                <span className="text-blue-500">[22:40:21]</span> SYNC: Analytics chron-job executed.
+              <div className="admin-panel p-5 flex flex-col h-[350px]">
+                <h3 className="text-xs font-mono uppercase tracking-widest text-nexid-muted mb-4 shrink-0 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-nexid-success rounded-full animate-pulse" /> Activity Feed
+                </h3>
+                <div
+                  ref={logRef}
+                  className="flex-1 overflow-y-auto custom-scroll bg-[#030303] border border-[#111] rounded p-3 matrix-log space-y-2"
+                >
+                  {events.length === 0 ? (
+                    <div className="text-nexid-muted text-xs text-center py-8">No recent activity</div>
+                  ) : (
+                    events.map((evt, i) => (
+                      <div key={i} className="text-xs">
+                        <span className={EVENT_COLORS[evt.type] ?? "text-nexid-muted"}>
+                          [{formatTime(evt.createdAt)}]
+                        </span>{" "}
+                        {evt.label}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </section>
     </AdminShell>
   );

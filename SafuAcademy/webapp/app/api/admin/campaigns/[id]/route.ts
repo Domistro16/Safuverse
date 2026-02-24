@@ -66,6 +66,8 @@ export async function GET(
         "contractType",
         "prizePoolUsdc"::text AS "prizePoolUsdc",
         "keyTakeaways",
+        "coverImageUrl",
+        "modules",
         "status",
         "isPublished",
         "startAt",
@@ -135,6 +137,10 @@ export async function PATCH(
     const keyTakeaways = Array.isArray(body.keyTakeaways)
       ? body.keyTakeaways.map((item: unknown) => String(item).trim()).filter(Boolean)
       : undefined;
+    const coverImageUrl = body.coverImageUrl !== undefined
+      ? (body.coverImageUrl ? String(body.coverImageUrl).trim() : null)
+      : undefined;
+    const modules = Array.isArray(body.modules) ? body.modules : undefined;
 
     await prisma.$executeRaw`
       UPDATE "Campaign"
@@ -147,6 +153,7 @@ export async function PATCH(
         "ownerType" = COALESCE(${ownerType}::"CampaignOwnerType", "ownerType"),
         "contractType" = COALESCE(${contractType}::"CampaignContractType", "contractType"),
         "prizePoolUsdc" = COALESCE(${prizePoolUsdc}, "prizePoolUsdc"),
+        "coverImageUrl" = COALESCE(${coverImageUrl === undefined ? null : coverImageUrl}, "coverImageUrl"),
         "status" = COALESCE(${status}::"CampaignStatus", "status"),
         "isPublished" = COALESCE(${isPublished}, "isPublished"),
         "startAt" = COALESCE(${startAt === undefined ? null : startAt}, "startAt"),
@@ -159,6 +166,14 @@ export async function PATCH(
       await prisma.$executeRaw`
         UPDATE "Campaign"
         SET "keyTakeaways" = ${keyTakeaways}::text[]
+        WHERE "id" = ${campaignId}
+      `;
+    }
+
+    if (modules !== undefined) {
+      await prisma.$executeRaw`
+        UPDATE "Campaign"
+        SET "modules" = ${JSON.stringify(modules)}::jsonb
         WHERE "id" = ${campaignId}
       `;
     }
