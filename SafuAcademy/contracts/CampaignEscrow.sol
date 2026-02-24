@@ -120,7 +120,7 @@ contract CampaignEscrow is Ownable {
         address[] calldata recipients,
         uint256[] calldata ranks,
         uint256[] calldata amounts
-    ) external onlyOwner {
+    ) external onlyOwner 
         if (recipients.length == 0) revert EmptyDistribution();
         if (recipients.length != ranks.length || recipients.length != amounts.length) {
             revert LengthMismatch();
