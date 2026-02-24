@@ -1,16 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
+import { verifyAuth } from "@/lib/middleware/admin.middleware";
 
 const MIN_PRIZE_POOL_USDC = 15000;
 const VALID_TIERS = new Set(["STANDARD", "PREMIUM", "ECOSYSTEM"]);
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyAuth(request);
+    if (!auth.authorized || !auth.user) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
+    const partner = await prisma.partner.findUnique({
+      where: { userId: auth.user.userId },
+    });
+    if (!partner) {
+      return NextResponse.json(
+        { error: "Partner profile not found. Complete onboarding first." },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
 
-    const partnerName = String(body.partnerName || "").trim();
-    const partnerNamespace = body.partnerNamespace ? String(body.partnerNamespace).trim() : null;
+    const partnerName = partner.orgName;
+    const partnerNamespace = partner.namespace;
     const campaignTitle = String(body.campaignTitle || "").trim();
     const primaryObjective = String(body.primaryObjective || "").trim();
     const tier = String(body.tier || "").toUpperCase();
@@ -25,9 +41,6 @@ export async function POST(request: NextRequest) {
         : null;
     const callBookedFor = callBookedForRaw ? new Date(callBookedForRaw) : null;
 
-    if (!partnerName) {
-      return NextResponse.json({ error: "partnerName is required" }, { status: 400 });
-    }
     if (!campaignTitle) {
       return NextResponse.json({ error: "campaignTitle is required" }, { status: 400 });
     }
@@ -40,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (!Number.isFinite(prizePoolUsdc) || prizePoolUsdc < MIN_PRIZE_POOL_USDC) {
       return NextResponse.json(
         { error: `prizePoolUsdc must be >= ${MIN_PRIZE_POOL_USDC}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!callBookedFor || Number.isNaN(callBookedFor.getTime())) {
@@ -56,6 +69,7 @@ export async function POST(request: NextRequest) {
     await prisma.$executeRaw`
       INSERT INTO "CampaignRequest" (
         "id",
+        "submittedById",
         "partnerName",
         "partnerNamespace",
         "campaignTitle",
@@ -72,6 +86,7 @@ export async function POST(request: NextRequest) {
         "updatedAt"
       ) VALUES (
         ${id},
+        ${auth.user.userId},
         ${partnerName},
         ${partnerNamespace},
         ${campaignTitle},

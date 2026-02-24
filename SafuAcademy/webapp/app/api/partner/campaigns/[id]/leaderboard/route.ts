@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { verifyAuth } from "@/lib/middleware/admin.middleware";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await verifyAuth(request);
+  if (!auth.authorized || !auth.user) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
+  const partner = await prisma.partner.findUnique({
+    where: { userId: auth.user.userId },
+  });
+  if (!partner) {
+    return NextResponse.json({ error: "Partner profile not found" }, { status: 403 });
+  }
+
   const { id } = await params;
   const campaignId = Number(id);
 
   if (!Number.isFinite(campaignId)) {
     return NextResponse.json({ error: "Invalid campaign id" }, { status: 400 });
+  }
+
+  // Verify this campaign belongs to the partner
+  const campaign = await prisma.campaign.findFirst({
+    where: { id: campaignId, sponsorName: partner.orgName },
+    select: { id: true },
+  });
+  if (!campaign) {
+    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
   }
 
   try {

@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { verifyAuth } from "@/lib/middleware/admin.middleware";
 
 export async function GET(request: NextRequest) {
   try {
-    const sponsorName = request.nextUrl.searchParams.get("sponsorName")?.trim() ?? null;
+    const auth = await verifyAuth(request);
+    if (!auth.authorized || !auth.user) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
 
-    if (!sponsorName) {
+    const partner = await prisma.partner.findUnique({
+      where: { userId: auth.user.userId },
+    });
+
+    if (!partner) {
       return NextResponse.json(
-        { error: "sponsorName query parameter is required" },
-        { status: 400 },
+        { error: "Partner profile not found. Complete onboarding first." },
+        { status: 403 },
       );
     }
+
+    const sponsorName = partner.orgName;
 
     const campaigns = await prisma.$queryRaw<
       Array<{
