@@ -96,7 +96,7 @@ const CoursesSection = ({
 
                   <div className="mt-auto">
                     {/* Always show "View Details" button for consistency in this section */}
-                    <Link href={`/courses/${course.id}`}>
+                    <Link href={`/academy/campaign/${course.id}`}>
                       <Button className="w-full bg-gradient-to-r from-primary to-orange-400 hover:from-orange-500 hover:to-primary text-background font-semibold text-sm py-3 rounded-lg shadow-lg hover:shadow-primary/40 transition-all duration-300 transform hover:scale-105">
                         View Details
                         <ArrowRight className="w-4 h-4 ml-2" />
@@ -121,7 +121,7 @@ const CoursesSection = ({
             viewport={{ once: true }}
             className="text-center mt-16"
           >
-            <Link href="/courses">
+            <Link href="/academy">
               <Button
                 size="lg"
                 variant="outline"

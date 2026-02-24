@@ -19,6 +19,13 @@ export async function GET(request: NextRequest) {
             prisma.userCourse.count({ where: { completedAt: { not: null } } }),
             prisma.course.count(),
         ]);
+        const [campaignCounts] = await prisma.$queryRaw<
+            Array<{ totalCampaigns: number; pendingCampaignRequests: number }>
+        >`
+            SELECT
+                (SELECT COUNT(*)::int FROM "Campaign") AS "totalCampaigns",
+                (SELECT COUNT(*)::int FROM "CampaignRequest" WHERE "status" = 'PENDING'::"CampaignRequestStatus") AS "pendingCampaignRequests"
+        `;
 
         // Get course-level stats
         const courseStats = await prisma.course.findMany({
@@ -75,6 +82,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             totalUsers,
             totalCourses,
+            totalCampaigns: campaignCounts?.totalCampaigns ?? 0,
+            pendingCampaignRequests: campaignCounts?.pendingCampaignRequests ?? 0,
             totalEnrollments,
             totalCompletions,
             recentEnrollments,

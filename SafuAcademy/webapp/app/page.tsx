@@ -1,638 +1,552 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { CourseCard } from "../components/CourseCard";
-import { ChatWidget } from "../components/ChatWidget";
-import { useReadContract } from "wagmi";
-import { abi, Deploy, OnChainCourse } from "@/lib/constants";
-import { useTheme } from "@/app/providers";
-import { NavBar } from "@/components/NavBar";
-import { User } from "lucide-react";
+import { useEffect } from "react";
 
-// Backend course type for featured courses API
-interface FeaturedCourse {
-  id: number;
-  title: string;
-  description: string;
-  instructor: string;
-  category: string;
-  level: string;
-  thumbnailUrl: string | null;
-  duration: string;
-  completionPoints: number;
-  minPointsToAccess: number;
-  enrollmentCost: number;
-  isIncentivized: boolean;
-  _count?: {
-    lessons: number;
-  };
-}
+type NexidWindow = Window & typeof globalThis & {
+  openConnectionModal?: (target: string) => void;
+  launchAction?: (text: string) => void;
+  closeModal?: () => void;
+};
 
-// Component to fetch and display featured courses with personalization
-function FeaturedCourses() {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+const HOME_HTML =
+  String.raw`
+<div class="bg-stardust"></div>
+<div class="shooting-star star-1"></div>
+<div class="shooting-star star-2"></div>
+<div class="shooting-star star-3"></div>
 
-  // State for API-based featured courses
-  const [apiCourses, setApiCourses] = useState<FeaturedCourse[] | null>(null);
-  const [apiLoading, setApiLoading] = useState(true);
-  const [isPersonalized, setIsPersonalized] = useState(false);
+<header class="h-20 border-b border-nexid-border flex items-center justify-between px-6 lg:px-12 bg-[#030303]/80 backdrop-blur-xl z-50 fixed top-0 w-full">
+  <div class="font-display font-black text-2xl tracking-tighter cursor-pointer hover:text-white/80 transition-colors" onclick="window.scrollTo(0,0)">
+    N<span class="hidden sm:inline">ex</span>ID<span class="text-nexid-gold">.</span>
+    <span class="text-[10px] font-mono font-normal text-nexid-muted tracking-widest ml-2 border border-[#222] px-1.5 py-0.5 rounded shadow-inner-glaze">ACADEMY</span>
+  </div>
 
-  // Fallback: contract-based courses
-  const { data: contractCourses, isPending: contractLoading } = useReadContract({
-    abi: abi,
-    functionName: "getAllCourses",
-    address: Deploy,
-  }) as {
-    data: OnChainCourse[];
-    isPending: boolean;
-  };
+  <nav class="hidden md:flex gap-8 text-sm font-medium">
+    <a href="#campaigns" class="nav-link text-nexid-muted hover:text-white transition-colors">Campaigns</a>
+    <a href="#journey" class="nav-link text-nexid-muted hover:text-white transition-colors">How it Works</a>
+    <a href="#b2b-portal" class="nav-link text-nexid-muted hover:text-white transition-colors">For Protocols</a>
+  </nav>
 
-  // Try to fetch personalized featured courses from API
+  <div class="flex items-center gap-4">
+    <button onclick="openConnectionModal('Partner Console')" class="px-5 py-2.5 bg-transparent border border-[#333] text-white font-medium text-sm rounded-lg hover:bg-[#111] hover:border-[#555] transition-all active:scale-95 hidden sm:block">Partner Portal</button>
+    <button onclick="openConnectionModal('Student Protocol')" class="px-6 py-2.5 bg-white text-black font-bold text-sm rounded-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all active:scale-95 flex items-center gap-2">
+      Launch App
+    </button>
+  </div>
+</header>
+
+<main class="w-full pt-20">
+  <section class="relative w-full min-h-[90vh] flex items-center justify-center px-6 py-20 lg:py-0 overflow-hidden" id="hero-section">
+    <div class="hero-orb"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.4)_0%,transparent_60%)] pointer-events-none z-0"></div>
+
+    <div class="max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-10 px-0 lg:px-8">
+      <div class="lg:col-span-6 flex flex-col items-start text-left reveal">
+        <div class="text-[10px] font-mono text-nexid-gold border border-nexid-gold/30 bg-nexid-gold/5 px-3 py-1.5 rounded-full inline-flex mb-6 uppercase tracking-widest shadow-inner-glaze items-center gap-2">
+          <span class="w-1.5 h-1.5 bg-nexid-gold rounded-full animate-pulse shadow-gold-glow"></span>
+          Sovereign Knowledge Engine
+        </div>
+
+        <h1 class="text-5xl md:text-6xl lg:text-7xl font-display font-black text-white mb-6 tracking-tighter leading-[1.05] crisp-text">
+          Prove your knowledge.<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">Earn your allocation.</span>
+        </h1>
+
+        <p class="text-lg md:text-xl text-nexid-muted font-sans leading-relaxed max-w-xl mb-10 crisp-text">
+          The ultimate decentralized education protocol. Complete technical tracks, verify your on-chain activity, and secure USDC prize pools directly to your .id namespace.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-14">
+          <a href="#campaigns" class="w-full sm:w-auto px-8 py-4 bg-nexid-gold text-black font-bold text-sm md:text-base rounded-xl hover:shadow-gold-glow-lg transition-all active:scale-95 flex items-center justify-center gap-2 group">
+            Explore Campaigns
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+          </a>
+          <a href="#b2b-portal" class="w-full sm:w-auto px-8 py-4 bg-[#0a0a0a] border border-[#333] text-white font-medium text-sm md:text-base rounded-xl hover:bg-[#111] hover:border-nexid-gold/50 transition-all active:scale-95 shadow-inner-glaze flex items-center justify-center">
+            Sponsor a Track
+          </a>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 sm:gap-8 w-full border-t border-[#1a1a1a] pt-8">
+          <div>
+            <div class="text-xl md:text-2xl font-display text-white font-bold">$2.4M+</div>
+            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">USDC Distributed</div>
+          </div>
+          <div class="border-l border-[#1a1a1a] pl-4 sm:pl-8">
+            <div class="text-xl md:text-2xl font-display text-white font-bold">84k+</div>
+            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Active Nodes</div>
+          </div>
+          <div class="border-l border-[#1a1a1a] pl-4 sm:pl-8">
+            <div class="text-xl md:text-2xl font-display text-nexid-gold font-bold">14 Live</div>
+            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Partner Campaigns</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-6 relative w-full h-[450px] lg:h-[600px] reveal delay-200 mt-10 lg:mt-0 flex items-center justify-center parallax-container">
+        <div class="parallax-layer w-full h-full relative" id="parallax-layer">
+          <div class="interactive-card absolute w-64 md:w-80 p-4 bg-[#0a0a0a]/90 backdrop-blur-2xl border border-[#222] rounded-2xl shadow-premium top-[5%] left-[10%] rotate-6 flex flex-col gap-3" style="transform: translateZ(-50px);">
+            <div class="card-glow-hover absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] pointer-events-none rounded-2xl"></div>
+            <div class="w-full aspect-video bg-black rounded-xl border border-[#222] relative overflow-hidden shadow-inner-glaze">
+              <img src="https://images.unsplash.com/photo-1639762681485-074b7f4ec651?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm pointer-events-none" alt="Interactive quiz">
+              <div class="absolute inset-0 bg-black/60 pointer-events-none"></div>
+              <div class="absolute inset-0 flex flex-col justify-center px-5 z-10">
+                <div class="flex items-center gap-1.5 text-nexid-gold mb-2">
+                  <span class="w-1.5 h-1.5 rounded-full bg-nexid-gold animate-pulse"></span>
+                  <span class="text-[9px] font-mono uppercase tracking-widest">Interactive Quiz</span>
+                </div>
+                <div class="text-sm text-white font-medium mb-3 leading-tight crisp-text">What formula governs an AMM?</div>
+                <div class="space-y-2 w-full">
+                  <div class="w-full bg-[#111]/80 backdrop-blur border border-[#333] rounded-md px-3 py-1.5 text-[10px] text-white/70">x + y = k</div>
+                  <div class="w-full bg-nexid-gold/20 backdrop-blur border border-nexid-gold rounded-md px-3 py-1.5 text-[10px] text-nexid-gold flex justify-between items-center shadow-[inset_0_0_10px_rgba(255,176,0,0.1)]">
+                    <span class="font-bold">x * y = k</span>
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="absolute bottom-0 left-0 w-full h-1 bg-[#222]">
+                <div class="h-full bg-nexid-gold w-2/3 shadow-[0_0_10px_#ffb000]"></div>
+              </div>
+            </div>
+            <div class="flex justify-between items-center px-1 relative z-10">
+              <div class="text-xs font-medium text-white">Module 1: Tokenomics</div>
+              <span class="text-[9px] font-mono text-nexid-gold px-2 py-0.5 border border-nexid-gold/30 rounded bg-nexid-gold/10">04:12</span>
+            </div>
+          </div>
+
+          <div class="interactive-card absolute w-72 md:w-96 p-6 bg-[#050505]/95 backdrop-blur-3xl border border-[#222] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(255,176,0,0.1)] top-[40%] left-[5%] z-10" style="transform: translateZ(20px);">
+            <div class="card-glow-hover absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,176,0,0.1)_0%,transparent_70%)] pointer-events-none rounded-2xl"></div>
+            <div class="flex justify-between items-start mb-5 relative z-10">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-[#111] border border-[#333] flex items-center justify-center shadow-inner-glaze">
+                  <svg class="w-6 h-6 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-base font-bold text-white mb-0.5">On-Chain Action</div>
+                  <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">Verifying Contract...</div>
+                </div>
+              </div>
+              <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e] mt-1"></span>
+            </div>
+            <div class="w-full bg-[#111] p-4 rounded-xl border border-[#222] flex justify-between items-center relative z-10 shadow-inner-glaze">
+              <div class="text-sm font-mono text-white font-medium">nadya<span class="text-nexid-gold">.id</span></div>
+              <div class="text-[10px] font-mono text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded uppercase tracking-widest">Synced</div>
+            </div>
+          </div>
+
+          <div class="interactive-card absolute w-56 md:w-64 p-6 bg-[#0a0a0a]/95 backdrop-blur-2xl border border-green-500/30 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.9),0_0_30px_rgba(34,197,94,0.15)] bottom-[10%] right-[10%] -rotate-3 z-20" style="transform: translateZ(60px);">
+            <div class="card-glow-hover absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.15)_0%,transparent_70%)] pointer-events-none rounded-2xl"></div>
+            <div class="text-[10px] font-mono text-green-400 uppercase tracking-widest mb-3 border-b border-green-500/20 pb-3 relative z-10 flex justify-between items-center">
+              Yield Settled
+              <svg class="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div class="text-4xl font-display font-black text-white mb-1 relative z-10 tracking-tight">+$1,833<span class="text-xl text-white/50 font-normal">.02</span></div>
+            <div class="text-xs font-mono text-nexid-muted mb-6 relative z-10">USDC Allocation</div>
+            <div class="w-full py-2.5 bg-green-500/10 border border-green-500/50 text-green-400 text-center text-[10px] font-bold rounded-lg uppercase tracking-widest relative z-10">Claimed 1 Hr Ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-12 border-y border-[#1a1a1a] bg-[#050505] reveal relative z-10 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+    <div class="text-center text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-10">Trusted by Tier-One Protocols</div>
+    <div class="marquee-wrapper w-full max-w-7xl mx-auto">
+      <div class="marquee-content">
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Uniswap</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Phantom</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">LayerZero</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tighter">SOAR</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Only Bags</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Linear</span></div>
+      </div>
+      <div class="marquee-content">
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Uniswap</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Phantom</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">LayerZero</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tighter">SOAR</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Only Bags</span></div>
+        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Linear</span></div>
+      </div>
+    </div>
+  </section>
+` +
+  String.raw`
+  <section id="journey" class="py-24 lg:py-32 w-full max-w-7xl mx-auto px-6">
+    <div class="text-center mb-20 reveal">
+      <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-6 tracking-tight">The Proof of Knowledge Flow</h2>
+      <p class="text-nexid-muted max-w-2xl mx-auto text-lg leading-relaxed">A seamless, verifiable journey from abstract education to concrete on-chain execution.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="premium-panel hover-card p-10 reveal bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.04),transparent_50%)]">
+        <div class="w-14 h-14 rounded-full border border-[#333] bg-[#111] flex items-center justify-center font-mono text-white mb-8 shadow-inner-glaze animate-[float_6s_ease-in-out_infinite]">01</div>
+        <h3 class="text-2xl font-display text-white mb-4">Interactive Learning</h3>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Consume high-fidelity Synthesia video modules directly in the NexID terminal. Answer integrated quizzes to prove comprehension and unlock subsequent chapters.</p>
+        <div class="w-full h-32 rounded-xl bg-[#050505] border border-[#222] overflow-hidden relative shadow-inner-glaze flex items-center justify-center">
+          <div class="absolute inset-0 flex items-center justify-center opacity-30">
+            <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+          </div>
+          <div class="absolute bottom-0 left-0 w-full h-1 bg-[#1a1a1a]"><div class="h-full bg-white w-[40%] shadow-[0_0_10px_#fff]"></div></div>
+        </div>
+      </div>
+
+      <div class="premium-panel hover-card p-10 reveal delay-100 bg-[radial-gradient(ellipse_at_top_left,rgba(255,176,0,0.06),transparent_50%)]">
+        <div class="w-14 h-14 rounded-full border border-nexid-gold/40 bg-nexid-gold/10 flex items-center justify-center font-mono text-nexid-gold mb-8 shadow-gold-glow animate-[float_5s_ease-in-out_infinite]">02</div>
+        <h3 class="text-2xl font-display text-white mb-4">On-Chain Verification</h3>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Perform real ecosystem microtasks. Swap on a testnet, provide liquidity, or sign messages. Our AI oracle verifies your on-chain activity instantly.</p>
+        <div class="w-full bg-[#050505] border border-[#222] p-5 rounded-xl flex items-center justify-between shadow-inner-glaze">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded border border-[#333] flex items-center justify-center bg-[#111]">
+              <svg class="w-5 h-5 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-white mb-0.5">Verify Smart Contract</div>
+              <div class="text-[10px] font-mono text-nexid-muted uppercase">Querying State...</div>
+            </div>
+          </div>
+          <div class="w-5 h-5 rounded-full border-2 border-nexid-gold border-t-transparent animate-spin"></div>
+        </div>
+      </div>
+
+      <div class="premium-panel hover-card p-10 reveal bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,197,94,0.06),transparent_50%)]">
+        <div class="w-14 h-14 rounded-full border border-green-500/40 bg-green-500/10 flex items-center justify-center font-mono text-green-400 mb-8 shadow-[0_0_20px_rgba(34,197,94,0.2)] animate-[float_6s_ease-in-out_infinite_reverse]">03</div>
+        <h3 class="text-2xl font-display text-white mb-4">Claim Allocations</h3>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Accumulate points on the campaign leaderboard. When the protocol campaign concludes, eligible users sign a gasless transaction to claim rewards directly to their vault.</p>
+        <div class="w-full bg-[#050505] border border-green-500/20 p-6 rounded-xl text-center shadow-[inset_0_0_20px_rgba(34,197,94,0.05)]">
+          <div class="text-[10px] font-mono text-green-400 uppercase tracking-widest mb-1.5">Eligible Settlement</div>
+          <div class="text-3xl font-display font-bold text-white">$500.00 <span class="text-base text-nexid-muted font-normal">USDC</span></div>
+        </div>
+      </div>
+
+      <div class="premium-panel hover-card p-10 reveal delay-100 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.04),transparent_50%)]">
+        <div class="w-14 h-14 rounded-full border border-[#333] bg-[#111] flex items-center justify-center font-mono text-white mb-8 shadow-inner-glaze animate-[float_7s_ease-in-out_infinite]">04</div>
+        <h3 class="text-2xl font-display text-white mb-4">Mint Sovereign SBTs</h3>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Your achievements become immutable. Mint Soulbound Tokens directly to your .id namespace, building a verifiable, on-chain professional reputation.</p>
+        <div class="flex gap-4 items-center h-24">
+          <div class="w-16 h-16 rounded-xl rotate-12 border border-[#333] bg-[#0a0a0a] flex items-center justify-center shadow-premium"><div class="text-nexid-gold font-display font-black text-xl opacity-50">S</div></div>
+          <div class="w-20 h-20 rounded-xl -rotate-6 border-2 border-nexid-gold/60 bg-[#111] flex items-center justify-center shadow-gold-glow z-10"><div class="text-white font-display font-black text-3xl crisp-text">O</div></div>
+          <div class="w-16 h-16 rounded-xl rotate-6 border border-[#333] bg-[#0a0a0a] flex items-center justify-center shadow-premium"><div class="text-nexid-muted font-display font-black text-xl opacity-50">L</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="campaigns" class="py-24 w-full max-w-[1600px] mx-auto px-6 border-t border-[#1a1a1a] relative z-10">
+    <div class="flex flex-col md:flex-row justify-between items-end mb-12 reveal">
+      <div>
+        <div class="text-[10px] font-mono text-nexid-gold border border-nexid-gold/30 bg-nexid-gold/10 px-2.5 py-1 rounded inline-flex mb-4 uppercase tracking-widest shadow-inner-glaze">Active Matrix</div>
+        <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-2 tracking-tight">Ecosystem Campaigns</h2>
+        <p class="text-nexid-muted max-w-xl text-lg">Jump into live tracks to start climbing the global leaderboard.</p>
+      </div>
+      <button onclick="window.open('/academy', '_blank')" class="mt-6 md:mt-0 px-6 py-3.5 bg-[#111] border border-[#333] text-white text-sm font-medium rounded-lg hover:bg-[#1a1a1a] hover:border-white/30 transition-all active:scale-95 flex items-center gap-2 shadow-inner-glaze group">
+        View All 20 Campaigns
+        <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div onclick="launchAction('Entering Secure Track...')" class="course-card hover-card premium-panel flex flex-col overflow-hidden bg-[#0a0a0a] reveal cursor-pointer">
+        <div class="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a]">
+          <img src="https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-luminosity" alt="Soar campaign">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
+          <div class="absolute top-5 left-5 text-[10px] font-mono border border-nexid-gold/50 bg-nexid-gold/20 text-nexid-gold px-3 py-1.5 rounded tracking-widest uppercase shadow-gold-glow flex items-center gap-2 backdrop-blur-sm">
+            <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]"></span>
+            Live Ends 14d
+          </div>
+        </div>
+        <div class="p-8 flex flex-col flex-1">
+          <h3 class="text-2xl font-display text-white mb-2 leading-tight">Soar Ecosystem: Liquidity & Routing</h3>
+          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By Soar Protocol</div>
+          <div class="mt-auto border-t border-[#1a1a1a] pt-5 flex justify-between items-end">
+            <div>
+              <div class="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-wider">Total Prize Pool</div>
+              <div class="text-base font-bold text-white">$25,000 USDC + 1k .id</div>
+            </div>
+            <div class="text-xs font-bold text-nexid-gold transition-colors flex items-center gap-1 group">Enter Track</div>
+          </div>
+        </div>
+      </div>
+
+      <div onclick="launchAction('Entering Secure Track...')" class="course-card hover-card premium-panel flex flex-col overflow-hidden bg-[#0a0a0a] reveal delay-100 cursor-pointer">
+        <div class="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a]">
+          <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="Only Bags campaign">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
+          <div class="absolute top-5 left-5 text-[10px] font-mono border border-nexid-gold/30 bg-nexid-gold/10 text-nexid-gold px-3 py-1.5 rounded tracking-widest uppercase shadow-inner-glaze backdrop-blur-sm">Live</div>
+        </div>
+        <div class="p-8 flex flex-col flex-1">
+          <h3 class="text-2xl font-display text-white mb-2 leading-tight">Only Bags Tokenomics</h3>
+          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By Only Bags</div>
+          <div class="mt-auto border-t border-[#1a1a1a] pt-5 flex justify-between items-end">
+            <div>
+              <div class="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-wider">Total Prize Pool</div>
+              <div class="text-base font-bold text-white">$10,000 USDC + Tokens</div>
+            </div>
+            <div class="text-xs font-bold text-nexid-gold transition-colors flex items-center gap-1 group">Enter Track</div>
+          </div>
+        </div>
+      </div>
+
+      <div onclick="launchAction('Entering Secure Track...')" class="course-card hover-card premium-panel flex flex-col overflow-hidden bg-[#0a0a0a] reveal delay-200 cursor-pointer">
+        <div class="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a]">
+          <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="Smart contract campaign">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
+          <div class="absolute top-5 left-5 text-[10px] font-mono border border-[#333] bg-[#111] text-nexid-muted px-3 py-1.5 rounded tracking-widest uppercase shadow-inner-glaze backdrop-blur-sm">Evergreen</div>
+        </div>
+        <div class="p-8 flex flex-col flex-1">
+          <h3 class="text-2xl font-display text-white mb-2 leading-tight">Smart Contract Infrastructure</h3>
+          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By NexID Core</div>
+          <div class="mt-auto border-t border-[#1a1a1a] pt-5 flex justify-between items-end">
+            <div>
+              <div class="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-wider">Total Prize Pool</div>
+              <div class="text-base font-bold text-white">$5,000 USDC + SBT</div>
+            </div>
+            <div class="text-xs font-bold text-nexid-gold transition-colors flex items-center gap-1 group">Enter Track</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+` +
+  String.raw`
+  <section id="b2b-portal" class="py-24 lg:py-32 w-full bg-[#050505] border-t border-[#1a1a1a] relative overflow-hidden z-10">
+    <div class="absolute right-0 bottom-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_bottom_right,rgba(255,176,0,0.06)_0%,transparent_50%)] pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-16 relative z-10 reveal">
+      <div class="max-w-xl">
+        <div class="text-[10px] font-mono text-white/60 border border-white/10 bg-[#111] px-3 py-1.5 rounded-full inline-flex mb-8 uppercase tracking-widest shadow-inner-glaze">For Protocols & Developers</div>
+        <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-6 leading-tight">Bootstrap your ecosystem with verifiable intelligence.</h2>
+        <p class="text-nexid-muted leading-relaxed mb-8 text-lg">
+          Stop paying for bot interactions and sybil farms. Launch a targeted campaign on the NexID Academy to educate real users, verify their on-chain interactions with your smart contracts, and distribute USDC rewards dynamically.
+        </p>
+        <ul class="space-y-5 mb-10">
+          <li class="flex items-center gap-4 text-sm text-white/90 font-medium">
+            <div class="p-1 rounded-full bg-nexid-gold/20">
+              <svg class="w-4 h-4 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            AI-generated Synthesia video curriculum.
+          </li>
+          <li class="flex items-center gap-4 text-sm text-white/90 font-medium">
+            <div class="p-1 rounded-full bg-nexid-gold/20">
+              <svg class="w-4 h-4 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            Smart contract task verification (Swaps, Mints, Staking).
+          </li>
+          <li class="flex items-center gap-4 text-sm text-white/90 font-medium">
+            <div class="p-1 rounded-full bg-nexid-gold/20">
+              <svg class="w-4 h-4 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            Enterprise deployment tiers starting at $15,000.
+          </li>
+        </ul>
+        <button onclick="openConnectionModal('Partner Console')" class="px-8 py-4 bg-white text-black font-bold text-sm rounded-xl hover:bg-gray-200 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center gap-2 group">
+          Open Partner Portal
+          <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="w-full lg:w-1/2 [perspective:1000px]">
+        <div class="premium-panel hover-card p-8 transform rotate-2 shadow-premium border-nexid-gold/20 cursor-default">
+          <div class="flex items-center justify-between mb-8 border-b border-[#222] pb-4">
+            <div class="flex gap-2"><div class="w-3 h-3 rounded-full bg-[#ef4444]"></div><div class="w-3 h-3 rounded-full bg-[#f59e0b]"></div><div class="w-3 h-3 rounded-full bg-[#22c55e]"></div></div>
+            <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest">partner.nexid.fun</div>
+          </div>
+          <div class="space-y-6 pointer-events-none">
+            <div class="h-10 w-3/4 bg-[#111] rounded border border-[#222]"></div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="h-24 bg-[#111] rounded border border-[#222] relative overflow-hidden"><div class="absolute bottom-0 w-full h-[60%] bg-nexid-gold/20 border-t border-nexid-gold/50"></div></div>
+              <div class="h-24 bg-[#111] rounded border border-[#222]"></div>
+              <div class="h-24 bg-[#111] rounded border border-[#222]"></div>
+            </div>
+            <div class="h-40 w-full bg-[#111] rounded border border-[#222] flex items-end p-5 gap-3">
+              <div class="w-full bg-white/10 h-[30%] rounded-t-sm"></div>
+              <div class="w-full bg-white/10 h-[50%] rounded-t-sm"></div>
+              <div class="w-full bg-nexid-gold h-[90%] rounded-t-sm shadow-gold-glow relative"><div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div></div>
+              <div class="w-full bg-white/10 h-[60%] rounded-t-sm"></div>
+              <div class="w-full bg-white/10 h-[40%] rounded-t-sm"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="py-10 border-t border-[#1a1a1a] bg-[#030303] text-center relative z-10">
+    <div class="font-display font-black text-2xl tracking-tighter text-white mb-3">N<span class="hidden sm:inline">ex</span>ID<span class="text-nexid-gold">.</span></div>
+    <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">Sovereign Identity Protocol</div>
+    <div class="flex justify-center gap-6 text-sm font-medium text-nexid-muted">
+      <a href="https://x.com/SafuVerse" target="_blank" rel="noreferrer" class="nav-link hover:text-white transition-colors">X (Twitter)</a>
+      <a href="https://discord.gg/safuverse" target="_blank" rel="noreferrer" class="nav-link hover:text-white transition-colors">Discord</a>
+      <a href="https://safuverse.gitbook.io/safuverse-docs/" target="_blank" rel="noreferrer" class="nav-link hover:text-white transition-colors">Docs</a>
+      <a href="https://github.com/" target="_blank" rel="noreferrer" class="nav-link hover:text-white transition-colors">GitHub</a>
+    </div>
+    <div class="mt-8 text-[10px] text-[#555] font-mono">2026 NexID. All rights reserved.</div>
+  </footer>
+</main>
+
+<div id="connect-modal" class="modal-overlay fixed inset-0 flex items-center justify-center p-4">
+  <div class="absolute inset-0" onclick="closeModal()"></div>
+  <div class="modal-content relative w-full max-w-sm premium-panel p-8 text-center flex flex-col items-center">
+    <div class="w-16 h-16 rounded-full border-2 border-nexid-gold/50 border-t-nexid-gold animate-spin mb-6 shadow-gold-glow"></div>
+    <h3 class="text-xl font-display text-white mb-2" id="modal-title">Connecting...</h3>
+    <p class="text-sm text-nexid-muted font-mono" id="modal-desc">Establishing secure enclave.</p>
+  </div>
+</div>
+`;
+
+export default function Home() {
   useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        const token = localStorage.getItem('auth_token');
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
+    const win = window as NexidWindow;
+    let modalTimeout: ReturnType<typeof setTimeout> | null = null;
 
-        const res = await fetch('/api/courses/featured?limit=3', { headers });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.courses && data.courses.length > 0) {
-            setApiCourses(data.courses);
-            setIsPersonalized(data.personalized);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch featured courses:', err);
-      } finally {
-        setApiLoading(false);
+    const clearModalTimer = () => {
+      if (modalTimeout) {
+        clearTimeout(modalTimeout);
+        modalTimeout = null;
       }
     };
 
-    fetchFeatured();
+    const closeModal = () => {
+      clearModalTimer();
+      document.getElementById("connect-modal")?.classList.remove("active");
+    };
+
+    const openConnectionModal = (target: string) => {
+      const modal = document.getElementById("connect-modal");
+      const modalTitle = document.getElementById("modal-title");
+      const modalDesc = document.getElementById("modal-desc");
+      if (!modal || !modalTitle || !modalDesc) {
+        return;
+      }
+
+      modal.classList.add("active");
+      modalTitle.textContent = `Connecting ${target}...`;
+      modalDesc.textContent = "Awaiting wallet signature.";
+
+      clearModalTimer();
+      modalTimeout = setTimeout(() => {
+        closeModal();
+        if (target === "Partner Console") {
+          window.location.assign("/partner-portal");
+          return;
+        }
+        if (target === "Student Protocol") {
+          const hasGatewaySession =
+            localStorage.getItem("nexid_gateway_connected") === "true";
+          const hasLegacyAuth = Boolean(localStorage.getItem("auth_token"));
+          const destination =
+            hasGatewaySession || hasLegacyAuth ? "/academy" : "/academy-gateway";
+          window.location.assign(destination);
+          return;
+        }
+        window.open("/academy", "_blank", "noopener,noreferrer");
+      }, 1500);
+    };
+
+    const launchAction = (text: string) => {
+      const modal = document.getElementById("connect-modal");
+      const modalTitle = document.getElementById("modal-title");
+      const modalDesc = document.getElementById("modal-desc");
+      if (!modal || !modalTitle || !modalDesc) {
+        return;
+      }
+
+      modal.classList.add("active");
+      modalTitle.textContent = text;
+      modalDesc.textContent = "Verifying .id namespace...";
+
+      clearModalTimer();
+      modalTimeout = setTimeout(() => {
+        closeModal();
+        window.open("/academy", "_blank", "noopener,noreferrer");
+      }, 1200);
+    };
+
+    win.openConnectionModal = openConnectionModal;
+    win.launchAction = launchAction;
+    win.closeModal = closeModal;
+
+    const heroSection = document.getElementById("hero-section");
+    const parallaxLayer = document.getElementById("parallax-layer");
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!heroSection || !parallaxLayer) {
+        return;
+      }
+      const rect = heroSection.getBoundingClientRect();
+      const x = event.clientX - rect.left - rect.width / 2;
+      const y = event.clientY - rect.top - rect.height / 2;
+      const rotateY = (x / rect.width) * 15;
+      const rotateX = -(y / rect.height) * 15;
+      parallaxLayer.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    };
+
+    const handleMouseLeave = () => {
+      if (parallaxLayer) {
+        parallaxLayer.style.transform = "rotateX(0deg) rotateY(0deg)";
+      }
+    };
+
+    if (heroSection && parallaxLayer && window.innerWidth > 1024) {
+      heroSection.addEventListener("mousemove", handleMouseMove);
+      heroSection.addEventListener("mouseleave", handleMouseLeave);
+    }
+
+    const revealElements = Array.from(
+      document.querySelectorAll<HTMLElement>(".nexid-homepage .reveal"),
+    );
+
+    const observer = new IntersectionObserver(
+      (entries, intersectionObserver) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("active");
+            intersectionObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { root: null, rootMargin: "0px", threshold: 0.15 },
+    );
+
+    revealElements.forEach((element) => observer.observe(element));
+
+    const initialRevealTimeout = setTimeout(() => {
+      revealElements.forEach((element) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.top < window.innerHeight) {
+          element.classList.add("active");
+        }
+      });
+    }, 100);
+
+    return () => {
+      clearModalTimer();
+      clearTimeout(initialRevealTimeout);
+      observer.disconnect();
+      if (heroSection) {
+        heroSection.removeEventListener("mousemove", handleMouseMove);
+        heroSection.removeEventListener("mouseleave", handleMouseLeave);
+      }
+      delete win.openConnectionModal;
+      delete win.launchAction;
+      delete win.closeModal;
+    };
   }, []);
 
-  // Use API courses if available, otherwise fall back to contract
-  const useApiData = apiCourses && apiCourses.length > 0;
-  const isLoading = useApiData ? apiLoading : (apiLoading && contractLoading);
-
-  // Convert API courses to match CourseCard format
-  const featuredCourses = useApiData
-    ? apiCourses.map(c => ({
-      id: BigInt(c.id),
-      title: c.title,
-      description: c.description,
-      instructor: c.instructor,
-      category: c.category,
-      level: c.level,
-      thumbnailUrl: c.thumbnailUrl || '',
-      duration: c.duration,
-      totalLessons: BigInt(c._count?.lessons ?? 0),
-      minPointsToAccess: BigInt(c.minPointsToAccess ?? 0),
-      enrollmentCost: BigInt(c.enrollmentCost ?? 0),
-      objectives: [],
-      prerequisites: [],
-      longDescription: c.description,
-      isIncentivized: c.isIncentivized ?? false,
-    } as OnChainCourse))
-    : (contractCourses?.slice(0, 3) ?? []);
-
-  if (isLoading) {
-    return (
-      <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className={`rounded-[28px] border shadow-[0_18px_55px_rgba(15,23,42,0.10)] h-80 animate-pulse ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/70 border-black/5'
-              }`}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (featuredCourses.length === 0) {
-    return (
-      <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-        No courses available yet. Check back soon!
-      </div>
-    );
-  }
-
   return (
-    <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-      {featuredCourses.map((course) => (
-        <CourseCard key={String(course.id)} course={course} />
-      ))}
-    </div>
+    <div
+      className="nexid-homepage scroll-smooth relative min-h-screen"
+      dangerouslySetInnerHTML={{ __html: HOME_HTML }}
+    />
   );
 }
-
-
-const Home: React.FC = () => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
-  const testimonials = [
-    {
-      name: "Ada",
-      role: "Web3 Designer",
-      quote: "The courses are clear, modern and not overloaded. Nex Academy helped me become job-ready fast",
-      color: "from-[#ffbdf2] to-[#cbb8ff]",
-    },
-    {
-      name: "Leo",
-      role: "Protocol Founder",
-      quote: "The content goes straight to what matters. I felt job-ready sooner than expected",
-      color: "from-[#c6e7ff] to-[#ffb8cb]",
-    },
-    {
-      name: "Sakura",
-      role: "Community Lead",
-      quote: "Everything feels modern and well structured. I became confident in my skills much faster",
-      color: "from-[#ffd7b8] to-[#b8e2ff]",
-    },
-  ];
-
-  const stats = [
-    { label: "HOURS OF CONTENT", value: "100+", icon: "📅" },
-    { label: "COURSES", value: "15+", icon: "📚" },
-    { label: "STUDENTS", value: "20k+", icon: "👥" },
-  ];
-
-  const topics = [
-    "Wallet Basics",
-    "On-Chain Safety",
-    "Smart Contracts",
-    "On-Chain Data",
-    "Agents",
-    "EduFi",
-    "Domains",
-    "Personal Branding",
-    "DeFi",
-    "NFTs",
-  ];
-
-  const faqItems = [
-    { q: "What is Nex Academy?", a: "Nex Academy is a next-generation learning platform offering interactive, skill-based courses designed for real-world application." },
-    { q: "Who is SafuAcademy for?", a: "Nex Academy is built for learners at any level who want practical skills, clear learning paths, and modern education experiences." },
-    { q: "What kind of courses does SafuAcademy offer?", a: "Nex Academy offers micro-courses and deeper learning tracks focused on building practical, job-ready skills." },
-    { q: "How is Nex Academy different from traditional learning platforms?", a: "Nex Academy focuses on interactive, skill-first learning instead of passive videos and static content." },
-    { q: "Do I need technical knowledge to use Nex Academy?", a: "No. The learning experience is designed to feel simple and familiar, without technical barriers." },
-    { q: "How do I access Nex Academy?", a: "Nex Academy is accessible through NexID ecosystem, with learning unlocked through digital identity." },
-  ];
-
-  const [openFAQ, setOpenFAQ] = React.useState<number | null>(0);
-
-  return (
-    <div className={isDark ? "dark" : ""}>
-      <div className={`w-full min-h-screen font-sans antialiased ${isDark
-        ? 'bg-[#0a0a0f] text-white'
-        : 'bg-[radial-gradient(circle_at_20%_0%,#fff5d9,transparent_60%),radial-gradient(circle_at_80%_120%,#fff3cd,transparent_60%),linear-gradient(to_bottom,#ffffff,#fff9ea)] text-[#050509]'
-        }`}>
-
-        {/* NAVBAR */}
-        <NavBar />
-
-        {/* Floating Profile Button - Bottom Left */}
-        <Link
-          href="/profile"
-          className={`fixed bottom-6 left-6 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl ${isDark
-            ? "bg-[#ffb000] text-black hover:bg-[#ffa000]"
-            : "bg-[#111] text-white hover:bg-[#333]"
-            }`}
-          aria-label="Go to Profile"
-        >
-          <User className="w-5 h-5" />
-        </Link>
-
-        {/* HERO SECTION */}
-        <section className="relative w-full pt-24 md:pt-28 lg:pt-32 pb-32 lg:pb-40 overflow-hidden">
-          {isDark ? (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,#1a1a3e,transparent_60%),radial-gradient(circle_at_100%_0%,#2a1a3e,transparent_55%),radial-gradient(circle_at_50%_120%,#1a2a3e,transparent_55%)]" />
-          ) : (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,#fff0c7,transparent_60%),radial-gradient(circle_at_100%_0%,#ffd6e9,transparent_55%),radial-gradient(circle_at_50%_120%,#e4f1ff,transparent_55%),linear-gradient(to_bottom,#ffffff,#fff9ea)]" />
-          )}
-          {!isDark && <div className="absolute left-1/2 -translate-x-1/2 bottom-[-180px] w-[980px] h-[980px] bg-white/55 blur-[190px]" />}
-
-          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-2 gap-20 items-center">
-            {/* LEFT: TEXT COLUMN */}
-            <div className="text-left">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.08)] border text-xs sm:text-sm mb-6 ${isDark ? 'bg-white/10 border-white/10 text-gray-300' : 'bg-white/50 border-black/5 text-[#444]'
-                }`}>
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
-                  }`}>
-                  NA
-                </span>
-                <span className="tracking-[-0.01em]">Next Generation EduFi</span>
-              </div>
-
-              <h1 className={`text-[34px] sm:text-[42px] lg:text-[56px] xl:text-[64px] font-bold leading-[1.02] tracking-[-0.05em] ${isDark ? 'text-white' : 'text-[#050509]'
-                }`}>
-                AI-Powered
-                <br />
-                <span className="inline-block mt-1 bg-clip-text text-transparent bg-[linear-gradient(120deg,#ffb000,#ffd700,#fff0b3)]">
-                  Skill-based Education.
-                </span>
-              </h1>
-
-              <p className={`mt-5 text-sm sm:text-base lg:text-[15px] max-w-xl leading-relaxed ${isDark ? 'text-gray-300' : 'text-[#333]'
-                }`}>
-                Multilingual, interactive AI learning that turns practice into real skills, and learning into earning, powered by .id - a unique digital identity across the Web
-              </p>
-
-              <div className="flex flex-wrap gap-3 sm:gap-4 mt-7">
-                <Link href="/courses">
-                  <button className={`px-7 sm:px-8 py-3 rounded-full text-[13px] sm:text-[14px] font-semibold shadow-[0_20px_50px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#ffb000] text-black hover:bg-[#ffa000]' : 'bg-[#111] text-white hover:bg-[#222]'
-                    }`}>
-                    Start Learning
-                  </button>
-                </Link>
-                <button className={`px-7 sm:px-8 py-3 rounded-full border text-[13px] sm:text-[14px] font-semibold transition flex items-center gap-2 shadow-[0_10px_30px_rgba(15,23,42,0.10)] ${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-white/50 border-black/10 text-[#111] hover:bg-white'
-                  }`}>
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
-                    }`}>
-                    ▶
-                  </span>
-                  Watch intro lesson
-                </button>
-              </div>
-
-              <div className={`flex items-center gap-4 mt-6 text-[11px] sm:text-xs ${isDark ? 'text-gray-400' : 'text-[#555]'
-                }`}>
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffb5e8] via-[#c9b8ff] to-[#9ad4ff] border-2 border-white" />
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffd1b3] via-[#ff9ac2] to-[#9ad4ff] border-2 border-white" />
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#b3e9ff] via-[#c9b8ff] to-[#ffb5e8] border-2 border-white" />
-                </div>
-                <div>
-                  <div className={`font-semibold tracking-[-0.01em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                    20,000+ NexID Learners
-                  </div>
-                  <div className={`text-[10px] sm:text-[11px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
-                    From Growing, learning and earning in NexID
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT: HERO CARD STACK */}
-            <div className="relative h-full flex justify-center lg:justify-end">
-              <div className={`relative w-full max-w-lg rounded-[32px] backdrop-blur-xl border shadow-[0_32px_100px_rgba(15,23,42,0.30)] p-6 sm:p-7 ${isDark ? 'bg-white/10 border-white/10' : 'bg-white/60 border-black/5'
-                }`}>
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-[11px] mb-4 ${isDark ? 'bg-white/10 text-gray-300' : 'bg-[#f5f2ff] text-[#555]'
-                  }`}>
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
-                    }`}>
-                    ▶
-                  </span>
-                  <span className="truncate">Lesson 03 · Reading On-chain Activity</span>
-                </div>
-
-                <h3 className={`text-base sm:text-lg font-semibold mb-2 leading-snug ${isDark ? 'text-white' : 'text-[#111]'
-                  }`}>
-                  See a full Nex Academy lesson in action.
-                </h3>
-                <p className={`text-xs sm:text-sm mb-5 leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'
-                  }`}>
-                  Follow a real walkthrough of on-chain dashboards, agents and
-                  transactions. No fluff — just the exact flows you'll use in NexID.
-                </p>
-
-                <div className="mb-5">
-                  <div className={`flex items-center justify-between text-[10px] sm:text-[11px] mb-2 ${isDark ? 'text-gray-500' : 'text-[#777]'
-                    }`}>
-                    <span>Progress</span>
-                    <span>36 min · Intermediate</span>
-                  </div>
-                  <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-[#ecebff]'
-                    }`}>
-                    <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-[#ffb000] via-[#ffd700] to-[#fff0b3]" />
-                  </div>
-                </div>
-
-                <div className={`flex items-center justify-between text-[10px] sm:text-[11px] ${isDark ? 'text-gray-400' : 'text-[#555]'
-                  }`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${isDark ? 'bg-[#ffb000] text-black' : 'bg-[#111] text-white'
-                      }`}>
-                      ◎
-                    </span>
-                    <span>Certificate & on-chain proof of completion</span>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full font-medium ${isDark ? 'bg-white/10 text-white' : 'bg-[#f5f5ff] text-[#111]'
-                    }`}>
-                    Live cohorts
-                  </span>
-                </div>
-              </div>
-
-              {/* Floating XP card */}
-              <div className="absolute -top-4 -right-4 w-28 rounded-2xl bg-[#111] text-white text-[10px] sm:text-[11px] shadow-[0_22px_60px_rgba(15,23,42,0.55)] p-3 flex flex-col gap-1">
-                <span className="text-[9px] uppercase tracking-[0.18em] text-[#ffb000]">XP EARNED</span>
-                <span className="text-sm font-semibold">+320 Nex Points</span>
-                <span className="text-[9px] text-[#ccccff]">This week</span>
-              </div>
-
-              {/* Floating Agents card */}
-              <div className={`absolute -bottom-6 left-0 w-40 rounded-2xl border text-[10px] sm:text-[11px] shadow-[0_18px_55px_rgba(15,23,42,0.22)] p-3 flex items-center gap-2 ${isDark ? 'bg-white/10 border-white/10' : 'bg-white/60 border-black/5'
-                }`}>
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ffb5e8] via-[#c9b8ff] to-[#9ad4ff]" />
-                <div>
-                  <div className={`font-semibold leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                    Nex Agents Lab
-                  </div>
-                  <div className={`text-[9px] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
-                    New cohort starts in 3 days
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* MAIN CONTENT */}
-        <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-0 pb-32">
-
-          {/* STATS SECTION */}
-          <section className="py-16 lg:py-20">
-            <div className="text-center">
-              <div className={`inline-flex items-center gap-2 px-4 py-1 mb-5 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-xs sm:text-sm ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#555]'
-                }`}>
-                <span className="w-5 h-5 rounded-full bg-[#f4e8ff] flex items-center justify-center text-[10px]">🎓</span>
-                <span>Nex Academy · What We Offer</span>
-              </div>
-
-              <h2 className={`text-3xl md:text-4xl font-bold mb-3 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                Build Real Skills
-              </h2>
-              <p className={`max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                From guided learning to hands-on mastery, Nex Academy helps you grow, practice, and progress with confidence.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mt-12 max-w-5xl mx-auto">
-              {stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className={`relative p-9 rounded-[26px] shadow-[0_20px_60px_rgba(15,23,42,0.12)] border ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-white/70'
-                    }`}
-                >
-                  <div className="absolute -top-5 left-6 w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ffb5e8] via-[#c9b8ff] to-[#9ad4ff] shadow-md flex items-center justify-center text-2xl">
-                    {stat.icon}
-                  </div>
-                  <div className="mt-6">
-                    <div className={`text-3xl md:text-4xl font-bold ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                      {stat.value}
-                    </div>
-                    <div className={`mt-1 text-[11px] tracking-[0.18em] ${isDark ? 'text-gray-500' : 'text-[#777]'}`}>
-                      {stat.label}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className={`mt-12 text-center text-[11px] ${isDark ? 'text-gray-600' : 'text-[#999]'}`}>
-              Built on Base.
-              <span className={`font-semibold ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                On-chain experience that feels like Web2
-              </span>
-            </div>
-          </section>
-
-          {/* FEATURED COURSES */}
-          <section className="py-16">
-            <div className="text-center mb-10 md:mb-12">
-              <div className={`inline-flex items-center gap-2 px-4 py-1 mb-4 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-[11px] ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#777]'
-                }`}>
-                <span className="text-base">🎓</span>
-                <span>Our Courses</span>
-              </div>
-              <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                Featured Courses
-              </h2>
-              <p className={`max-w-2xl mx-auto mt-3 text-sm sm:text-base leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                From essential skills to advanced mastery, choose a learning path that fits where you are today.
-
-              </p>
-            </div>
-
-            <FeaturedCourses />
-
-            <div className="flex justify-center mt-10">
-              <Link href="/courses">
-                <button className={`px-8 py-3 rounded-full border text-sm font-semibold shadow-[0_10px_30px_rgba(15,23,42,0.10)] transition transform hover:scale-105 ${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-white border-black/10 text-[#111] hover:bg-[#f7f7ff]'
-                  }`}>
-                  View All Courses
-                </button>
-              </Link>
-            </div>
-          </section>
-
-          {/* TESTIMONIALS */}
-          <section className="py-20 lg:py-24 relative">
-            {!isDark && (
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,#faf6ff,transparent_70%)] pointer-events-none" />
-            )}
-
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
-              <div>
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full shadow-[0_8px_25px_rgba(15,23,42,0.06)] border text-[11px] mb-4 ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white/60 border-black/5 text-[#777]'
-                  }`}>
-                  <span className="text-base">💜</span>
-                  <span>Testimonials</span>
-                </div>
-                <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                  What NexID Learners Are Saying
-                </h2>
-                <p className={`mt-3 text-sm sm:text-base max-w-md leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                  Real learners from around the world using Nex Academy to build real skills.
-
-                </p>
-              </div>
-              <Link href="/courses">
-                <button className={`self-start sm:self-auto px-6 py-3 rounded-full text-sm font-semibold shadow-[0_20px_55px_rgba(15,23,42,0.35)] transition transform hover:scale-105 ${isDark ? 'bg-[#ffb000] text-black hover:bg-[#ffa000]' : 'bg-[#111] text-white hover:bg-[#222]'
-                  }`}>
-                  Start Learning Now
-                </button>
-              </Link>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {testimonials.map((t) => (
-                <div
-                  key={t.name}
-                  className={`group relative p-7 rounded-[28px] backdrop-blur border shadow-[0_15px_45px_rgba(15,23,42,0.10)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_35px_95px_rgba(15,23,42,0.25)] ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/60 border-black/5'
-                    }`}
-                >
-                  <div className={`absolute -top-4 -right-4 w-10 h-10 rounded-2xl bg-gradient-to-br ${t.color} opacity-70 blur-sm transition-all duration-500 group-hover:scale-125`} />
-
-                  <p className={`mb-6 leading-relaxed text-[14px] ${isDark ? 'text-gray-300' : 'text-[#333]'}`}>"{t.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.color}`} />
-                    <div className="text-xs">
-                      <div className={`font-semibold ${isDark ? 'text-white' : 'text-[#111]'}`}>{t.name}</div>
-                      <div className={isDark ? 'text-gray-500' : 'text-[#777]'}>{t.role}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* COURSE TOPICS */}
-          <section className="py-24 relative overflow-hidden">
-            {!isDark && (
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,#f7e9ff,transparent_60%),radial-gradient(circle_at_80%_120%,#e1f0ff,transparent_60%)] opacity-70 pointer-events-none" />
-            )}
-
-            <div className="relative z-10 text-center mb-12">
-              <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-[12px] mb-4 ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#777]'
-                }`}>
-                <span className="text-base">📚</span>
-                <span>Course Topics</span>
-              </div>
-
-              <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                Explore Topics
-              </h2>
-              <p className={`mt-3 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                Discover micro-courses and deep dives designed to build real skills.              </p>
-            </div>
-
-            <div className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
-              {topics.map((topic) => (
-                <div
-                  key={topic}
-                  className={`group relative p-4 sm:p-5 rounded-[22px] border shadow-[0_12px_35px_rgba(15,23,42,0.08)] backdrop-blur transition duration-500 hover:-translate-y-2 hover:shadow-[0_25px_70px_rgba(15,23,42,0.18)] cursor-pointer ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/50 border-black/5'
-                    }`}
-                >
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-xl bg-gradient-to-br from-[#ffbdf2] to-[#cbb8ff] blur-sm opacity-60 group-hover:scale-125 transition duration-500" />
-                  <span className={`relative z-10 text-[13px] sm:text-[14px] font-medium tracking-[-0.01em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                    {topic}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* FAQ SECTION */}
-          <section className="py-24 relative overflow-hidden">
-            {!isDark && (
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,#f7e9ff,transparent_60%),radial-gradient(circle_at_80%_120%,#e1f0ff,transparent_60%)] opacity-70 pointer-events-none" />
-            )}
-
-            <div className="relative z-10 text-center mb-12">
-              <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full shadow-[0_10px_30px_rgba(15,23,42,0.06)] border text-[11px] mb-4 ${isDark ? 'bg-white/10 border-white/10 text-gray-400' : 'bg-white border-black/5 text-[#777]'
-                }`}>
-                <span className="text-base">❓</span>
-                <span>FAQ</span>
-              </div>
-              <h2 className={`text-3xl md:text-4xl font-bold tracking-[-0.04em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                Frequently Asked Questions
-              </h2>
-            </div>
-
-            <div className="max-w-3xl mx-auto space-y-4">
-              {faqItems.map((item, idx) => (
-                <div
-                  key={item.q}
-                  onClick={() => setOpenFAQ(openFAQ === idx ? null : idx)}
-                  className={`group rounded-2xl border shadow-[0_12px_35px_rgba(15,23,42,0.10)] p-6 cursor-pointer transition-all duration-500 hover:shadow-[0_22px_55px_rgba(15,23,42,0.18)] ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/60 border-black/5'
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm sm:text-base font-medium tracking-[-0.01em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                      {item.q}
-                    </span>
-                    <span className={`text-xl transition-transform duration-300 ${openFAQ === idx ? "rotate-180" : ""} ${isDark ? 'text-gray-500' : 'text-[#999]'}`}>
-                      {openFAQ === idx ? "−" : "+"}
-                    </span>
-                  </div>
-                  <div className={`grid transition-all duration-500 overflow-hidden ${openFAQ === idx ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"}`}>
-                    <div className={`overflow-hidden text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-[#555]'}`}>
-                      {item.a}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </main>
-
-        {/* FOOTER */}
-        <footer className={`w-full pt-28 pb-10 text-center border-t ${isDark ? 'bg-[#0a0a0f] border-white/10' : 'bg-[#fafafa] border-black/5'
-          }`}>
-          <h2 className={`text-3xl md:text-4xl font-bold mb-4 tracking-[-0.03em] ${isDark ? 'text-white' : 'text-[#111]'}`}>
-            Level Up Your Skills & Knowledge
-            <br />
-            with Nex Academy Today          </h2>
-
-          <Link href="/courses">
-            <button className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark ? 'bg-[#ffb000] text-black hover:bg-[#ffa000]' : 'bg-[#111] text-white hover:bg-[#222]'
-              }`}>
-              Start Learning Now
-            </button>
-          </Link>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10">
-            <a
-              href="https://safuverse.gitbook.io/safuverse-docs/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <button className="px-8 py-3 rounded-full border font-semibold font-bold transition text-sm border-black/80 text-[#111] bg-white hover:bg-[#f5f5f5] dark:border-white/20 dark:text-white dark:bg-white/5 dark:hover:bg-white/10">
-                Read Docs
-              </button>
-            </a>
-
-            <a
-              href="https://names.idverse.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <button className="px-8 py-3 rounded-full shadow-sm border flex font-bold items-center gap-2 font-semibold transition text-sm bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5] dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10">
-                Mint .id
-              </button>
-            </a>
-
-            <a
-              href="https://safupad.xyz"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <button className="px-8 py-3 rounded-full shadow-sm border font-bold flex items-center gap-2 font-semibold transition text-sm bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5] dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10">
-                Try SafuPad
-              </button>
-            </a>
-
-            <a
-              href="https://safuverse.gitbook.io/safuverse-docs/security/audits"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <button className="px-8 py-3 rounded-full shadow-sm border flex font-bold items-center gap-2 font-semibold transition text-sm bg-white border-black/10 text-[#111] hover:bg-[#f5f5f5] dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10">
-                Audit Report
-              </button>
-            </a>
-          </div>
-
-
-          <p className={`mt-12 text-[11px] tracking-[0.18em] uppercase ${isDark ? 'text-gray-600' : 'text-[#777]'}`}>
-            Nex Academy © 2025 · Designed by Level3 Labs
-          </p>
-        </footer>
-
-        <ChatWidget />
-      </div>
-    </div>
-  );
-};
-
-export default Home;

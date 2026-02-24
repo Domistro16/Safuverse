@@ -23,12 +23,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
 
       {/* Floating Profile Button - Bottom Left */}
       <Link
-        href="/profile"
+        href="/academy"
         className={`fixed bottom-6 left-6 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl ${isDark
           ? "bg-[#ffb000] text-black hover:bg-[#ffa000]"
           : "bg-[#111] text-white hover:bg-[#333]"
           }`}
-        aria-label="Go to Profile"
+        aria-label="Go to Academy"
       >
         <User className="w-5 h-5" />
       </Link>
@@ -51,7 +51,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
           <br />
           with Nex Academy Today        </h2>
 
-        <Link href="/courses">
+        <Link href="/academy">
           <button
             className={`px-10 py-4 rounded-full font-semibold text-base md:text-lg transition shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${isDark
               ? "bg-[#ffb000] text-black hover:bg-[#ffa000]"

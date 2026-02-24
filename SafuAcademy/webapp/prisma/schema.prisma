@@ -24,6 +24,11 @@ model User {
   scormRuns        ScormRun[]
   scoreActionNonces ScoreActionNonce[]
   transactions     BlockchainTx[]
+
+  campaignParticipations        CampaignParticipant[]
+  submittedCampaignRequests     CampaignRequest[]          @relation("SubmittedCampaignRequests")
+  reviewedCampaignRequests      CampaignRequest[]          @relation("ReviewedCampaignRequests")
+  executedCampaignDistributions CampaignRewardDistribution[] @relation("CampaignDistributionExecutor")
 }
 
 model Course {
@@ -245,4 +250,112 @@ enum TxType {
   ENROLL
   COMPLETE
   PROGRESS_UPDATE
+}
+
+enum CampaignTier {
+  STANDARD
+  PREMIUM
+  ECOSYSTEM
+}
+
+enum CampaignStatus {
+  DRAFT
+  LIVE
+  ENDED
+  ARCHIVED
+}
+
+enum CampaignRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Campaign {
+  id                  Int            @id @default(autoincrement())
+  slug                String         @unique
+  title               String
+  objective           String         @db.Text
+  sponsorName         String
+  sponsorNamespace    String?
+  category            String?
+  tier                CampaignTier   @default(STANDARD)
+  prizePoolUsdc       Decimal        @db.Decimal(18, 6)
+  additionalRewards   String?
+  keyTakeaways        String[]       @default([])
+  status              CampaignStatus @default(DRAFT)
+  isPublished         Boolean        @default(false)
+  startAt             DateTime?
+  endAt               DateTime?
+  escrowAddress       String?
+  onChainCampaignId   Int?
+  requestId           String?        @unique
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  request             CampaignRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  participants        CampaignParticipant[]
+  distributions       CampaignRewardDistribution[]
+
+  @@index([status, isPublished])
+  @@index([sponsorName])
+}
+
+model CampaignRequest {
+  id                 String                @id @default(cuid())
+  submittedById      String?
+  reviewedById       String?
+  partnerName        String
+  partnerNamespace   String?
+  campaignTitle      String
+  primaryObjective   String                @db.Text
+  tier               CampaignTier
+  prizePoolUsdc      Decimal               @db.Decimal(18, 6)
+  briefFileName      String?
+  status             CampaignRequestStatus @default(PENDING)
+  reviewNotes        String?               @db.Text
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  submittedBy        User?                 @relation("SubmittedCampaignRequests", fields: [submittedById], references: [id], onDelete: SetNull)
+  reviewedBy         User?                 @relation("ReviewedCampaignRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
+  campaign           Campaign?
+
+  @@index([status, createdAt])
+  @@index([partnerName])
+}
+
+model CampaignParticipant {
+  id                String    @id @default(cuid())
+  campaignId        Int
+  userId            String
+  score             Int       @default(0)
+  rank              Int?
+  rewardAmountUsdc  Decimal?  @db.Decimal(18, 6)
+  rewardTxHash      String?
+  enrolledAt        DateTime  @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  campaign          Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId, rank])
+}
+
+model CampaignRewardDistribution {
+  id                  String    @id @default(cuid())
+  campaignId          Int
+  executedById        String?
+  txHash              String?
+  totalDistributedUsdc Decimal  @db.Decimal(18, 6)
+  recipientCount      Int
+  createdAt           DateTime  @default(now())
+
+  campaign            Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  executedBy          User?     @relation("CampaignDistributionExecutor", fields: [executedById], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, createdAt])
 }

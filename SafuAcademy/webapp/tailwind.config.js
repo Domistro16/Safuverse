@@ -21,6 +21,21 @@ module.exports = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        nexid: {
+          base: "#030303",
+          surface: "#0a0a0a",
+          border: "#1a1a1a",
+          hover: "#111111",
+          gold: "#ffb000",
+          text: "#f5f5f5",
+          muted: "#8a8a8a",
+          success: "#22c55e",
+          danger: "#ef4444",
+          alert: "#f97316",
+          rank1: "#FFD700",
+          rank2: "#C0C0C0",
+          rank3: "#CD7F32",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -63,11 +78,21 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
+        sans: ["Inter", "sans-serif"],
+        display: ["Satoshi", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
         gilroy: ["Gilroy-Regular", "sans-serif"],
         bold: ["Gilroy-Bold", "sans-serif"],
         semibold: ["Gilroy-Medium", "sans-serif"],
         light: ["Gilroy-Light", "sans-serif"],
         extrabold: ["Gilroy-Heavy", "sans-serif"],
+      },
+      boxShadow: {
+        premium: "0 20px 40px -10px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.5)",
+        "gold-glow": "0 0 30px -5px rgba(255,176,0,0.2)",
+        "gold-glow-lg": "0 0 60px -10px rgba(255,176,0,0.35)",
+        "success-glow": "0 0 40px -5px rgba(34,197,94,0.3)",
+        "inner-glaze": "inset 0 1px 1px rgba(255,255,255,0.05)",
       },
       keyframes: {
         "accordion-down": {

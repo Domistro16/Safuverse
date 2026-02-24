@@ -59,11 +59,11 @@ export const NavBar: React.FC = () => {
         <NavLink href="/" isDark={isDark}>
           Home
         </NavLink>
-        <NavLink href="/courses" isDark={isDark}>
-          All Courses
+        <NavLink href="/academy" isDark={isDark}>
+          Academy
         </NavLink>
-        <NavLink href="/points" isDark={isDark}>
-          Points
+        <NavLink href="/academy/leaderboard" isDark={isDark}>
+          Leaderboard
         </NavLink>
         <NavLink href="/certificates" isDark={isDark}>
           Certificates
@@ -135,20 +135,20 @@ export const NavBar: React.FC = () => {
             Home
           </Link>
           <Link
-            href="/courses"
+            href="/academy"
             onClick={() => setMobileMenuOpen(false)}
             className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? "text-gray-300 hover:bg-white/5" : "text-[#555]"
               }`}
           >
-            All Courses
+            Academy
           </Link>
           <Link
-            href="/points"
+            href="/academy/leaderboard"
             onClick={() => setMobileMenuOpen(false)}
             className={`py-3 px-4 rounded-xl text-sm transition hover:bg-black/5 ${isDark ? "text-gray-300 hover:bg-white/5" : "text-[#555]"
               }`}
           >
-            Points
+            Leaderboard
           </Link>
           <Link
             href="/certificates"

@@ -29,7 +29,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       viewport={{ once: true, amount: 0.2 }}
     >
       <Link
-        href={`/courses/${course.id}`}
+        href={`/academy/campaign/${course.id}`}
         className={`group relative flex flex-col h-full rounded-[28px] border overflow-hidden transition duration-500 hover:-translate-y-3 ${isDark
           ? 'bg-[#12121a] border-[#2a2a3a] shadow-[0_18px_55px_rgba(0,0,0,0.4)] hover:shadow-[0_40px_110px_rgba(255,251,0,0.15)] hover:border-[#ffb000]/50'
           : 'bg-white/70 border-black/5 shadow-[0_18px_55px_rgba(15,23,42,0.10)] hover:shadow-[0_40px_110px_rgba(15,23,42,0.32)] hover:border-[#fcd34d]'

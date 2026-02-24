@@ -111,13 +111,12 @@ export function WalletModal({
                     {/* View Profile */}
                     <button
                         onClick={() => {
-                            // If there's a profile page, navigate to it. Assuming /profile exists or similar
-                            router.push('/profile');
+                            router.push('/academy');
                         }}
                         className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 transition-all hover:scale-105 group"
                     >
                         <ExternalLink className="mb-2 text-[#ffb000] group-hover:text-white transition-colors" size={20} />
-                        <span className="text-sm font-medium">View Profile</span>
+                        <span className="text-sm font-medium">Open Academy</span>
                     </button>
 
                     {/* Export Wallet - Conditional */}

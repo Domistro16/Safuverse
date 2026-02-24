@@ -115,7 +115,7 @@ const FaqSection = () => {
               </a>
             </Button>
             <Link
-              href="/courses/all"
+              href="/academy"
               className="mt-4 text-sm text-primary hover:underline"
             >
               Or Start Learning Now
