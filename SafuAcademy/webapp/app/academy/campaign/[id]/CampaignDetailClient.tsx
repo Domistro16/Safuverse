@@ -53,6 +53,11 @@ type Module = {
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200";
 
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+}
+
 function shortAddress(value: string) {
   if (value.length < 12) return value;
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
@@ -83,6 +88,15 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const [activeModule, setActiveModule] = useState(0);
   const [completedUntil, setCompletedUntil] = useState(-1);
 
+  // Enrollment state
+  const [enrolled, setEnrolled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollmentScore, setEnrollmentScore] = useState(0);
+  const [enrollmentChecked, setEnrollmentChecked] = useState(false);
+  const [completedAt, setCompletedAt] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
+
+  // Load campaign data
   useEffect(() => {
     let active = true;
 
@@ -115,6 +129,46 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
     };
   }, [campaignId]);
 
+  // Check enrollment status
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token || !data) return;
+
+    fetch(`/api/campaigns/${campaignId}/enroll`, { headers: authHeaders() })
+      .then(async (res) => {
+        if (res.ok) {
+          const body = await res.json();
+          setEnrolled(body.enrolled);
+          if (body.participant) {
+            setEnrollmentScore(body.participant.score ?? 0);
+            if (body.participant.completedAt) {
+              setCompletedAt(body.participant.completedAt);
+            }
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setEnrollmentChecked(true));
+  }, [campaignId, data]);
+
+  async function handleEnroll() {
+    setEnrolling(true);
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/enroll`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      if (res.ok) {
+        const body = await res.json();
+        setEnrolled(body.enrolled);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setEnrolling(false);
+    }
+  }
+
   if (loading) {
     return (
       <section className="mx-auto w-full max-w-[1200px] px-6 pb-12 pt-10 text-sm text-nexid-muted">
@@ -138,6 +192,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
 
   const { campaign, leaderboard, onChain } = data;
   const isEnded = campaign.status === "ENDED";
+  const isLive = campaign.status === "LIVE";
   const modules: Module[] =
     Array.isArray(campaign.modules) && campaign.modules.length > 0
       ? campaign.modules
@@ -146,6 +201,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const campaignImage = campaign.coverImageUrl || FALLBACK_IMAGE;
   const startDate = formatDate(campaign.startAt);
   const endDate = formatDate(campaign.endAt);
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-6 pb-12 pt-8 lg:px-12">
@@ -175,6 +231,30 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
               {startDate ? `Start: ${startDate}` : null}
               {startDate && endDate ? " · " : null}
               {endDate ? `End: ${endDate}` : null}
+            </div>
+          ) : null}
+
+          {isLive && hasToken && enrollmentChecked ? (
+            <div className="mt-4">
+              {enrolled ? (
+                <div className="rounded border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-400">
+                  Enrolled · Score: {enrollmentScore}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleEnroll}
+                  disabled={enrolling}
+                  className="w-full rounded bg-nexid-gold py-2.5 text-sm font-bold text-black disabled:opacity-50"
+                >
+                  {enrolling ? "Enrolling..." : "Join Campaign"}
+                </button>
+              )}
+            </div>
+          ) : null}
+          {isLive && !hasToken ? (
+            <div className="mt-4 text-[10px] text-nexid-muted">
+              Connect wallet to enroll in this campaign.
             </div>
           ) : null}
         </div>
@@ -238,19 +318,50 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                           );
                         })}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCompletedUntil((prev) => Math.max(prev, activeModule));
-                          const next = activeModule + 1;
-                          if (next < modules.length && modules[next]?.type !== "locked") {
-                            setActiveModule(next);
-                          }
-                        }}
-                        className="rounded bg-nexid-gold px-6 py-2.5 text-sm font-bold text-black"
-                      >
-                        Mark Complete
-                      </button>
+                      {enrolled && !completedAt ? (
+                        <button
+                          type="button"
+                          disabled={completing}
+                          onClick={async () => {
+                            const newCompleted = Math.max(completedUntil, activeModule);
+                            setCompletedUntil(newCompleted);
+                            const next = activeModule + 1;
+                            if (next < modules.length && modules[next]?.type !== "locked") {
+                              setActiveModule(next);
+                            }
+
+                            // If all modules are now done, call the complete endpoint (DB + on-chain)
+                            if (newCompleted >= modules.length - 1) {
+                              setCompleting(true);
+                              try {
+                                const res = await fetch(`/api/campaigns/${campaignId}/complete`, {
+                                  method: "POST",
+                                  headers: authHeaders(),
+                                });
+                                if (res.ok) {
+                                  const body = await res.json();
+                                  setCompletedAt(body.participant?.completedAt ?? new Date().toISOString());
+                                }
+                              } catch {
+                                // silently fail
+                              } finally {
+                                setCompleting(false);
+                              }
+                            }
+                          }}
+                          className="rounded bg-nexid-gold px-6 py-2.5 text-sm font-bold text-black disabled:opacity-50"
+                        >
+                          {completing ? "Completing..." : completedUntil >= modules.length - 1 ? "All Modules Complete" : "Mark Complete"}
+                        </button>
+                      ) : enrolled && completedAt ? (
+                        <div className="rounded border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs text-green-400">
+                          Campaign Completed on {formatDate(completedAt) ?? "N/A"}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-nexid-muted">
+                          Enroll in this campaign to track module progress.
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="text-sm text-nexid-muted">

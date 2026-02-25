@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useAccount } from "wagmi";
+import { useENSName } from "@/hooks/getPrimaryName";
 
 interface AcademyLayoutProps {
   children: ReactNode;
@@ -14,6 +16,17 @@ function navClass(active: boolean) {
 
 export default function AcademyLayout({ children }: AcademyLayoutProps) {
   const pathname = usePathname();
+  const { address } = useAccount();
+  const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (domainName && typeof domainName === "string" && domainName.length > 0) {
+      setDisplayName(domainName);
+    } else if (address) {
+      setDisplayName(`${address.slice(0, 6)}...${address.slice(-4)}`);
+    }
+  }, [domainName, address]);
 
   const inBrowse = pathname === "/academy" || pathname.startsWith("/academy/campaign/");
   const inFaq = pathname.startsWith("/academy/faq");
@@ -43,10 +56,12 @@ export default function AcademyLayout({ children }: AcademyLayoutProps) {
           </nav>
 
           <div className="ml-auto flex items-center gap-4">
-            <div className="hidden items-center gap-2.5 rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs text-white sm:flex">
-              <span className="h-2 w-2 rounded-full bg-green-500" />
-              founder<span className="text-nexid-gold">.id</span>
-            </div>
+            {displayName ? (
+              <div className="hidden items-center gap-2.5 rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs text-white sm:flex">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                {displayName}
+              </div>
+            ) : null}
             <Link href="/sovereign-terminal" className="rounded-lg bg-white px-5 py-2 text-sm font-bold text-black">
               Dashboard
             </Link>
