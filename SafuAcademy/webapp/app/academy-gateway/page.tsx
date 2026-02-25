@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useLoginWithSiwe } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
+import { useENSName } from "@/hooks/getPrimaryName";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -16,6 +17,13 @@ export default function AcademyGatewayPage() {
   const [networkStatus, setNetworkStatus] = useState<"disconnected" | "syncing" | "connected">("disconnected");
   const [redirectCount, setRedirectCount] = useState(3);
   const [error, setError] = useState("");
+  const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
+
+  const displayName = useMemo(() => {
+    if (domainName && typeof domainName === "string" && domainName.length > 0) return domainName;
+    if (address) return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    return "";
+  }, [domainName, address]);
 
   const orbClass = useMemo(() => {
     if (networkStatus === "syncing") return "orb-gold";
@@ -213,7 +221,7 @@ export default function AcademyGatewayPage() {
               Primary Namespace
             </div>
             <div className="font-display text-xl font-bold text-white">
-              nadya<span className="text-nexid-gold">.id</span>
+              {displayName}
             </div>
             <div className="font-mono text-[10px] text-nexid-muted">
               {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ""}
@@ -225,7 +233,7 @@ export default function AcademyGatewayPage() {
             </label>
             <input
               type="text"
-              placeholder="Defaults to nadya.id"
+              placeholder={displayName ? `Defaults to ${displayName}` : "Enter alias"}
               className="gateway-input"
             />
           </div>
@@ -253,7 +261,7 @@ export default function AcademyGatewayPage() {
               <span className="font-mono text-[10px] text-green-400">Granted</span>
             </div>
             <div className="break-all font-mono text-xs text-white/80">
-              SignMessage: "Authenticate session for nadya.id. Valid for 24h."
+              SignMessage: &quot;Authenticate session for {displayName || "wallet"}. Valid for 24h.&quot;
             </div>
           </div>
           <button

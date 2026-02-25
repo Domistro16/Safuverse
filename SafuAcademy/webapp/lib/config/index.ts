@@ -19,6 +19,10 @@ export const config = {
     relayerPrivateKey: process.env.RELAYER_PRIVATE_KEY,
     ownerPrivateKey: process.env.OWNER_PRIVATE_KEY, // For Admin course management
 
+    // Campaign contracts
+    nexidCampaignsAddress: process.env.NEXID_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_NEXID_CAMPAIGNS_ADDRESS || '',
+    partnerCampaignsAddress: process.env.PARTNER_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_PARTNER_CAMPAIGNS_ADDRESS || '',
+
     // S3/R2 Storage
     s3Region: process.env.S3_REGION || 'auto',
     s3Endpoint: process.env.S3_ENDPOINT,
