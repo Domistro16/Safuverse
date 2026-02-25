@@ -1,13 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { useAccount } from "wagmi";
 import AdminShell from "../_components/AdminShell";
+import {
+  useAdminContract,
+  type NexIDCreateParams,
+  type PartnerCreateParams,
+} from "@/hooks/useAdminContract";
 
 type OwnerMode = "NEXID" | "PARTNER";
 
 type ModuleItem = { type: "video" | "task" | "locked"; title: string };
 
 export default function AdminBuilderPage() {
+  const { address } = useAccount();
+  const {
+    createCampaignOnChain,
+    loading: contractLoading,
+    txHash,
+    error: contractError,
+    isConfigured,
+  } = useAdminContract();
+
   const [ownerMode, setOwnerMode] = useState<OwnerMode>("PARTNER");
   const [title, setTitle] = useState("");
   const [objective, setObjective] = useState("");
@@ -21,11 +36,13 @@ export default function AdminBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [txStep, setTxStep] = useState<string | null>(null);
 
   async function submitCampaign(status: "DRAFT" | "LIVE") {
     setSaving(true);
     setError(null);
     setMessage(null);
+    setTxStep(null);
 
     try {
       const token = localStorage.getItem("auth_token");
@@ -45,6 +62,8 @@ export default function AdminBuilderPage() {
         .map((item) => item.trim())
         .filter(Boolean);
 
+      // Step 1: Create campaign in database
+      setTxStep("Creating campaign in database...");
       const res = await fetch("/api/admin/campaigns", {
         method: "POST",
         headers: {
@@ -74,13 +93,85 @@ export default function AdminBuilderPage() {
         return;
       }
 
-      setMessage(
-        `Campaign created: ${data?.campaign?.title ?? title} (${data?.campaign?.status ?? status})`,
-      );
+      const dbCampaignId = data?.campaign?.id;
+
+      // Step 2: Create campaign on-chain (admin signs tx)
+      const contractType = ownerMode === "NEXID" ? "NEXID_CAMPAIGNS" : "PARTNER_CAMPAIGNS";
+      if (isConfigured(contractType)) {
+        setTxStep("Please confirm the transaction in your wallet...");
+
+        let contractResult: { onChainCampaignId: number; txHash: string } | null = null;
+
+        if (contractType === "NEXID_CAMPAIGNS") {
+          const params: NexIDCreateParams = {
+            title: title.trim(),
+            description: objective.trim(),
+            longDescription: objective.trim(),
+            instructor: resolvedSponsor,
+            objectives: takeaways,
+            prerequisites: [],
+            category: tier,
+            level: "Beginner",
+            thumbnailUrl: coverImageUrl.trim() || "",
+            duration: "4 weeks",
+            totalLessons: BigInt(modules.length || 1),
+          };
+          contractResult = await createCampaignOnChain("NEXID_CAMPAIGNS", params);
+        } else {
+          const params: PartnerCreateParams = {
+            title: title.trim(),
+            description: objective.trim(),
+            category: tier,
+            level: "Beginner",
+            thumbnailUrl: coverImageUrl.trim() || "",
+            duration: "4 weeks",
+            totalTasks: BigInt(modules.length || 1),
+            sponsor: (address || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+            sponsorName: resolvedSponsor,
+            sponsorLogo: coverImageUrl.trim() || "",
+            prizePool: BigInt(Math.round(prizePoolUsdc * 1e6)),
+            startTime: BigInt(Math.floor(Date.now() / 1000)),
+            endTime: BigInt(Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60), // +30 days
+          };
+          contractResult = await createCampaignOnChain("PARTNER_CAMPAIGNS", params);
+        }
+
+        // Step 3: Store on-chain campaign ID in database
+        if (contractResult && dbCampaignId) {
+          setTxStep("Storing on-chain ID in database...");
+          await fetch(`/api/admin/campaigns/${dbCampaignId}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              onChainCampaignId: contractResult.onChainCampaignId,
+            }),
+          });
+        }
+
+        if (contractResult) {
+          setMessage(
+            `Campaign created on-chain! ID: ${contractResult.onChainCampaignId} | Tx: ${contractResult.txHash.slice(0, 10)}...`,
+          );
+        } else {
+          setMessage(
+            `Campaign saved to DB (${data?.campaign?.title ?? title}). Contract tx was skipped or failed.`,
+          );
+        }
+      } else {
+        setMessage(
+          `Campaign created in DB: ${data?.campaign?.title ?? title} (${data?.campaign?.status ?? status}). Contract not configured — skipped on-chain creation.`,
+        );
+      }
+
+      setTxStep(null);
     } catch {
       setError("Failed to create campaign.");
     } finally {
       setSaving(false);
+      setTxStep(null);
     }
   }
 
@@ -99,11 +190,10 @@ export default function AdminBuilderPage() {
             <button
               type="button"
               onClick={() => setOwnerMode("NEXID")}
-              className={`rounded-lg border p-4 text-left ${
-                ownerMode === "NEXID"
-                  ? "border-nexid-gold bg-nexid-gold/10"
-                  : "border-[#333] bg-[#111]"
-              }`}
+              className={`rounded-lg border p-4 text-left ${ownerMode === "NEXID"
+                ? "border-nexid-gold bg-nexid-gold/10"
+                : "border-[#333] bg-[#111]"
+                }`}
             >
               <div className="text-sm font-bold text-white">NexID Internal</div>
               <div className="mt-1 text-[11px] text-nexid-muted">
@@ -113,11 +203,10 @@ export default function AdminBuilderPage() {
             <button
               type="button"
               onClick={() => setOwnerMode("PARTNER")}
-              className={`rounded-lg border p-4 text-left ${
-                ownerMode === "PARTNER"
-                  ? "border-nexid-gold bg-nexid-gold/10"
-                  : "border-[#333] bg-[#111]"
-              }`}
+              className={`rounded-lg border p-4 text-left ${ownerMode === "PARTNER"
+                ? "border-nexid-gold bg-nexid-gold/10"
+                : "border-[#333] bg-[#111]"
+                }`}
             >
               <div className="text-sm font-bold text-white">Partner Sponsored</div>
               <div className="mt-1 text-[11px] text-nexid-muted">
@@ -275,13 +364,20 @@ export default function AdminBuilderPage() {
           </div>
 
           {error ? <div className="text-xs text-red-500">{error}</div> : null}
+          {contractError ? <div className="text-xs text-red-500">{contractError}</div> : null}
+          {txStep ? <div className="text-xs text-nexid-gold animate-pulse">{txStep}</div> : null}
           {message ? <div className="text-xs text-green-400">{message}</div> : null}
+          {txHash ? (
+            <div className="text-[10px] font-mono text-nexid-muted">
+              Tx: <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-nexid-gold hover:underline">{String(txHash).slice(0, 14)}...</a>
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-3 border-t border-[#1a1a1a] pt-5">
             <button
               type="button"
               onClick={() => submitCampaign("DRAFT")}
-              disabled={saving}
+              disabled={saving || contractLoading}
               className="px-4 py-2 border border-[#333] text-white text-xs font-medium rounded hover:bg-[#111] disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save Draft"}
@@ -289,7 +385,7 @@ export default function AdminBuilderPage() {
             <button
               type="button"
               onClick={() => submitCampaign("LIVE")}
-              disabled={saving}
+              disabled={saving || contractLoading}
               className="px-5 py-2 bg-nexid-gold text-black text-xs font-bold rounded disabled:opacity-60"
             >
               {saving ? "Publishing..." : "Publish Live"}

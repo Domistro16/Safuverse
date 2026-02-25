@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAccount } from "wagmi";
 import AdminShell from "../_components/AdminShell";
+import {
+  useAdminContract,
+  type PartnerCreateParams,
+  type NexIDCreateParams,
+} from "@/hooks/useAdminContract";
 
 type Project = {
   id: string;
@@ -14,6 +20,13 @@ type Project = {
   escrow: string;
   students: string;
   live: boolean;
+  contractType?: string;
+  onChainCampaignId?: number | null;
+  prizePoolUsdc?: number;
+  objective?: string;
+  coverImageUrl?: string;
+  modules?: { type: string; title: string }[];
+  keyTakeaways?: string[];
 };
 
 type CampaignRequest = {
@@ -45,6 +58,16 @@ function shortAddress(value: string) {
 }
 
 export default function AdminProjectsPage() {
+  const { address } = useAccount();
+  const {
+    createCampaignOnChain,
+    deactivateCampaignOnChain,
+    loading: contractLoading,
+    txHash,
+    error: contractError,
+    isConfigured,
+  } = useAdminContract();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -54,6 +77,8 @@ export default function AdminProjectsPage() {
   const [requestsError, setRequestsError] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [txStep, setTxStep] = useState<string | null>(null);
+  const [txMessage, setTxMessage] = useState<string | null>(null);
   const selected = projects.find((p) => p.id === selectedId) ?? projects[0] ?? null;
 
   async function fetchCampaigns() {
@@ -70,15 +95,8 @@ export default function AdminProjectsPage() {
         return;
       }
 
-      const mapped: Project[] = data.campaigns.map((campaign: {
-        id: number;
-        sponsorName: string;
-        title: string;
-        tier: string;
-        status: string;
-        prizePoolUsdc: string;
-        participantCount?: number;
-      }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped: Project[] = data.campaigns.map((campaign: any) => {
         const status =
           campaign.status === "LIVE"
             ? "Active"
@@ -99,6 +117,13 @@ export default function AdminProjectsPage() {
           escrow: `$${Number(campaign.prizePoolUsdc).toLocaleString()}`,
           students: participantCount > 0 ? participantCount.toLocaleString() : "-",
           live: campaign.status === "LIVE",
+          contractType: campaign.contractType,
+          onChainCampaignId: campaign.onChainCampaignId ?? null,
+          prizePoolUsdc: Number(campaign.prizePoolUsdc),
+          objective: campaign.objective,
+          coverImageUrl: campaign.coverImageUrl,
+          modules: campaign.modules,
+          keyTakeaways: campaign.keyTakeaways,
         } as Project;
       });
 
@@ -163,6 +188,8 @@ export default function AdminProjectsPage() {
   async function reviewRequest(id: string, decision: "APPROVE" | "REJECT") {
     setRequestActionId(id);
     setRequestsError(null);
+    setTxStep(null);
+    setTxMessage(null);
     try {
       const token = localStorage.getItem("auth_token");
       if (!token) {
@@ -170,6 +197,8 @@ export default function AdminProjectsPage() {
         return;
       }
 
+      // Step 1: Approve/reject in DB
+      setTxStep(decision === "APPROVE" ? "Approving and creating campaign in DB..." : "Rejecting request...");
       const res = await fetch(`/api/admin/campaign-requests/${id}`, {
         method: "PATCH",
         headers: {
@@ -187,6 +216,77 @@ export default function AdminProjectsPage() {
         return;
       }
 
+      // Step 2: If approved, also create on-chain
+      if (decision === "APPROVE" && data?.campaign?.id) {
+        const dbCampaignId = data.campaign.id;
+        const campaignData = data.campaign;
+        // Determine contract type (default to PARTNER_CAMPAIGNS for partner campaign requests)
+        const contractType = (campaignData.contractType || "PARTNER_CAMPAIGNS").toUpperCase() as "NEXID_CAMPAIGNS" | "PARTNER_CAMPAIGNS";
+
+        if (isConfigured(contractType)) {
+          setTxStep("Please confirm the on-chain createCampaign transaction in your wallet...");
+
+          let contractResult: { onChainCampaignId: number; txHash: string } | null = null;
+
+          if (contractType === "NEXID_CAMPAIGNS") {
+            const params: NexIDCreateParams = {
+              title: campaignData.title || "",
+              description: campaignData.objective || "",
+              longDescription: campaignData.objective || "",
+              instructor: campaignData.sponsorName || "NexID",
+              objectives: campaignData.keyTakeaways || [],
+              prerequisites: [],
+              category: campaignData.tier || "STANDARD",
+              level: "Beginner",
+              thumbnailUrl: campaignData.coverImageUrl || "",
+              duration: "4 weeks",
+              totalLessons: BigInt(campaignData.modules?.length || 1),
+            };
+            contractResult = await createCampaignOnChain("NEXID_CAMPAIGNS", params);
+          } else {
+            const params: PartnerCreateParams = {
+              title: campaignData.title || "",
+              description: campaignData.objective || "",
+              category: campaignData.tier || "STANDARD",
+              level: "Beginner",
+              thumbnailUrl: campaignData.coverImageUrl || "",
+              duration: "4 weeks",
+              totalTasks: BigInt(campaignData.modules?.length || 1),
+              sponsor: (address || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+              sponsorName: campaignData.sponsorName || "",
+              sponsorLogo: campaignData.coverImageUrl || "",
+              prizePool: BigInt(Math.round((Number(campaignData.prizePoolUsdc) || 0) * 1e6)),
+              startTime: BigInt(Math.floor(Date.now() / 1000)),
+              endTime: BigInt(Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60),
+            };
+            contractResult = await createCampaignOnChain("PARTNER_CAMPAIGNS", params);
+          }
+
+          // Step 3: Store on-chain campaign ID in DB
+          if (contractResult) {
+            setTxStep("Storing on-chain ID in database...");
+            await fetch(`/api/admin/campaigns/${dbCampaignId}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                onChainCampaignId: contractResult.onChainCampaignId,
+              }),
+            });
+            setTxMessage(
+              `Campaign created on-chain! ID: ${contractResult.onChainCampaignId} | Tx: ${contractResult.txHash.slice(0, 10)}...`,
+            );
+          } else {
+            setTxMessage("Campaign created in DB but contract tx failed or was rejected.");
+          }
+        } else {
+          setTxMessage("Campaign created in DB. Contract not configured — skipped on-chain.");
+        }
+      }
+
+      setTxStep(null);
       await fetchCampaignRequests();
       if (decision === "APPROVE") {
         await fetchCampaigns();
@@ -195,7 +295,48 @@ export default function AdminProjectsPage() {
       setRequestsError("Failed to review request.");
     } finally {
       setRequestActionId(null);
+      setTxStep(null);
     }
+  }
+
+  async function deactivateCampaign(project: Project) {
+    if (!project.onChainCampaignId && project.onChainCampaignId !== 0) {
+      setRequestsError("Campaign has no on-chain ID — cannot deactivate on-chain.");
+      return;
+    }
+
+    const contractType = (project.contractType || "PARTNER_CAMPAIGNS") as "NEXID_CAMPAIGNS" | "PARTNER_CAMPAIGNS";
+    if (!isConfigured(contractType)) {
+      setRequestsError(`${contractType} contract not configured.`);
+      return;
+    }
+
+    setTxStep("Please confirm the deactivateCampaign transaction in your wallet...");
+    setTxMessage(null);
+
+    const result = await deactivateCampaignOnChain(contractType, BigInt(project.onChainCampaignId));
+
+    if (result) {
+      // Update DB status to ARCHIVED
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        await fetch(`/api/admin/campaigns/${project.numericId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: "ARCHIVED" }),
+        });
+      }
+
+      setTxMessage(`Campaign deactivated on-chain! Tx: ${result.txHash.slice(0, 14)}...`);
+      await fetchCampaigns();
+    } else {
+      setTxMessage("Deactivation failed or was rejected.");
+    }
+
+    setTxStep(null);
   }
 
   useEffect(() => {
@@ -224,6 +365,14 @@ export default function AdminProjectsPage() {
             </span>
           </div>
           {requestsError ? <p className="mb-3 text-xs text-red-500">{requestsError}</p> : null}
+          {contractError ? <p className="mb-3 text-xs text-red-500">{contractError}</p> : null}
+          {txStep ? <p className="mb-3 text-xs text-nexid-gold animate-pulse">{txStep}</p> : null}
+          {txMessage ? <p className="mb-3 text-xs text-green-400">{txMessage}</p> : null}
+          {txHash ? (
+            <p className="mb-3 text-[10px] font-mono text-nexid-muted">
+              Tx: <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-nexid-gold hover:underline">{String(txHash).slice(0, 14)}...</a>
+            </p>
+          ) : null}
           {requestsLoading ? (
             <p className="text-xs text-nexid-muted">Loading requests...</p>
           ) : campaignRequests.length === 0 ? (
@@ -235,14 +384,14 @@ export default function AdminProjectsPage() {
                   key={request.id}
                   className="rounded-lg border border-[#222] bg-[#0a0a0a] p-3"
                 >
-                    <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-                      <div className="text-sm font-medium text-white">
-                        {request.campaignTitle}
-                      </div>
-                      <div className="font-mono text-[10px] text-nexid-muted">
-                        {request.tier} - ${Number(request.prizePoolUsdc).toLocaleString()} USDC
-                      </div>
+                  <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-sm font-medium text-white">
+                      {request.campaignTitle}
                     </div>
+                    <div className="font-mono text-[10px] text-nexid-muted">
+                      {request.tier} - ${Number(request.prizePoolUsdc).toLocaleString()} USDC
+                    </div>
+                  </div>
                   <div className="mb-2 text-[11px] text-nexid-muted">
                     {request.partnerName}
                     {request.partnerNamespace ? ` (${request.partnerNamespace})` : ""}
@@ -391,6 +540,16 @@ export default function AdminProjectsPage() {
             </div>
             <div className="p-3 border-t border-[#1a1a1a] bg-[#0a0a0a]">
               <button className="w-full py-2 border border-[#333] text-xs text-white rounded hover:bg-[#111] transition-colors">Export CSV Data</button>
+              {selected && selected.status === "Active" && (
+                <button
+                  type="button"
+                  onClick={() => deactivateCampaign(selected)}
+                  disabled={contractLoading}
+                  className="w-full mt-2 py-2 border border-red-500/30 bg-red-500/10 text-xs font-bold text-red-500 rounded hover:bg-red-500/20 transition-colors disabled:opacity-60"
+                >
+                  {contractLoading ? "Processing..." : "Deactivate Campaign"}
+                </button>
+              )}
             </div>
           </div>
         </div>

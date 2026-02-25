@@ -141,6 +141,10 @@ export async function PATCH(
       ? (body.coverImageUrl ? String(body.coverImageUrl).trim() : null)
       : undefined;
     const modules = Array.isArray(body.modules) ? body.modules : undefined;
+    const onChainCampaignId =
+      body.onChainCampaignId !== undefined && body.onChainCampaignId !== null
+        ? Number(body.onChainCampaignId)
+        : null;
 
     await prisma.$executeRaw`
       UPDATE "Campaign"
@@ -158,6 +162,7 @@ export async function PATCH(
         "isPublished" = COALESCE(${isPublished}, "isPublished"),
         "startAt" = COALESCE(${startAt === undefined ? null : startAt}, "startAt"),
         "endAt" = COALESCE(${endAt === undefined ? null : endAt}, "endAt"),
+        "onChainCampaignId" = COALESCE(${onChainCampaignId}, "onChainCampaignId"),
         "updatedAt" = ${new Date()}
       WHERE "id" = ${campaignId}
     `;

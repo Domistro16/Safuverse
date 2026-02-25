@@ -62,7 +62,7 @@ export default function AcademyLayout({ children }: AcademyLayoutProps) {
                 {displayName}
               </div>
             ) : null}
-            <Link href="/sovereign-terminal" className="rounded-lg bg-white px-5 py-2 text-sm font-bold text-black">
+            <Link href="/academy/dashboard" className="rounded-lg bg-white px-5 py-2 text-sm font-bold text-black">
               Dashboard
             </Link>
           </div>
