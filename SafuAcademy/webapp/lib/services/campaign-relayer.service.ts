@@ -3,7 +3,9 @@ import { config } from '../config';
 
 /**
  * Minimal ABIs for the NexIDCampaigns and PartnerCampaigns contracts.
- * Only includes functions actually called by the backend relayer.
+ * Only includes functions called by the backend relayer wallet.
+ * Owner-only functions (createCampaign, updateCampaign, etc.) are handled
+ * on the frontend via the useAdminContract hook.
  */
 const NEXID_CAMPAIGNS_ABI = [
     'function enroll(uint256 _campaignId, address _user) external',
