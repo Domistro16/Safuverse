@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { useLoginWithSiwe } from "@privy-io/react-auth";
+import { useLoginWithSiwe, useLoginWithOAuth } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useENSName } from "@/hooks/getPrimaryName";
 
@@ -10,6 +10,17 @@ type Step = 1 | 2 | 3 | 4 | 5;
 export default function AcademyGatewayPage() {
   const router = useRouter();
   const { generateSiweMessage, loginWithSiwe } = useLoginWithSiwe();
+  const { initOAuth } = useLoginWithOAuth({
+    onComplete: () => {
+      localStorage.setItem("nexid_gateway_connected", "true");
+      setStep(5);
+      setRedirectCount(3);
+    },
+    onError: (error) => {
+      setError(String(error) || "Social login failed.");
+      setSocialLoading(false);
+    },
+  });
   const [step, setStep] = useState<Step>(1);
   const [providerName, setProviderName] = useState("MetaMask");
   const [address, setAddress] = useState("");
@@ -17,6 +28,7 @@ export default function AcademyGatewayPage() {
   const [networkStatus, setNetworkStatus] = useState<"disconnected" | "syncing" | "connected">("disconnected");
   const [redirectCount, setRedirectCount] = useState(3);
   const [error, setError] = useState("");
+  const [socialLoading, setSocialLoading] = useState(false);
   const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
 
   const displayName = useMemo(() => {
@@ -150,13 +162,12 @@ export default function AcademyGatewayPage() {
 
         <div className="absolute right-6 top-6 z-20 flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest">
           <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              networkStatus === "connected"
-                ? "bg-green-500"
-                : networkStatus === "syncing"
-                  ? "bg-nexid-gold animate-pulse"
-                  : "bg-[#444]"
-            }`}
+            className={`h-1.5 w-1.5 rounded-full ${networkStatus === "connected"
+              ? "bg-green-500"
+              : networkStatus === "syncing"
+                ? "bg-nexid-gold animate-pulse"
+                : "bg-[#444]"
+              }`}
           />
           <span className={networkStatus === "connected" ? "text-green-400" : networkStatus === "syncing" ? "text-nexid-gold" : "text-nexid-muted"}>
             {networkStatus === "connected" ? "Connected" : networkStatus === "syncing" ? "Syncing RPC..." : "Disconnected"}
@@ -172,18 +183,108 @@ export default function AcademyGatewayPage() {
               Connect your provider to access the Sovereign Knowledge Layer.
             </p>
           </div>
+
+          {/* Social Logins */}
           <div className="mt-8 space-y-3">
-            {(["MetaMask", "WalletConnect", "Phantom"] as const).map((name) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => connectWithProvider(name)}
-                className="wallet-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white"
-              >
-                {name}
-              </button>
-            ))}
+            <button
+              type="button"
+              disabled={socialLoading}
+              onClick={() => {
+                setSocialLoading(true);
+                setError("");
+                initOAuth({ provider: "google" });
+              }}
+              className="social-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.96 11.96 0 0 0 1 12c0 1.94.46 3.77 1.18 5.07l3.66-2.84z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              <span className="font-medium">Continue with Google</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={socialLoading}
+              onClick={() => {
+                setSocialLoading(true);
+                setError("");
+                initOAuth({ provider: "twitter" });
+              }}
+              className="social-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="white">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span className="font-medium">Continue with X</span>
+            </button>
           </div>
+
+          {/* Divider */}
+          <div className="gateway-divider my-6 flex items-center gap-4">
+            <div className="h-px flex-1 bg-[#222]" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-nexid-muted">or connect wallet</span>
+            <div className="h-px flex-1 bg-[#222]" />
+          </div>
+
+          {/* Wallet Buttons with Icons */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => connectWithProvider("MetaMask")}
+              className="wallet-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 35 33">
+                <path fill="#E17726" d="M32.96 1l-13.14 9.72 2.45-5.73z" />
+                <path fill="#E27625" d="M2.66 1l13.02 9.8L13.35 5zM28.23 23.53l-3.5 5.34 7.49 2.06 2.14-7.28zM.67 23.65l2.13 7.28 7.47-2.06-3.48-5.34z" />
+                <path fill="#E27625" d="M9.93 14.42l-2.07 3.14 7.4.34-.26-7.96zM25.69 14.42l-5.17-4.56-.17 8.04 7.39-.34zM10.27 28.87l4.47-2.16-3.86-3.01zM20.88 26.71l4.46 2.16-.6-5.17z" />
+                <path fill="#D5BFB2" d="M25.34 28.87l-4.46-2.16.36 2.93-.04 1.23zM10.27 28.87l4.15 2 -.03-1.23.34-2.93z" />
+                <path fill="#233447" d="M14.52 21.76l-3.72-1.09 2.62-1.2zM21.1 21.76l1.1-2.29 2.63 1.2z" />
+                <path fill="#CD6116" d="M10.27 28.87l.65-5.34-4.13.12zM24.7 23.53l.64 5.34 3.49-5.22zM27.76 17.56l-7.39.34.69 3.86 1.1-2.29 2.63 1.2zM11.8 20.67l2.62-1.2 1.1 2.29.68-3.86-7.39-.34z" />
+                <path fill="#E27525" d="M7.81 17.56l3.12 6.08-.1-3.01zM24.73 20.63l-.12 3.01 3.14-6.08zM15.2 17.9l-.69 3.86.86 4.47.19-5.89zM20.37 17.9L19.45 20.34l.18 5.89.87-4.47z" />
+                <path fill="#F5841F" d="M21.06 21.76l-.87 4.47.62.44 3.86-3.01.12-3.01zM11.8 20.65l.1 3.01 3.86 3.01.62-.44-.86-4.47z" />
+                <path fill="#C0AC9D" d="M21.12 30.87l.04-1.23-.34-.29h-5.02l-.32.29.03 1.23-4.15-2 1.45 1.19 2.95 2.04h5.1l2.96-2.04 1.44-1.19z" />
+                <path fill="#161616" d="M20.88 26.71l-.62-.44h-3.91l-.62.44-.34 2.93.32-.29h5.02l.34.29z" />
+                <path fill="#763E1A" d="M33.52 11.35l1.1-5.36L32.96 1l-12.08 8.97 4.65 3.93 6.57 1.92 1.45-1.7-.63-.46 1.01-.92-.78-.6 1.01-.77z" />
+                <path fill="#763E1A" d="M.01 5.99l1.11 5.36-.71.53 1.01.77-.77.6 1.01.92-.64.46 1.45 1.7 6.57-1.92 4.65-3.93L2.66 1z" />
+                <path fill="#F5841F" d="M32.05 16.86l-6.57-1.92 1.98 3.14-3.14 6.08 4.14-.05h6.18zM9.93 14.94l-6.57 1.92-2.19 6.79h6.17l4.14.05-3.12-6.08z" />
+                <path fill="#F5841F" d="M20.37 17.9l.42-7.23 1.91-5.17H12.91l1.91 5.17.42 7.23.16 2.45.01 5.88h3.91l.02-5.88z" />
+              </svg>
+              <span className="font-medium">MetaMask</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => connectWithProvider("WalletConnect")}
+              className="wallet-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 400 400" fill="none">
+                <path d="M122.52 127.57c42.95-42.07 112.57-42.07 155.52 0l5.17 5.06a5.3 5.3 0 0 1 0 7.63l-17.68 17.32a2.8 2.8 0 0 1-3.89 0l-7.11-6.97c-29.97-29.36-78.56-29.36-108.53 0l-7.62 7.46a2.8 2.8 0 0 1-3.89 0l-17.68-17.32a5.3 5.3 0 0 1 0-7.63zm192.04 35.75 15.73 15.42a5.3 5.3 0 0 1 0 7.63l-70.89 69.46a5.59 5.59 0 0 1-7.78 0l-50.3-49.29a1.4 1.4 0 0 0-1.94 0l-50.3 49.29a5.59 5.59 0 0 1-7.78 0l-70.89-69.46a5.3 5.3 0 0 1 0-7.63l15.73-15.42a5.59 5.59 0 0 1 7.78 0l50.3 49.29a1.4 1.4 0 0 0 1.94 0l50.3-49.29a5.59 5.59 0 0 1 7.78 0l50.3 49.29a1.4 1.4 0 0 0 1.94 0l50.3-49.29a5.59 5.59 0 0 1 7.78 0z" fill="#3B99FC" />
+              </svg>
+              <span className="font-medium">WalletConnect</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => connectWithProvider("Phantom")}
+              className="wallet-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 128 128">
+                <defs>
+                  <linearGradient id="phantom-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#534BB1" />
+                    <stop offset="100%" stopColor="#551BF9" />
+                  </linearGradient>
+                </defs>
+                <rect width="128" height="128" rx="26" fill="url(#phantom-grad)" />
+                <path d="M110.58 64.14c-1.21 14.6-13.55 26.18-27.59 26.18h-2.36c-1.36 0-2.45-1.15-2.37-2.52.36-6.07.14-14.32-3.86-19.55-4.38-5.73-11.86-5.8-17.45-3.32-5.14 2.27-8.73 6.55-10.55 11.91-.5 1.47-.77 3-.86 4.55-.04.67-.36 1.29-.88 1.72a2.4 2.4 0 0 1-1.87.55c-8.85-1.09-18.12-5.14-20.68-18.73C19.64 48.73 33.73 27 53.36 27h21.28c20.09 0 37.14 16.41 35.94 37.14zM45.73 56.73a4.36 4.36 0 1 0 0-8.73 4.36 4.36 0 0 0 0 8.73zm18.18 0a4.36 4.36 0 1 0 0-8.73 4.36 4.36 0 0 0 0 8.73z" fill="white" />
+              </svg>
+              <span className="font-medium">Phantom</span>
+            </button>
+          </div>
+
           {error ? (
             <p className="mt-4 text-xs text-red-400">{error}</p>
           ) : null}

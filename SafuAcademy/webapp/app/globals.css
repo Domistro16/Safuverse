@@ -143,9 +143,12 @@ body {
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(-1deg);
   }
+
   50% {
     transform: translateY(-18px) rotate(1deg);
   }
@@ -160,6 +163,7 @@ body {
     box-shadow: 0 0 18px hsla(var(--primary), 0.6);
     transform: scale(1);
   }
+
   to {
     box-shadow: 0 0 30px hsla(var(--primary), 1),
       0 0 40px hsla(var(--primary), 0.6);
@@ -244,7 +248,7 @@ body {
     --radius: 0.5rem;
   }
 
-.dark {
+  .dark {
     --background: 240 9% 4%;
     --foreground: 0 0% 98%;
     --card: 240 9% 8%;
@@ -399,6 +403,7 @@ body {
     color: #fff;
     text-shadow: 0 0 8px #fff;
   }
+
   100% {
     color: #8a8a8a;
   }
@@ -436,6 +441,7 @@ body {
   from {
     background-position: 0 0;
   }
+
   to {
     background-position: -1000px 1000px;
   }
@@ -477,14 +483,17 @@ body {
     opacity: 0;
     transform: rotate(-45deg) translateX(0) scaleX(0.5);
   }
+
   10% {
     opacity: 1;
     transform: rotate(-45deg) translateX(-300px) scaleX(1);
   }
+
   20% {
     opacity: 0;
     transform: rotate(-45deg) translateX(-600px) scaleX(0.5);
   }
+
   100% {
     opacity: 0;
     transform: rotate(-45deg) translateX(-600px);
@@ -559,6 +568,7 @@ body {
     transform: translate(30%, -50%) scale(1);
     opacity: 0.7;
   }
+
   100% {
     transform: translate(30%, -50%) scale(1.1);
     opacity: 1;
@@ -618,6 +628,7 @@ body {
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-100%);
   }
@@ -693,9 +704,12 @@ body {
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-8px);
   }
@@ -745,6 +759,7 @@ body {
   from {
     background-position: 0 0;
   }
+
   to {
     background-position: -1000px 1000px;
   }
@@ -992,6 +1007,7 @@ body {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1041,6 +1057,7 @@ body {
   from {
     background-position: 0 0;
   }
+
   to {
     background-position: -1000px 1000px;
   }
@@ -1082,14 +1099,17 @@ body {
     opacity: 0;
     transform: rotate(-45deg) translateX(0) scaleX(0.5);
   }
+
   10% {
     opacity: 1;
     transform: rotate(-45deg) translateX(-200px) scaleX(1);
   }
+
   20% {
     opacity: 0;
     transform: rotate(-45deg) translateX(-400px) scaleX(0.5);
   }
+
   100% {
     opacity: 0;
     transform: rotate(-45deg) translateX(-400px);
@@ -1228,6 +1248,52 @@ body {
   text-shadow: 0 0 10px rgba(205, 127, 50, 0.3);
 }
 
+.nexid-academy .podium-card {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+}
+
+.nexid-academy .podium-card:hover {
+  transform: translateY(-6px) scale(1.02);
+}
+
+.nexid-academy .rank-1-gradient {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.02) 100%);
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+.nexid-academy .rank-2-gradient {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.12) 0%, rgba(192, 192, 192, 0.02) 100%);
+  border-color: rgba(192, 192, 192, 0.3);
+}
+
+.nexid-academy .rank-3-gradient {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.12) 0%, rgba(205, 127, 50, 0.02) 100%);
+  border-color: rgba(205, 127, 50, 0.3);
+}
+
+.nexid-academy .pulse-gold {
+  animation: pulseGold 2s infinite;
+}
+
+@keyframes pulseGold {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 176, 0, 0.3);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 176, 0, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 176, 0, 0);
+  }
+}
+
+.shadow-inner-glaze {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04);
+}
+
 /* NexID Gateway */
 .nexid-gateway {
   background-color: #030303;
@@ -1289,7 +1355,7 @@ body {
   border-radius: 1.25rem;
   width: 100%;
   max-width: 440px;
-  min-height: 480px;
+  min-height: 600px;
   position: relative;
   overflow: hidden;
 }
@@ -1298,6 +1364,7 @@ body {
   position: absolute;
   inset: 0;
   padding: 2rem;
+  overflow-y: auto;
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px) scale(0.98);
@@ -1322,6 +1389,26 @@ body {
 
 .nexid-gateway .wallet-btn:active {
   transform: translateY(0) scale(0.98);
+}
+
+.nexid-gateway .social-btn {
+  transition: all 0.2s ease;
+}
+
+.nexid-gateway .social-btn:hover {
+  background: #111;
+  border-color: #444;
+  transform: translateY(-2px);
+}
+
+.nexid-gateway .social-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.nexid-gateway .social-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .nexid-gateway .gateway-input {
@@ -1364,6 +1451,7 @@ body {
     opacity: 0;
     transform: translateY(5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1407,6 +1495,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1470,6 +1559,7 @@ body {
   0% {
     transform: translateY(-100%) rotate(45deg);
   }
+
   100% {
     transform: translateY(100%) rotate(45deg);
   }

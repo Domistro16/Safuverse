@@ -12,8 +12,13 @@ export default function AcademyFaqPage() {
 
   return (
     <section className="mx-auto w-full max-w-[900px] px-6 pb-12 pt-16">
-      <h1 className="font-display mb-4 text-center text-4xl font-bold text-white">Protocol FAQ</h1>
-      <p className="mb-10 text-center text-nexid-muted">Architecture and reward logic explained.</p>
+      <div className="text-center mb-12">
+        <div className="text-[10px] font-mono text-nexid-gold border border-nexid-gold/30 bg-nexid-gold/10 px-2.5 py-1 rounded inline-flex mb-4 uppercase tracking-widest">
+          Knowledge Base
+        </div>
+        <h1 className="font-display text-4xl font-bold text-white mb-4">Protocol FAQ</h1>
+        <p className="text-nexid-muted">Architecture, verifications, and prize pools explained.</p>
+      </div>
       <div className="space-y-4">
         {FAQS.map((item, idx) => {
           const open = openItems.includes(idx);
@@ -25,7 +30,14 @@ export default function AcademyFaqPage() {
             >
               <div className="flex items-center justify-between p-6">
                 <h3 className="font-medium text-white">{item.q}</h3>
-                <span className="faq-icon text-nexid-muted">{open ? "-" : "+"}</span>
+                <svg
+                  className="w-5 h-5 text-nexid-muted faq-icon shrink-0 ml-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
               <div className="faq-content border-t border-[#1a1a1a] bg-[#050505]">
                 <div className="p-6 text-sm leading-relaxed text-nexid-muted">{item.a}</div>

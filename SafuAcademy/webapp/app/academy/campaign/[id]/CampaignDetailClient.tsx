@@ -87,6 +87,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const [data, setData] = useState<CampaignResponse | null>(null);
   const [activeModule, setActiveModule] = useState(0);
   const [completedUntil, setCompletedUntil] = useState(-1);
+  const [sidebarTab, setSidebarTab] = useState<"syllabus" | "leaderboard">("syllabus");
 
   // Enrollment state
   const [enrolled, setEnrolled] = useState(false);
@@ -147,7 +148,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
           }
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setEnrollmentChecked(true));
   }, [campaignId, data]);
 
@@ -205,27 +206,32 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-6 pb-12 pt-8 lg:px-12">
-      <Link href="/academy" className="mb-6 inline-block text-sm font-medium text-nexid-muted hover:text-white">
-        {"<-"} Back to Academy
-      </Link>
+      {/* Back */}
+      <button
+        onClick={() => window.history.back()}
+        className="flex items-center gap-2 text-sm font-medium text-nexid-muted hover:text-white transition-colors mb-6 group w-max"
+      >
+        <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        Back to Gallery
+      </button>
 
-      <div className="mb-8 flex flex-col gap-8 border-b border-[#1a1a1a] pb-8 lg:flex-row">
+      {/* Header */}
+      <div className="mb-8 flex flex-col gap-8 border-b border-[#1a1a1a] pb-8 lg:flex-row items-start">
         <div className="flex-1">
-          <h1 className="font-display mb-4 text-4xl font-bold text-white md:text-5xl">{campaign.title}</h1>
+          <div className="flex gap-2 mb-4">
+            <span className={`${isEnded ? "bg-red-500/10 text-red-500 border-red-500/30" : "bg-nexid-gold/10 text-nexid-gold border-nexid-gold/30"} text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-widest border shadow-inner-glaze`}>
+              {campaign.status}
+            </span>
+          </div>
+          <h1 className="font-display mb-4 text-4xl font-bold text-white md:text-5xl tracking-tight leading-tight">{campaign.title}</h1>
           <p className="max-w-4xl text-sm leading-relaxed text-nexid-muted">{campaign.objective}</p>
         </div>
-        <div className="premium-panel w-full shrink-0 bg-[#0a0a0a] p-6 lg:w-80">
+        <div className="premium-panel w-full shrink-0 bg-[#0a0a0a] p-6 lg:w-72 text-right shadow-inner-glaze">
           <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-muted">Sponsored By</div>
-          <div className="font-display mb-1 text-xl text-white">{campaign.sponsorName}</div>
-          {campaign.sponsorNamespace ? (
-            <div className="mb-3 font-mono text-[10px] text-nexid-muted">{campaign.sponsorNamespace}</div>
-          ) : (
-            <div className="mb-3" />
-          )}
-          <div className="mb-1 text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
-          <div className="text-[11px] text-nexid-muted">
-            {campaign.tier} · {campaign.ownerType} · {campaign.status}
-          </div>
+          <div className="font-display mb-4 text-xl text-white">{campaign.sponsorName}</div>
+          <div className="h-px w-full bg-[#1a1a1a] mb-4" />
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-gold">Rewards</div>
+          <div className="text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
           {(startDate || endDate) ? (
             <div className="mt-2 text-[11px] text-nexid-muted">
               {startDate ? `Start: ${startDate}` : null}
@@ -261,62 +267,26 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">
-        <div className="flex-1">
-          <div className="premium-panel mb-6 min-h-[420px] overflow-hidden border border-[#1a1a1a] bg-[#050505]">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col gap-6 w-full">
+          {/* Theater Stage */}
+          <div className="premium-panel overflow-hidden border border-[#1a1a1a] flex flex-col relative bg-[#050505] min-h-[500px] lg:h-[600px]">
             {!isEnded ? (
               <div className="flex h-full flex-col">
-                <div className="relative h-[300px] bg-black">
+                <div className="relative w-full h-full bg-black">
                   <img
                     src={campaignImage}
                     alt={campaign.title}
                     className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-luminosity"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 p-6">
-                    {hasModules ? (
-                      <>
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
-                          {modules[activeModule]?.type ?? "module"}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                  {hasModules ? (
+                    <div className="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end">
+                      <div>
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold mb-1">
+                          Module {activeModule + 1}
                         </div>
                         <h3 className="font-display text-2xl text-white">{modules[activeModule]?.title}</h3>
-                      </>
-                    ) : (
-                      <>
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
-                          campaign
-                        </div>
-                        <h3 className="font-display text-2xl text-white">{campaign.title}</h3>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="p-6">
-                  {hasModules ? (
-                    <>
-                      <div className="mb-4 flex flex-wrap gap-2">
-                        {modules.map((mod, idx) => {
-                          const isCompleted = idx <= completedUntil;
-                          const isActive = idx === activeModule;
-                          const isLocked = mod.type === "locked" && idx > completedUntil + 1;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              disabled={isLocked}
-                              onClick={() => !isLocked && setActiveModule(idx)}
-                              className={`rounded border px-3 py-1.5 text-xs ${
-                                isActive
-                                  ? "border-nexid-gold bg-nexid-gold/10 text-nexid-gold"
-                                  : isCompleted
-                                    ? "border-green-500/30 bg-green-500/10 text-green-400"
-                                    : isLocked
-                                      ? "cursor-not-allowed border-[#222] bg-[#111] text-nexid-muted opacity-50"
-                                      : "border-[#333] bg-[#111] text-white"
-                              }`}
-                            >
-                              {mod.title}
-                            </button>
-                          );
-                        })}
                       </div>
                       {enrolled && !completedAt ? (
                         <button
@@ -329,8 +299,6 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                             if (next < modules.length && modules[next]?.type !== "locked") {
                               setActiveModule(next);
                             }
-
-                            // If all modules are now done, call the complete endpoint (DB + on-chain)
                             if (newCompleted >= modules.length - 1) {
                               setCompleting(true);
                               try {
@@ -349,34 +317,37 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                               }
                             }
                           }}
-                          className="rounded bg-nexid-gold px-6 py-2.5 text-sm font-bold text-black disabled:opacity-50"
+                          className="px-6 py-2.5 bg-nexid-gold text-black font-bold text-sm rounded hover:shadow-gold-glow transition-all"
                         >
-                          {completing ? "Completing..." : completedUntil >= modules.length - 1 ? "All Modules Complete" : "Mark Complete"}
+                          {completing ? "Completing..." : completedUntil >= modules.length - 1 ? "All Complete" : "Mark Complete"}
                         </button>
                       ) : enrolled && completedAt ? (
                         <div className="rounded border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs text-green-400">
-                          Campaign Completed on {formatDate(completedAt) ?? "N/A"}
+                          Completed {formatDate(completedAt) ?? ""}
                         </div>
-                      ) : (
-                        <div className="text-xs text-nexid-muted">
-                          Enroll in this campaign to track module progress.
-                        </div>
-                      )}
-                    </>
+                      ) : null}
+                    </div>
                   ) : (
-                    <div className="text-sm text-nexid-muted">
-                      Campaign modules have not been configured yet.
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold mb-2">Campaign</div>
+                        <h3 className="font-display text-2xl text-white">{campaign.title}</h3>
+                        <p className="text-sm text-nexid-muted mt-2">Modules have not been configured yet.</p>
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center p-10 text-center">
-                <h3 className="font-display mb-2 text-3xl text-white">Campaign Concluded</h3>
-                <p className="mb-6 text-sm text-nexid-muted">Rewards are distributed by campaign ranking.</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center border-t-4 border-nexid-gold">
+                <div className="w-24 h-24 rounded-2xl rotate-45 border-2 border-nexid-gold/40 bg-nexid-gold/10 flex items-center justify-center mb-10 shadow-gold-glow">
+                  <svg className="w-10 h-10 text-nexid-gold -rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h3 className="font-display text-3xl text-white mb-2">Campaign Concluded</h3>
+                <p className="text-sm text-nexid-muted mb-8 max-w-sm">Your score has been aggregated. Review your reward eligibility below.</p>
                 <button
                   type="button"
-                  className="cursor-not-allowed rounded border border-[#222] bg-[#111] px-8 py-3 text-sm font-bold text-nexid-muted"
+                  className="cursor-not-allowed rounded-xl border border-[#222] bg-[#111] px-8 py-4 text-sm font-bold text-nexid-muted uppercase tracking-widest"
                 >
                   Claim Window Managed By Sponsor
                 </button>
@@ -384,17 +355,23 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
             )}
           </div>
 
-          <div className="premium-panel mb-6 bg-[#0a0a0a] p-6">
-            <h3 className="font-display mb-4 text-lg text-white">Key Takeaways</h3>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {/* Key Takeaways */}
+          <div className="premium-panel p-6 bg-[#0a0a0a]">
+            <div className="flex items-center gap-2 mb-4 border-b border-[#1a1a1a] pb-4">
+              <svg className="w-5 h-5 text-nexid-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+              <h3 className="font-display text-lg text-white">Key Takeaways</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {(campaign.keyTakeaways.length > 0 ? campaign.keyTakeaways : ["No key takeaways published yet."]).map((takeaway) => (
-                <div key={takeaway} className="rounded-lg border border-[#222] bg-[#111] p-3 text-xs leading-relaxed text-nexid-muted">
-                  {takeaway}
+                <div key={takeaway} className="flex items-start gap-3 bg-[#111] p-3 rounded-lg border border-[#222]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-nexid-gold mt-1.5 shrink-0 shadow-[0_0_5px_#ffb000]" />
+                  <p className="text-xs leading-relaxed text-nexid-muted">{takeaway}</p>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* On-Chain Snapshot */}
           <div className="premium-panel bg-[#0a0a0a] p-6">
             <h3 className="font-display mb-3 text-lg text-white">On-Chain Snapshot</h3>
             {onChain ? (
@@ -425,34 +402,91 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
           </div>
         </div>
 
-        <aside className="premium-panel w-full shrink-0 border border-[#1a1a1a] bg-[#0a0a0a] lg:w-[420px]">
-          <div className="border-b border-[#1a1a1a] bg-[#111] p-4 text-xs font-bold text-white">
-            Campaign Leaderboard
+        {/* Sidebar */}
+        <div className="w-full lg:w-[400px] shrink-0 flex flex-col premium-panel border border-[#1a1a1a] bg-[#0a0a0a] lg:h-[calc(600px+150px)]">
+          {/* Tabs */}
+          <div className="p-2 border-b border-[#1a1a1a] shrink-0 flex gap-2 bg-[#111]">
+            <button
+              type="button"
+              onClick={() => setSidebarTab("syllabus")}
+              className={`flex-1 py-2 text-xs font-bold rounded transition-colors ${sidebarTab === "syllabus" ? "bg-[#222] text-white shadow-sm border border-[#333]" : "text-nexid-muted hover:text-white border border-transparent"}`}
+            >
+              Campaign Ledger
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarTab("leaderboard")}
+              className={`flex-1 py-2 text-xs font-bold rounded transition-colors ${sidebarTab === "leaderboard" ? "bg-[#222] text-white shadow-sm border border-[#333]" : "text-nexid-muted hover:text-white border border-transparent"}`}
+            >
+              Leaderboard
+            </button>
           </div>
-          <div className="custom-scroll max-h-[680px] overflow-y-auto">
-            {leaderboard.length === 0 ? (
-              <div className="p-6 text-sm text-nexid-muted">No leaderboard entries yet.</div>
-            ) : (
-              leaderboard.map((row, idx) => {
-                const rank = row.rank ?? idx + 1;
-                return (
-                  <div key={`${row.walletAddress}-${rank}`} className="border-b border-[#1a1a1a] p-4 text-sm">
-                    <div className="mb-1 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 text-center font-mono text-xs text-nexid-gold">{rank}</span>
-                        <span className="font-mono text-white/90">{shortAddress(row.walletAddress)}</span>
+
+          <div className="flex-1 overflow-y-auto custom-scroll relative">
+            {/* Syllabus */}
+            {sidebarTab === "syllabus" ? (
+              <div>
+                {isEnded ? (
+                  <div className="p-6 text-center text-sm text-nexid-muted">Campaign ended. Modules locked. Check claim status.</div>
+                ) : hasModules ? (
+                  modules.map((mod, idx) => {
+                    const isCompleted = idx <= completedUntil;
+                    const isActive = idx === activeModule;
+                    const isLocked = mod.type === "locked" && idx > completedUntil + 1;
+                    const stateClass = isCompleted ? "completed" : isActive ? "active" : isLocked ? "locked" : "";
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`syllabus-item ${stateClass} p-4 border-b border-[#1a1a1a] flex gap-4 ${!isLocked ? "cursor-pointer" : ""}`}
+                        onClick={() => !isLocked && setActiveModule(idx)}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-[#111] border border-[#222] flex items-center justify-center shrink-0">
+                          {isCompleted ? (
+                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          ) : isActive ? (
+                            <span className="w-3 h-3 bg-nexid-gold rounded-full shadow-[0_0_10px_#ffb000] pulse-gold" />
+                          ) : isLocked ? (
+                            <svg className="w-4 h-4 text-[#555]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                          ) : (
+                            <span className="w-2 h-2 bg-[#333] rounded-full" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-widest">{mod.type}</div>
+                          <div className="text-sm font-medium text-white">{mod.title}</div>
+                        </div>
                       </div>
-                      <span className="font-mono text-xs text-white">{row.score.toLocaleString()} pts</span>
-                    </div>
-                    <div className="pl-11 text-[11px] text-nexid-muted">
-                      Reward: {row.rewardAmountUsdc ? `$${formatUsdc(row.rewardAmountUsdc)} USDC` : "TBD"}
-                    </div>
-                  </div>
-                );
-              })
+                    );
+                  })
+                ) : (
+                  <div className="p-6 text-sm text-nexid-muted">Campaign modules have not been configured yet.</div>
+                )}
+              </div>
+            ) : (
+              /* Leaderboard */
+              <div className="p-2 space-y-1">
+                {leaderboard.length === 0 ? (
+                  <div className="p-6 text-sm text-nexid-muted">No leaderboard entries yet.</div>
+                ) : (
+                  leaderboard.map((row, idx) => {
+                    const rank = row.rank ?? idx + 1;
+                    const color = rank === 1 ? "text-[#FFD700]" : rank === 2 ? "text-[#C0C0C0]" : rank === 3 ? "text-[#CD7F32]" : "text-nexid-muted";
+                    return (
+                      <div key={`${row.walletAddress}-${rank}`} className="p-2.5 rounded hover:bg-[#111] flex items-center justify-between transition-colors border-b border-[#1a1a1a] last:border-0">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 text-center font-mono text-xs font-bold ${color}`}>{rank}</div>
+                          <div className="font-medium text-white/90 text-xs">{shortAddress(row.walletAddress)}</div>
+                        </div>
+                        <div className={`font-mono text-xs ${color}`}>{row.score.toLocaleString()} pts</div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             )}
           </div>
-        </aside>
+        </div>
       </div>
     </section>
   );
