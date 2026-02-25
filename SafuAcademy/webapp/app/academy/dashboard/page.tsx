@@ -1,49 +1,65 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAccount } from "wagmi";
+import { useENSName } from "@/hooks/getPrimaryName";
 
 type GlobalView = "dashboard" | "profile";
 type ProfileTab = "general" | "wallets" | "security" | "prefs";
-type LeaderboardTab = "24h" | "7d" | "all";
 
-const CAROUSEL = [
-  {
-    tag: "TRENDING",
-    title: "L2 Rollup Architecture",
-    desc: "Master ZK vs Optimistic.",
-    img: "https://images.unsplash.com/photo-1639762681485-074b7f4ec651?auto=format&fit=crop&q=80&w=800",
-  },
-  {
-    tag: "NEW",
-    title: "Advanced Tokenomics",
-    desc: "Design sustainable economies.",
-    img: "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&q=80&w=800",
-  },
-  {
-    tag: "SECURITY",
-    title: "DeFi Auditing",
-    desc: "Identify smart contract vulnerabilities.",
-    img: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=800",
-  },
-];
+type LeaderboardRow = {
+  rank: number;
+  walletAddress: string;
+  totalPoints: number;
+  campaignsFinished: number;
+  totalScore: number;
+};
 
-const LEDGER = [
-  { name: "Smart Contracts w/ Desmond", active: true, progress: "72%" },
-  { name: "Identity Fundamentals", active: false, progress: "100%" },
-  { name: "Web3 Economics", active: false, progress: "100%" },
-  { name: "Zero-Knowledge Proofs 101", active: false, progress: "100%" },
-  { name: "Solidity Best Practices", active: false, progress: "100%" },
-  { name: "EVM Under the Hood", active: false, progress: "100%" },
-  { name: "L2 Scaling Solutions", active: false, progress: "100%" },
-  { name: "Cross-Chain Bridges", active: false, progress: "100%" },
-  { name: "Governance & DAOs", active: false, progress: "100%" },
-  { name: "NFT Metadata Standards", active: false, progress: "100%" },
-];
+type UserCampaign = {
+  campaignId: number;
+  title: string;
+  status: string;
+  score: number;
+  rank: number | null;
+  completedAt: string | null;
+  enrolledAt: string;
+  modules: unknown[];
+  coverImageUrl: string | null;
+  sponsorName: string;
+};
+
+type FeaturedCampaign = {
+  id: number;
+  slug: string;
+  title: string;
+  objective: string;
+  coverImageUrl: string | null;
+  status: string;
+  tier: string;
+};
+
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function shortAddr(addr: string) {
+  if (!addr || addr.length < 12) return addr || "";
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
 
 export default function SovereignTerminalPage() {
+  const { address, isConnected } = useAccount();
+  const { name: ensName } = useENSName({
+    owner: (address ?? "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  });
+
+  const displayName = ensName ? String(ensName) : shortAddr(address ?? "");
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
+
   const [view, setView] = useState<GlobalView>("dashboard");
   const [profileTab, setProfileTab] = useState<ProfileTab>("general");
-  const [leaderboardTab, setLeaderboardTab] = useState<LeaderboardTab>("24h");
   const [slide, setSlide] = useState(0);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [top100Open, setTop100Open] = useState(false);
@@ -52,34 +68,93 @@ export default function SovereignTerminalPage() {
   const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
   const cardRef = useRef<HTMLDivElement | null>(null);
 
+  // ── Data state ──
+  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
+  const [userCampaigns, setUserCampaigns] = useState<UserCampaign[]>([]);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [featuredCampaigns, setFeaturedCampaigns] = useState<FeaturedCampaign[]>([]);
+  const [userRank, setUserRank] = useState<number | null>(null);
+
+  // ── Fetch global leaderboard (public) ──
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSlide((prev) => (prev + 1) % CAROUSEL.length);
-    }, 4500);
-    return () => clearInterval(interval);
+    fetch("/api/leaderboard")
+      .then(async (res) => {
+        if (res.ok) {
+          const body = await res.json();
+          setLeaderboard(body.leaderboard ?? []);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const topRows = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) => ({
-        rank: i + 4,
-        name: `anon_${(i * 353 + 77) % 9999}.id`,
-        score: 80000 - i * 3500,
-      })),
-    [],
+  // ── Compute user rank from leaderboard ──
+  useEffect(() => {
+    if (!address || leaderboard.length === 0) return;
+    const idx = leaderboard.findIndex(
+      (r) => r.walletAddress.toLowerCase() === address.toLowerCase(),
+    );
+    if (idx >= 0) {
+      setUserRank(idx + 1);
+      setTotalPoints(leaderboard[idx].totalPoints);
+    }
+  }, [address, leaderboard]);
+
+  // ── Fetch user campaigns (authenticated) ──
+  useEffect(() => {
+    if (!hasToken) return;
+    fetch("/api/user/campaigns", { headers: authHeaders() })
+      .then(async (res) => {
+        if (res.ok) {
+          const body = await res.json();
+          setUserCampaigns(body.campaigns ?? []);
+        }
+      })
+      .catch(() => {});
+  }, [hasToken]);
+
+  // ── Fetch user stats (authenticated) ──
+  useEffect(() => {
+    if (!hasToken) return;
+    fetch("/api/user/stats", { headers: authHeaders() })
+      .then(async (res) => {
+        if (res.ok) {
+          const body = await res.json();
+          setTotalPoints((prev) => body.totalPoints ?? prev);
+        }
+      })
+      .catch(() => {});
+  }, [hasToken]);
+
+  // ── Fetch featured campaigns for carousel (public) ──
+  useEffect(() => {
+    fetch("/api/campaigns?includeDraft=false")
+      .then(async (res) => {
+        if (res.ok) {
+          const body = await res.json();
+          const campaigns = (body.campaigns ?? []) as FeaturedCampaign[];
+          setFeaturedCampaigns(campaigns.slice(0, 5));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Carousel rotation ──
+  useEffect(() => {
+    if (featuredCampaigns.length <= 1) return;
+    const interval = setInterval(() => {
+      setSlide((prev) => (prev + 1) % featuredCampaigns.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [featuredCampaigns.length]);
+
+  const activeCampaign = useMemo(
+    () => userCampaigns.find((c) => !c.completedAt && c.status === "LIVE"),
+    [userCampaigns],
   );
 
-  const top100 = useMemo(
-    () =>
-      Array.from({ length: 100 }, (_, i) => ({
-        rank: i + 1,
-        name: `anon_${(i * 187 + 109) % 9999}.id`,
-        score: 100000 - i * 730,
-      })),
-    [],
-  );
+  const leaderboardTop10 = leaderboard.slice(0, 10);
 
-  const handleCardMove = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleCardMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     const rect = cardRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = event.clientX - rect.left;
@@ -90,15 +165,16 @@ export default function SovereignTerminalPage() {
     const ry = ((x - cx) / cx) * 12;
     setCardTransform(`rotateX(${rx}deg) rotateY(${ry}deg)`);
     setGlare({ x: (x / rect.width) * 100, y: (y / rect.height) * 100, opacity: 1 });
-  };
+  }, []);
 
-  const handleCardLeave = () => {
+  const handleCardLeave = useCallback(() => {
     setCardTransform("rotateX(0deg) rotateY(0deg)");
     setGlare((prev) => ({ ...prev, opacity: 0 }));
-  };
+  }, []);
 
   return (
     <div className="nexid-terminal flex h-screen overflow-hidden">
+      {/* Sidebar */}
       <aside className="z-40 flex w-20 shrink-0 flex-col border-r border-nexid-border bg-nexid-base/90 backdrop-blur-xl lg:w-64">
         <div className="flex h-20 cursor-pointer items-center justify-center border-b border-nexid-border lg:justify-start lg:px-8">
           <div className="font-display text-2xl font-black tracking-tighter">
@@ -110,9 +186,17 @@ export default function SovereignTerminalPage() {
         <nav className="flex-1 space-y-2 px-3 py-8">
           <SideItem label="Dashboard" active={view === "dashboard"} onClick={() => setView("dashboard")} />
           <SideItem label="Profile Settings" active={view === "profile"} onClick={() => setView("profile")} />
+          <Link
+            href="/academy"
+            className="group flex w-full items-center justify-center gap-4 rounded-xl border border-transparent px-3 py-3.5 text-nexid-muted transition-all hover:bg-white/5 hover:text-white lg:justify-start lg:px-4"
+          >
+            <span className="hidden text-sm font-medium lg:block">Academy</span>
+            <span className="text-sm lg:hidden">A</span>
+          </Link>
         </nav>
       </aside>
 
+      {/* Main content */}
       <main className="custom-scroll relative flex h-full flex-1 flex-col overflow-y-auto">
         <header className="sticky top-0 z-30 flex h-20 shrink-0 items-center justify-between border-b border-nexid-border bg-nexid-base/80 px-8 backdrop-blur-md">
           <h1 className="font-display text-xl tracking-tight text-white">
@@ -121,22 +205,23 @@ export default function SovereignTerminalPage() {
           <div className="flex items-center gap-6">
             <div className="hidden items-center gap-3 md:flex">
               <div className="shadow-inner-glaze rounded-md border border-[#222] bg-[#111] px-3 py-1.5 font-mono text-[11px] text-nexid-gold">
-                <span className="mr-2 text-white/40">BAL</span> 14,200 Nex Points
+                <span className="mr-2 text-white/40">BAL</span> {totalPoints.toLocaleString()} Nex Points
               </div>
             </div>
             <button type="button" onClick={() => setView("profile")} className="h-9 w-9 rounded-full border border-[#333] p-0.5 hover:border-nexid-gold">
-              <img
-                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=150"
-                alt=""
-                className="h-full w-full rounded-full object-cover"
-              />
+              <div className="flex h-full w-full items-center justify-center rounded-full bg-nexid-gold/20 text-xs font-bold text-nexid-gold">
+                {displayName ? displayName.charAt(0).toUpperCase() : "?"}
+              </div>
             </button>
           </div>
         </header>
 
+        {/* ════════════ DASHBOARD VIEW ════════════ */}
         {view === "dashboard" ? (
           <section className="mx-auto w-full max-w-[1400px] space-y-8 p-6 lg:p-10">
+            {/* Top row: ID Card · Active Campaign · Carousel */}
             <div className="grid auto-rows-fr grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* ── ID Card ── */}
               <div className="id-card-wrapper min-h-[220px]">
                 <div
                   ref={cardRef}
@@ -163,95 +248,131 @@ export default function SovereignTerminalPage() {
                           Sovereign Asset
                         </div>
                       </div>
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full border border-nexid-gold/30 bg-nexid-gold/10">
-                        <span className="text-xs text-nexid-gold">✓</span>
-                      </div>
+                      {isConnected ? (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-nexid-gold/30 bg-nexid-gold/10">
+                          <span className="text-xs text-nexid-gold">&#10003;</span>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="mt-8">
                       <div className="font-display mb-1 text-3xl tracking-tight text-white">
-                        founder.id
+                        {displayName || "Connect Wallet"}
                       </div>
                       <div className="flex items-center justify-between font-mono text-[11px] text-white/60">
-                        <span>0x71C8...976F</span>
-                        <span>EST. 2026</span>
+                        <span>{address ? shortAddr(address) : "--"}</span>
+                        <span>{totalPoints.toLocaleString()} pts</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* ── Active Campaign Card ── */}
               <div className="premium-panel group relative flex min-h-[220px] flex-col justify-between overflow-hidden p-6">
-                <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800" alt="" className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-luminosity transition-transform duration-1000 group-hover:scale-105" />
+                {activeCampaign?.coverImageUrl ? (
+                  <img src={activeCampaign.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-luminosity transition-transform duration-1000 group-hover:scale-105" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#111] to-[#050505]" />
+                )}
                 <div className="relative z-10 mb-6 flex items-start justify-between">
-                  <div className="shadow-inner-glaze rounded bg-white/5 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-white border border-white/10">Active Module</div>
-                  <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white">▶</button>
+                  <div className="shadow-inner-glaze rounded bg-white/5 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-white border border-white/10">
+                    {activeCampaign ? "Active Campaign" : "No Active Campaign"}
+                  </div>
+                  {activeCampaign ? (
+                    <Link href={`/academy/campaign/${activeCampaign.campaignId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white">&#9654;</Link>
+                  ) : null}
                 </div>
                 <div className="relative z-10 mt-auto">
-                  <h3 className="font-display mb-1 text-lg text-white">Smart Contracts w/ Desmond</h3>
-                  <p className="mb-4 text-xs text-nexid-muted">Infrastructure Gas Optimization</p>
-                  <div className="flex items-center gap-4">
-                    <div className="h-1 flex-1 overflow-hidden rounded-full border border-white/5 bg-black">
-                      <div className="h-full w-[72%] bg-nexid-gold shadow-[0_0_10px_#ffb000]" />
-                    </div>
-                    <span className="font-mono text-xs text-nexid-gold">72%</span>
-                  </div>
+                  {activeCampaign ? (
+                    <>
+                      <h3 className="font-display mb-1 text-lg text-white">{activeCampaign.title}</h3>
+                      <p className="mb-4 text-xs text-nexid-muted">{activeCampaign.sponsorName}</p>
+                      <div className="flex items-center gap-4">
+                        <span className="font-mono text-xs text-nexid-gold">{activeCampaign.score} pts</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="font-display mb-1 text-lg text-white">Browse Campaigns</h3>
+                      <Link href="/academy" className="mt-2 inline-block rounded bg-nexid-gold px-4 py-2 text-xs font-bold text-black">
+                        Explore Academy
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
 
+              {/* ── Campaigns Carousel ── */}
               <div className="premium-panel relative min-h-[220px] overflow-hidden">
-                <div className="absolute right-4 top-4 z-20 flex gap-1.5">
-                  {CAROUSEL.map((_, idx) => (
-                    <div key={idx} className={`h-1.5 w-1.5 rounded-full ${slide === idx ? "bg-nexid-gold" : "bg-white/20"}`} />
-                  ))}
-                </div>
-                {CAROUSEL.map((item, idx) => (
-                  <div key={item.title} className={`carousel-item flex h-full flex-col justify-between p-6 ${slide === idx ? "active" : ""}`}>
-                    <img src={item.img} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-luminosity" />
-                    <div className="relative z-10 self-start rounded border border-white/10 bg-black/50 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-white">{item.tag}</div>
-                    <div className="relative z-10">
-                      <h3 className="font-display mb-1 text-lg text-white">{item.title}</h3>
-                      <div className="mt-2 flex items-center justify-between">
-                        <p className="truncate pr-4 text-xs text-nexid-muted">{item.desc}</p>
-                        <button type="button" className="shrink-0 rounded bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black">Join</button>
+                {featuredCampaigns.length > 1 ? (
+                  <div className="absolute right-4 top-4 z-20 flex gap-1.5">
+                    {featuredCampaigns.map((_, idx) => (
+                      <div key={idx} className={`h-1.5 w-1.5 rounded-full ${slide === idx ? "bg-nexid-gold" : "bg-white/20"}`} />
+                    ))}
+                  </div>
+                ) : null}
+                {featuredCampaigns.length > 0 ? (
+                  featuredCampaigns.map((c, idx) => (
+                    <div key={c.id} className={`carousel-item flex h-full flex-col justify-between p-6 ${slide === idx ? "active" : ""}`}>
+                      {c.coverImageUrl ? (
+                        <img src={c.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-luminosity" />
+                      ) : null}
+                      <div className="relative z-10 self-start rounded border border-white/10 bg-black/50 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-white">
+                        {c.status === "LIVE" ? c.tier : c.status}
+                      </div>
+                      <div className="relative z-10">
+                        <h3 className="font-display mb-1 text-lg text-white">{c.title}</h3>
+                        <div className="mt-2 flex items-center justify-between">
+                          <p className="truncate pr-4 text-xs text-nexid-muted">{c.objective}</p>
+                          <Link href={`/academy/campaign/${c.id}`} className="shrink-0 rounded bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black">
+                            View
+                          </Link>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="flex h-full items-center justify-center p-6 text-sm text-nexid-muted">
+                    No campaigns available yet.
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
+            {/* ── Leaderboard + Global Comm ── */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              {/* Leaderboard */}
               <div className="premium-panel flex h-[500px] flex-col lg:col-span-7">
                 <div className="flex items-center justify-between border-b border-[#1a1a1a] p-5">
                   <h3 className="font-display text-lg text-white">Global Hierarchy</h3>
-                  <div className="flex rounded-md border border-[#222] bg-[#050505] p-1 font-mono text-[10px]">
-                    {(["24h", "7d", "all"] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => setLeaderboardTab(tab)}
-                        className={`rounded px-3 py-1 transition-colors ${leaderboardTab === tab ? "bg-[#222] text-white" : "text-nexid-muted"}`}
-                      >
-                        {tab.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
                 </div>
                 <div className="custom-scroll flex-1 overflow-y-auto p-3">
-                  <div className="mb-4 flex items-center justify-between rounded-lg border border-nexid-gold/30 bg-[#111]/95 p-3">
-                    <div className="flex items-center gap-4">
-                      <div className="w-6 text-center font-mono text-sm font-bold text-nexid-gold">42</div>
-                      <div className="font-medium text-white">founder.id <span className="rounded border border-white/5 bg-white/10 px-1.5 py-0.5 font-mono text-[9px] text-nexid-muted">YOU</span></div>
+                  {/* Current user highlight */}
+                  {address && userRank ? (
+                    <div className="mb-4 flex items-center justify-between rounded-lg border border-nexid-gold/30 bg-[#111]/95 p-3">
+                      <div className="flex items-center gap-4">
+                        <div className="w-6 text-center font-mono text-sm font-bold text-nexid-gold">{userRank}</div>
+                        <div className="font-medium text-white">
+                          {displayName || shortAddr(address)}{" "}
+                          <span className="rounded border border-white/5 bg-white/10 px-1.5 py-0.5 font-mono text-[9px] text-nexid-muted">YOU</span>
+                        </div>
+                      </div>
+                      <div className="font-mono text-sm text-nexid-gold">{totalPoints.toLocaleString()} pts</div>
                     </div>
-                    <div className="font-mono text-sm text-nexid-gold">14,200 pts</div>
-                  </div>
+                  ) : null}
 
-                  <RankRow rank={1} name="vitalik.id" score="98,450 pts" />
-                  <RankRow rank={2} name="satoshi.id" score="89,200 pts" />
-                  <RankRow rank={3} name="punk6529.id" score="85,110 pts" />
-                  {topRows.map((r) => (
-                    <RankRow key={r.rank} rank={r.rank} name={r.name} score={`${r.score.toLocaleString()} pts`} />
-                  ))}
+                  {leaderboardTop10.length > 0 ? (
+                    leaderboardTop10.map((row) => (
+                      <RankRow
+                        key={row.rank}
+                        rank={row.rank}
+                        name={shortAddr(row.walletAddress)}
+                        score={`${row.totalPoints.toLocaleString()} pts`}
+                      />
+                    ))
+                  ) : (
+                    <div className="p-6 text-center text-sm text-nexid-muted">Leaderboard data loading...</div>
+                  )}
                 </div>
                 <div className="rounded-b-xl border-t border-[#1a1a1a] bg-[#0a0a0a] p-4">
                   <button type="button" onClick={() => setTop100Open(true)} className="w-full rounded-lg border border-[#222] bg-[#111] py-2.5 text-sm font-medium text-white hover:border-white/20">
@@ -260,6 +381,7 @@ export default function SovereignTerminalPage() {
                 </div>
               </div>
 
+              {/* Global Comm */}
               <div className="premium-panel flex h-[500px] flex-col lg:col-span-5">
                 <div className="flex items-center justify-between border-b border-[#1a1a1a] p-5">
                   <h3 className="font-display flex items-center gap-2 text-lg text-white">
@@ -271,69 +393,86 @@ export default function SovereignTerminalPage() {
                   </button>
                 </div>
                 <div className="custom-scroll flex-1 space-y-5 overflow-y-auto p-5 text-sm">
-                  <ChatLine user="desmond.id" time="14:02 UTC" text="Gas optimization module is live. Review registry state variables closely." />
-                  <ChatLine user="builder.id" time="14:05 UTC" text="Working through the array packing section now." />
-                  <ChatLine user="nuvyx.id" time="14:12 UTC" text="Anyone routed .id data to Soar yet? Need eyes on REST API." />
+                  <div className="flex h-full items-center justify-center text-sm text-nexid-muted">
+                    Global comm channel coming soon.
+                  </div>
                 </div>
                 <div className="rounded-b-xl border-t border-[#1a1a1a] bg-[#0a0a0a] p-4">
                   <div className="flex items-center rounded-lg border border-[#222] bg-[#111]">
-                    <span className="absolute ml-3 font-mono text-[10px] tracking-widest text-nexid-gold">founder.id &gt;</span>
-                    <input type="text" placeholder="Execute message..." className="w-full border-none bg-transparent py-3 pl-[90px] pr-10 text-sm text-white placeholder:text-nexid-muted/50 focus:outline-none" />
+                    <span className="absolute ml-3 font-mono text-[10px] tracking-widest text-nexid-gold">{displayName || "anon"} &gt;</span>
+                    <input type="text" placeholder="Execute message..." className="w-full border-none bg-transparent py-3 pl-[90px] pr-10 text-sm text-white placeholder:text-nexid-muted/50 focus:outline-none" disabled />
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* ── Academic Ledger ── */}
             <div>
               <h3 className="font-display mb-4 text-xl text-white">Academic Ledger</h3>
               <div className="premium-panel overflow-hidden">
                 <div className="divide-y divide-[#1a1a1a]">
-                  {LEDGER.map((item) => (
-                    <div key={item.name} className="flex flex-col items-center gap-5 p-5 transition-colors hover:bg-[#111] sm:flex-row">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-[#050505] shadow-inner-glaze ${item.active ? "border-nexid-gold/30" : "border-white/5 opacity-50"}`}>⬢</div>
-                      <div className="w-full flex-1">
-                        <h4 className="mb-1 text-sm font-medium text-white">{item.name}</h4>
-                        {item.active ? (
-                          <div className="flex items-center gap-3">
-                            <div className="h-1 flex-1 overflow-hidden rounded-full border border-[#222] bg-black">
-                              <div className="h-full bg-nexid-gold" style={{ width: item.progress }} />
+                  {userCampaigns.length > 0 ? (
+                    userCampaigns.slice(0, 10).map((c) => (
+                      <Link
+                        key={c.campaignId}
+                        href={`/academy/campaign/${c.campaignId}`}
+                        className="flex flex-col items-center gap-5 p-5 transition-colors hover:bg-[#111] sm:flex-row"
+                      >
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-[#050505] shadow-inner-glaze ${!c.completedAt ? "border-nexid-gold/30" : "border-white/5 opacity-50"}`}>
+                          &#x2B22;
+                        </div>
+                        <div className="w-full flex-1">
+                          <h4 className="mb-1 text-sm font-medium text-white">{c.title}</h4>
+                          {!c.completedAt ? (
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono text-[10px] text-nexid-gold">{c.score} pts &middot; In Progress</span>
                             </div>
-                            <span className="font-mono text-[10px] text-nexid-gold">{item.progress}</span>
-                          </div>
-                        ) : (
-                          <p className="text-[11px] text-nexid-muted">Completed</p>
-                        )}
-                      </div>
+                          ) : (
+                            <p className="text-[11px] text-green-400">Completed</p>
+                          )}
+                        </div>
+                        <div className="text-xs text-nexid-muted">{c.sponsorName}</div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-sm text-nexid-muted">
+                      {hasToken ? "No campaign enrollments yet." : "Connect wallet to view your academic ledger."}
                     </div>
-                  ))}
+                  )}
                 </div>
-                <div className="bg-[#0a0a0a] p-4">
-                  <button type="button" onClick={() => setLedgerOpen(true)} className="w-full rounded-lg border border-[#222] bg-[#111] py-3 text-sm font-medium text-white hover:border-white/20">
-                    View Complete Academic Ledger
-                  </button>
-                </div>
+                {userCampaigns.length > 10 ? (
+                  <div className="bg-[#0a0a0a] p-4">
+                    <button type="button" onClick={() => setLedgerOpen(true)} className="w-full rounded-lg border border-[#222] bg-[#111] py-3 text-sm font-medium text-white hover:border-white/20">
+                      View Complete Academic Ledger
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </section>
         ) : null}
 
+        {/* ════════════ PROFILE VIEW ════════════ */}
         {view === "profile" ? (
           <section className="mx-auto w-full max-w-6xl space-y-8 p-6 lg:p-10">
             <div className="flex flex-col gap-6 border-b border-nexid-border pb-8 md:flex-row md:items-end md:justify-between">
               <div className="flex items-center gap-6">
-                <div className="group relative h-28 w-28 cursor-pointer rounded-full border border-nexid-gold/50 p-1 shadow-gold-glow">
-                  <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=300" alt="" className="h-full w-full rounded-full object-cover" />
+                <div className="group relative h-28 w-28 rounded-full border border-nexid-gold/50 p-1 shadow-gold-glow">
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-nexid-gold/20 text-3xl font-bold text-nexid-gold">
+                    {displayName ? displayName.charAt(0).toUpperCase() : "?"}
+                  </div>
                 </div>
                 <div>
                   <h2 className="font-display mb-1.5 flex items-center gap-3 text-4xl font-bold tracking-tight text-white">
-                    founder.id <span className="text-blue-400">✔</span>
+                    {displayName || "Anonymous"} {ensName ? <span className="text-blue-400">&#10004;</span> : null}
                   </h2>
                   <div className="font-mono text-[11px] text-nexid-muted">
-                    <span className="shadow-inner-glaze rounded border border-[#222] bg-[#111] px-2 py-0.5 text-white">0x71C8...976F</span>
+                    <span className="shadow-inner-glaze rounded border border-[#222] bg-[#111] px-2 py-0.5 text-white">
+                      {address ? shortAddr(address) : "Not connected"}
+                    </span>
                   </div>
                 </div>
               </div>
-              <button type="button" className="rounded-lg bg-white px-8 py-3 text-sm font-bold text-black">Save Matrix</button>
             </div>
 
             <div className="flex flex-col gap-10 md:flex-row">
@@ -345,8 +484,8 @@ export default function SovereignTerminalPage() {
               </nav>
 
               <div className="min-h-[500px] max-w-3xl flex-1">
-                {profileTab === "general" ? <GeneralPanel /> : null}
-                {profileTab === "wallets" ? <WalletPanel /> : null}
+                {profileTab === "general" ? <GeneralPanel displayName={displayName} /> : null}
+                {profileTab === "wallets" ? <WalletPanel address={address ?? null} /> : null}
                 {profileTab === "security" ? <SecurityPanel /> : null}
                 {profileTab === "prefs" ? <PrefsPanel /> : null}
               </div>
@@ -354,6 +493,8 @@ export default function SovereignTerminalPage() {
           </section>
         ) : null}
       </main>
+
+      {/* ═══ Modals ═══ */}
 
       {rulesOpen ? (
         <Modal title="Terminal Protocol" onClose={() => setRulesOpen(false)}>
@@ -370,15 +511,21 @@ export default function SovereignTerminalPage() {
       {top100Open ? (
         <Modal title="Top 100 Ledger" onClose={() => setTop100Open(false)} maxWidth="max-w-2xl" fullHeight>
           <div className="custom-scroll flex-1 space-y-1 overflow-y-auto rounded-lg border border-[#1a1a1a] bg-[#050505] p-2">
-            {top100.map((row) => (
-              <div key={row.rank} className="flex items-center justify-between rounded border-b border-[#111] p-3 text-sm last:border-0 hover:bg-[#0d0d0d]">
-                <div className="flex items-center gap-6">
-                  <div className={`w-8 text-right font-mono font-black ${row.rank <= 3 ? `rank-${row.rank}` : "text-nexid-muted"}`}>{row.rank}</div>
-                  <div className="text-white/90">{row.name}</div>
+            {leaderboard.length > 0 ? (
+              leaderboard.map((row) => (
+                <div key={row.rank} className="flex items-center justify-between rounded border-b border-[#111] p-3 text-sm last:border-0 hover:bg-[#0d0d0d]">
+                  <div className="flex items-center gap-6">
+                    <div className={`w-8 text-right font-mono font-black ${row.rank <= 3 ? `rank-${row.rank}` : "text-nexid-muted"}`}>{row.rank}</div>
+                    <div className="text-white/90">{shortAddr(row.walletAddress)}</div>
+                  </div>
+                  <div className={`font-mono text-xs ${row.rank <= 3 ? `rank-${row.rank}` : "text-nexid-muted"}`}>
+                    {row.totalPoints.toLocaleString()} pts
+                  </div>
                 </div>
-                <div className={`font-mono text-xs ${row.rank <= 3 ? `rank-${row.rank}` : "text-nexid-muted"}`}>{row.score.toLocaleString()} pts</div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="p-6 text-center text-sm text-nexid-muted">No leaderboard data yet.</div>
+            )}
           </div>
         </Modal>
       ) : null}
@@ -386,16 +533,22 @@ export default function SovereignTerminalPage() {
       {ledgerOpen ? (
         <Modal title="Complete Academic Ledger" onClose={() => setLedgerOpen(false)} maxWidth="max-w-4xl" fullHeight>
           <div className="custom-scroll flex-1 overflow-y-auto rounded-xl border border-[#1a1a1a] bg-[#050505] p-2">
-            {Array.from({ length: 10 }, (_, idx) => (
-              <div key={idx} className="flex flex-col items-center gap-5 rounded-lg border-b border-[#111] p-5 transition-colors last:border-0 hover:bg-[#0d0d0d] sm:flex-row">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#333] bg-[#111]">⬢</div>
-                <div className="w-full flex-1">
-                  <h4 className="mb-1 text-sm font-medium text-white">{["Web3 Economics", "Zero-Knowledge Proofs 101", "Solidity Best Practices", "EVM Under the Hood", "L2 Scaling Solutions", "Cross-Chain Bridges", "Governance & DAOs", "NFT Metadata Standards", "Smart Contract Auditing", "Decentralized Storage"][idx]}</h4>
-                  <div className="font-mono text-[11px] uppercase tracking-wider text-green-400">VERIFIED ON-CHAIN</div>
+            {userCampaigns.length > 0 ? (
+              userCampaigns.map((c) => (
+                <div key={c.campaignId} className="flex flex-col items-center gap-5 rounded-lg border-b border-[#111] p-5 transition-colors last:border-0 hover:bg-[#0d0d0d] sm:flex-row">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#333] bg-[#111]">&#x2B22;</div>
+                  <div className="w-full flex-1">
+                    <h4 className="mb-1 text-sm font-medium text-white">{c.title}</h4>
+                    <div className={`font-mono text-[11px] uppercase tracking-wider ${c.completedAt ? "text-green-400" : "text-nexid-gold"}`}>
+                      {c.completedAt ? "COMPLETED" : "IN PROGRESS"}
+                    </div>
+                  </div>
+                  <div className="text-xs text-nexid-muted">Score: {c.score}</div>
                 </div>
-                <div className="text-xs text-nexid-muted">Score: {90 + (idx % 10)}%</div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="p-6 text-center text-sm text-nexid-muted">No enrollments yet.</div>
+            )}
           </div>
         </Modal>
       ) : null}
@@ -403,15 +556,9 @@ export default function SovereignTerminalPage() {
   );
 }
 
-function SideItem({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
+/* ═══════════════════ Sub-components ═══════════════════ */
+
+function SideItem({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -419,7 +566,7 @@ function SideItem({
       className={`group flex w-full items-center justify-center gap-4 rounded-xl px-3 py-3.5 transition-all lg:justify-start lg:px-4 ${active ? "border border-[#222] bg-[#111] text-white" : "border border-transparent text-nexid-muted hover:bg-white/5 hover:text-white"}`}
     >
       <span className="hidden text-sm font-medium lg:block">{label}</span>
-      <span className="text-sm lg:hidden">•</span>
+      <span className="text-sm lg:hidden">&#8226;</span>
     </button>
   );
 }
@@ -440,29 +587,7 @@ function RankRow({ rank, name, score }: { rank: number; name: string; score: str
   );
 }
 
-function ChatLine({ user, time, text }: { user: string; time: string; text: string }) {
-  return (
-    <div>
-      <div className="mb-1 flex items-baseline gap-2">
-        <span className="text-xs font-medium text-white">{user}</span>
-        <span className="font-mono text-[9px] text-nexid-muted">{time}</span>
-      </div>
-      <div className="text-sm leading-relaxed text-white/80">{text}</div>
-    </div>
-  );
-}
-
-function ProfileTabButton({
-  tab,
-  active,
-  onClick,
-  label,
-}: {
-  tab: ProfileTab;
-  active: boolean;
-  onClick: (tab: ProfileTab) => void;
-  label: string;
-}) {
+function ProfileTabButton({ tab, active, onClick, label }: { tab: ProfileTab; active: boolean; onClick: (tab: ProfileTab) => void; label: string }) {
   return (
     <button
       type="button"
@@ -474,7 +599,7 @@ function ProfileTabButton({
   );
 }
 
-function GeneralPanel() {
+function GeneralPanel({ displayName }: { displayName: string }) {
   return (
     <div className="space-y-8">
       <div>
@@ -485,24 +610,20 @@ function GeneralPanel() {
         Updating fields executes a transaction to your `.id` resolver contract.
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Field label="Public Alias" value="NexID Founder" />
+        <Field label="Primary Name" value={displayName || "Not set"} readOnly />
         <Field label="Timezone" value="UTC (Coordinated Universal Time)" />
       </div>
     </div>
   );
 }
 
-function WalletPanel() {
+function WalletPanel({ address }: { address: string | null }) {
   return (
     <div className="space-y-8">
       <h3 className="font-display text-2xl text-white">Nodes & Socials</h3>
       <div className="rounded-lg border border-[#222] bg-[#0a0a0a] p-4">
-        <div className="text-sm font-medium text-white">Ethereum Mainnet</div>
-        <div className="mt-0.5 font-mono text-[10px] text-nexid-muted">0x71C...976F</div>
-      </div>
-      <div className="rounded-lg border border-[#222] bg-[#0a0a0a] p-4">
-        <div className="text-sm font-medium text-white">X (Twitter)</div>
-        <div className="mt-0.5 font-mono text-[10px] text-nexid-muted">@NexID_Founder</div>
+        <div className="text-sm font-medium text-white">Base Mainnet</div>
+        <div className="mt-0.5 font-mono text-[10px] text-nexid-muted">{address ? shortAddr(address) : "Not connected"}</div>
       </div>
     </div>
   );
@@ -533,30 +654,18 @@ function PrefsPanel() {
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value, readOnly }: { label: string; value: string; readOnly?: boolean }) {
   return (
     <div>
       <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-nexid-muted">
         {label}
       </label>
-      <input type="text" defaultValue={value} className="w-full rounded-lg border border-[#222] bg-[#0a0a0a] px-4 py-3 text-sm text-white" />
+      <input type="text" defaultValue={value} readOnly={readOnly} className={`w-full rounded-lg border border-[#222] bg-[#0a0a0a] px-4 py-3 text-sm text-white ${readOnly ? "cursor-default opacity-70" : ""}`} />
     </div>
   );
 }
 
-function Modal({
-  title,
-  children,
-  onClose,
-  maxWidth = "max-w-lg",
-  fullHeight = false,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-  maxWidth?: string;
-  fullHeight?: boolean;
-}) {
+function Modal({ title, children, onClose, maxWidth = "max-w-lg", fullHeight = false }: { title: string; children: ReactNode; onClose: () => void; maxWidth?: string; fullHeight?: boolean }) {
   return (
     <div className="modal-overlay active fixed inset-0 flex items-center justify-center p-4">
       <button type="button" onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
