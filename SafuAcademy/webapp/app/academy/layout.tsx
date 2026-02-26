@@ -31,6 +31,11 @@ export default function AcademyLayout({ children }: AcademyLayoutProps) {
     }
   }, [domainName, address]);
 
+  // Dashboard has its own full layout — skip the academy wrapper
+  if (pathname.startsWith("/academy/dashboard")) {
+    return <>{children}</>;
+  }
+
   const inBrowse = pathname === "/academy" || pathname.startsWith("/academy/campaign/");
   const inLeaderboard = pathname.startsWith("/academy/leaderboard");
   const inFaq = pathname.startsWith("/academy/faq");
