@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useWalletClient } from "wagmi";
 import { useENSName } from "@/hooks/getPrimaryName";
 
 type GlobalView = "dashboard" | "profile";
@@ -39,6 +39,25 @@ type FeaturedCampaign = {
   tier: string;
 };
 
+type EndedCampaignClaim = {
+  campaignId: number;
+  title: string;
+  sponsorName: string;
+  coverImageUrl: string | null;
+  prizePoolUsdc: string;
+  endAt: string | null;
+  escrowId: number | null;
+  escrowAddress: string | null;
+  rank: number | null;
+  score: number;
+  rewardAmountUsdc: string | null;
+  claimed: boolean;
+  claimedAt: string | null;
+  rewardTxHash: string | null;
+  merkleProof: string[] | null;
+  claimReady: boolean;
+};
+
 function authHeaders(): Record<string, string> {
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -51,6 +70,7 @@ function shortAddr(addr: string) {
 
 export default function SovereignTerminalPage() {
   const { address, isConnected } = useAccount();
+  const { data: walletClient } = useWalletClient();
   const { name: ensName } = useENSName({
     owner: (address ?? "0x0000000000000000000000000000000000000000") as `0x${string}`,
   });
@@ -74,6 +94,12 @@ export default function SovereignTerminalPage() {
   const [totalPoints, setTotalPoints] = useState(0);
   const [featuredCampaigns, setFeaturedCampaigns] = useState<FeaturedCampaign[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
+
+  // ── Ended Campaigns claim state ──
+  const [endedClaims, setEndedClaims] = useState<EndedCampaignClaim[]>([]);
+  const [claimingId, setClaimingId] = useState<number | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [claimSuccess, setClaimSuccess] = useState<{ campaignId: number; txHash: string } | null>(null);
 
   // ── Fetch global leaderboard (public) ──
   useEffect(() => {
@@ -146,6 +172,111 @@ export default function SovereignTerminalPage() {
     }, 4500);
     return () => clearInterval(interval);
   }, [featuredCampaigns.length]);
+
+  // ── Fetch claim info for ended campaigns the user participated in ──
+  useEffect(() => {
+    if (!hasToken) return;
+    const endedIds = userCampaigns
+      .filter((c) => c.status === "ENDED")
+      .map((c) => c.campaignId);
+    if (endedIds.length === 0) {
+      setEndedClaims([]);
+      return;
+    }
+
+    Promise.all(
+      endedIds.map((id) =>
+        fetch(`/api/campaigns/${id}/claim`, { headers: authHeaders() })
+          .then(async (res) => (res.ok ? res.json() : null))
+          .catch(() => null),
+      ),
+    ).then((results) => {
+      setEndedClaims(results.filter(Boolean) as EndedCampaignClaim[]);
+    });
+  }, [hasToken, userCampaigns]);
+
+  // ── Claim reward handler (EIP-712 gasless signature) ──
+  const handleClaim = useCallback(
+    async (claim: EndedCampaignClaim) => {
+      if (!walletClient || !address || !claim.escrowAddress || claim.escrowId === null || !claim.rewardAmountUsdc) return;
+
+      setClaimingId(claim.campaignId);
+      setClaimError(null);
+      setClaimSuccess(null);
+
+      try {
+        // 10-minute deadline
+        const deadline = Math.floor(Date.now() / 1000) + 600;
+
+        // USDC has 6 decimals — rewardAmountUsdc is stored as a decimal string (e.g. "150.000000")
+        const amountRaw = BigInt(
+          Math.round(parseFloat(claim.rewardAmountUsdc) * 1_000_000),
+        );
+
+        const chainId = await walletClient.getChainId();
+
+        // Sign EIP-712 typed data
+        const signature = await walletClient.signTypedData({
+          domain: {
+            name: "CampaignEscrow",
+            version: "1",
+            chainId,
+            verifyingContract: claim.escrowAddress as `0x${string}`,
+          },
+          types: {
+            ClaimReward: [
+              { name: "escrowId", type: "uint256" },
+              { name: "claimer", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "deadline", type: "uint256" },
+            ],
+          },
+          primaryType: "ClaimReward",
+          message: {
+            escrowId: BigInt(claim.escrowId),
+            claimer: address,
+            amount: amountRaw,
+            deadline: BigInt(deadline),
+          },
+        });
+
+        // Submit to backend relayer
+        const res = await fetch(`/api/campaigns/${claim.campaignId}/claim/submit`, {
+          method: "POST",
+          headers: { ...authHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({ signature, deadline }),
+        });
+
+        const body = await res.json();
+
+        if (!res.ok) {
+          setClaimError(body.error || "Claim failed");
+          return;
+        }
+
+        setClaimSuccess({ campaignId: claim.campaignId, txHash: body.txHash });
+
+        // Update local state
+        setEndedClaims((prev) =>
+          prev.map((c) =>
+            c.campaignId === claim.campaignId
+              ? { ...c, claimed: true, claimedAt: new Date().toISOString(), rewardTxHash: body.txHash, claimReady: false }
+              : c,
+          ),
+        );
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Claim failed";
+        if (msg.includes("rejected") || msg.includes("denied")) {
+          setClaimError("Signature rejected by wallet");
+        } else {
+          setClaimError(msg);
+        }
+      } finally {
+        setClaimingId(null);
+      }
+    },
+    [walletClient, address],
+  );
 
   const activeCampaign = useMemo(
     () => userCampaigns.find((c) => !c.completedAt && c.status === "LIVE"),
@@ -405,6 +536,103 @@ export default function SovereignTerminalPage() {
                 </div>
               </div>
             </div>
+
+            {/* ── Ended Campaigns — Claim Terminal ── */}
+            {endedClaims.length > 0 ? (
+              <div>
+                <h3 className="font-display mb-4 text-xl text-white">
+                  Ended Campaigns
+                  <span className="ml-3 inline-block rounded border border-nexid-gold/30 bg-nexid-gold/10 px-2 py-0.5 align-middle font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
+                    Claim Terminal
+                  </span>
+                </h3>
+
+                {claimError ? (
+                  <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+                    {claimError}
+                    <button type="button" onClick={() => setClaimError(null)} className="ml-3 text-xs text-white/50 hover:text-white">dismiss</button>
+                  </div>
+                ) : null}
+
+                {claimSuccess ? (
+                  <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
+                    Reward claimed successfully! Tx: <span className="font-mono text-[11px] text-white/70">{claimSuccess.txHash.slice(0, 10)}...{claimSuccess.txHash.slice(-6)}</span>
+                    <button type="button" onClick={() => setClaimSuccess(null)} className="ml-3 text-xs text-white/50 hover:text-white">dismiss</button>
+                  </div>
+                ) : null}
+
+                <div className="premium-panel overflow-hidden">
+                  <div className="divide-y divide-[#1a1a1a]">
+                    {endedClaims.map((claim) => (
+                      <div key={claim.campaignId} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                        {/* Campaign info */}
+                        <div className="flex flex-1 items-center gap-4">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-nexid-gold/30 bg-[#050505] shadow-inner-glaze">
+                            <span className="text-nexid-gold">&#x2B22;</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="mb-0.5 text-sm font-medium text-white">{claim.title}</h4>
+                            <p className="text-[11px] text-nexid-muted">{claim.sponsorName}</p>
+                          </div>
+                        </div>
+
+                        {/* Rank & Score */}
+                        <div className="flex items-center gap-6">
+                          {claim.rank ? (
+                            <div className="text-center">
+                              <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-muted">Rank</div>
+                              <div className={`font-mono text-sm font-bold ${claim.rank <= 3 ? `rank-${claim.rank}` : "text-white"}`}>
+                                #{claim.rank}
+                              </div>
+                            </div>
+                          ) : null}
+                          <div className="text-center">
+                            <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-muted">Score</div>
+                            <div className="font-mono text-sm text-white">{claim.score.toLocaleString()}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-muted">Reward</div>
+                            <div className="font-mono text-sm font-bold text-nexid-gold">
+                              {claim.rewardAmountUsdc ? `$${parseFloat(claim.rewardAmountUsdc).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Claim button */}
+                        <div className="sm:ml-4">
+                          {claim.claimed ? (
+                            <div className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-2.5">
+                              <span className="h-2 w-2 rounded-full bg-green-500" />
+                              <span className="font-mono text-[11px] uppercase tracking-wider text-green-400">Claimed</span>
+                            </div>
+                          ) : claim.claimReady ? (
+                            <button
+                              type="button"
+                              disabled={claimingId === claim.campaignId}
+                              onClick={() => handleClaim(claim)}
+                              className="relative rounded-lg bg-nexid-gold px-5 py-2.5 text-sm font-bold text-black transition-all hover:shadow-[0_0_20px_rgba(255,176,0,0.3)] disabled:opacity-50"
+                            >
+                              {claimingId === claim.campaignId ? (
+                                <span className="flex items-center gap-2">
+                                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                                  Signing...
+                                </span>
+                              ) : (
+                                "Claim USDC"
+                              )}
+                            </button>
+                          ) : (
+                            <div className="rounded-lg border border-[#222] bg-[#111] px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-nexid-muted">
+                              {claim.rewardAmountUsdc ? "Pending" : "No Reward"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {/* ── Academic Ledger ── */}
             <div>
