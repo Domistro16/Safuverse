@@ -9,7 +9,9 @@ export const config = {
     databaseUrl: process.env.DATABASE_URL!,
 
     // JWT
-    jwtSecret: process.env.JWT_SECRET || 'fallback-secret-change-me',
+    jwtSecret:
+        process.env.JWT_SECRET ||
+        (process.env.NODE_ENV === 'development' ? 'dev-local-jwt-secret' : ''),
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
 
     // Blockchain

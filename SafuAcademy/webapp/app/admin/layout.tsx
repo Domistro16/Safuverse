@@ -43,8 +43,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             return;
           }
 
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
+          // Only purge auth on explicit auth failures; keep token on transient server/network issues.
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+          }
         }
 
         if (!isConnected || !address || !authenticated) {
@@ -106,6 +109,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
+  if (isAdmin) {
+    return <>{children}</>;
+  }
+
   if (!isConnected || !authenticated) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -136,6 +143,4 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
     );
   }
-
-  return <>{children}</>;
 }

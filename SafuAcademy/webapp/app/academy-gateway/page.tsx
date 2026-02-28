@@ -12,7 +12,17 @@ export default function AcademyGatewayPage() {
   const router = useRouter();
   const { initOAuth } = useLoginWithOAuth({
     onComplete: () => {
+      setSocialLoading(false);
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        setError("Social login succeeded, but no Academy auth session was issued. Please connect wallet.");
+        localStorage.removeItem("nexid_gateway_connected");
+        setSocialLoading(false);
+        setStep(1);
+        return;
+      }
       localStorage.setItem("nexid_gateway_connected", "true");
+      window.dispatchEvent(new Event("nexid-auth-changed"));
       setStep(5);
       setRedirectCount(3);
     },
@@ -139,6 +149,7 @@ export default function AcademyGatewayPage() {
           localStorage.setItem("auth_user", JSON.stringify(verifyBody.user ?? {}));
           localStorage.setItem("nexid_gateway_connected", "true");
           localStorage.setItem("nexid_gateway_address", connectedAddress);
+          window.dispatchEvent(new Event("nexid-auth-changed"));
           signedAndVerified = true;
           break;
         } catch (err) {
@@ -173,10 +184,17 @@ export default function AcademyGatewayPage() {
   };
 
   const executeSignature = async () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setError("Session token missing. Please reconnect your wallet.");
+      setStep(1);
+      return;
+    }
     setStep(5);
     setRedirectCount(3);
     localStorage.setItem("nexid_gateway_connected", "true");
     if (address) localStorage.setItem("nexid_gateway_address", address);
+    window.dispatchEvent(new Event("nexid-auth-changed"));
   };
 
   useEffect(() => {

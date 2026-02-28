@@ -33,9 +33,12 @@ function getInitialAuthState(): AuthState {
     try {
         const token = localStorage.getItem('auth_token');
         const userStr = localStorage.getItem('auth_user');
-        if (token && userStr) {
-            const user = JSON.parse(userStr);
-            return { isAuthenticated: true, token, user, domainName: null };
+        if (token) {
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                return { isAuthenticated: true, token, user, domainName: null };
+            }
+            return { isAuthenticated: true, token, user: null, domainName: null };
         }
     } catch {
         // ignore
@@ -61,32 +64,58 @@ export function CustomConnect() {
         }
     }, [isConnected, chainId, switchChain]);
 
-    // Clear auth when wallet disconnects
+    // Keep local auth state in sync with storage updates (gateway login/logout, other tabs, modal disconnect).
     useEffect(() => {
-        // Wait for Privy to finish initialising before deciding to clear.
-        // During initialisation, `authenticated` is always false, so without
-        // this guard the stored token would be wiped on every page load,
-        // causing a sign-message prompt on every navigation / reload.
+        const syncAuthState = () => {
+            setAuthState(getInitialAuthState());
+        };
+
+        const validateAuthToken = async () => {
+            const token = localStorage.getItem('auth_token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/auth/me', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (!res.ok) {
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('auth_user');
+                    setAuthState({ isAuthenticated: false, token: null, user: null, domainName: null });
+                    return;
+                }
+
+                const body = await res.json();
+                if (body?.user) {
+                    localStorage.setItem('auth_user', JSON.stringify(body.user));
+                    setAuthState({ isAuthenticated: true, token, user: body.user, domainName: null });
+                }
+            } catch {
+                // Keep current state on transient network issues.
+            }
+        };
+
+        syncAuthState();
+        void validateAuthToken();
+        window.addEventListener('storage', syncAuthState);
+        window.addEventListener('nexid-auth-changed', syncAuthState as EventListener);
+        return () => {
+            window.removeEventListener('storage', syncAuthState);
+            window.removeEventListener('nexid-auth-changed', syncAuthState as EventListener);
+        };
+    }, []);
+
+    // Wallet disconnect should not wipe backend session token (gateway auth is token-based).
+    useEffect(() => {
         if (!ready) return;
-        if (!isConnected) {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('auth_user');
-            emitAuthChanged();
-            setAuthState({
-                isAuthenticated: false,
-                token: null,
-                user: null,
-                domainName: null,
-            });
-            hasAttemptedAuth.current = false;
-        }
-        if (!authenticated) {
+        if (!isConnected || !authenticated) {
             hasAttemptedAuth.current = false;
         }
     }, [ready, isConnected, authenticated]);
 
     // Resolve primary .id domain name via the SafuDomains reverse lookup chain
-    const { name: domainName } = useENSName({ owner: address as `0x${string}` });
+    const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
     const authenticate = useCallback(async () => {
         if (!address || isAuthenticating) return;
 
@@ -164,9 +193,12 @@ export function CustomConnect() {
                     const parsedUser = JSON.parse(userStr);
                     if (parsedUser.walletAddress?.toLowerCase() === address.toLowerCase()) {
                         setAuthState({ isAuthenticated: true, token, user: parsedUser, domainName: null });
-                        emitAuthChanged();
                         return;
                     }
+                }
+                if (token && !userStr) {
+                    setAuthState({ isAuthenticated: true, token, user: null, domainName: null });
+                    return;
                 }
             } catch {
                 // fall through to sign
@@ -196,18 +228,9 @@ export function CustomConnect() {
         );
     }
 
-    if (!authenticated || !isConnected) {
-        return (
-            <button
-                onClick={() => router.push('/academy-gateway')}
-                className="rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white shadow-inner-glaze transition-colors hover:border-white/20"
-            >
-                Login
-            </button>
-        );
-    }
+    const hasBackendAuth = authState.isAuthenticated && Boolean(authState.token);
 
-    if (isAuthenticating) {
+    if (!hasBackendAuth && isAuthenticating) {
         return (
             <button
                 disabled
@@ -218,8 +241,20 @@ export function CustomConnect() {
         );
     }
 
+    if (!hasBackendAuth) {
+        return (
+            <button
+                onClick={() => router.push('/academy-gateway')}
+                className="rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white shadow-inner-glaze transition-colors hover:border-white/20"
+            >
+                Login
+            </button>
+        );
+    }
+
+    const fallbackAddress = authState.user?.walletAddress;
     const displayText = (domainName as string | undefined)
-        || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
+        || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : fallbackAddress ? `${fallbackAddress.slice(0, 6)}...${fallbackAddress.slice(-4)}` : 'Connected');
     return (
         <>
             <button
@@ -234,7 +269,7 @@ export function CustomConnect() {
             <WalletModal
                 isOpen={showWalletModal}
                 onRequestClose={() => setShowWalletModal(false)}
-                address={address || ''}
+                address={address || fallbackAddress || ''}
                 name={(domainName as string | undefined) || ''}
             />
         </>

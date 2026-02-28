@@ -108,6 +108,9 @@ export class AuthService {
     }
 
     generateToken(userId: string, walletAddress: string): string {
+        if (!config.jwtSecret) {
+            throw new Error('JWT_SECRET is required to generate auth tokens');
+        }
         return jwt.sign(
             { userId, walletAddress },
             config.jwtSecret,
@@ -117,6 +120,9 @@ export class AuthService {
 
     verifyToken(token: string): { userId: string; walletAddress: string } | null {
         try {
+            if (!config.jwtSecret) {
+                return null;
+            }
             const decoded = jwt.verify(token, config.jwtSecret) as {
                 userId: string;
                 walletAddress: string;
