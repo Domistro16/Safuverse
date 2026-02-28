@@ -28,7 +28,15 @@ export async function POST(
   // Fetch campaign info
   const campaign = await prisma.campaign.findUnique({
     where: { id: campaignId },
-    select: { id: true, status: true, contractType: true, onChainCampaignId: true },
+    select: {
+      id: true,
+      status: true,
+      contractType: true,
+      onChainCampaignId: true,
+      ownerType: true,
+      sponsorName: true,
+      sponsorNamespace: true,
+    },
   });
   if (!campaign) {
     return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
@@ -37,6 +45,10 @@ export async function POST(
   // Check enrollment
   const participant = await prisma.campaignParticipant.findUnique({
     where: { campaignId_userId: { campaignId, userId: auth.user.userId } },
+    select: {
+      id: true,
+      completedAt: true,
+    },
   });
   if (!participant) {
     return NextResponse.json({ error: "Not enrolled in this campaign" }, { status: 400 });
@@ -45,7 +57,7 @@ export async function POST(
     return NextResponse.json({ error: "Campaign already completed" }, { status: 400 });
   }
 
-  // ── On-chain completion ──
+  // On-chain completion
   let onChainTxHash: string | null = null;
 
   if (campaign.onChainCampaignId !== null) {
@@ -71,11 +83,37 @@ export async function POST(
     }
   }
 
-  // ── DB completion ──
-  const updated = await prisma.campaignParticipant.update({
-    where: { id: participant.id },
-    data: { completedAt: new Date() },
-  });
+  // Reward campaigns grant Genesis points on completion.
+  const sponsor = campaign.sponsorName?.toLowerCase() ?? "";
+  const sponsorNamespace = campaign.sponsorNamespace?.toLowerCase() ?? "";
+  const isGenesisRewardCampaign =
+    campaign.ownerType === "NEXID" ||
+    sponsor.includes("nexid") ||
+    sponsorNamespace.includes("nexid");
+  const pointsToAward = isGenesisRewardCampaign ? 100 : 0;
+
+  // DB completion
+  // Run both updates in a transaction to ensure atomic score assignment
+  const [updated] = await prisma.$transaction([
+    prisma.campaignParticipant.update({
+      where: { id: participant.id },
+      data: {
+        completedAt: new Date(),
+        score: { increment: pointsToAward }
+      },
+      select: {
+        score: true,
+        rank: true,
+        completedAt: true,
+      },
+    }),
+    ...(pointsToAward > 0 ? [
+      prisma.user.update({
+        where: { id: auth.user.userId },
+        data: { totalPoints: { increment: pointsToAward } },
+      })
+    ] : [])
+  ]);
 
   return NextResponse.json({
     completed: true,

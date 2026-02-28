@@ -3,6 +3,39 @@ import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/middleware/admin.middleware";
 import { getCampaignRelayer } from "@/lib/services/campaign-relayer.service";
 
+let completedUntilColumnEnsured = false;
+
+async function ensureCompletedUntilColumn() {
+  if (completedUntilColumnEnsured) {
+    return;
+  }
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "CampaignParticipant"
+      ADD COLUMN IF NOT EXISTS "completedUntil" INTEGER NOT NULL DEFAULT -1
+    `);
+    completedUntilColumnEnsured = true;
+  } catch (error) {
+    console.error("Failed to ensure completedUntil column", error);
+  }
+}
+
+async function getCompletedUntil(campaignId: number, userId: string) {
+  await ensureCompletedUntilColumn();
+  try {
+    const rows = await prisma.$queryRaw<Array<{ completedUntil: number }>>`
+      SELECT COALESCE("completedUntil", -1) AS "completedUntil"
+      FROM "CampaignParticipant"
+      WHERE "campaignId" = ${campaignId} AND "userId" = ${userId}
+      LIMIT 1
+    `;
+    return rows[0]?.completedUntil ?? -1;
+  } catch (error) {
+    console.error("Failed to read completedUntil", error);
+    return -1;
+  }
+}
+
 /**
  * POST /api/campaigns/[id]/enroll
  * Enroll the authenticated user in a campaign (DB + on-chain).
@@ -39,9 +72,22 @@ export async function POST(
   // Check if already enrolled in DB
   const existing = await prisma.campaignParticipant.findUnique({
     where: { campaignId_userId: { campaignId, userId: auth.user.userId } },
+    select: {
+      score: true,
+      rank: true,
+      completedAt: true,
+      enrolledAt: true,
+    },
   });
   if (existing) {
-    return NextResponse.json({ enrolled: true, participant: existing });
+    const completedUntil = await getCompletedUntil(campaignId, auth.user.userId);
+    return NextResponse.json({
+      enrolled: true,
+      participant: {
+        ...existing,
+        completedUntil,
+      },
+    });
   }
 
   // ── On-chain enrollment ──
@@ -77,10 +123,24 @@ export async function POST(
       userId: auth.user.userId,
       score: 0,
     },
+    select: {
+      score: true,
+      rank: true,
+      completedAt: true,
+      enrolledAt: true,
+    },
   });
+  const completedUntil = await getCompletedUntil(campaignId, auth.user.userId);
 
   return NextResponse.json(
-    { enrolled: true, participant, onChainTxHash },
+    {
+      enrolled: true,
+      participant: {
+        ...participant,
+        completedUntil,
+      },
+      onChainTxHash,
+    },
     { status: 201 },
   );
 }
@@ -102,17 +162,25 @@ export async function GET(
 
   const participant = await prisma.campaignParticipant.findUnique({
     where: { campaignId_userId: { campaignId, userId: auth.user.userId } },
+    select: {
+      score: true,
+      rank: true,
+      completedAt: true,
+      enrolledAt: true,
+    },
   });
 
   if (!participant) {
     return NextResponse.json({ enrolled: false });
   }
+  const completedUntil = await getCompletedUntil(campaignId, auth.user.userId);
 
   return NextResponse.json({
     enrolled: true,
     participant: {
       score: participant.score,
       rank: participant.rank,
+      completedUntil,
       completedAt: participant.completedAt,
       enrolledAt: participant.enrolledAt,
     },

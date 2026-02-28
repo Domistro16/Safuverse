@@ -365,6 +365,7 @@ model CampaignParticipant {
   campaignId        Int
   userId            String
   score             Int       @default(0)
+  completedUntil    Int       @default(-1)
   rank              Int?
   rewardAmountUsdc  Decimal?  @db.Decimal(18, 6)
   rewardTxHash      String?

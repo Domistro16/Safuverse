@@ -49,6 +49,9 @@ contract PartnerCampaigns is Ownable {
     // Points per user per campaign (the on-chain leaderboard data)
     mapping(uint256 => mapping(address => uint256)) public campaignPoints;
 
+    // Running total of all points awarded per campaign (for proportional reward calculation)
+    mapping(uint256 => uint256) public totalCampaignPoints;
+
     // Participant tracking per campaign
     mapping(uint256 => address[]) internal _participants;
     mapping(uint256 => mapping(address => bool)) internal _isParticipant;
@@ -60,10 +63,7 @@ contract PartnerCampaigns is Ownable {
     );
     event CampaignUpdated(uint256 indexed campaignId, string title);
     event CampaignDeactivated(uint256 indexed campaignId);
-    event UserEnrolled(
-        address indexed user,
-        uint256 indexed campaignId
-    );
+    event UserEnrolled(address indexed user, uint256 indexed campaignId);
     event CampaignCompleted(
         address indexed user,
         uint256 indexed campaignId,
@@ -75,10 +75,7 @@ contract PartnerCampaigns is Ownable {
         uint256 points,
         uint256 totalPoints
     );
-    event BatchPointsAwarded(
-        uint256 indexed campaignId,
-        uint256 userCount
-    );
+    event BatchPointsAwarded(uint256 indexed campaignId, uint256 userCount);
     event RelayerUpdated(
         address indexed oldRelayer,
         address indexed newRelayer
@@ -224,6 +221,7 @@ contract PartnerCampaigns is Ownable {
         if (!_isParticipant[_campaignId][_user]) revert NotEnrolled();
 
         campaignPoints[_campaignId][_user] += _points;
+        totalCampaignPoints[_campaignId] += _points;
 
         emit PointsAwarded(
             _campaignId,
@@ -243,9 +241,9 @@ contract PartnerCampaigns is Ownable {
         if (_users.length != _points.length) revert LengthMismatch();
 
         for (uint256 i = 0; i < _users.length; i++) {
-            if (!_isParticipant[_campaignId][_users[i]])
-                revert NotEnrolled();
+            if (!_isParticipant[_campaignId][_users[i]]) revert NotEnrolled();
             campaignPoints[_campaignId][_users[i]] += _points[i];
+            totalCampaignPoints[_campaignId] += _points[i];
 
             emit PointsAwarded(
                 _campaignId,
@@ -314,11 +312,7 @@ contract PartnerCampaigns is Ownable {
     /// @return points Array of corresponding point totals
     function getLeaderboard(
         uint256 _campaignId
-    )
-        external
-        view
-        returns (address[] memory users, uint256[] memory points)
-    {
+    ) external view returns (address[] memory users, uint256[] memory points) {
         if (_campaignId >= campaignCounter) revert CampaignNotFound();
 
         address[] memory parts = _participants[_campaignId];
@@ -354,5 +348,11 @@ contract PartnerCampaigns is Ownable {
 
     function numCampaigns() external view returns (uint256) {
         return campaignCounter;
+    }
+
+    function getTotalCampaignPoints(
+        uint256 _campaignId
+    ) external view returns (uint256) {
+        return totalCampaignPoints[_campaignId];
     }
 }

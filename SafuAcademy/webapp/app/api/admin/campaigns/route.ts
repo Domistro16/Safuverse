@@ -57,6 +57,7 @@ type CampaignRow = {
   startAt: Date | null;
   endAt: Date | null;
   escrowAddress: string | null;
+  escrowId: number | null;
   onChainCampaignId: number | null;
   requestId: string | null;
   createdAt: Date;
@@ -132,10 +133,50 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Enrich with on-chain status from PartnerCampaigns (source of truth)
+    let onChainStatusMap = new Map<number, { onChainStatus: string; onChainEndTime: number | null }>();
+    const partnerAddr = process.env.PARTNER_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_PARTNER_CAMPAIGNS_ADDRESS;
+    const rpcUrl = process.env.RPC_URL || "https://mainnet.base.org";
+
+    if (partnerAddr) {
+      try {
+        const { ethers } = await import("ethers");
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const abi = [
+          "function getCampaign(uint256) view returns (tuple(uint256 id, string title, string description, string category, string level, string thumbnailUrl, string duration, uint256 totalTasks, address sponsor, string sponsorName, string sponsorLogo, uint256 prizePool, uint256 startTime, uint256 endTime, bool isActive))",
+        ];
+        const contract = new ethers.Contract(partnerAddr, abi, provider);
+
+        const withOnChainId = campaigns.filter((c) => c.onChainCampaignId != null);
+        const results = await Promise.allSettled(
+          withOnChainId.map((c) => contract.getCampaign(c.onChainCampaignId)),
+        );
+
+        const now = Math.floor(Date.now() / 1000);
+        for (let i = 0; i < withOnChainId.length; i++) {
+          const result = results[i];
+          if (result.status === "fulfilled") {
+            const campaign = result.value;
+            const isActive = campaign.isActive;
+            const endTime = Number(campaign.endTime);
+            const isEnded = endTime > 0 && now >= endTime;
+
+            onChainStatusMap.set(withOnChainId[i].id, {
+              onChainStatus: !isActive ? "Inactive" : isEnded ? "Ended" : "Active",
+              onChainEndTime: endTime || null,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to read on-chain status, falling back to DB:", err);
+      }
+    }
+
     return NextResponse.json({
       campaigns: campaigns.map((c) => ({
         ...c,
         ...(metricsMap.get(c.id) ?? { participantCount: 0, topScore: 0, totalScore: 0 }),
+        ...(onChainStatusMap.get(c.id) ?? {}),
       })),
     });
   } catch (error) {
@@ -188,8 +229,8 @@ export async function POST(request: NextRequest) {
     if (!sponsorName) {
       return NextResponse.json({ error: "sponsorName is required" }, { status: 400 });
     }
-    if (!Number.isFinite(prizePoolUsdc) || prizePoolUsdc <= 0) {
-      return NextResponse.json({ error: "prizePoolUsdc must be > 0" }, { status: 400 });
+    if (!Number.isFinite(prizePoolUsdc) || prizePoolUsdc < 0) {
+      return NextResponse.json({ error: "prizePoolUsdc must be >= 0" }, { status: 400 });
     }
 
     const slug = await getUniqueSlug(slugify(title));

@@ -4,14 +4,15 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 interface IPartnerCampaigns {
     function getUserCampaignPoints(
         uint256 campaignId,
         address user
+    ) external view returns (uint256);
+
+    function getTotalCampaignPoints(
+        uint256 campaignId
     ) external view returns (uint256);
 
     function getCampaignSponsor(
@@ -22,20 +23,20 @@ interface IPartnerCampaigns {
 /**
  * @title CampaignEscrow
  * @notice Escrow contract for partner campaign prize pools (USDC).
- * @dev Holds USDC deposited by partner projects. After a campaign ends, participants
- *      claim their rewards via Merkle proofs. Supports gasless claims through EIP-712
- *      signatures — a relayer submits the claim on behalf of the user.
+ * @dev Holds USDC deposited by sponsors. After a campaign's endTimestamp passes,
+ *      participants claim their proportional share of the prize pool based on
+ *      their on-chain points in PartnerCampaigns.
  *
- * Flow:
+ * Simplified flow (fully automated):
  * 1. Owner creates an escrow campaign linked to a PartnerCampaigns campaign ID
  * 2. Sponsor (or anyone) funds the campaign with USDC
  * 3. Campaign runs, points accumulate in PartnerCampaigns
- * 4. After endTimestamp, owner closes the campaign
- * 5. Owner sets the claim Merkle root (computed off-chain from final leaderboard)
- * 6. Participants claim USDC by providing their Merkle proof — directly or via relayer
- * 7. Sponsor can withdraw any remaining funds after a grace period
+ * 4. After endTimestamp, campaign is automatically "ended" — no manual close needed
+ * 5. Participants call claim() — contract reads their points on-chain, calculates
+ *    proportional share, and sends USDC directly
+ * 6. Sponsor can withdraw any remaining funds after a grace period
  */
-contract CampaignEscrow is Ownable, EIP712 {
+contract CampaignEscrow is Ownable {
     using SafeERC20 for IERC20;
 
     struct EscrowCampaign {
@@ -44,22 +45,17 @@ contract CampaignEscrow is Ownable, EIP712 {
         uint256 totalFunded;
         uint256 totalDistributed;
         uint256 endTimestamp;
-        bool isClosed;
     }
-
-    // EIP-712 typehash for gasless claim authorization
-    bytes32 public constant CLAIM_TYPEHASH =
-        keccak256("ClaimReward(uint256 escrowId,address claimer,uint256 amount,uint256 deadline)");
 
     IERC20 public immutable usdc;
     IPartnerCampaigns public partnerCampaigns;
 
+    /// @notice Grace period after campaign ends before sponsor can withdraw remaining funds
+    uint256 public constant CLAIM_GRACE_PERIOD = 30 days;
+
     uint256 public campaignCounter;
     mapping(uint256 => EscrowCampaign) public campaigns;
-    mapping(uint256 => mapping(address => bool)) public hasReceivedReward;
-
-    // Merkle claim roots per campaign
-    mapping(uint256 => bytes32) public claimRoots;
+    mapping(uint256 => mapping(address => bool)) public hasClaimed;
 
     event CampaignCreated(
         uint256 indexed escrowId,
@@ -73,23 +69,12 @@ contract CampaignEscrow is Ownable, EIP712 {
         uint256 amount,
         uint256 totalFunded
     );
-    event CampaignClosed(uint256 indexed escrowId, uint256 closedAt);
-    event ClaimRootSet(uint256 indexed escrowId, bytes32 merkleRoot);
     event RewardClaimed(
         uint256 indexed escrowId,
         address indexed claimer,
+        uint256 userPoints,
+        uint256 totalPoints,
         uint256 amount
-    );
-    event RewardDistributed(
-        uint256 indexed escrowId,
-        address indexed recipient,
-        uint256 rank,
-        uint256 amount
-    );
-    event BatchDistributed(
-        uint256 indexed escrowId,
-        uint256 recipientCount,
-        uint256 totalAmount
     );
     event PartnerCampaignsUpdated(
         address indexed oldAddress,
@@ -105,20 +90,15 @@ contract CampaignEscrow is Ownable, EIP712 {
     error InvalidTimestamp();
     error InvalidAmount();
     error CampaignNotFound();
-    error CampaignAlreadyClosed();
     error CampaignStillActive();
+    error CampaignAlreadyClosed();
     error NotSponsorOrOwner();
-    error LengthMismatch();
-    error EmptyDistribution();
-    error DuplicateRecipient();
-    error InsufficientEscrowBalance();
-    error InvalidRankingOrder();
-    error NothingToWithdraw();
-    error ClaimRootNotSet();
-    error InvalidMerkleProof();
     error AlreadyClaimed();
-    error SignatureExpired();
-    error InvalidSignature();
+    error NoPointsEarned();
+    error NoPointsInCampaign();
+    error NothingToWithdraw();
+    error GracePeriodNotOver();
+    error InsufficientEscrowBalance();
 
     modifier onlySponsorOrOwner(uint256 escrowId) {
         EscrowCampaign storage c = campaigns[escrowId];
@@ -131,7 +111,7 @@ contract CampaignEscrow is Ownable, EIP712 {
         address _owner,
         address _usdc,
         address _partnerCampaigns
-    ) Ownable(_owner) EIP712("CampaignEscrow", "1") {
+    ) Ownable(_owner) {
         if (_owner == address(0) || _usdc == address(0))
             revert InvalidAddress();
         usdc = IERC20(_usdc);
@@ -142,9 +122,7 @@ contract CampaignEscrow is Ownable, EIP712 {
 
     // ============ OWNER-ONLY ADMIN FUNCTIONS ============
 
-    function setPartnerCampaigns(
-        address _partnerCampaigns
-    ) external onlyOwner {
+    function setPartnerCampaigns(address _partnerCampaigns) external onlyOwner {
         address old = address(partnerCampaigns);
         partnerCampaigns = IPartnerCampaigns(_partnerCampaigns);
         emit PartnerCampaignsUpdated(old, _partnerCampaigns);
@@ -165,37 +143,11 @@ contract CampaignEscrow is Ownable, EIP712 {
             sponsor: _sponsor,
             totalFunded: 0,
             totalDistributed: 0,
-            endTimestamp: _endTimestamp,
-            isClosed: false
+            endTimestamp: _endTimestamp
         });
 
         emit CampaignCreated(id, _partnerCampaignId, _sponsor, _endTimestamp);
         return id;
-    }
-
-    function closeCampaign(uint256 escrowId) external onlyOwner {
-        EscrowCampaign storage c = campaigns[escrowId];
-        if (c.sponsor == address(0)) revert CampaignNotFound();
-        if (c.isClosed) revert CampaignAlreadyClosed();
-        if (block.timestamp < c.endTimestamp) revert CampaignStillActive();
-
-        c.isClosed = true;
-        emit CampaignClosed(escrowId, block.timestamp);
-    }
-
-    /// @notice Set the Merkle root for reward claims (computed off-chain from final leaderboard)
-    /// @param escrowId Escrow campaign identifier
-    /// @param _merkleRoot Root of the Merkle tree of (claimer, amount) leaves
-    function setClaimRoot(
-        uint256 escrowId,
-        bytes32 _merkleRoot
-    ) external onlyOwner {
-        EscrowCampaign storage c = campaigns[escrowId];
-        if (c.sponsor == address(0)) revert CampaignNotFound();
-        if (!c.isClosed) revert CampaignStillActive();
-
-        claimRoots[escrowId] = _merkleRoot;
-        emit ClaimRootSet(escrowId, _merkleRoot);
     }
 
     // ============ FUNDING ============
@@ -207,7 +159,7 @@ contract CampaignEscrow is Ownable, EIP712 {
 
         EscrowCampaign storage c = campaigns[escrowId];
         if (c.sponsor == address(0)) revert CampaignNotFound();
-        if (c.isClosed) revert CampaignAlreadyClosed();
+        if (block.timestamp >= c.endTimestamp) revert CampaignAlreadyClosed();
 
         usdc.safeTransferFrom(msg.sender, address(this), amount);
         c.totalFunded += amount;
@@ -215,159 +167,66 @@ contract CampaignEscrow is Ownable, EIP712 {
         emit CampaignFunded(escrowId, msg.sender, amount, c.totalFunded);
     }
 
-    // ============ USER CLAIMS (Merkle-based) ============
+    // ============ AUTOMATED CLAIMING ============
 
     /**
-     * @notice Claim USDC reward directly (user pays gas).
+     * @notice Claim your proportional share of the prize pool.
+     * @dev Reads your points directly from PartnerCampaigns on-chain.
+     *      Reward = (yourPoints / totalPoints) × totalFunded
+     *      No Merkle proofs, no manual close, no owner intervention.
+     *      Campaign is "ended" automatically when block.timestamp >= endTimestamp.
      * @param escrowId Escrow campaign identifier.
-     * @param amount USDC reward amount for the caller.
-     * @param merkleProof Merkle proof that (msg.sender, amount) is in the claim tree.
      */
-    function claimReward(
-        uint256 escrowId,
-        uint256 amount,
-        bytes32[] calldata merkleProof
-    ) external {
-        _executeClaim(escrowId, msg.sender, amount, merkleProof);
-    }
+    function claim(uint256 escrowId) external {
+        EscrowCampaign storage c = campaigns[escrowId];
+        if (c.sponsor == address(0)) revert CampaignNotFound();
+        if (block.timestamp < c.endTimestamp) revert CampaignStillActive();
+        if (hasClaimed[escrowId][msg.sender]) revert AlreadyClaimed();
 
-    /**
-     * @notice Gasless claim — relayer submits on behalf of the user using an EIP-712 signature.
-     * @param escrowId Escrow campaign identifier.
-     * @param claimer Address of the user claiming the reward (USDC recipient).
-     * @param amount USDC reward amount.
-     * @param merkleProof Merkle proof that (claimer, amount) is in the claim tree.
-     * @param deadline Timestamp after which the signature is no longer valid.
-     * @param v ECDSA recovery byte.
-     * @param r ECDSA signature component.
-     * @param s ECDSA signature component.
-     */
-    function claimRewardFor(
-        uint256 escrowId,
-        address claimer,
-        uint256 amount,
-        bytes32[] calldata merkleProof,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        if (block.timestamp > deadline) revert SignatureExpired();
-
-        bytes32 structHash = keccak256(
-            abi.encode(CLAIM_TYPEHASH, escrowId, claimer, amount, deadline)
+        // Read points directly from PartnerCampaigns
+        uint256 userPoints = partnerCampaigns.getUserCampaignPoints(
+            c.partnerCampaignId,
+            msg.sender
         );
-        bytes32 digest = _hashTypedDataV4(structHash);
-        address signer = ECDSA.recover(digest, v, r, s);
+        if (userPoints == 0) revert NoPointsEarned();
 
-        if (signer != claimer) revert InvalidSignature();
+        uint256 totalPoints = partnerCampaigns.getTotalCampaignPoints(
+            c.partnerCampaignId
+        );
+        if (totalPoints == 0) revert NoPointsInCampaign();
 
-        _executeClaim(escrowId, claimer, amount, merkleProof);
-    }
-
-    /**
-     * @dev Internal claim execution — verifies Merkle proof and transfers USDC.
-     */
-    function _executeClaim(
-        uint256 escrowId,
-        address claimer,
-        uint256 amount,
-        bytes32[] calldata merkleProof
-    ) internal {
-        if (claimer == address(0)) revert InvalidAddress();
-        if (amount == 0) revert InvalidAmount();
-
-        EscrowCampaign storage c = campaigns[escrowId];
-        if (c.sponsor == address(0)) revert CampaignNotFound();
-        if (!c.isClosed) revert CampaignStillActive();
-
-        bytes32 root = claimRoots[escrowId];
-        if (root == bytes32(0)) revert ClaimRootNotSet();
-
-        if (hasReceivedReward[escrowId][claimer]) revert AlreadyClaimed();
-
-        // Verify Merkle proof — leaf is hash(claimer, amount)
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(claimer, amount))));
-        if (!MerkleProof.verify(merkleProof, root, leaf)) revert InvalidMerkleProof();
+        // Calculate proportional reward: (userPoints / totalPoints) × totalFunded
+        uint256 reward = (c.totalFunded * userPoints) / totalPoints;
+        if (reward == 0) revert InvalidAmount();
 
         uint256 remaining = c.totalFunded - c.totalDistributed;
-        if (amount > remaining) revert InsufficientEscrowBalance();
+        if (reward > remaining) revert InsufficientEscrowBalance();
 
-        hasReceivedReward[escrowId][claimer] = true;
-        c.totalDistributed += amount;
-        usdc.safeTransfer(claimer, amount);
+        hasClaimed[escrowId][msg.sender] = true;
+        c.totalDistributed += reward;
+        usdc.safeTransfer(msg.sender, reward);
 
-        emit RewardClaimed(escrowId, claimer, amount);
+        emit RewardClaimed(
+            escrowId,
+            msg.sender,
+            userPoints,
+            totalPoints,
+            reward
+        );
     }
 
-    // ============ LEGACY DISTRIBUTION (owner/sponsor push) ============
+    // ============ SPONSOR WITHDRAWAL ============
 
-    /**
-     * @notice Distribute USDC rewards based on leaderboard ranking (legacy push model).
-     * @dev Kept for admin/emergency use. For normal flow, use Merkle claims instead.
-     */
-    function distribute(
-        uint256 escrowId,
-        address[] calldata recipients,
-        uint256[] calldata amounts
-    ) external onlySponsorOrOwner(escrowId) {
-        if (recipients.length == 0) revert EmptyDistribution();
-        if (recipients.length != amounts.length) revert LengthMismatch();
-
-        EscrowCampaign storage c = campaigns[escrowId];
-        if (c.sponsor == address(0)) revert CampaignNotFound();
-        if (!c.isClosed) revert CampaignStillActive();
-
-        // Verify ranking order against on-chain leaderboard
-        if (address(partnerCampaigns) != address(0)) {
-            uint256 prevPoints = type(uint256).max;
-            for (uint256 i = 0; i < recipients.length; i++) {
-                uint256 pts = partnerCampaigns.getUserCampaignPoints(
-                    c.partnerCampaignId,
-                    recipients[i]
-                );
-                if (pts > prevPoints) revert InvalidRankingOrder();
-                prevPoints = pts;
-            }
-        }
-
-        // Validate amounts and check for duplicates
-        uint256 totalAmount;
-        for (uint256 i = 0; i < recipients.length; i++) {
-            if (recipients[i] == address(0)) revert InvalidAddress();
-            if (amounts[i] == 0) revert InvalidAmount();
-            if (hasReceivedReward[escrowId][recipients[i]])
-                revert DuplicateRecipient();
-            totalAmount += amounts[i];
-        }
-
-        uint256 remaining = c.totalFunded - c.totalDistributed;
-        if (totalAmount > remaining) revert InsufficientEscrowBalance();
-
-        // Transfer USDC rewards
-        for (uint256 i = 0; i < recipients.length; i++) {
-            hasReceivedReward[escrowId][recipients[i]] = true;
-            usdc.safeTransfer(recipients[i], amounts[i]);
-
-            emit RewardDistributed(
-                escrowId,
-                recipients[i],
-                i + 1,
-                amounts[i]
-            );
-        }
-
-        c.totalDistributed += totalAmount;
-        emit BatchDistributed(escrowId, recipients.length, totalAmount);
-    }
-
-    /// @notice Withdraw remaining undistributed funds back to sponsor
+    /// @notice Withdraw remaining undistributed funds after the claim grace period
+    /// @dev Grace period gives participants time to claim before sponsor can sweep
     function withdrawRemaining(
         uint256 escrowId
     ) external onlySponsorOrOwner(escrowId) {
         EscrowCampaign storage c = campaigns[escrowId];
         if (c.sponsor == address(0)) revert CampaignNotFound();
-        if (!c.isClosed) revert CampaignStillActive();
+        if (block.timestamp < c.endTimestamp) revert CampaignStillActive();
+        if (block.timestamp < c.endTimestamp + CLAIM_GRACE_PERIOD)
+            revert GracePeriodNotOver();
 
         uint256 remaining = c.totalFunded - c.totalDistributed;
         if (remaining == 0) revert NothingToWithdraw();
@@ -400,16 +259,34 @@ contract CampaignEscrow is Ownable, EIP712 {
         return campaignCounter;
     }
 
-    /// @notice Check if a user has already claimed for a campaign
-    function hasClaimed(
-        uint256 escrowId,
-        address user
-    ) external view returns (bool) {
-        return hasReceivedReward[escrowId][user];
+    /// @notice Check if a campaign has ended (timestamp-based, automatic)
+    function hasEnded(uint256 escrowId) external view returns (bool) {
+        EscrowCampaign storage c = campaigns[escrowId];
+        if (c.sponsor == address(0)) revert CampaignNotFound();
+        return block.timestamp >= c.endTimestamp;
     }
 
-    /// @notice Get the EIP-712 domain separator (useful for frontend signature construction)
-    function domainSeparator() external view returns (bytes32) {
-        return _domainSeparatorV4();
+    /// @notice Preview what a user would receive if they claim now
+    function previewClaim(
+        uint256 escrowId,
+        address user
+    ) external view returns (uint256 reward) {
+        EscrowCampaign storage c = campaigns[escrowId];
+        if (c.sponsor == address(0)) revert CampaignNotFound();
+        if (block.timestamp < c.endTimestamp) return 0;
+        if (hasClaimed[escrowId][user]) return 0;
+
+        uint256 userPoints = partnerCampaigns.getUserCampaignPoints(
+            c.partnerCampaignId,
+            user
+        );
+        if (userPoints == 0) return 0;
+
+        uint256 totalPoints = partnerCampaigns.getTotalCampaignPoints(
+            c.partnerCampaignId
+        );
+        if (totalPoints == 0) return 0;
+
+        return (c.totalFunded * userPoints) / totalPoints;
     }
 }

@@ -18,6 +18,7 @@ const HEADER_BY_SECTION: Record<AdminSection, string> = {
 interface AdminShellProps {
   active: AdminSection;
   children: ReactNode;
+  noPadding?: boolean;
 }
 
 function navClasses(isActive: boolean, withTopMargin = false) {
@@ -32,7 +33,7 @@ function navClasses(isActive: boolean, withTopMargin = false) {
     .join(" ");
 }
 
-export default function AdminShell({ active, children }: AdminShellProps) {
+export default function AdminShell({ active, children, noPadding = false }: AdminShellProps) {
   const { address } = useAccount();
   const { name: domainName } = useENSName({ owner: address as `0x${string}` });
   const [adminLabel, setAdminLabel] = useState<string>("...");
@@ -125,7 +126,7 @@ export default function AdminShell({ active, children }: AdminShellProps) {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scroll p-6">{children}</div>
+        <div className={`flex-1 overflow-y-auto custom-scroll ${noPadding ? "" : "p-6"}`}>{children}</div>
       </main>
     </div>
   );

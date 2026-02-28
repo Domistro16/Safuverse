@@ -1,6 +1,9 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  outputFileTracingRoot: path.resolve(__dirname),
   // Keep this explicit so Next.js 16 Turbopack builds don't fail when webpack config exists.
   turbopack: {},
   // Allow larger file uploads for video lessons (500MB)

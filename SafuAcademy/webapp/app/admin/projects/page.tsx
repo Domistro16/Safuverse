@@ -22,11 +22,14 @@ type Project = {
   live: boolean;
   contractType?: string;
   onChainCampaignId?: number | null;
+  escrowId?: number | null;
   prizePoolUsdc?: number;
   objective?: string;
   coverImageUrl?: string;
   modules?: { type: string; title: string }[];
   keyTakeaways?: string[];
+  type: string;
+  title: string;
 };
 
 type CampaignRequest = {
@@ -62,6 +65,9 @@ export default function AdminProjectsPage() {
   const {
     createCampaignOnChain,
     deactivateCampaignOnChain,
+    approveUSDC,
+    fundEscrowCampaign,
+    isEscrowConfigured,
     loading: contractLoading,
     txHash,
     error: contractError,
@@ -79,6 +85,16 @@ export default function AdminProjectsPage() {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [txStep, setTxStep] = useState<string | null>(null);
   const [txMessage, setTxMessage] = useState<string | null>(null);
+  const [fundingOpen, setFundingOpen] = useState(false);
+  const [fundAmount, setFundAmount] = useState("");
+
+  // Campaign notes
+  const [notes, setNotes] = useState<Array<{ id: string; content: string; createdAt: string }>>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+
   const selected = projects.find((p) => p.id === selectedId) ?? projects[0] ?? null;
 
   async function fetchCampaigns() {
@@ -95,31 +111,38 @@ export default function AdminProjectsPage() {
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: Project[] = data.campaigns.map((campaign: any) => {
-        const status =
-          campaign.status === "LIVE"
-            ? "Active"
-            : campaign.status === "DRAFT"
-              ? "Draft"
-              : "Ended";
+        // On-chain status is the source of truth; fall back to DB
+        let status: "Active" | "Draft" | "Ended";
+        if (campaign.onChainStatus) {
+          status = campaign.onChainStatus === "Active" ? "Active" : "Ended";
+        } else {
+          const isTimeEnded = campaign.endAt && new Date(campaign.endAt).getTime() < Date.now();
+          status =
+            isTimeEnded || campaign.status === "ENDED" || campaign.status === "ARCHIVED"
+              ? "Ended"
+              : campaign.status === "LIVE"
+                ? "Active"
+                : "Draft";
+        }
 
         const participantCount = campaign.participantCount ?? 0;
 
         return {
           id: `C-${String(campaign.id).padStart(3, "0")}`,
           numericId: campaign.id,
-          partner: campaign.sponsorName,
+          partner: campaign.sponsorName || "Unknown",
           symbol: campaign.sponsorName?.[0]?.toUpperCase() || "C",
-          campaign: campaign.title,
-          tier: campaign.tier,
+          campaign: campaign.title || "Untitled",
+          tier: campaign.tier || "STANDARD",
           status,
-          escrow: `$${Number(campaign.prizePoolUsdc).toLocaleString()}`,
+          escrow: `$${Number(campaign.prizePoolUsdc || 0).toLocaleString()}`,
           students: participantCount > 0 ? participantCount.toLocaleString() : "-",
-          live: campaign.status === "LIVE",
+          live: status === "Active",
           contractType: campaign.contractType,
           onChainCampaignId: campaign.onChainCampaignId ?? null,
-          prizePoolUsdc: Number(campaign.prizePoolUsdc),
+          escrowId: campaign.escrowId ?? null,
+          prizePoolUsdc: Number(campaign.prizePoolUsdc || 0),
           objective: campaign.objective,
           coverImageUrl: campaign.coverImageUrl,
           modules: campaign.modules,
@@ -540,6 +563,15 @@ export default function AdminProjectsPage() {
             </div>
             <div className="p-3 border-t border-[#1a1a1a] bg-[#0a0a0a]">
               <button className="w-full py-2 border border-[#333] text-xs text-white rounded hover:bg-[#111] transition-colors">Export CSV Data</button>
+              {selected && (
+                <a
+                  href={`/admin/builder?edit=${selected.numericId}`}
+                  className="block w-full mt-2 py-2 border border-nexid-gold/30 bg-nexid-gold/10 text-xs font-bold text-nexid-gold text-center rounded hover:bg-nexid-gold/20 transition-colors"
+                >
+                  Edit Campaign
+                </a>
+              )}
+
               {selected && selected.status === "Active" && (
                 <button
                   type="button"
@@ -550,6 +582,169 @@ export default function AdminProjectsPage() {
                   {contractLoading ? "Processing..." : "Deactivate Campaign"}
                 </button>
               )}
+
+              {/* Fund Campaign */}
+              {selected && selected.escrowId != null && isEscrowConfigured && (
+                <>
+                  {!fundingOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFundingOpen(true);
+                        setFundAmount(String(selected.prizePoolUsdc ?? 0));
+                      }}
+                      className="w-full mt-2 py-2 border border-nexid-gold/30 bg-nexid-gold/10 text-xs font-bold text-nexid-gold rounded hover:bg-nexid-gold/20 transition-colors"
+                    >
+                      Fund Campaign (USDC)
+                    </button>
+                  ) : (
+                    <div className="mt-2 rounded-lg border border-nexid-gold/20 bg-[#0a0a0a] p-3 space-y-3">
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-nexid-gold">
+                        Fund Escrow #{selected.escrowId}
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] font-mono text-nexid-muted uppercase">Amount (USDC)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={fundAmount}
+                          onChange={(e) => setFundAmount(e.target.value)}
+                          className="admin-input w-full font-mono"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={contractLoading || !fundAmount}
+                          onClick={async () => {
+                            const usdcAmount = BigInt(Math.round(Number(fundAmount) * 1e6));
+                            if (usdcAmount <= 0n) return;
+
+                            setTxStep("Step 1/2: Approving USDC — confirm in wallet...");
+                            setTxMessage(null);
+                            const approval = await approveUSDC(usdcAmount);
+                            if (!approval) {
+                              setTxStep(null);
+                              return;
+                            }
+
+                            setTxStep("Step 2/2: Funding escrow — confirm in wallet...");
+                            const fund = await fundEscrowCampaign(selected.escrowId!, usdcAmount);
+                            setTxStep(null);
+
+                            if (fund) {
+                              setTxMessage(`Funded! ${Number(fundAmount).toLocaleString()} USDC deposited. Tx: ${fund.txHash.slice(0, 14)}...`);
+                              setFundingOpen(false);
+                            }
+                          }}
+                          className="flex-1 py-2 bg-nexid-gold text-black text-xs font-bold rounded disabled:opacity-60"
+                        >
+                          {contractLoading ? "Processing..." : `Fund $${Number(fundAmount || 0).toLocaleString()}`}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFundingOpen(false)}
+                          className="px-3 py-2 border border-[#333] text-xs text-white rounded hover:bg-[#111]"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {/* ── Campaign Notes ── */}
+              <div className="mt-4 border-t border-[#222] pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotesOpen(!notesOpen);
+                    if (!notesOpen && selected) {
+                      setNotesLoading(true);
+                      const token = localStorage.getItem("auth_token");
+                      fetch(`/api/admin/campaigns/${selected.numericId}/notes`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      })
+                        .then((r) => r.json())
+                        .then((body) => setNotes(body.notes ?? []))
+                        .catch(() => setNotes([]))
+                        .finally(() => setNotesLoading(false));
+                    }
+                  }}
+                  className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-nexid-muted hover:text-white transition-colors w-full"
+                >
+                  <span>{notesOpen ? "▾" : "▸"}</span>
+                  <span>Notes ({notes.length})</span>
+                </button>
+                {notesOpen && (
+                  <div className="mt-3 space-y-3">
+                    <div className="flex gap-2">
+                      <textarea
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="Add an encrypted note..."
+                        className="admin-input flex-1 h-16 resize-none text-xs"
+                      />
+                      <button
+                        type="button"
+                        disabled={!newNote.trim() || noteSaving}
+                        onClick={async () => {
+                          if (!selected) return;
+                          setNoteSaving(true);
+                          try {
+                            const token = localStorage.getItem("auth_token");
+                            const res = await fetch(`/api/admin/campaigns/${selected.numericId}/notes`, {
+                              method: "POST",
+                              headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                              body: JSON.stringify({ content: newNote }),
+                            });
+                            if (res.ok) {
+                              const body = await res.json();
+                              setNotes([body.note, ...notes]);
+                              setNewNote("");
+                            }
+                          } catch { /* ignore */ }
+                          setNoteSaving(false);
+                        }}
+                        className="self-end rounded border border-nexid-gold/30 bg-nexid-gold/10 px-3 py-1.5 text-[10px] font-bold uppercase text-nexid-gold disabled:opacity-40 hover:bg-nexid-gold/20"
+                      >
+                        {noteSaving ? "..." : "Add"}
+                      </button>
+                    </div>
+                    {notesLoading ? (
+                      <div className="text-xs text-nexid-muted">Loading...</div>
+                    ) : notes.length === 0 ? (
+                      <div className="text-xs text-nexid-muted">No notes yet.</div>
+                    ) : (
+                      notes.map((note) => (
+                        <div key={note.id} className="rounded-lg border border-[#222] bg-[#050505] p-3">
+                          <div className="flex justify-between items-start mb-1">
+                            <div className="text-[9px] font-mono text-nexid-muted">
+                              {new Date(note.createdAt).toLocaleString()}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!selected) return;
+                                const token = localStorage.getItem("auth_token");
+                                await fetch(`/api/admin/campaigns/${selected.numericId}/notes?noteId=${note.id}`, {
+                                  method: "DELETE",
+                                  headers: { Authorization: `Bearer ${token}` },
+                                });
+                                setNotes(notes.filter((n) => n.id !== note.id));
+                              }}
+                              className="text-[9px] text-red-500/60 hover:text-red-400"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="text-xs text-white/80 whitespace-pre-wrap">{note.content}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

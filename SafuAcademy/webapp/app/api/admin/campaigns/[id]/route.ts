@@ -145,6 +145,10 @@ export async function PATCH(
       body.onChainCampaignId !== undefined && body.onChainCampaignId !== null
         ? Number(body.onChainCampaignId)
         : null;
+    const escrowAddress =
+      body.escrowAddress !== undefined && body.escrowAddress !== null
+        ? String(body.escrowAddress).trim()
+        : null;
 
     await prisma.$executeRaw`
       UPDATE "Campaign"
@@ -163,6 +167,7 @@ export async function PATCH(
         "startAt" = COALESCE(${startAt === undefined ? null : startAt}, "startAt"),
         "endAt" = COALESCE(${endAt === undefined ? null : endAt}, "endAt"),
         "onChainCampaignId" = COALESCE(${onChainCampaignId}, "onChainCampaignId"),
+        "escrowAddress" = COALESCE(${escrowAddress}, "escrowAddress"),
         "updatedAt" = ${new Date()}
       WHERE "id" = ${campaignId}
     `;

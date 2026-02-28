@@ -48,6 +48,17 @@ type CampaignResponse = {
 type Module = {
   type: "video" | "task" | "locked";
   title: string;
+  videoUrl?: string;
+  description?: string;
+  actionUrl?: string;
+  actionLabel?: string;
+};
+
+type CampaignNote = {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
 };
 
 const FALLBACK_IMAGE =
@@ -95,7 +106,20 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const [enrollmentScore, setEnrollmentScore] = useState(0);
   const [enrollmentChecked, setEnrollmentChecked] = useState(false);
   const [completedAt, setCompletedAt] = useState<string | null>(null);
+  const [canViewOnChainSnapshot, setCanViewOnChainSnapshot] = useState(false);
+  const [progressSaving, setProgressSaving] = useState(false);
+  const [progressError, setProgressError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [notes, setNotes] = useState<CampaignNote[]>([]);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+  const [domainInput, setDomainInput] = useState("");
+  const [domainClaiming, setDomainClaiming] = useState(false);
+  const [domainClaimError, setDomainClaimError] = useState<string | null>(null);
+  const [domainClaimed, setDomainClaimed] = useState<string | null>(null);
+  const [domainSpotsRemaining, setDomainSpotsRemaining] = useState<number | null>(null);
 
   // Load campaign data
   useEffect(() => {
@@ -142,6 +166,15 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
           setEnrolled(body.enrolled);
           if (body.participant) {
             setEnrollmentScore(body.participant.score ?? 0);
+            const savedCompletedUntil = Number.isInteger(body.participant.completedUntil)
+              ? body.participant.completedUntil
+              : -1;
+            setCompletedUntil(savedCompletedUntil);
+            const moduleCount = Array.isArray(data.campaign.modules) ? data.campaign.modules.length : 0;
+            if (moduleCount > 0) {
+              const resumeModule = Math.min(Math.max(savedCompletedUntil + 1, 0), moduleCount - 1);
+              setActiveModule(resumeModule);
+            }
             if (body.participant.completedAt) {
               setCompletedAt(body.participant.completedAt);
             }
@@ -151,6 +184,68 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
       .catch(() => { })
       .finally(() => setEnrollmentChecked(true));
   }, [campaignId, data]);
+
+  // Load current user's encrypted notes for this campaign.
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token || !data) return;
+
+    setNotesLoading(true);
+    setNotesError(null);
+    fetch(`/api/campaigns/${campaignId}/notes`, { headers: authHeaders() })
+      .then(async (res) => {
+        const body = await res.json();
+        if (!res.ok) {
+          throw new Error(body?.error || "Failed to load notes");
+        }
+        setNotes(Array.isArray(body.notes) ? body.notes : []);
+      })
+      .catch((err) => {
+        setNotesError(err instanceof Error ? err.message : "Failed to load notes");
+      })
+      .finally(() => setNotesLoading(false));
+  }, [campaignId, data]);
+
+  // Only admins should see on-chain snapshot details.
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setCanViewOnChainSnapshot(false);
+      return;
+    }
+
+    fetch("/api/auth/admin-status", { headers: authHeaders() })
+      .then((res) => setCanViewOnChainSnapshot(res.ok))
+      .catch(() => setCanViewOnChainSnapshot(false));
+  }, [campaignId]);
+
+  // Fetch domain claim status after completion for Genesis reward campaigns.
+  useEffect(() => {
+    if (!data || !completedAt) return;
+    const sponsor = data.campaign.sponsorName?.toLowerCase() ?? "";
+    const sponsorNamespace = data.campaign.sponsorNamespace?.toLowerCase() ?? "";
+    const isGenesisRewardCampaign =
+      data.campaign.ownerType === "NEXID" ||
+      sponsor.includes("nexid") ||
+      sponsorNamespace.includes("nexid");
+    if (!isGenesisRewardCampaign) return;
+
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+
+    fetch(`/api/campaigns/${campaignId}/claim-domain`, { headers: authHeaders() })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const body = await res.json();
+        setDomainClaimed(body.domainName ?? null);
+        setDomainSpotsRemaining(
+          Number.isFinite(Number(body.spotsRemaining))
+            ? Number(body.spotsRemaining)
+            : null,
+        );
+      })
+      .catch(() => { });
+  }, [campaignId, data, completedAt]);
 
   async function handleEnroll() {
     setEnrolling(true);
@@ -162,11 +257,89 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
       if (res.ok) {
         const body = await res.json();
         setEnrolled(body.enrolled);
+        if (body.participant) {
+          setEnrollmentScore(body.participant.score ?? 0);
+          const savedCompletedUntil = Number.isInteger(body.participant.completedUntil)
+            ? body.participant.completedUntil
+            : -1;
+          setCompletedUntil(savedCompletedUntil);
+          if (body.participant.completedAt) {
+            setCompletedAt(body.participant.completedAt);
+          }
+        }
       }
     } catch {
       // silently fail
     } finally {
       setEnrolling(false);
+    }
+  }
+
+  async function handleSaveNote() {
+    const content = noteDraft.trim();
+    if (!content) return;
+    setSavingNote(true);
+    setNotesError(null);
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/notes`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ content }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body?.error || "Failed to save note");
+      }
+      if (body?.note) {
+        setNotes((prev) => [body.note, ...prev]);
+      }
+      setNoteDraft("");
+    } catch (err) {
+      setNotesError(err instanceof Error ? err.message : "Failed to save note");
+    } finally {
+      setSavingNote(false);
+    }
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    try {
+      await fetch(`/api/campaigns/${campaignId}/notes?noteId=${noteId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch {
+      // silently fail
+    }
+  }
+
+  async function handleClaimDomain() {
+    const value = domainInput.trim().toLowerCase();
+    if (value.length !== 5) {
+      setDomainClaimError("Domain name must be exactly 5 characters.");
+      return;
+    }
+    setDomainClaiming(true);
+    setDomainClaimError(null);
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/claim-domain`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ domainName: value }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body?.error || "Failed to claim domain");
+      }
+      setDomainClaimed(body.domainName ?? value);
+      setDomainInput("");
+      if (domainSpotsRemaining !== null) {
+        setDomainSpotsRemaining(Math.max(0, domainSpotsRemaining - 1));
+      }
+    } catch (err) {
+      setDomainClaimError(err instanceof Error ? err.message : "Failed to claim domain");
+    } finally {
+      setDomainClaiming(false);
     }
   }
 
@@ -199,10 +372,18 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
       ? campaign.modules
       : [];
   const hasModules = modules.length > 0;
+  const active = modules[activeModule];
+  const isActiveVideoModule = !!(active?.type === "video" && active?.videoUrl);
   const campaignImage = campaign.coverImageUrl || FALLBACK_IMAGE;
   const startDate = formatDate(campaign.startAt);
   const endDate = formatDate(campaign.endAt);
   const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
+  const sponsor = campaign.sponsorName?.toLowerCase() ?? "";
+  const sponsorNamespace = campaign.sponsorNamespace?.toLowerCase() ?? "";
+  const isGenesisRewardCampaign =
+    campaign.ownerType === "NEXID" ||
+    sponsor.includes("nexid") ||
+    sponsorNamespace.includes("nexid");
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-6 pb-12 pt-8 lg:px-12">
@@ -231,11 +412,20 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
           <div className="font-display mb-4 text-xl text-white">{campaign.sponsorName}</div>
           <div className="h-px w-full bg-[#1a1a1a] mb-4" />
           <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-gold">Rewards</div>
-          <div className="text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
+          {isGenesisRewardCampaign ? (
+            <div className="space-y-1">
+              <div className="text-sm font-bold text-white">100 Genesis Points</div>
+              <div className="text-[11px] text-nexid-muted">
+                + 5-char .id domain for first 1,000 completions
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
+          )}
           {(startDate || endDate) ? (
             <div className="mt-2 text-[11px] text-nexid-muted">
               {startDate ? `Start: ${startDate}` : null}
-              {startDate && endDate ? " · " : null}
+              {startDate && endDate ? " - " : null}
               {endDate ? `End: ${endDate}` : null}
             </div>
           ) : null}
@@ -244,7 +434,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
             <div className="mt-4">
               {enrolled ? (
                 <div className="rounded border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-400">
-                  Enrolled · Score: {enrollmentScore}
+                  Enrolled - Score: {enrollmentScore}
                 </div>
               ) : (
                 <button
@@ -280,52 +470,164 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                     className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-luminosity"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
-                  {hasModules ? (
-                    <div className="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end">
-                      <div>
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold mb-1">
-                          Module {activeModule + 1}
-                        </div>
-                        <h3 className="font-display text-2xl text-white">{modules[activeModule]?.title}</h3>
+                  {!enrolled ? (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+                      <div className="text-center">
+                        <h3 className="font-display text-2xl text-white">Content Locked</h3>
+                        <p className="mt-2 text-sm text-nexid-muted">Enroll to watch modules.</p>
                       </div>
-                      {enrolled && !completedAt ? (
-                        <button
-                          type="button"
-                          disabled={completing}
-                          onClick={async () => {
-                            const newCompleted = Math.max(completedUntil, activeModule);
-                            setCompletedUntil(newCompleted);
-                            const next = activeModule + 1;
-                            if (next < modules.length && modules[next]?.type !== "locked") {
-                              setActiveModule(next);
-                            }
-                            if (newCompleted >= modules.length - 1) {
-                              setCompleting(true);
-                              try {
-                                const res = await fetch(`/api/campaigns/${campaignId}/complete`, {
-                                  method: "POST",
-                                  headers: authHeaders(),
-                                });
-                                if (res.ok) {
-                                  const body = await res.json();
-                                  setCompletedAt(body.participant?.completedAt ?? new Date().toISOString());
-                                }
-                              } catch {
-                                // silently fail
-                              } finally {
-                                setCompleting(false);
-                              }
-                            }
-                          }}
-                          className="px-6 py-2.5 bg-nexid-gold text-black font-bold text-sm rounded hover:shadow-gold-glow transition-all"
-                        >
-                          {completing ? "Completing..." : completedUntil >= modules.length - 1 ? "All Complete" : "Mark Complete"}
-                        </button>
-                      ) : enrolled && completedAt ? (
-                        <div className="rounded border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs text-green-400">
-                          Completed {formatDate(completedAt) ?? ""}
+                    </div>
+                  ) : null}
+                  {hasModules ? (
+                    <div className="absolute inset-0 z-10 flex flex-col">
+                      <div className="relative z-0 flex-1">
+                        {!enrolled ? null : active?.type === "video" && active?.videoUrl ? (
+                          <div
+                            style={{
+                              position: "relative",
+                              overflow: "hidden",
+                              aspectRatio: "1920 / 1080",
+                              width: "100%",
+                              height: "100%",
+                              zIndex: 0,
+                            }}
+                          >
+                            <iframe
+                              src={active.videoUrl}
+                              loading="lazy"
+                              title={`Video player - ${active.title}`}
+                              allowFullScreen
+                              allow="encrypted-media; fullscreen; microphone; screen-wake-lock;"
+                              style={{
+                                position: "absolute",
+                                width: "100%",
+                                height: "100%",
+                                top: 0,
+                                left: 0,
+                                border: "none",
+                                padding: 0,
+                                margin: 0,
+                                overflow: "hidden",
+                              }}
+                            />
+                          </div>
+                        ) : active?.type === "task" ? (
+                          <div className="absolute inset-0 flex items-center justify-center p-8">
+                            <div className="max-w-xl text-center">
+                              <h3 className="font-display text-2xl text-white">{active.title}</h3>
+                              {active.description ? (
+                                <p className="mt-3 text-sm text-nexid-muted">{active.description}</p>
+                              ) : null}
+                              {active.actionUrl ? (
+                                <a
+                                  href={active.actionUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-5 inline-block rounded bg-nexid-gold px-5 py-2 text-sm font-bold text-black"
+                                >
+                                  {active.actionLabel || "Open Task"}
+                                </a>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
+                            <p className="text-sm text-nexid-muted">This module has no playable content yet.</p>
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className={`absolute left-0 z-20 w-full p-6 flex justify-between pointer-events-auto ${
+                          isActiveVideoModule
+                            ? "top-0 items-start bg-gradient-to-b from-black to-black/20"
+                            : "bottom-0 items-end bg-gradient-to-t from-black to-black/20"
+                        }`}
+                      >
+                        <div>
+                          <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold mb-1">
+                            Module {activeModule + 1}
+                          </div>
+                          <h3 className="font-display text-2xl text-white">{active?.title}</h3>
                         </div>
-                      ) : null}
+                        {enrolled && !completedAt ? (
+                          <div className="flex flex-col items-end gap-2">
+                            <button
+                              type="button"
+                              disabled={progressSaving || completing}
+                              onClick={async () => {
+                                setProgressError(null);
+                                setProgressSaving(true);
+
+                                const attemptedCompletedUntil = Math.max(completedUntil, activeModule);
+                                let persistedCompletedUntil = attemptedCompletedUntil;
+
+                                try {
+                                  const progressRes = await fetch(`/api/campaigns/${campaignId}/progress`, {
+                                    method: "POST",
+                                    headers: authHeaders(),
+                                    body: JSON.stringify({ moduleIndex: activeModule }),
+                                  });
+                                  const progressBody = await progressRes.json().catch(() => null);
+                                  if (!progressRes.ok) {
+                                    throw new Error(progressBody?.error || "Failed to save module progress");
+                                  }
+                                  if (Number.isInteger(progressBody?.completedUntil)) {
+                                    persistedCompletedUntil = progressBody.completedUntil;
+                                  }
+                                  setCompletedUntil(persistedCompletedUntil);
+                                } catch (err) {
+                                  setProgressError(
+                                    err instanceof Error ? err.message : "Failed to save module progress",
+                                  );
+                                  return;
+                                } finally {
+                                  setProgressSaving(false);
+                                }
+
+                                const next = activeModule + 1;
+                                if (next < modules.length && modules[next]?.type !== "locked") {
+                                  setActiveModule(next);
+                                }
+
+                                if (persistedCompletedUntil >= modules.length - 1) {
+                                  setCompleting(true);
+                                  try {
+                                    const res = await fetch(`/api/campaigns/${campaignId}/complete`, {
+                                      method: "POST",
+                                      headers: authHeaders(),
+                                    });
+                                    const body = await res.json().catch(() => null);
+                                    if (!res.ok) {
+                                      throw new Error(body?.error || "Failed to complete campaign");
+                                    }
+                                    setEnrollmentScore(body?.participant?.score ?? enrollmentScore);
+                                    setCompletedAt(body?.participant?.completedAt ?? new Date().toISOString());
+                                    setCompletedUntil(Math.max(persistedCompletedUntil, modules.length - 1));
+                                  } catch (err) {
+                                    setProgressError(
+                                      err instanceof Error ? err.message : "Failed to complete campaign",
+                                    );
+                                  } finally {
+                                    setCompleting(false);
+                                  }
+                                }
+                              }}
+                              className="px-6 py-2.5 bg-nexid-gold text-black font-bold text-sm rounded hover:shadow-gold-glow transition-all disabled:opacity-60"
+                            >
+                              {completing ? "Completing..." : progressSaving ? "Saving..." : "Mark Complete"}
+                            </button>
+                            {progressError ? (
+                              <div className="max-w-[280px] text-right text-[11px] text-red-400">
+                                {progressError}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : enrolled && completedAt ? (
+                          <div className="rounded border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs text-green-400">
+                            Completed {formatDate(completedAt) ?? ""}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -371,35 +673,92 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
             </div>
           </div>
 
-          {/* On-Chain Snapshot */}
-          <div className="premium-panel bg-[#0a0a0a] p-6">
-            <h3 className="font-display mb-3 text-lg text-white">On-Chain Snapshot</h3>
-            {onChain ? (
-              <div className="space-y-2 text-xs text-white/80">
-                <div>
-                  Contract: <span className="font-mono text-nexid-gold">{onChain.contractType}</span>
+          {/* Genesis Rewards */}
+          {isGenesisRewardCampaign ? (
+            <div className="premium-panel bg-[#0a0a0a] p-6">
+              <h3 className="font-display mb-2 text-lg text-white">Genesis Rewards</h3>
+              <p className="mb-4 text-xs text-nexid-muted">
+                Complete the campaign to receive 100 Genesis Points and claim a 5-character .id domain.
+              </p>
+              <div className="rounded border border-[#222] bg-[#111] p-3 text-xs text-white/90">
+                <div>Genesis Points: 100 on completion</div>
+                <div className="mt-1">Domain Spots Remaining: {domainSpotsRemaining ?? "-"}</div>
+              </div>
+              {!completedAt ? (
+                <div className="mt-4 text-xs text-nexid-muted">
+                  Complete all modules to unlock domain claiming.
                 </div>
-                <div>
-                  Address: <span className="font-mono text-nexid-muted">{shortAddress(onChain.contractAddress)}</span>
+              ) : domainClaimed ? (
+                <div className="mt-4 rounded border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-400">
+                  Domain claimed: {domainClaimed}.id
                 </div>
-                <div>
-                  On-chain Campaign ID: <span className="font-mono">{onChain.campaignId}</span>
-                </div>
-                <div>
-                  On-chain Participants: <span className="font-mono">{onChain.participantCount}</span>
-                </div>
-                {onChain.sponsorAddress ? (
-                  <div>
-                    Sponsor Wallet: <span className="font-mono">{shortAddress(onChain.sponsorAddress)}</span>
+              ) : (
+                <div className="mt-4">
+                  <label className="mb-1 block text-[10px] uppercase tracking-widest text-nexid-muted">
+                    Claim Your 5-Character Domain
+                  </label>
+                  <div className="flex items-stretch">
+                    <input
+                      type="text"
+                      maxLength={5}
+                      value={domainInput}
+                      onChange={(e) => {
+                        setDomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""));
+                        setDomainClaimError(null);
+                      }}
+                      placeholder="abcde"
+                      className="w-full rounded-l border border-[#333] bg-[#0c0c0c] px-3 py-2 text-sm text-white outline-none focus:border-nexid-gold/50"
+                    />
+                    <div className="rounded-r border border-l-0 border-[#333] bg-[#171717] px-3 py-2 text-xs text-nexid-gold">
+                      .id
+                    </div>
                   </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="text-xs text-nexid-muted">
-                On-chain mapping not configured for this campaign yet.
-              </div>
-            )}
-          </div>
+                  <button
+                    type="button"
+                    onClick={handleClaimDomain}
+                    disabled={domainClaiming || domainInput.length !== 5}
+                    className="mt-3 rounded bg-nexid-gold px-4 py-2 text-xs font-bold text-black disabled:opacity-50"
+                  >
+                    {domainClaiming ? "Claiming..." : "Claim Domain"}
+                  </button>
+                  {domainClaimError ? (
+                    <div className="mt-2 text-xs text-red-400">{domainClaimError}</div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {canViewOnChainSnapshot ? (
+            <div className="premium-panel bg-[#0a0a0a] p-6">
+              <h3 className="font-display mb-3 text-lg text-white">On-Chain Snapshot</h3>
+              {onChain ? (
+                <div className="space-y-2 text-xs text-white/80">
+                  <div>
+                    Contract: <span className="font-mono text-nexid-gold">{onChain.contractType}</span>
+                  </div>
+                  <div>
+                    Address: <span className="font-mono text-nexid-muted">{shortAddress(onChain.contractAddress)}</span>
+                  </div>
+                  <div>
+                    On-chain Campaign ID: <span className="font-mono">{onChain.campaignId}</span>
+                  </div>
+                  <div>
+                    On-chain Participants: <span className="font-mono">{onChain.participantCount}</span>
+                  </div>
+                  {onChain.sponsorAddress ? (
+                    <div>
+                      Sponsor Wallet: <span className="font-mono">{shortAddress(onChain.sponsorAddress)}</span>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="text-xs text-nexid-muted">
+                  On-chain mapping not configured for this campaign yet.
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {/* Sidebar */}
@@ -462,6 +821,68 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                 ) : (
                   <div className="p-6 text-sm text-nexid-muted">Campaign modules have not been configured yet.</div>
                 )}
+
+                <div className="border-t border-[#1a1a1a] bg-[#0d0d0d] p-4">
+                  <div className="mb-3">
+                    <h3 className="font-display text-base text-white">My Encrypted Notes</h3>
+                    <p className="mt-1 text-[10px] text-nexid-muted">
+                      Saved per campaign and encrypted on backend.
+                    </p>
+                  </div>
+                  {hasToken ? (
+                    <>
+                      <textarea
+                        value={noteDraft}
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        placeholder="Write your notes..."
+                        className="h-24 w-full rounded border border-[#222] bg-[#111] p-2.5 text-xs text-white outline-none focus:border-nexid-gold/50"
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-nexid-muted">Max 4000 chars</span>
+                        <button
+                          type="button"
+                          onClick={handleSaveNote}
+                          disabled={savingNote || noteDraft.trim().length === 0}
+                          className="rounded bg-nexid-gold px-3 py-1.5 text-[11px] font-bold text-black disabled:opacity-50"
+                        >
+                          {savingNote ? "Saving..." : "Save"}
+                        </button>
+                      </div>
+                      {notesError ? (
+                        <div className="mt-2 rounded border border-red-500/30 bg-red-500/10 px-2.5 py-2 text-[11px] text-red-400">
+                          {notesError}
+                        </div>
+                      ) : null}
+                      <div className="mt-3 space-y-2">
+                        {notesLoading ? (
+                          <div className="text-[11px] text-nexid-muted">Loading notes...</div>
+                        ) : notes.length === 0 ? (
+                          <div className="text-[11px] text-nexid-muted">No notes yet.</div>
+                        ) : (
+                          notes.map((note) => (
+                            <div key={note.id} className="rounded border border-[#222] bg-[#111] p-2.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-[10px] text-nexid-muted">
+                                  {new Date(note.createdAt).toLocaleString()}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteNote(note.id)}
+                                  className="text-[10px] text-nexid-muted hover:text-red-400"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                              <p className="mt-1.5 whitespace-pre-wrap text-[11px] text-white/90">{note.content}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-[11px] text-nexid-muted">Connect wallet to save notes.</div>
+                  )}
+                </div>
               </div>
             ) : (
               /* Leaderboard */
