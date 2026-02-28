@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "The Sovereign Knowledge Layer",
+  title: "Nexid - The Sovereign Knowledge Layer",
   description: "AI-Powered development, blockchain, and cryptocurrency with Nex Academy",
 };
 
