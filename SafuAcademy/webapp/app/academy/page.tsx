@@ -202,7 +202,12 @@ export default function AcademyBrowsePage() {
             <img
               src={resolveCampaignImage(featuredCampaign.coverImageUrl, FALLBACK_FEATURED_IMAGE)}
               alt={featuredCampaign.title}
-              className="absolute inset-0 h-full w-full object-cover opacity-60 mix-blend-luminosity"
+              className="absolute inset-0 h-full w-full object-cover opacity-25 blur-sm mix-blend-luminosity"
+            />
+            <img
+              src={resolveCampaignImage(featuredCampaign.coverImageUrl, FALLBACK_FEATURED_IMAGE)}
+              alt={featuredCampaign.title}
+              className="absolute inset-0 h-full w-full object-contain opacity-90"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
             <div className="absolute top-6 left-6 flex gap-2 z-10">
@@ -301,7 +306,12 @@ export default function AcademyBrowsePage() {
                   <img
                     src={resolveCampaignImage(campaign.coverImageUrl, FALLBACK_IMAGE)}
                     alt={campaign.title}
-                    className="absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-luminosity"
+                    className="absolute inset-0 h-full w-full object-cover opacity-20 blur-sm mix-blend-luminosity"
+                  />
+                  <img
+                    src={resolveCampaignImage(campaign.coverImageUrl, FALLBACK_IMAGE)}
+                    alt={campaign.title}
+                    className="absolute inset-0 h-full w-full object-contain"
                   />
                   <div className="absolute bottom-4 left-4">
                     <span className={`text-[10px] font-mono border ${tag.style} px-2.5 py-1 rounded tracking-widest uppercase shadow-inner-glaze`}>

@@ -4,6 +4,7 @@ import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { usePrivy } from "@privy-io/react-auth";
 import { useAccount, useSignMessage } from "wagmi";
 import { useENSName } from "@/hooks/getPrimaryName";
+import Link from "next/link";
 
 type ViewKey = "dashboard" | "analytics" | "brief" | "review";
 
@@ -476,12 +477,12 @@ export default function PartnerConsolePage() {
           }`}
         >
           <div className="flex h-16 items-center justify-between border-b border-[#1a1a1a] px-6">
-            <div className="font-display text-xl font-bold tracking-tighter">
+            <Link href="/" className="font-display text-xl font-bold tracking-tighter">
               NexID<span className="text-nexid-gold">.</span>{" "}
               <span className="ml-2 rounded border border-[#333] px-1.5 py-0.5 font-mono text-[9px] font-normal tracking-widest text-nexid-muted">
                 B2B
               </span>
-            </div>
+            </Link>
             <button type="button" className="text-nexid-muted md:hidden" onClick={() => setSidebarOpen(false)}>
               X
             </button>

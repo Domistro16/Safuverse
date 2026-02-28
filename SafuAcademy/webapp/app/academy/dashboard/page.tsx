@@ -307,12 +307,12 @@ export default function SovereignTerminalPage() {
     <div className="nexid-terminal flex h-screen overflow-hidden">
       {/* Sidebar */}
       <aside className="z-40 flex w-20 shrink-0 flex-col border-r border-nexid-border bg-nexid-base/90 backdrop-blur-xl lg:w-64">
-        <div className="flex h-20 cursor-pointer items-center justify-center border-b border-nexid-border lg:justify-start lg:px-8">
+        <Link href="/" className="flex h-20 cursor-pointer items-center justify-center border-b border-nexid-border lg:justify-start lg:px-8">
           <div className="font-display text-2xl font-black tracking-tighter">
             N<span className="hidden lg:inline">ex</span>ID
             <span className="text-nexid-gold">.</span>
           </div>
-        </div>
+        </Link>
 
         <nav className="flex-1 space-y-2 px-3 py-8">
           <SideItem label="Dashboard" active={view === "dashboard"} onClick={() => setView("dashboard")} />

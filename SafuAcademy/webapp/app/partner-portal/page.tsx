@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const NEGATIVES = [
@@ -107,16 +108,12 @@ export default function PartnerPortalPage() {
       <div className="bg-glow" />
 
       <header className="fixed top-0 z-50 flex h-20 w-full items-center justify-between border-b border-nexid-border bg-[#030303]/80 px-6 backdrop-blur-xl lg:px-12">
-        <button
-          type="button"
-          className="font-display cursor-pointer text-2xl font-black tracking-tighter"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        >
+        <Link href="/" className="font-display cursor-pointer text-2xl font-black tracking-tighter">
           N<span className="hidden sm:inline">ex</span>ID<span className="text-nexid-gold">.</span>
           <span className="ml-2 rounded border border-[#222] px-1.5 py-0.5 font-mono text-[10px] font-normal tracking-widest text-nexid-muted shadow-inner-glaze">
             ENTERPRISE
           </span>
-        </button>
+        </Link>
 
         <nav className="hidden gap-8 text-sm font-medium md:flex">
           <a href="#roi" className="text-nexid-muted transition-colors hover:text-white">

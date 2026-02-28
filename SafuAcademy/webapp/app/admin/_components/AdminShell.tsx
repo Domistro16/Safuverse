@@ -56,7 +56,7 @@ export default function AdminShell({ active, children, noPadding = false }: Admi
   return (
     <div className="h-screen w-full flex overflow-hidden text-sm bg-black">
       <aside className="w-16 hover:w-64 border-r border-[#1a1a1a] bg-[#050505] flex flex-col shrink-0 z-50 transition-all duration-300 overflow-hidden group absolute md:relative h-full">
-        <div className="h-14 flex items-center px-4 border-b border-[#1a1a1a] shrink-0 min-w-[256px]">
+        <Link href="/" className="h-14 flex items-center px-4 border-b border-[#1a1a1a] shrink-0 min-w-[256px]">
           <div className="w-8 h-8 rounded bg-nexid-gold text-black flex items-center justify-center font-black text-xl shrink-0 shadow-gold-glow">
             N
           </div>
@@ -66,7 +66,7 @@ export default function AdminShell({ active, children, noPadding = false }: Admi
               ROOT
             </span>
           </div>
-        </div>
+        </Link>
 
         <div className="p-4 border-b border-[#1a1a1a] min-w-[256px]">
           <div className="flex items-center gap-3">

@@ -202,9 +202,13 @@ export default function AcademyGatewayPage() {
       <div className={`hero-orb ${orbClass}`} />
 
       <div className="gateway-panel">
-        <div className="logo-mark font-display text-lg font-black tracking-tighter text-white">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="logo-mark font-display text-lg font-black tracking-tighter text-white"
+        >
           N<span className="text-nexid-gold">.</span>
-        </div>
+        </button>
 
         <div className="absolute right-6 top-6 z-20 flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest">
           <span

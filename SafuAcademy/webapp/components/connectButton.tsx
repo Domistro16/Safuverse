@@ -6,6 +6,7 @@ import { useAccount, useSignMessage, useSwitchChain } from 'wagmi';
 import { base } from 'viem/chains';
 import { WalletModal } from './WalletModal';
 import { useENSName } from '@/hooks/getPrimaryName';
+import { useRouter } from 'next/navigation';
 
 interface AuthState {
     isAuthenticated: boolean;
@@ -43,10 +44,11 @@ function getInitialAuthState(): AuthState {
 }
 
 export function CustomConnect() {
-    const { login, ready, authenticated } = usePrivy();
+    const { ready, authenticated } = usePrivy();
     const { address, isConnected, chainId } = useAccount();
     const { signMessageAsync } = useSignMessage();
     const { switchChain } = useSwitchChain();
+    const router = useRouter();
     const [authState, setAuthState] = useState<AuthState>(getInitialAuthState);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [showWalletModal, setShowWalletModal] = useState(false);
@@ -197,7 +199,7 @@ export function CustomConnect() {
     if (!authenticated || !isConnected) {
         return (
             <button
-                onClick={login}
+                onClick={() => router.push('/academy-gateway')}
                 className="rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white shadow-inner-glaze transition-colors hover:border-white/20"
             >
                 Login
