@@ -8,6 +8,102 @@ type NexidWindow = Window & typeof globalThis & {
   closeModal?: () => void;
 };
 
+type LandingCampaign = {
+  id: number;
+  title: string;
+  sponsorName: string;
+  ownerType: string;
+  contractType: string;
+  prizePoolUsdc: string;
+  coverImageUrl: string | null;
+  status: string;
+  endAt: string | null;
+  isPublished: boolean;
+};
+
+const CAMPAIGN_FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800";
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatUsdc(value: string) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "0";
+  return amount.toLocaleString();
+}
+
+function getCampaignBadge(campaign: LandingCampaign) {
+  if (campaign.status === "LIVE") {
+    const endAt = campaign.endAt ? new Date(campaign.endAt) : null;
+    if (endAt && !Number.isNaN(endAt.getTime())) {
+      const diff = endAt.getTime() - Date.now();
+      if (diff > 0) {
+        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        return {
+          text: `Live Ends ${days}d`,
+          className:
+            "text-[10px] font-mono border border-nexid-gold/50 bg-nexid-gold/20 text-nexid-gold px-3 py-1.5 rounded tracking-widest uppercase shadow-gold-glow flex items-center gap-2 backdrop-blur-sm",
+          dotClass: "w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]",
+        };
+      }
+    }
+    return {
+      text: "Live",
+      className:
+        "text-[10px] font-mono border border-nexid-gold/30 bg-nexid-gold/10 text-nexid-gold px-3 py-1.5 rounded tracking-widest uppercase shadow-inner-glaze backdrop-blur-sm",
+      dotClass: "",
+    };
+  }
+
+  return {
+    text: "Evergreen",
+    className:
+      "text-[10px] font-mono border border-[#333] bg-[#111] text-nexid-muted px-3 py-1.5 rounded tracking-widest uppercase shadow-inner-glaze backdrop-blur-sm",
+    dotClass: "",
+  };
+}
+
+function renderCampaignCard(campaign: LandingCampaign, delayClass: string) {
+  const image = campaign.coverImageUrl || CAMPAIGN_FALLBACK_IMAGE;
+  const badge = getCampaignBadge(campaign);
+  const isInternal =
+    campaign.ownerType === "NEXID" || campaign.contractType === "NEXID_CAMPAIGNS";
+  const rewardLabel = isInternal
+    ? "Internal Campaign"
+    : `$${formatUsdc(campaign.prizePoolUsdc)} USDC`;
+
+  return `
+      <div onclick="window.location.assign('/academy/campaign/${campaign.id}')" class="course-card hover-card premium-panel flex flex-col overflow-hidden bg-[#0a0a0a] reveal ${delayClass} cursor-pointer">
+        <div class="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a]">
+          <img src="${escapeHtml(image)}" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="${escapeHtml(campaign.title)}">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
+          <div class="absolute top-5 left-5 ${badge.className}">
+            ${badge.dotClass ? `<span class="${badge.dotClass}"></span>` : ""}
+            ${escapeHtml(badge.text)}
+          </div>
+        </div>
+        <div class="p-8 flex flex-col flex-1">
+          <h3 class="text-2xl font-display text-white mb-2 leading-tight">${escapeHtml(campaign.title)}</h3>
+          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By ${escapeHtml(campaign.sponsorName)}</div>
+          <div class="mt-auto border-t border-[#1a1a1a] pt-5 flex justify-between items-end">
+            <div>
+              <div class="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-wider">${isInternal ? "Campaign Type" : "Total Prize Pool"}</div>
+              <div class="text-base font-bold text-white">${escapeHtml(rewardLabel)}</div>
+            </div>
+            <div class="text-xs font-bold text-nexid-gold transition-colors flex items-center gap-1 group">Enter Track</div>
+          </div>
+        </div>
+      </div>
+    `;
+}
+
 const HOME_HTML =
   String.raw`
 <div class="bg-stardust"></div>
@@ -247,14 +343,14 @@ const HOME_HTML =
         <p class="text-nexid-muted max-w-xl text-lg">Jump into live tracks to start climbing the global leaderboard.</p>
       </div>
       <button onclick="window.open('/academy', '_blank')" class="mt-6 md:mt-0 px-6 py-3.5 bg-[#111] border border-[#333] text-white text-sm font-medium rounded-lg hover:bg-[#1a1a1a] hover:border-white/30 transition-all active:scale-95 flex items-center gap-2 shadow-inner-glaze group">
-        View All 20 Campaigns
+        <span id="live-campaign-count">View All Campaigns</span>
         <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
         </svg>
       </button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div id="live-campaign-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <div onclick="launchAction('Entering Secure Track...')" class="course-card hover-card premium-panel flex flex-col overflow-hidden bg-[#0a0a0a] reveal cursor-pointer">
         <div class="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a]">
           <img src="https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-luminosity" alt="Soar campaign">
@@ -408,6 +504,7 @@ export default function Home() {
   useEffect(() => {
     const win = window as NexidWindow;
     let modalTimeout: ReturnType<typeof setTimeout> | null = null;
+    const campaignsAbortController = new AbortController();
 
     const clearModalTimer = () => {
       if (modalTimeout) {
@@ -476,6 +573,63 @@ export default function Home() {
     win.launchAction = launchAction;
     win.closeModal = closeModal;
 
+    const loadLiveCampaigns = async () => {
+      const campaignGrid = document.getElementById("live-campaign-grid");
+      const campaignCountEl = document.getElementById("live-campaign-count");
+      if (!campaignGrid) {
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/campaigns", {
+          method: "GET",
+          cache: "no-store",
+          signal: campaignsAbortController.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch campaigns (${response.status})`);
+        }
+
+        const payload = (await response.json()) as { campaigns?: LandingCampaign[] };
+        const campaigns = Array.isArray(payload.campaigns) ? payload.campaigns : [];
+
+        if (campaignCountEl) {
+          const label = campaigns.length === 1 ? "Campaign" : "Campaigns";
+          campaignCountEl.textContent = `View All ${campaigns.length} ${label}`;
+        }
+
+        if (campaigns.length === 0) {
+          campaignGrid.innerHTML = `
+            <div class="premium-panel p-8 text-center text-nexid-muted border border-[#222]">
+              No live campaigns right now.
+            </div>
+          `;
+          return;
+        }
+
+        const delayClasses = ["", "delay-100", "delay-200"];
+        campaignGrid.innerHTML = campaigns
+          .slice(0, 3)
+          .map((campaign, index) => renderCampaignCard(campaign, delayClasses[index] ?? ""))
+          .join("");
+
+        campaignGrid.querySelectorAll<HTMLElement>(".reveal").forEach((element) => {
+          element.classList.add("active");
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.name === "AbortError"
+        ) {
+          return;
+        }
+        console.error("Failed to load landing campaigns", error);
+      }
+    };
+
+    void loadLiveCampaigns();
+
     const heroSection = document.getElementById("hero-section");
     const parallaxLayer = document.getElementById("parallax-layer");
 
@@ -530,6 +684,7 @@ export default function Home() {
     }, 100);
 
     return () => {
+      campaignsAbortController.abort();
       clearModalTimer();
       clearTimeout(initialRevealTimeout);
       observer.disconnect();

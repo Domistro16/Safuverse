@@ -135,6 +135,9 @@ export function WalletModal({
                         onClick={async () => {
                             localStorage.removeItem('auth_token');
                             localStorage.removeItem('auth_user');
+                            if (typeof window !== 'undefined') {
+                                window.dispatchEvent(new Event('nexid-auth-changed'));
+                            }
                             await logout();
                             window.location.reload();
                         }}

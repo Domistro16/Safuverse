@@ -18,6 +18,12 @@ interface AuthState {
     domainName: string | null;
 }
 
+function emitAuthChanged() {
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('nexid-auth-changed'));
+    }
+}
+
 // Read existing auth from localStorage synchronously at init time
 function getInitialAuthState(): AuthState {
     if (typeof window === 'undefined') {
@@ -60,9 +66,10 @@ export function CustomConnect() {
         // this guard the stored token would be wiped on every page load,
         // causing a sign-message prompt on every navigation / reload.
         if (!ready) return;
-        if (!isConnected || !authenticated) {
+        if (!isConnected) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_user');
+            emitAuthChanged();
             setAuthState({
                 isAuthenticated: false,
                 token: null,
@@ -71,11 +78,13 @@ export function CustomConnect() {
             });
             hasAttemptedAuth.current = false;
         }
+        if (!authenticated) {
+            hasAttemptedAuth.current = false;
+        }
     }, [ready, isConnected, authenticated]);
 
     // Resolve primary .id domain name via the SafuDomains reverse lookup chain
     const { name: domainName } = useENSName({ owner: address as `0x${string}` });
-    console.log(domainName);
     const authenticate = useCallback(async () => {
         if (!address || isAuthenticating) return;
 
@@ -112,6 +121,7 @@ export function CustomConnect() {
             const { token, user } = await verifyRes.json();
             localStorage.setItem('auth_token', token);
             localStorage.setItem('auth_user', JSON.stringify(user));
+            emitAuthChanged();
 
             setAuthState({
                 isAuthenticated: true,
@@ -152,6 +162,7 @@ export function CustomConnect() {
                     const parsedUser = JSON.parse(userStr);
                     if (parsedUser.walletAddress?.toLowerCase() === address.toLowerCase()) {
                         setAuthState({ isAuthenticated: true, token, user: parsedUser, domainName: null });
+                        emitAuthChanged();
                         return;
                     }
                 }
@@ -176,7 +187,7 @@ export function CustomConnect() {
         return (
             <button
                 disabled
-                className="px-6 py-2 bg-black text-white font-semibold rounded-full opacity-50"
+                className="rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white opacity-60"
             >
                 Loading...
             </button>
@@ -187,7 +198,7 @@ export function CustomConnect() {
         return (
             <button
                 onClick={login}
-                className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
+                className="rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white shadow-inner-glaze transition-colors hover:border-white/20"
             >
                 Login
             </button>
@@ -198,7 +209,7 @@ export function CustomConnect() {
         return (
             <button
                 disabled
-                className="px-6 py-2 bg-black text-white font-semibold rounded-full opacity-50"
+                className="rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white opacity-60"
             >
                 Signing...
             </button>
@@ -207,14 +218,14 @@ export function CustomConnect() {
 
     const displayText = (domainName as string | undefined)
         || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Connected');
-        console.log(displayText);
     return (
         <>
             <button
                 onClick={() => setShowWalletModal(true)}
-                className="px-6 py-2 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-2.5 rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white shadow-inner-glaze transition-colors hover:border-white/20"
                 type="button"
             >
+                <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
                 {displayText}
             </button>
 

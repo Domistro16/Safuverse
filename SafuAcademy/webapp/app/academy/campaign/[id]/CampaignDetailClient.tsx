@@ -93,6 +93,9 @@ interface CampaignDetailClientProps {
 }
 
 export default function CampaignDetailClient({ campaignId }: CampaignDetailClientProps) {
+  const [authToken, setAuthToken] = useState<string | null>(
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CampaignResponse | null>(null);
@@ -120,6 +123,21 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const [domainClaimError, setDomainClaimError] = useState<string | null>(null);
   const [domainClaimed, setDomainClaimed] = useState<string | null>(null);
   const [domainSpotsRemaining, setDomainSpotsRemaining] = useState<number | null>(null);
+
+  // Keep auth token in reactive state so connect/sign actions immediately update campaign UI.
+  useEffect(() => {
+    const syncAuthToken = () => {
+      setAuthToken(localStorage.getItem("auth_token"));
+    };
+
+    syncAuthToken();
+    window.addEventListener("storage", syncAuthToken);
+    window.addEventListener("nexid-auth-changed", syncAuthToken as EventListener);
+    return () => {
+      window.removeEventListener("storage", syncAuthToken);
+      window.removeEventListener("nexid-auth-changed", syncAuthToken as EventListener);
+    };
+  }, []);
 
   // Load campaign data
   useEffect(() => {
@@ -156,39 +174,53 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
 
   // Check enrollment status
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (!token || !data) return;
+    if (!data) return;
+    if (!authToken) {
+      setEnrolled(false);
+      setEnrollmentScore(0);
+      setCompletedUntil(-1);
+      setCompletedAt(null);
+      setEnrollmentChecked(true);
+      return;
+    }
+
+    setEnrollmentChecked(false);
 
     fetch(`/api/campaigns/${campaignId}/enroll`, { headers: authHeaders() })
       .then(async (res) => {
-        if (res.ok) {
-          const body = await res.json();
-          setEnrolled(body.enrolled);
-          if (body.participant) {
-            setEnrollmentScore(body.participant.score ?? 0);
-            const savedCompletedUntil = Number.isInteger(body.participant.completedUntil)
-              ? body.participant.completedUntil
-              : -1;
-            setCompletedUntil(savedCompletedUntil);
-            const moduleCount = Array.isArray(data.campaign.modules) ? data.campaign.modules.length : 0;
-            if (moduleCount > 0) {
-              const resumeModule = Math.min(Math.max(savedCompletedUntil + 1, 0), moduleCount - 1);
-              setActiveModule(resumeModule);
-            }
-            if (body.participant.completedAt) {
-              setCompletedAt(body.participant.completedAt);
-            }
+        if (!res.ok) {
+          setEnrolled(false);
+          return;
+        }
+        const body = await res.json();
+        setEnrolled(body.enrolled);
+        if (body.participant) {
+          setEnrollmentScore(body.participant.score ?? 0);
+          const savedCompletedUntil = Number.isInteger(body.participant.completedUntil)
+            ? body.participant.completedUntil
+            : -1;
+          setCompletedUntil(savedCompletedUntil);
+          const moduleCount = Array.isArray(data.campaign.modules) ? data.campaign.modules.length : 0;
+          if (moduleCount > 0) {
+            const resumeModule = Math.min(Math.max(savedCompletedUntil + 1, 0), moduleCount - 1);
+            setActiveModule(resumeModule);
+          }
+          if (body.participant.completedAt) {
+            setCompletedAt(body.participant.completedAt);
           }
         }
       })
       .catch(() => { })
       .finally(() => setEnrollmentChecked(true));
-  }, [campaignId, data]);
+  }, [campaignId, data, authToken]);
 
   // Load current user's encrypted notes for this campaign.
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (!token || !data) return;
+    if (!authToken || !data) {
+      setNotes([]);
+      setNotesLoading(false);
+      return;
+    }
 
     setNotesLoading(true);
     setNotesError(null);
@@ -204,12 +236,11 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
         setNotesError(err instanceof Error ? err.message : "Failed to load notes");
       })
       .finally(() => setNotesLoading(false));
-  }, [campaignId, data]);
+  }, [campaignId, data, authToken]);
 
   // Only admins should see on-chain snapshot details.
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
+    if (!authToken) {
       setCanViewOnChainSnapshot(false);
       return;
     }
@@ -217,7 +248,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
     fetch("/api/auth/admin-status", { headers: authHeaders() })
       .then((res) => setCanViewOnChainSnapshot(res.ok))
       .catch(() => setCanViewOnChainSnapshot(false));
-  }, [campaignId]);
+  }, [campaignId, authToken]);
 
   // Fetch domain claim status after completion for Genesis reward campaigns.
   useEffect(() => {
@@ -232,8 +263,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
       (sponsor.includes("nexid") || sponsorNamespace.includes("nexid"));
     if (!isGenesisRewardCampaign) return;
 
-    const token = localStorage.getItem("auth_token");
-    if (!token) return;
+    if (!authToken) return;
 
     fetch(`/api/campaigns/${campaignId}/claim-domain`, { headers: authHeaders() })
       .then(async (res) => {
@@ -247,7 +277,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
         );
       })
       .catch(() => { });
-  }, [campaignId, data, completedAt]);
+  }, [campaignId, data, completedAt, authToken]);
 
   async function handleEnroll() {
     setEnrolling(true);
@@ -379,7 +409,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const campaignImage = campaign.coverImageUrl || FALLBACK_IMAGE;
   const startDate = formatDate(campaign.startAt);
   const endDate = formatDate(campaign.endAt);
-  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
+  const hasToken = Boolean(authToken);
   const sponsor = campaign.sponsorName?.toLowerCase() ?? "";
   const sponsorNamespace = campaign.sponsorNamespace?.toLowerCase() ?? "";
   const isInternalCoreCampaign =

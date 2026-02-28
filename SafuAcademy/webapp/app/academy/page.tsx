@@ -39,6 +39,16 @@ function formatUsdc(value: string) {
   return amount.toLocaleString();
 }
 
+function resolveCampaignImage(url: string | null, fallback: string) {
+  if (!url) return fallback;
+  const lower = url.toLowerCase();
+  const isEmbedUrl =
+    lower.includes("share.synthesia.io/embeds/videos") ||
+    lower.includes("youtube.com/watch") ||
+    lower.includes("youtu.be/");
+  return isEmbedUrl ? fallback : url;
+}
+
 function isInternalCoreCampaign(campaign: Campaign) {
   return campaign.ownerType === "NEXID" || campaign.contractType === "NEXID_CAMPAIGNS";
 }
@@ -190,7 +200,7 @@ export default function AcademyBrowsePage() {
         >
           <div className="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a] md:h-80">
             <img
-              src={featuredCampaign.coverImageUrl || FALLBACK_FEATURED_IMAGE}
+              src={resolveCampaignImage(featuredCampaign.coverImageUrl, FALLBACK_FEATURED_IMAGE)}
               alt={featuredCampaign.title}
               className="absolute inset-0 h-full w-full object-cover opacity-60 mix-blend-luminosity"
             />
@@ -289,7 +299,7 @@ export default function AcademyBrowsePage() {
               >
                 <div className="course-image-wrapper relative h-48 overflow-hidden border-b border-[#1a1a1a]">
                   <img
-                    src={campaign.coverImageUrl || FALLBACK_IMAGE}
+                    src={resolveCampaignImage(campaign.coverImageUrl, FALLBACK_IMAGE)}
                     alt={campaign.title}
                     className="absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-luminosity"
                   />

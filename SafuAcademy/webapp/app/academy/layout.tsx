@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import { useAccount } from "wagmi";
-import { useENSName } from "@/hooks/getPrimaryName";
+import { useState, type ReactNode } from "react";
+import { CustomConnect } from "@/components/connectButton";
 
 interface AcademyLayoutProps {
   children: ReactNode;
@@ -18,18 +17,7 @@ export default function AcademyLayout({ children }: AcademyLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { address } = useAccount();
-  const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
-  const [displayName, setDisplayName] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
-
-  useEffect(() => {
-    if (domainName && typeof domainName === "string" && domainName.length > 0) {
-      setDisplayName(domainName);
-    } else if (address) {
-      setDisplayName(`${address.slice(0, 6)}...${address.slice(-4)}`);
-    }
-  }, [domainName, address]);
 
   // Dashboard has its own full layout — skip the academy wrapper
   if (pathname.startsWith("/academy/dashboard")) {
@@ -92,12 +80,7 @@ export default function AcademyLayout({ children }: AcademyLayoutProps) {
               />
             </div>
 
-            {displayName ? (
-              <div className="hidden items-center gap-2.5 rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white shadow-inner-glaze sm:flex cursor-pointer hover:border-white/20 transition-colors">
-                <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                {displayName}
-              </div>
-            ) : null}
+            <CustomConnect />
             <Link href="/academy/dashboard" className="rounded-lg bg-white px-5 py-2 text-sm font-bold text-black hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all shrink-0">
               Dashboard
             </Link>
