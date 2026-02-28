@@ -224,10 +224,12 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
     if (!data || !completedAt) return;
     const sponsor = data.campaign.sponsorName?.toLowerCase() ?? "";
     const sponsorNamespace = data.campaign.sponsorNamespace?.toLowerCase() ?? "";
-    const isGenesisRewardCampaign =
+    const isInternalCoreCampaign =
       data.campaign.ownerType === "NEXID" ||
-      sponsor.includes("nexid") ||
-      sponsorNamespace.includes("nexid");
+      data.campaign.contractType === "NEXID_CAMPAIGNS";
+    const isGenesisRewardCampaign =
+      !isInternalCoreCampaign &&
+      (sponsor.includes("nexid") || sponsorNamespace.includes("nexid"));
     if (!isGenesisRewardCampaign) return;
 
     const token = localStorage.getItem("auth_token");
@@ -380,10 +382,12 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
   const sponsor = campaign.sponsorName?.toLowerCase() ?? "";
   const sponsorNamespace = campaign.sponsorNamespace?.toLowerCase() ?? "";
-  const isGenesisRewardCampaign =
+  const isInternalCoreCampaign =
     campaign.ownerType === "NEXID" ||
-    sponsor.includes("nexid") ||
-    sponsorNamespace.includes("nexid");
+    campaign.contractType === "NEXID_CAMPAIGNS";
+  const isGenesisRewardCampaign =
+    !isInternalCoreCampaign &&
+    (sponsor.includes("nexid") || sponsorNamespace.includes("nexid"));
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-6 pb-12 pt-8 lg:px-12">
@@ -410,18 +414,22 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
         <div className="premium-panel w-full shrink-0 bg-[#0a0a0a] p-6 lg:w-72 text-right shadow-inner-glaze">
           <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-muted">Sponsored By</div>
           <div className="font-display mb-4 text-xl text-white">{campaign.sponsorName}</div>
-          <div className="h-px w-full bg-[#1a1a1a] mb-4" />
-          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-gold">Rewards</div>
-          {isGenesisRewardCampaign ? (
-            <div className="space-y-1">
-              <div className="text-sm font-bold text-white">100 Genesis Points</div>
-              <div className="text-[11px] text-nexid-muted">
-                + 5-char .id domain for first 1,000 completions
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
-          )}
+          {!isInternalCoreCampaign ? (
+            <>
+              <div className="h-px w-full bg-[#1a1a1a] mb-4" />
+              <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-gold">Rewards</div>
+              {isGenesisRewardCampaign ? (
+                <div className="space-y-1">
+                  <div className="text-sm font-bold text-white">100 Genesis Points</div>
+                  <div className="text-[11px] text-nexid-muted">
+                    + 5-char .id domain for first 1,000 completions
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm font-bold text-white">${formatUsdc(campaign.prizePoolUsdc)} USDC</div>
+              )}
+            </>
+          ) : null}
           {(startDate || endDate) ? (
             <div className="mt-2 text-[11px] text-nexid-muted">
               {startDate ? `Start: ${startDate}` : null}

@@ -39,6 +39,10 @@ function formatUsdc(value: string) {
   return amount.toLocaleString();
 }
 
+function isInternalCoreCampaign(campaign: Campaign) {
+  return campaign.ownerType === "NEXID" || campaign.contractType === "NEXID_CAMPAIGNS";
+}
+
 function getTagInfo(campaign: Campaign) {
   if (campaign.status === "ENDED") return { label: "Ended", style: "text-red-400 border-red-400/30 bg-red-400/5" };
   if (campaign.status === "LIVE") return { label: "Live", style: "text-nexid-gold border-nexid-gold/30 bg-nexid-gold/5" };
@@ -209,7 +213,10 @@ export default function AcademyBrowsePage() {
                 {featuredCampaign.title}
               </h2>
               <p className="text-nexid-muted leading-relaxed max-w-2xl">
-                {featuredCampaign.objective || `$${formatUsdc(featuredCampaign.prizePoolUsdc)} USDC pool · ${featuredCampaign.participantCount} participants`}
+                {featuredCampaign.objective ||
+                  (isInternalCoreCampaign(featuredCampaign)
+                    ? `${featuredCampaign.participantCount} participants`
+                    : `$${formatUsdc(featuredCampaign.prizePoolUsdc)} USDC pool - ${featuredCampaign.participantCount} participants`)}
               </p>
             </div>
             <div className="flex items-center gap-6 shrink-0 bg-[#111] border border-[#222] p-4 rounded-xl shadow-inner-glaze">
@@ -217,8 +224,17 @@ export default function AcademyBrowsePage() {
                 {featuredCampaign.sponsorName.slice(0, 4)}
               </div>
               <div>
-                <div className="text-[10px] font-mono text-nexid-gold mb-1 uppercase tracking-widest">Total Prize Pool</div>
-                <div className="text-base font-bold text-white">${formatUsdc(featuredCampaign.prizePoolUsdc)} USDC</div>
+                {isInternalCoreCampaign(featuredCampaign) ? (
+                  <>
+                    <div className="text-[10px] font-mono text-nexid-gold mb-1 uppercase tracking-widest">Participants</div>
+                    <div className="text-base font-bold text-white">{featuredCampaign.participantCount.toLocaleString()}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[10px] font-mono text-nexid-gold mb-1 uppercase tracking-widest">Total Prize Pool</div>
+                    <div className="text-base font-bold text-white">${formatUsdc(featuredCampaign.prizePoolUsdc)} USDC</div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -289,10 +305,19 @@ export default function AcademyBrowsePage() {
                     By {campaign.sponsorName}
                   </div>
                   <div className="mt-auto border-t border-[#1a1a1a] pt-3">
-                    <div className="text-[9px] font-mono text-nexid-muted mb-0.5 uppercase tracking-wider">Prize Pool</div>
-                    <div className={`text-xs font-bold ${campaign.status === "ENDED" ? "text-nexid-muted" : "text-white"}`}>
-                      ${formatUsdc(campaign.prizePoolUsdc)} USDC
-                    </div>
+                    {isInternalCoreCampaign(campaign) ? (
+                      <>
+                        <div className="text-[9px] font-mono text-nexid-muted mb-0.5 uppercase tracking-wider">Campaign Type</div>
+                        <div className="text-xs font-bold text-white">Internal</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[9px] font-mono text-nexid-muted mb-0.5 uppercase tracking-wider">Prize Pool</div>
+                        <div className={`text-xs font-bold ${campaign.status === "ENDED" ? "text-nexid-muted" : "text-white"}`}>
+                          ${formatUsdc(campaign.prizePoolUsdc)} USDC
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </Link>
