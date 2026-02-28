@@ -538,11 +538,12 @@ export default function Home() {
           return;
         }
         if (target === "Student Protocol") {
-          const hasGatewaySession =
-            localStorage.getItem("nexid_gateway_connected") === "true";
-          const hasLegacyAuth = Boolean(localStorage.getItem("auth_token"));
-          const destination =
-            hasGatewaySession || hasLegacyAuth ? "/academy" : "/academy-gateway";
+          const authToken = localStorage.getItem("auth_token");
+          const hasAuthToken = Boolean(authToken && authToken.trim().length > 0);
+          if (!hasAuthToken) {
+            localStorage.removeItem("nexid_gateway_connected");
+          }
+          const destination = hasAuthToken ? "/academy" : "/academy-gateway";
           window.location.assign(destination);
           return;
         }
