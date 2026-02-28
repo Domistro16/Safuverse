@@ -1,15 +1,15 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { useLoginWithSiwe, useLoginWithOAuth } from "@privy-io/react-auth";
+import { useLoginWithOAuth } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useENSName } from "@/hooks/getPrimaryName";
+import { getAddress } from "viem";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
 export default function AcademyGatewayPage() {
   const router = useRouter();
-  const { generateSiweMessage, loginWithSiwe } = useLoginWithSiwe();
   const { initOAuth } = useLoginWithOAuth({
     onComplete: () => {
       localStorage.setItem("nexid_gateway_connected", "true");
@@ -73,10 +73,11 @@ export default function AcademyGatewayPage() {
       const accounts = (await ethereum.request({
         method: "eth_requestAccounts",
       })) as string[];
-      const connectedAddress = accounts?.[0];
-      if (!connectedAddress) {
+      const rawAddress = accounts?.[0];
+      if (!rawAddress) {
         throw new Error("Wallet connection was not approved.");
       }
+      const connectedAddress = getAddress(rawAddress);
       setAddress(connectedAddress);
       addLog(`[WALLET] Connected ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}.`);
       await sleep(250);
@@ -88,31 +89,76 @@ export default function AcademyGatewayPage() {
       addLog(`[RPC] Network chainId ${chainId}.`);
       await sleep(250);
 
-      const message = await generateSiweMessage({
-        address: connectedAddress,
-        chainId: `eip155:${chainId}`,
+      const nonceRes = await fetch("/api/auth/nonce", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: connectedAddress }),
       });
-      addLog("[NEXID] SIWE message generated.");
+      const nonceBody = await nonceRes.json();
+      if (!nonceRes.ok) {
+        throw new Error(nonceBody?.error || "Failed to generate auth nonce.");
+      }
+      const message = String(nonceBody.message ?? "");
+      if (!message) {
+        throw new Error("Auth message was empty.");
+      }
+      addLog("[NEXID] Auth message generated.");
       await sleep(250);
 
-      const signature = (await ethereum.request({
-        method: "personal_sign",
-        params: [message, connectedAddress],
-      })) as string;
-      addLog("[WALLET] Signature received.");
-      await sleep(250);
+      const signAttempts: Array<{ label: string; params: [string, string] }> = [
+        { label: "message,address", params: [message, connectedAddress] },
+        { label: "address,message", params: [connectedAddress, message] },
+      ];
 
-      await loginWithSiwe({
-        signature,
-        message,
-        walletClientType:
-          provider === "MetaMask"
-            ? "metamask"
-            : provider === "WalletConnect"
-              ? "wallet_connect_v2"
-              : "phantom",
-        connectorType: "injected",
-      });
+      let signedAndVerified = false;
+      let lastError: unknown = null;
+
+      for (const attempt of signAttempts) {
+        try {
+          const signature = (await ethereum.request({
+            method: "personal_sign",
+            params: attempt.params,
+          })) as string;
+          addLog(`[WALLET] Signature received (${attempt.label}).`);
+          await sleep(250);
+
+          const verifyRes = await fetch("/api/auth/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              walletAddress: connectedAddress,
+              signature,
+              message,
+            }),
+          });
+          const verifyBody = await verifyRes.json();
+          if (!verifyRes.ok) {
+            throw new Error(verifyBody?.error || "Wallet verification failed.");
+          }
+          localStorage.setItem("auth_token", String(verifyBody.token ?? ""));
+          localStorage.setItem("auth_user", JSON.stringify(verifyBody.user ?? {}));
+          localStorage.setItem("nexid_gateway_connected", "true");
+          localStorage.setItem("nexid_gateway_address", connectedAddress);
+          signedAndVerified = true;
+          break;
+        } catch (err) {
+          lastError = err;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          if (
+            !/invalid signature|verification failed|invalid token|invalid siwe message and\/or signature/i.test(
+              errMsg,
+            )
+          ) {
+            throw err;
+          }
+          addLog(`[RETRY] Signature rejected (${attempt.label}), trying fallback...`);
+          await sleep(200);
+        }
+      }
+
+      if (!signedAndVerified) {
+        throw lastError instanceof Error ? lastError : new Error("Wallet verification failed.");
+      }
 
       addLog("[SUCCESS] Identity resolved.");
       setNetworkStatus("connected");
