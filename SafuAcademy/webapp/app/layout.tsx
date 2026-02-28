@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Nex Academy - Web3 Learning Platform",
+  title: "The Sovereign Knowledge Layer",
   description: "AI-Powered development, blockchain, and cryptocurrency with Nex Academy",
 };
 
