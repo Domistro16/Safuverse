@@ -11,7 +11,7 @@ const NEGATIVES = [
 ];
 
 const POSITIVES = [
-  "Forced interactive video engagement (Synthesia).",
+  "Baked in gamification boosting retention by 70%",
   "Cryptographic verification for on-chain testnet/mainnet tasks.",
   "Built-in AI Overwatch blocks botnets and VPN farms.",
   "Permanent SBT mints turn users into long-term advocates.",

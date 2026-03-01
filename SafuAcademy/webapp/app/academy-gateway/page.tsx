@@ -1,7 +1,14 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
-import { useLoginWithOAuth } from "@privy-io/react-auth";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  getEmbeddedConnectedWallet,
+  useLoginWithOAuth,
+  usePrivy,
+  useSignMessage,
+  useWallets,
+} from "@privy-io/react-auth";
+import type { ConnectedWallet } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useENSName } from "@/hooks/getPrimaryName";
 import { getAddress } from "viem";
@@ -10,27 +17,6 @@ type Step = 1 | 2 | 3 | 4 | 5;
 
 export default function AcademyGatewayPage() {
   const router = useRouter();
-  const { initOAuth } = useLoginWithOAuth({
-    onComplete: () => {
-      setSocialLoading(false);
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
-        setError("Social login succeeded, but no Academy auth session was issued. Please connect wallet.");
-        localStorage.removeItem("nexid_gateway_connected");
-        setSocialLoading(false);
-        setStep(1);
-        return;
-      }
-      localStorage.setItem("nexid_gateway_connected", "true");
-      window.dispatchEvent(new Event("nexid-auth-changed"));
-      setStep(5);
-      setRedirectCount(3);
-    },
-    onError: (error) => {
-      setError(String(error) || "Social login failed.");
-      setSocialLoading(false);
-    },
-  });
   const [step, setStep] = useState<Step>(1);
   const [providerName, setProviderName] = useState("MetaMask");
   const [address, setAddress] = useState("");
@@ -39,7 +25,89 @@ export default function AcademyGatewayPage() {
   const [redirectCount, setRedirectCount] = useState(3);
   const [error, setError] = useState("");
   const [socialLoading, setSocialLoading] = useState(false);
+  const [socialPendingSession, setSocialPendingSession] = useState(false);
+  const [socialAuthInFlight, setSocialAuthInFlight] = useState(false);
+  const { ready: privyReady, authenticated } = usePrivy();
+  const { wallets, ready: walletsReady } = useWallets();
+  const { signMessage: signPrivyMessage } = useSignMessage();
+  const walletsRef = useRef<ConnectedWallet[]>([]);
   const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
+
+  useEffect(() => {
+    walletsRef.current = wallets;
+  }, [wallets]);
+
+  const completeGatewayAuth = useCallback((walletAddress?: string) => {
+    localStorage.setItem("nexid_gateway_connected", "true");
+    if (walletAddress) {
+      localStorage.setItem("nexid_gateway_address", walletAddress);
+    }
+    window.dispatchEvent(new Event("nexid-auth-changed"));
+    setStep(5);
+    setRedirectCount(3);
+  }, []);
+
+  const issueAcademySessionForWallet = useCallback(async (
+    walletAddress: string,
+    signWithWallet: (message: string) => Promise<string>,
+  ) => {
+    const nonceRes = await fetch("/api/auth/nonce", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress }),
+    });
+    const nonceBody = await nonceRes.json();
+    if (!nonceRes.ok) {
+      throw new Error(nonceBody?.error || "Failed to generate auth nonce.");
+    }
+
+    const message = String(nonceBody.message ?? "");
+    if (!message) {
+      throw new Error("Auth message was empty.");
+    }
+
+    const signature = await signWithWallet(message);
+
+    const verifyRes = await fetch("/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        walletAddress,
+        signature,
+        message,
+      }),
+    });
+    const verifyBody = await verifyRes.json();
+    if (!verifyRes.ok) {
+      throw new Error(verifyBody?.error || "Wallet verification failed.");
+    }
+
+    const token = String(verifyBody.token ?? "");
+    if (!token) {
+      throw new Error("Verification succeeded but no auth token was returned.");
+    }
+
+    localStorage.setItem("auth_token", token);
+    localStorage.setItem("auth_user", JSON.stringify(verifyBody.user ?? {}));
+  }, []);
+
+  const { initOAuth } = useLoginWithOAuth({
+    onComplete: () => {
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        setSocialLoading(false);
+        completeGatewayAuth();
+        return;
+      }
+      setSocialPendingSession(true);
+    },
+    onError: (error) => {
+      setError(String(error) || "Social login failed.");
+      setSocialLoading(false);
+      setSocialPendingSession(false);
+      setSocialAuthInFlight(false);
+    },
+  });
 
   const displayName = useMemo(() => {
     if (domainName && typeof domainName === "string" && domainName.length > 0) return domainName;
@@ -58,6 +126,61 @@ export default function AcademyGatewayPage() {
   };
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  useEffect(() => {
+    if (!socialPendingSession || socialAuthInFlight) return;
+    if (!privyReady || !authenticated || !walletsReady) return;
+
+    setSocialAuthInFlight(true);
+
+    void (async () => {
+      try {
+        let embeddedAddress = "";
+        const timeoutAt = Date.now() + 8000;
+
+        while (Date.now() < timeoutAt) {
+          const embeddedWallet = getEmbeddedConnectedWallet(walletsRef.current);
+          if (embeddedWallet?.address) {
+            embeddedAddress = getAddress(embeddedWallet.address);
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+
+        if (!embeddedAddress) {
+          throw new Error("Social login succeeded, but no Academy auth session was issued. Please connect wallet.");
+        }
+
+        await issueAcademySessionForWallet(embeddedAddress, async (message) => {
+          const signed = await signPrivyMessage({ message }, { address: embeddedAddress });
+          return signed.signature;
+        });
+
+        setAddress((prev) => prev || embeddedAddress);
+        completeGatewayAuth(embeddedAddress);
+      } catch (e) {
+        const message = e instanceof Error
+          ? e.message
+          : "Social login succeeded, but no Academy auth session was issued. Please connect wallet.";
+        setError(message);
+        localStorage.removeItem("nexid_gateway_connected");
+        setStep(1);
+      } finally {
+        setSocialLoading(false);
+        setSocialPendingSession(false);
+        setSocialAuthInFlight(false);
+      }
+    })();
+  }, [
+    authenticated,
+    completeGatewayAuth,
+    issueAcademySessionForWallet,
+    privyReady,
+    signPrivyMessage,
+    socialAuthInFlight,
+    socialPendingSession,
+    walletsReady,
+  ]);
 
   const connectWithProvider = async (provider: "MetaMask" | "WalletConnect" | "Phantom") => {
     setProviderName(provider);
