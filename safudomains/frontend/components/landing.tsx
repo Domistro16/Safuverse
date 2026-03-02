@@ -6,11 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { keccak256, toBytes, zeroAddress } from 'viem'
 import { constants } from '../constant'
 import {
-  Search, X, ArrowUpRight, ArrowDownLeft, ChevronLeft,
-  Signal, Wifi, Battery, CheckCircle2, XCircle, Wallet,
+  Search, X, CheckCircle2, XCircle, Wallet,
   CreditCard, Plus, Box, Diamond, Zap, GraduationCap,
   User, Loader, ShieldCheck, Twitter, MessageCircle,
-  History, Check, ArrowUp, ArrowLeft,
+  History, Check, ArrowUp, ArrowLeft, ArrowRight,
 } from 'lucide-react'
 
 const abi = [
@@ -33,16 +32,6 @@ const reservedOwnersAbi = [
   },
 ] as const
 
-/* ── Transaction cards for the phone animation ── */
-const txCards = [
-  { id: 'c1', name: 'agent.id', type: 'Sent', amount: '500.00', token: 'USDC', tx: -270, ty: -180, rot: -6, icon: 'up' },
-  { id: 'c2', name: 'shop.id', type: 'Paid', amount: '24.99', token: 'DAI', tx: -310, ty: 0, rot: -3, icon: 'down' },
-  { id: 'c3', name: 'dev.id', type: 'Sent', amount: '0.1', token: 'ETH', tx: -260, ty: 180, rot: -5, icon: 'up' },
-  { id: 'c4', name: 'alice.id', type: 'Rec', amount: '0.45', token: 'ETH', tx: 270, ty: -160, rot: 6, icon: 'down' },
-  { id: 'c5', name: 'bob.id', type: 'Rec', amount: '50.00', token: 'USDC', tx: 310, ty: 20, rot: 2, icon: 'down' },
-  { id: 'c6', name: 'dao.id', type: 'Sent', amount: '1,000', token: 'BASE', tx: 260, ty: 200, rot: 5, icon: 'up' },
-]
-
 const faqItems = [
   { q: 'What exactly is a .id name?', a: "It's your universal identity for the decentralized web. A single .id name replaces clunky wallet addresses for payments, works as your username across social dApps, and serves as a verified identity for AI agents across Base, Ethereum, Solana, and more." },
   { q: 'How does the 25% revenue share work?', a: 'Every .id holder gets a unique referral link. When someone mints a name using your link, you instantly receive a 25% commission of the minting fee directly to your wallet. Built-in at the smart contract level.' },
@@ -54,10 +43,10 @@ const faqItems = [
 export default function Landing() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [scrollProgress, setScrollProgress] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalStage, setModalStage] = useState<'search' | 'timer' | 'payment' | 'guide'>('search')
   const [search, setSearch] = useState('')
+  const [heroSubmitted, setHeroSubmitted] = useState(false)
   const [available, setAvailable] = useState('')
   const [recents, setRecents] = useState<string[]>([])
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
@@ -106,12 +95,9 @@ export default function Landing() {
     } catch { /* empty */ }
   }, [])
 
-  /* scroll handler for hero animation */
+  /* scroll handler */
   useEffect(() => {
-    const MAX_SCROLL = 1000
     const onScroll = () => {
-      const p = Math.min(window.scrollY / MAX_SCROLL, 1)
-      setScrollProgress(p)
       setBackToTopVisible(window.scrollY > 500)
     }
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -227,141 +213,179 @@ export default function Landing() {
     setTimeout(() => setModalStage('payment'), 3000)
   }
 
-  /* Compute transforms */
-  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  const heroOpacity = Math.max(0, 1 - scrollProgress * 2.5)
-  const heroScale = 1 - scrollProgress * 0.3
-  const heroTranslateY = scrollProgress * -50
-  const mobileOffset = isMobile ? 40 : 40
-  const startY = (typeof window !== 'undefined' ? window.innerHeight / 2.4 : 375) + mobileOffset
-  const endY = -50
-  const currentY = startY - ((startY - endY) * scrollProgress)
-  const ease = 1 - Math.pow(1 - scrollProgress, 3)
+  const resolveHeroDomain = () => {
+    const cleaned = search.toLowerCase().replace(/[^a-z0-9-]/g, '')
+    if (!cleaned) return
+    if (cleaned !== search) setSearch(cleaned)
+    setHeroSubmitted(true)
+  }
 
   return (
     <div id="landing-view">
-      {/* ═══ HERO TRACK ═══ */}
-      <div className="landing-track">
-        <div className="landing-viewport">
-          {/* Ambient glow */}
-          {/* Ambient glow removed */}
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-[#1a1a1a] bg-[#030303]">
+        <div
+          className="pointer-events-none absolute inset-0 z-0 opacity-30"
+          style={{
+            backgroundImage: "url('https://www.transparenttextures.com/patterns/stardust.png')",
+            animation: 'landingNexidPan 180s linear infinite',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            backgroundSize: '50px 50px',
+            backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)',
+            maskImage: 'radial-gradient(ellipse at top, black 40%, transparent 80%)',
+            WebkitMaskImage: 'radial-gradient(ellipse at top, black 40%, transparent 80%)',
+          }}
+        />
 
-          {/* Hero Text */}
-          <div
-            className="landing-hero-text"
-            style={{ opacity: heroOpacity, transform: `scale(${heroScale}) translateY(${heroTranslateY}px)` }}
-          >
-            <h1 className="landing-hero-h1">
-              <span>Reimagine How</span><br />
-              <span>You <span className="text-[#FFB000]">Transact.</span></span>
+        <div className="relative z-10 w-full max-w-4xl mx-auto px-6 pt-28 md:pt-36 pb-24">
+          <div className="mb-12 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#ffb0004d] bg-[#ffb0000d] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-[#ffb000]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#ffb000] animate-pulse" />
+              The Root Registry
+            </div>
+            <h1 className="mt-6 text-5xl font-black tracking-tight text-white md:text-6xl lg:text-7xl">
+              Establish your <span className="bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">domain.</span>
             </h1>
-            <p className="landing-hero-sub">
-              Send crypto to names, not numbers. <br /> Powered by NexID on Base.
+            <p className="mx-auto mt-6 max-w-xl text-base text-[#8a8a8a] md:text-lg">
+              Your identity, wallet, and sovereign transcript, permanently anchored to a single human-readable name.
             </p>
           </div>
 
-          {/* Floating TX Cards - desktop only */}
-          <div className="landing-cards-layer hidden md:block">
-            {txCards.map((card) => {
-              const fanX = card.tx * ease
-              const fanY = card.ty * ease
-              const finalY = currentY + fanY
-              return (
-                <div
-                  key={card.id}
-                  className="landing-tx-card"
-                  style={{
-                    transform: `translate(-50%, -50%) translate(${fanX}px, ${finalY}px) rotate(${card.rot * ease}deg)`,
-                    opacity: ease,
-                  }}
+          <div className="relative">
+            <div className="rounded-[1.5rem] border border-[#1a1a1a] border-t-[#222] bg-[#050505e6] p-3 shadow-[0_30px_60px_rgba(0,0,0,0.8)] backdrop-blur-xl md:p-4">
+              <div className="flex items-center">
+                <Search className="ml-4 mr-4 h-7 w-7 shrink-0 text-[#8a8a8a] md:h-8 md:w-8" />
+                <div className="flex flex-1 items-baseline">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder:text-[#222] md:text-5xl"
+                    placeholder="vitalik"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') resolveHeroDomain()
+                    }}
+                  />
+                  <span className="ml-1 select-none text-3xl font-black text-[#ffb00080] md:text-5xl">.id</span>
+                </div>
+                <button
+                  onClick={resolveHeroDomain}
+                  className="ml-4 hidden shrink-0 items-center gap-2 rounded-xl bg-[#ffb000] px-6 py-4 text-lg font-bold text-black transition-all hover:shadow-[0_0_60px_-10px_rgba(255,176,0,0.4)] active:scale-95 md:flex md:px-10 md:py-5"
                 >
-                  <div className="landing-tx-card-inner">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${card.icon === 'up' ? 'bg-[var(--foreground)] text-[var(--background)]' : 'bg-[#FFB000] text-black'}`}>
-                      {card.icon === 'up' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between mb-1">
-                        <span className="font-bold text-sm">{card.name}</span>
-                        <span className="text-[10px] text-muted-foreground font-bold uppercase">{card.type}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                        <span>{card.amount}</span>
-                        <span className="text-[var(--foreground)] font-bold">{card.token}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Glow behind phone */}
-
-          {/* Phone */}
-          <div
-            className="landing-phone-container"
-            style={{ transform: `translate(-50%, -50%) translateY(${currentY}px)` }}
-          >
-            <div className="landing-phone-body">
-              <div className="landing-notch" />
-              <div className="w-full h-full flex flex-col pt-14 px-6 relative text-[var(--foreground)]">
-                <div className="absolute top-4 left-9 text-[13px] font-bold">9:41</div>
-                <div className="absolute top-4 right-9 flex gap-1.5">
-                  <Signal className="w-3.5 h-3.5" />
-                  <Wifi className="w-3.5 h-3.5" />
-                  <Battery className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex items-center justify-between mb-6 mt-2">
-                  <ChevronLeft className="w-6 h-6 text-muted-foreground" />
-                  <span className="font-bold text-lg">Send</span>
-                  <div className="w-6" />
-                </div>
-                <div className="flex flex-col items-center mb-6">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FFB000] to-yellow-400 p-1 mb-3 shadow-xl"><div
-                    className="w-20 h-20 rounded-full bg-gradient-to-tr from-safu to-yellow-400 p-1 mb-3 shadow-xl shadow-orange/20">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nadya"
-                      className="w-full h-full rounded-full bg-white object-cover" /></div>
-                  </div>
-                  <h2 className="text-2xl font-bold tracking-tight text-[var(--foreground)] opacity-90">Nadya.id</h2>
-                  <div className="bg-[var(--muted)] px-3 py-1 rounded-full mt-2">
-                    <p className="text-xs font-mono text-muted-foreground font-medium">0x71C9...8A21</p>
-                  </div>
-                </div>
-                <div className="bg-[var(--background)] rounded-3xl p-6 shadow-sm border border-[var(--border)] mb-4 text-center">
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Amount</p>
-                  <h3 className="text-5xl font-extrabold text-[var(--foreground)] mb-3 tracking-tighter">$50.00</h3>
-                  <div className="inline-flex items-center gap-1.5 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 text-xs font-bold text-blue-500">USDC</div>
-                </div>
-                <div className="px-3 space-y-3 mb-6">
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground font-medium">Network</span><span className="font-bold text-[var(--foreground)]">Base</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground font-medium">Fee</span><span className="font-bold text-green-500">Free</span></div>
-                </div>
-                <div className="px-4 mt-auto pb-10">
-                  <div className="w-full bg-[var(--foreground)] text-[var(--background)] h-14 rounded-2xl flex items-center justify-center font-bold text-lg">Send Now</div>
-                </div>
+                  Search
+                  <ArrowRight className="h-5 w-5" />
+                </button>
               </div>
             </div>
+
+            <button
+              onClick={resolveHeroDomain}
+              className="mt-4 w-full rounded-xl bg-[#ffb000] py-4 text-lg font-bold text-black shadow-[0_0_60px_-10px_rgba(255,176,0,0.4)] transition-all active:scale-95 md:hidden"
+            >
+              Search Namespace
+            </button>
+
+            {heroSubmitted && search.length >= 1 && (
+              <div className="mt-8">
+                {available === 'Loading...' && (
+                  <div className="rounded-3xl border border-[#ffb0004d] bg-[#050505] p-6 md:p-8">
+                    <div className="flex items-center gap-3 text-[#ffb000]">
+                      <Loader className="h-5 w-5 animate-spin" />
+                      <span className="font-mono text-xs uppercase tracking-[0.18em]">Checking Registry...</span>
+                    </div>
+                  </div>
+                )}
+
+                {(available === 'Invalid' || available === 'Too Short') && (
+                  <div className="rounded-3xl border border-[#333] bg-[#0a0a0ab3] p-6 text-center md:p-8">
+                    <h2 className="text-xl font-bold text-white md:text-2xl">Name is not valid</h2>
+                    <p className="mt-2 text-sm text-[#8a8a8a]">
+                      {available === 'Too Short'
+                        ? 'Namespaces must be at least 3 characters long.'
+                        : 'Only lowercase letters, numbers, and hyphens are allowed.'}
+                    </p>
+                  </div>
+                )}
+
+                {(available === 'Registered' || available === 'Reserved' || available === 'Unavailable') && (
+                  <div className="rounded-3xl border border-red-500/20 bg-[radial-gradient(ellipse_at_top,rgba(239,68,68,0.05),transparent_60%)] p-6 md:p-8">
+                    <div className="flex flex-col items-center justify-between gap-5 md:flex-row">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10 text-red-500">
+                          <XCircle className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold tracking-tight text-white">
+                            {search}
+                            <span className="text-[#ffb00080]">.id</span>
+                          </h2>
+                          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-red-400">
+                            {available === 'Reserved' ? 'Unavailable / Reserved' : 'Unavailable / Registered'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSearch('')
+                          setHeroSubmitted(false)
+                        }}
+                        className="w-full rounded-xl border border-[#333] bg-[#111] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1a1a1a] md:w-auto"
+                      >
+                        Try another name
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {available === 'Available' && (
+                  <div className="rounded-3xl border border-green-500/30 bg-[radial-gradient(ellipse_at_top,rgba(34,197,94,0.05),transparent_60%)] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] md:p-8">
+                    <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+                      <div className="flex w-full items-center gap-4 md:w-auto md:gap-5">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-green-500/40 bg-green-500/10 text-green-500">
+                          <CheckCircle2 className="h-7 w-7" />
+                        </div>
+                        <div className="min-w-0 text-left">
+                          <h2 className="text-3xl font-bold tracking-tight text-white">
+                            {search}
+                            <span className="text-[#ffb000cc]">.id</span>
+                          </h2>
+                          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-green-400">Available for Mint</p>
+                        </div>
+                      </div>
+
+                      <div className="flex w-full items-center justify-between gap-4 rounded-xl border border-[#222] bg-[#050505] p-4 md:w-auto md:justify-start md:gap-6">
+                        <div className="text-left">
+                          <p className="text-xs text-[#8a8a8a]">Registration</p>
+                          <p className={`text-xl font-bold ${search.length >= 5 ? 'text-green-400' : 'text-white'}`}>
+                            {search.length === 3 ? '$500 USDC' : search.length === 4 ? '$150 USDC' : 'FREE (Scholarship)'}
+                          </p>
+                          <p className="mt-1 max-w-[145px] text-[9px] leading-tight text-[#8a8a8a]">
+                            {search.length >= 5
+                              ? 'First 1,000 users claim 5+ char domains for free.'
+                              : 'Premium length pricing applies.'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleRoute}
+                          className="flex items-center gap-2 rounded-lg bg-[#ffb000] px-6 py-4 font-bold text-black transition-all hover:shadow-[0_0_30px_-5px_rgba(255,176,0,0.3)] active:scale-95"
+                        >
+                          Mint
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      </div>
-
-      {/* ═══ SEARCH SECTION ═══ */}
-      <div className="landing-search-container">
-        <div className="landing-search-bleed-glow" />
-        <div className="max-w-3xl mx-auto px-4 relative z-10">
-          <h2 className="landing-search-heading">
-            Claim your <br /> unique <span>identity.</span>
-          </h2>
-          <p className="landing-search-sub">Your web3 username, across all chains.</p>
-          <div className="landing-search-bar" onClick={openModal}>
-            <span className="landing-search-text">Search for a .id name...</span>
-            <div className="landing-search-icon">
-              <Search className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-      </div>
-
+      </section>
       {/* ═══ SEARCH MODAL ═══ */}
       {modalOpen && (
         <div className={`landing-modal-overlay ${modalOpen ? 'active' : ''}`} onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false) }}>
@@ -766,6 +790,16 @@ export default function Landing() {
       >
         <ArrowUp className="w-6 h-6" />
       </div>
+      <style jsx global>{`
+        @keyframes landingNexidPan {
+          from {
+            background-position: 0 0;
+          }
+          to {
+            background-position: -1000px 1000px;
+          }
+        }
+      `}</style>
     </div>
   )
 }
