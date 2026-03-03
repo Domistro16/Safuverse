@@ -292,93 +292,30 @@ export default function Landing() {
             </button>
 
             {heroSubmitted && search.length >= 1 && (
-              <div className="mt-8">
-                {available === 'Loading...' && (
-                  <div className="rounded-3xl border border-[#ffb0004d] bg-[#050505] p-6 md:p-8">
+              <div className="mt-6">
+                {available === 'Loading...' ? (
+                  <div className="rounded-2xl border border-[#ffb0004d] bg-[#050505] p-5">
                     <div className="flex items-center gap-3 text-[#ffb000]">
                       <Loader className="h-5 w-5 animate-spin" />
-                      <span className="font-mono text-xs uppercase tracking-[0.18em]">Checking Registry...</span>
+                      <span className="font-mono text-xs uppercase tracking-[0.18em]">Checking Availability...</span>
                     </div>
                   </div>
-                )}
-
-                {(available === 'Invalid' || available === 'Too Short') && (
-                  <div className="rounded-3xl border border-[#333] bg-[#0a0a0ab3] p-6 text-center md:p-8">
-                    <h2 className="text-xl font-bold text-white md:text-2xl">Name is not valid</h2>
-                    <p className="mt-2 text-sm text-[#8a8a8a]">
-                      {available === 'Too Short'
-                        ? 'Namespaces must be at least 3 characters long.'
-                        : 'Only lowercase letters, numbers, and hyphens are allowed.'}
+                ) : (
+                  <div className={`rounded-2xl border p-5 ${available === 'Available'
+                    ? 'border-green-500/30 bg-[radial-gradient(ellipse_at_top,rgba(34,197,94,0.05),transparent_60%)]'
+                    : 'border-red-500/20 bg-[radial-gradient(ellipse_at_top,rgba(239,68,68,0.05),transparent_60%)]'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {available === 'Available' ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-400" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-400" />
+                      )}
+                      <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#8a8a8a]">{search}.id</p>
+                    </div>
+                    <p className={`mt-2 text-lg font-bold ${available === 'Available' ? 'text-green-400' : 'text-red-400'}`}>
+                      {available === 'Available' ? 'Available' : 'Not available'}
                     </p>
-                  </div>
-                )}
-
-                {(available === 'Registered' || available === 'Reserved' || available === 'Unavailable') && (
-                  <div className="rounded-3xl border border-red-500/20 bg-[radial-gradient(ellipse_at_top,rgba(239,68,68,0.05),transparent_60%)] p-6 md:p-8">
-                    <div className="flex flex-col items-center justify-between gap-5 md:flex-row">
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10 text-red-500">
-                          <XCircle className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <h2 className="text-2xl font-bold tracking-tight text-white">
-                            {search}
-                            <span className="text-[#ffb00080]">.id</span>
-                          </h2>
-                          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-red-400">
-                            {available === 'Reserved' ? 'Unavailable / Reserved' : 'Unavailable / Registered'}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setSearch('')
-                          setHeroSubmitted(false)
-                        }}
-                        className="w-full rounded-xl border border-[#333] bg-[#111] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1a1a1a] md:w-auto"
-                      >
-                        Try another name
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {available === 'Available' && (
-                  <div className="rounded-3xl border border-green-500/30 bg-[radial-gradient(ellipse_at_top,rgba(34,197,94,0.05),transparent_60%)] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] md:p-8">
-                    <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-                      <div className="flex w-full items-center gap-4 md:w-auto md:gap-5">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-green-500/40 bg-green-500/10 text-green-500">
-                          <CheckCircle2 className="h-7 w-7" />
-                        </div>
-                        <div className="min-w-0 text-left">
-                          <h2 className="text-3xl font-bold tracking-tight text-white">
-                            {search}
-                            <span className="text-[#ffb000cc]">.id</span>
-                          </h2>
-                          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-green-400">Available for Mint</p>
-                        </div>
-                      </div>
-
-                      <div className="flex w-full items-center justify-between gap-4 rounded-xl border border-[#222] bg-[#050505] p-4 md:w-auto md:justify-start md:gap-6">
-                        <div className="text-left">
-                          <p className="text-xs text-[#8a8a8a]">Registration</p>
-                          <p className={`text-xl font-bold ${search.length >= 5 ? 'text-green-400' : 'text-white'}`}>
-                            {search.length === 3 ? '$500 USDC' : search.length === 4 ? '$150 USDC' : 'FREE (Scholarship)'}
-                          </p>
-                          <p className="mt-1 max-w-[145px] text-[9px] leading-tight text-[#8a8a8a]">
-                            {search.length >= 5
-                              ? 'First 1,000 users claim 5+ char domains for free.'
-                              : 'Premium length pricing applies.'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={handleRoute}
-                          className="flex items-center gap-2 rounded-lg bg-[#ffb000] px-6 py-4 font-bold text-black transition-all hover:shadow-[0_0_30px_-5px_rgba(255,176,0,0.3)] active:scale-95"
-                        >
-                          Mint
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
