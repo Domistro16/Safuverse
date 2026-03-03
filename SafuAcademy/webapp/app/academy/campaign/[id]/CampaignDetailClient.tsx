@@ -418,7 +418,6 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const activeItems: Module[] = active?.items ?? [];
   const activeContent = activeItems[activeModuleItem] ?? activeItems[0];
   const activeModuleLabel = active?.title || `Module ${activeModule + 1}`;
-  const isActiveVideoModule = !!(activeContent?.type === "video" && activeContent?.videoUrl);
   const campaignImage = campaign.coverImageUrl || FALLBACK_IMAGE;
   const startDate = formatDate(campaign.startAt);
   const endDate = formatDate(campaign.endAt);
@@ -511,103 +510,81 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
         {/* Main Content */}
         <div className="flex-1 flex flex-col gap-6 w-full">
           {/* Theater Stage */}
-          <div className="premium-panel overflow-hidden border border-[#1a1a1a] flex flex-col relative bg-[#050505] min-h-[500px] lg:h-[600px]">
+          <div className="premium-panel overflow-hidden border border-[#1a1a1a] flex flex-col relative bg-[#050505] min-h-[360px] lg:h-[600px]">
             {!isEnded ? (
-              <div className="flex h-full flex-col">
-                <div className="relative w-full h-full bg-black">
-                  <img
-                    src={campaignImage}
-                    alt={campaign.title}
-                    className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-luminosity"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
-                  {!enrolled ? (
-                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
-                      <div className="text-center">
-                        <h3 className="font-display text-2xl text-white">Content Locked</h3>
-                        <p className="mt-2 text-sm text-nexid-muted">Enroll to watch modules.</p>
-                      </div>
+              <div className="relative h-full bg-black">
+                <img
+                  src={campaignImage}
+                  alt={campaign.title}
+                  className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-luminosity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+
+                {hasModules ? (
+                  <div className="relative z-10 flex h-full flex-col">
+                    <div className="relative w-full overflow-hidden bg-black aspect-video lg:flex-1">
+                      {!enrolled ? (
+                        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+                          <div className="text-center">
+                            <h3 className="font-display text-2xl text-white">Content Locked</h3>
+                            <p className="mt-2 text-sm text-nexid-muted">Enroll to watch modules.</p>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {!enrolled ? null : activeContent?.type === "video" && activeContent?.videoUrl ? (
+                        <div className="absolute inset-0">
+                          <iframe
+                            src={activeContent.videoUrl}
+                            loading="lazy"
+                            title={`Video player - ${activeContent.title}`}
+                            allowFullScreen
+                            allow="encrypted-media; fullscreen; microphone; screen-wake-lock;"
+                            className="absolute inset-0 h-full w-full border-0"
+                          />
+                        </div>
+                      ) : activeContent?.type === "task" ? (
+                        <div className="absolute inset-0 flex items-center justify-center p-6 md:p-8">
+                          <div className="max-w-xl text-center">
+                            <h3 className="font-display text-2xl text-white">{activeContent.title}</h3>
+                            {activeContent.description ? (
+                              <p className="mt-3 text-sm text-nexid-muted">{activeContent.description}</p>
+                            ) : null}
+                            {activeContent.actionUrl ? (
+                              <a
+                                href={activeContent.actionUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-5 inline-block rounded bg-nexid-gold px-5 py-2 text-sm font-bold text-black"
+                              >
+                                {activeContent.actionLabel || "Open Task"}
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : activeContent?.type === "quiz" ? (
+                        <div className="absolute inset-0 flex items-center justify-center p-6 md:p-8">
+                          <div className="max-w-xl text-center">
+                            <h3 className="font-display text-2xl text-white">{activeContent.title}</h3>
+                            {activeContent.question ? (
+                              <p className="mt-3 text-sm text-nexid-muted">{activeContent.question}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
+                          <p className="text-sm text-nexid-muted">This module has no playable content yet.</p>
+                        </div>
+                      )}
                     </div>
-                  ) : null}
-                  {hasModules ? (
-                    <div className="absolute inset-0 z-10 flex flex-col">
-                      <div className="relative z-0 flex-1">
-                        {!enrolled ? null : activeContent?.type === "video" && activeContent?.videoUrl ? (
-                          <div
-                            style={{
-                              position: "relative",
-                              overflow: "hidden",
-                              aspectRatio: "1920 / 1080",
-                              width: "100%",
-                              height: "100%",
-                              zIndex: 0,
-                            }}
-                          >
-                            <iframe
-                              src={activeContent.videoUrl}
-                              loading="lazy"
-                              title={`Video player - ${activeContent.title}`}
-                              allowFullScreen
-                              allow="encrypted-media; fullscreen; microphone; screen-wake-lock;"
-                              style={{
-                                position: "absolute",
-                                width: "100%",
-                                height: "100%",
-                                top: 0,
-                                left: 0,
-                                border: "none",
-                                padding: 0,
-                                margin: 0,
-                                overflow: "hidden",
-                              }}
-                            />
-                          </div>
-                        ) : activeContent?.type === "task" ? (
-                          <div className="absolute inset-0 flex items-center justify-center p-8">
-                            <div className="max-w-xl text-center">
-                              <h3 className="font-display text-2xl text-white">{activeContent.title}</h3>
-                              {activeContent.description ? (
-                                <p className="mt-3 text-sm text-nexid-muted">{activeContent.description}</p>
-                              ) : null}
-                              {activeContent.actionUrl ? (
-                                <a
-                                  href={activeContent.actionUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="mt-5 inline-block rounded bg-nexid-gold px-5 py-2 text-sm font-bold text-black"
-                                >
-                                  {activeContent.actionLabel || "Open Task"}
-                                </a>
-                              ) : null}
-                            </div>
-                          </div>
-                        ) : activeContent?.type === "quiz" ? (
-                          <div className="absolute inset-0 flex items-center justify-center p-8">
-                            <div className="max-w-xl text-center">
-                              <h3 className="font-display text-2xl text-white">{activeContent.title}</h3>
-                              {activeContent.question ? (
-                                <p className="mt-3 text-sm text-nexid-muted">{activeContent.question}</p>
-                              ) : null}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
-                            <p className="text-sm text-nexid-muted">This module has no playable content yet.</p>
-                          </div>
-                        )}
-                      </div>
-                      <div
-                        className={`absolute left-0 z-20 w-full p-6 flex justify-between pointer-events-auto ${
-                          isActiveVideoModule
-                            ? "top-0 items-start bg-gradient-to-b from-black to-black/20"
-                            : "bottom-0 items-end bg-gradient-to-t from-black to-black/20"
-                        }`}
-                      >
-                        <div>
-                          <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold mb-1">
+
+                    <div className="border-t border-white/10 bg-black/80 p-4 md:p-6">
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div className="min-w-0">
+                          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
                             Module {activeModule + 1}
                           </div>
-                          <h3 className="font-display text-2xl text-white">{activeModuleLabel}</h3>
+                          <h3 className="font-display text-xl text-white md:text-2xl">{activeModuleLabel}</h3>
                           {activeContent ? (
                             <p className="mt-1 text-xs text-nexid-muted">{activeContent.title}</p>
                           ) : null}
@@ -630,8 +607,9 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                             </div>
                           ) : null}
                         </div>
+
                         {enrolled && !completedAt ? (
-                          <div className="flex flex-col items-end gap-2">
+                          <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
                             <button
                               type="button"
                               disabled={progressSaving || completing}
@@ -693,12 +671,12 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                                   }
                                 }
                               }}
-                              className="px-6 py-2.5 bg-nexid-gold text-black font-bold text-sm rounded hover:shadow-gold-glow transition-all disabled:opacity-60"
+                              className="w-full rounded bg-nexid-gold px-6 py-2.5 text-sm font-bold text-black transition-all hover:shadow-gold-glow disabled:opacity-60 md:w-auto"
                             >
                               {completing ? "Completing..." : progressSaving ? "Saving..." : "Mark Complete"}
                             </button>
                             {progressError ? (
-                              <div className="max-w-[280px] text-right text-[11px] text-red-400">
+                              <div className="max-w-[280px] text-left text-[11px] text-red-400 md:text-right">
                                 {progressError}
                               </div>
                             ) : null}
@@ -710,16 +688,16 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                         ) : null}
                       </div>
                     </div>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold mb-2">Campaign</div>
-                        <h3 className="font-display text-2xl text-white">{campaign.title}</h3>
-                        <p className="text-sm text-nexid-muted mt-2">Modules have not been configured yet.</p>
-                      </div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-nexid-gold">Campaign</div>
+                      <h3 className="font-display text-2xl text-white">{campaign.title}</h3>
+                      <p className="mt-2 text-sm text-nexid-muted">Modules have not been configured yet.</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center border-t-4 border-nexid-gold">
