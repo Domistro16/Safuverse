@@ -71,12 +71,14 @@ function shortAddr(addr: string) {
 export default function SovereignTerminalPage() {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
+  const [authWalletAddress, setAuthWalletAddress] = useState<string | null>(null);
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
+  const identityAddress = authWalletAddress ?? address ?? null;
   const { name: ensName } = useENSName({
-    owner: (address ?? "0x0000000000000000000000000000000000000000") as `0x${string}`,
+    owner: (identityAddress ?? "0x0000000000000000000000000000000000000000") as `0x${string}`,
   });
 
-  const displayName = ensName ? String(ensName) : shortAddr(address ?? "");
-  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
+  const displayName = ensName ? String(ensName) : shortAddr(identityAddress ?? "");
 
   const [view, setView] = useState<GlobalView>("dashboard");
   const [profileTab, setProfileTab] = useState<ProfileTab>("general");
@@ -113,17 +115,35 @@ export default function SovereignTerminalPage() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!hasToken) {
+      setAuthWalletAddress(null);
+      return;
+    }
+
+    fetch("/api/user/profile", { headers: authHeaders() })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const body = await res.json();
+        const walletAddress = typeof body?.user?.walletAddress === "string"
+          ? body.user.walletAddress
+          : null;
+        setAuthWalletAddress(walletAddress);
+      })
+      .catch(() => setAuthWalletAddress(null));
+  }, [hasToken]);
+
   // ── Compute user rank from leaderboard ──
   useEffect(() => {
-    if (!address || leaderboard.length === 0) return;
+    if (!identityAddress || leaderboard.length === 0) return;
     const idx = leaderboard.findIndex(
-      (r) => r.walletAddress.toLowerCase() === address.toLowerCase(),
+      (r) => r.walletAddress.toLowerCase() === identityAddress.toLowerCase(),
     );
     if (idx >= 0) {
       setUserRank(idx + 1);
       setTotalPoints(leaderboard[idx].totalPoints);
     }
-  }, [address, leaderboard]);
+  }, [identityAddress, leaderboard]);
 
   // ── Fetch user campaigns (authenticated) ──
   useEffect(() => {
@@ -390,7 +410,7 @@ export default function SovereignTerminalPage() {
                         {displayName || "Connect Wallet"}
                       </div>
                       <div className="flex items-center justify-between font-mono text-[11px] text-white/60">
-                        <span>{address ? shortAddr(address) : "--"}</span>
+                        <span>{identityAddress ? shortAddr(identityAddress) : "--"}</span>
                         <span>{totalPoints.toLocaleString()} pts</span>
                       </div>
                     </div>
@@ -484,7 +504,7 @@ export default function SovereignTerminalPage() {
                       <div className="flex items-center gap-4">
                         <div className="w-6 text-center font-mono text-sm font-bold text-nexid-gold">{userRank}</div>
                         <div className="font-medium text-white">
-                          {displayName || shortAddr(address)}{" "}
+                          {displayName || shortAddr(identityAddress ?? "")}{" "}
                           <span className="rounded border border-white/5 bg-white/10 px-1.5 py-0.5 font-mono text-[9px] text-nexid-muted">YOU</span>
                         </div>
                       </div>
@@ -696,7 +716,7 @@ export default function SovereignTerminalPage() {
                   </h2>
                   <div className="font-mono text-[11px] text-nexid-muted">
                     <span className="shadow-inner-glaze rounded border border-[#222] bg-[#111] px-2 py-0.5 text-white">
-                      {address ? shortAddr(address) : "Not connected"}
+                      {identityAddress ? shortAddr(identityAddress) : "Not connected"}
                     </span>
                   </div>
                 </div>
@@ -713,7 +733,7 @@ export default function SovereignTerminalPage() {
 
               <div className="min-h-[500px] max-w-3xl flex-1">
                 {profileTab === "general" ? <GeneralPanel displayName={displayName} /> : null}
-                {profileTab === "wallets" ? <WalletPanel address={address ?? null} /> : null}
+                {profileTab === "wallets" ? <WalletPanel address={identityAddress} /> : null}
                 {profileTab === "security" ? <SecurityPanel /> : null}
                 {profileTab === "prefs" ? <PrefsPanel /> : null}
               </div>

@@ -119,6 +119,7 @@ async function resolveTargetCampaignId(): Promise<number> {
 
 async function updateModules() {
   const dryRun = process.argv.includes("--dry-run");
+  const replaceAll = process.argv.includes("--replace-all");
   const campaignId = await resolveTargetCampaignId();
 
   const campaign = await prisma.campaign.findUnique({
@@ -134,16 +135,21 @@ async function updateModules() {
   }
 
   const existingModules = normalizeCampaignModules(campaign.modules);
-  const module1 = existingModules[0] ? [existingModules[0]] : [];
-  const extraModules = existingModules
-    .slice(1)
-    .filter((module) => !isModule2To4Title(module.title));
-  const nextModules: CampaignModuleGroup[] = [...module1, ...NEW_MODULES_2_TO_4, ...extraModules];
+  const nextModules: CampaignModuleGroup[] = replaceAll
+    ? [...NEW_MODULES_2_TO_4]
+    : (() => {
+        const module1 = existingModules[0] ? [existingModules[0]] : [];
+        const extraModules = existingModules
+          .slice(1)
+          .filter((module) => !isModule2To4Title(module.title));
+        return [...module1, ...NEW_MODULES_2_TO_4, ...extraModules];
+      })();
 
   console.log(`Target campaign: ${campaign.id} (${campaign.title})`);
   console.log(`Existing grouped modules: ${existingModules.length}`);
   console.log(`New grouped modules: ${nextModules.length}`);
   console.log(`Dry run: ${dryRun ? "yes" : "no"}`);
+  console.log(`Replace all modules: ${replaceAll ? "yes" : "no"}`);
 
   if (dryRun) {
     console.log(JSON.stringify(nextModules, null, 2));

@@ -12,6 +12,11 @@ type LeaderboardRow = {
     totalScore: number;
 };
 
+function authHeaders(): Record<string, string> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function shortAddr(addr: string) {
     if (addr.length < 12) return addr;
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -21,15 +26,35 @@ export default function GlobalLeaderboardPage() {
     const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"24h" | "7d" | "all">("all");
+    const [authWalletAddress, setAuthWalletAddress] = useState<string | null>(null);
+    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
     const { address } = useAccount();
-    const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
+    const identityAddress = authWalletAddress ?? address ?? null;
+    const { name: domainName } = useENSName({ owner: (identityAddress || "0x0000000000000000000000000000000000000000") as `0x${string}` });
 
     const displayName =
         domainName && typeof domainName === "string" && domainName.length > 0
             ? domainName
-            : address
-                ? shortAddr(address)
+            : identityAddress
+                ? shortAddr(identityAddress)
                 : null;
+
+    useEffect(() => {
+        if (!hasToken) {
+            setAuthWalletAddress(null);
+            return;
+        }
+        fetch("/api/user/profile", { headers: authHeaders() })
+            .then(async (res) => {
+                if (!res.ok) return;
+                const body = await res.json();
+                const walletAddress = typeof body?.user?.walletAddress === "string"
+                    ? body.user.walletAddress
+                    : null;
+                setAuthWalletAddress(walletAddress);
+            })
+            .catch(() => setAuthWalletAddress(null));
+    }, [hasToken]);
 
     useEffect(() => {
         fetch("/api/leaderboard", { cache: "no-store" })
@@ -45,8 +70,8 @@ export default function GlobalLeaderboardPage() {
     const rest = leaderboard.slice(3);
 
     // Find the user's row
-    const userRow = address
-        ? leaderboard.find((r) => r.walletAddress.toLowerCase() === address.toLowerCase())
+    const userRow = identityAddress
+        ? leaderboard.find((r) => r.walletAddress.toLowerCase() === identityAddress.toLowerCase())
         : null;
 
     const tabs: { key: "24h" | "7d" | "all"; label: string }[] = [
