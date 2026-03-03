@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/middleware/admin.middleware";
 import { getCampaignRelayer } from "@/lib/services/campaign-relayer.service";
+import { normalizeCompletedUntil } from "@/lib/campaign-modules";
 
 let completedUntilColumnEnsured = false;
 
@@ -20,16 +21,32 @@ async function ensureCompletedUntilColumn() {
   }
 }
 
-async function getCompletedUntil(campaignId: number, userId: string) {
+async function getCompletedUntil(campaignId: number, userId: string, modules: unknown) {
   await ensureCompletedUntilColumn();
   try {
-    const rows = await prisma.$queryRaw<Array<{ completedUntil: number }>>`
-      SELECT COALESCE("completedUntil", -1) AS "completedUntil"
+    const rows = await prisma.$queryRaw<Array<{ id: string; completedUntil: number }>>`
+      SELECT
+        "id",
+        COALESCE("completedUntil", -1) AS "completedUntil"
       FROM "CampaignParticipant"
       WHERE "campaignId" = ${campaignId} AND "userId" = ${userId}
       LIMIT 1
     `;
-    return rows[0]?.completedUntil ?? -1;
+    const participant = rows[0];
+    if (!participant) {
+      return -1;
+    }
+
+    const normalizedCompletedUntil = normalizeCompletedUntil(modules, participant.completedUntil);
+    if (normalizedCompletedUntil !== participant.completedUntil) {
+      await prisma.$executeRaw`
+        UPDATE "CampaignParticipant"
+        SET "completedUntil" = ${normalizedCompletedUntil}, "updatedAt" = NOW()
+        WHERE "id" = ${participant.id}
+      `;
+    }
+
+    return normalizedCompletedUntil;
   } catch (error) {
     console.error("Failed to read completedUntil", error);
     return -1;
@@ -60,7 +77,7 @@ export async function POST(
 
   const campaign = await prisma.campaign.findUnique({
     where: { id: campaignId },
-    select: { id: true, status: true, contractType: true, onChainCampaignId: true },
+    select: { id: true, status: true, contractType: true, onChainCampaignId: true, modules: true },
   });
   if (!campaign) {
     return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
@@ -80,7 +97,7 @@ export async function POST(
     },
   });
   if (existing) {
-    const completedUntil = await getCompletedUntil(campaignId, auth.user.userId);
+    const completedUntil = await getCompletedUntil(campaignId, auth.user.userId, campaign.modules);
     return NextResponse.json({
       enrolled: true,
       participant: {
@@ -130,7 +147,7 @@ export async function POST(
       enrolledAt: true,
     },
   });
-  const completedUntil = await getCompletedUntil(campaignId, auth.user.userId);
+  const completedUntil = await getCompletedUntil(campaignId, auth.user.userId, campaign.modules);
 
   return NextResponse.json(
     {
@@ -173,7 +190,16 @@ export async function GET(
   if (!participant) {
     return NextResponse.json({ enrolled: false });
   }
-  const completedUntil = await getCompletedUntil(campaignId, auth.user.userId);
+
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { modules: true },
+  });
+  const completedUntil = await getCompletedUntil(
+    campaignId,
+    auth.user.userId,
+    campaign?.modules ?? [],
+  );
 
   return NextResponse.json({
     enrolled: true,

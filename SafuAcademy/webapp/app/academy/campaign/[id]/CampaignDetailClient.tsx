@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  normalizeCampaignModules,
+  type CampaignModuleGroup,
+  type CampaignModuleItem,
+} from "@/lib/campaign-modules";
 
 type Campaign = {
   id: number;
@@ -16,7 +21,7 @@ type Campaign = {
   prizePoolUsdc: string;
   keyTakeaways: string[];
   coverImageUrl: string | null;
-  modules: Module[];
+  modules: unknown;
   status: string;
   isPublished: boolean;
   startAt: string | null;
@@ -45,14 +50,9 @@ type CampaignResponse = {
   onChain: OnChainSnapshot;
 };
 
-type Module = {
-  type: "video" | "task" | "locked";
-  title: string;
-  videoUrl?: string;
-  description?: string;
-  actionUrl?: string;
-  actionLabel?: string;
-};
+type Module = CampaignModuleItem;
+
+type ModuleGroup = CampaignModuleGroup;
 
 type CampaignNote = {
   id: string;
@@ -92,6 +92,13 @@ interface CampaignDetailClientProps {
   campaignId: string;
 }
 
+function isModuleLocked(group: ModuleGroup | undefined): boolean {
+  if (!group || group.items.length === 0) {
+    return false;
+  }
+  return group.items.every((item) => item.type === "locked");
+}
+
 export default function CampaignDetailClient({ campaignId }: CampaignDetailClientProps) {
   const [authToken, setAuthToken] = useState<string | null>(
     typeof window !== "undefined" ? localStorage.getItem("auth_token") : null,
@@ -100,6 +107,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CampaignResponse | null>(null);
   const [activeModule, setActiveModule] = useState(0);
+  const [activeModuleItem, setActiveModuleItem] = useState(0);
   const [completedUntil, setCompletedUntil] = useState(-1);
   const [sidebarTab, setSidebarTab] = useState<"syllabus" | "leaderboard">("syllabus");
 
@@ -172,6 +180,10 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
     };
   }, [campaignId]);
 
+  useEffect(() => {
+    setActiveModuleItem(0);
+  }, [activeModule]);
+
   // Check enrollment status
   useEffect(() => {
     if (!data) return;
@@ -200,10 +212,11 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
             ? body.participant.completedUntil
             : -1;
           setCompletedUntil(savedCompletedUntil);
-          const moduleCount = Array.isArray(data.campaign.modules) ? data.campaign.modules.length : 0;
+          const moduleCount = normalizeCampaignModules(data.campaign.modules).length;
           if (moduleCount > 0) {
             const resumeModule = Math.min(Math.max(savedCompletedUntil + 1, 0), moduleCount - 1);
             setActiveModule(resumeModule);
+            setActiveModuleItem(0);
           }
           if (body.participant.completedAt) {
             setCompletedAt(body.participant.completedAt);
@@ -399,13 +412,13 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const { campaign, leaderboard, onChain } = data;
   const isEnded = campaign.status === "ENDED";
   const isLive = campaign.status === "LIVE";
-  const modules: Module[] =
-    Array.isArray(campaign.modules) && campaign.modules.length > 0
-      ? campaign.modules
-      : [];
+  const modules: ModuleGroup[] = normalizeCampaignModules(campaign.modules);
   const hasModules = modules.length > 0;
   const active = modules[activeModule];
-  const isActiveVideoModule = !!(active?.type === "video" && active?.videoUrl);
+  const activeItems: Module[] = active?.items ?? [];
+  const activeContent = activeItems[activeModuleItem] ?? activeItems[0];
+  const activeModuleLabel = active?.title || `Module ${activeModule + 1}`;
+  const isActiveVideoModule = !!(activeContent?.type === "video" && activeContent?.videoUrl);
   const campaignImage = campaign.coverImageUrl || FALLBACK_IMAGE;
   const startDate = formatDate(campaign.startAt);
   const endDate = formatDate(campaign.endAt);
@@ -519,7 +532,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                   {hasModules ? (
                     <div className="absolute inset-0 z-10 flex flex-col">
                       <div className="relative z-0 flex-1">
-                        {!enrolled ? null : active?.type === "video" && active?.videoUrl ? (
+                        {!enrolled ? null : activeContent?.type === "video" && activeContent?.videoUrl ? (
                           <div
                             style={{
                               position: "relative",
@@ -531,9 +544,9 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                             }}
                           >
                             <iframe
-                              src={active.videoUrl}
+                              src={activeContent.videoUrl}
                               loading="lazy"
-                              title={`Video player - ${active.title}`}
+                              title={`Video player - ${activeContent.title}`}
                               allowFullScreen
                               allow="encrypted-media; fullscreen; microphone; screen-wake-lock;"
                               style={{
@@ -549,22 +562,31 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                               }}
                             />
                           </div>
-                        ) : active?.type === "task" ? (
+                        ) : activeContent?.type === "task" ? (
                           <div className="absolute inset-0 flex items-center justify-center p-8">
                             <div className="max-w-xl text-center">
-                              <h3 className="font-display text-2xl text-white">{active.title}</h3>
-                              {active.description ? (
-                                <p className="mt-3 text-sm text-nexid-muted">{active.description}</p>
+                              <h3 className="font-display text-2xl text-white">{activeContent.title}</h3>
+                              {activeContent.description ? (
+                                <p className="mt-3 text-sm text-nexid-muted">{activeContent.description}</p>
                               ) : null}
-                              {active.actionUrl ? (
+                              {activeContent.actionUrl ? (
                                 <a
-                                  href={active.actionUrl}
+                                  href={activeContent.actionUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="mt-5 inline-block rounded bg-nexid-gold px-5 py-2 text-sm font-bold text-black"
                                 >
-                                  {active.actionLabel || "Open Task"}
+                                  {activeContent.actionLabel || "Open Task"}
                                 </a>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : activeContent?.type === "quiz" ? (
+                          <div className="absolute inset-0 flex items-center justify-center p-8">
+                            <div className="max-w-xl text-center">
+                              <h3 className="font-display text-2xl text-white">{activeContent.title}</h3>
+                              {activeContent.question ? (
+                                <p className="mt-3 text-sm text-nexid-muted">{activeContent.question}</p>
                               ) : null}
                             </div>
                           </div>
@@ -585,7 +607,28 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                           <div className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold mb-1">
                             Module {activeModule + 1}
                           </div>
-                          <h3 className="font-display text-2xl text-white">{active?.title}</h3>
+                          <h3 className="font-display text-2xl text-white">{activeModuleLabel}</h3>
+                          {activeContent ? (
+                            <p className="mt-1 text-xs text-nexid-muted">{activeContent.title}</p>
+                          ) : null}
+                          {activeItems.length > 1 ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {activeItems.map((item, itemIndex) => (
+                                <button
+                                  key={`${activeModule}-${itemIndex}-${item.title}`}
+                                  type="button"
+                                  onClick={() => setActiveModuleItem(itemIndex)}
+                                  className={`rounded border px-2.5 py-1 text-[10px] font-mono uppercase tracking-wide ${
+                                    itemIndex === activeModuleItem
+                                      ? "border-nexid-gold/60 bg-nexid-gold/15 text-nexid-gold"
+                                      : "border-white/10 bg-black/40 text-nexid-muted hover:text-white"
+                                  }`}
+                                >
+                                  {item.type}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                         {enrolled && !completedAt ? (
                           <div className="flex flex-col items-end gap-2">
@@ -623,7 +666,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                                 }
 
                                 const next = activeModule + 1;
-                                if (next < modules.length && modules[next]?.type !== "locked") {
+                                if (next < modules.length && !isModuleLocked(modules[next])) {
                                   setActiveModule(next);
                                 }
 
@@ -829,14 +872,20 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                   modules.map((mod, idx) => {
                     const isCompleted = idx <= completedUntil;
                     const isActive = idx === activeModule;
-                    const isLocked = mod.type === "locked" && idx > completedUntil + 1;
+                    const isLocked = isModuleLocked(mod) && idx > completedUntil + 1;
                     const stateClass = isCompleted ? "completed" : isActive ? "active" : isLocked ? "locked" : "";
+                    const typeSummary = Array.from(new Set(mod.items.map((item) => item.type))).join(" + ");
 
                     return (
                       <div
                         key={idx}
                         className={`syllabus-item ${stateClass} p-4 border-b border-[#1a1a1a] flex gap-4 ${!isLocked ? "cursor-pointer" : ""}`}
-                        onClick={() => !isLocked && setActiveModule(idx)}
+                        onClick={() => {
+                          if (!isLocked) {
+                            setActiveModule(idx);
+                            setActiveModuleItem(0);
+                          }
+                        }}
                       >
                         <div className="w-8 h-8 rounded-full bg-[#111] border border-[#222] flex items-center justify-center shrink-0">
                           {isCompleted ? (
@@ -850,7 +899,9 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                           )}
                         </div>
                         <div>
-                          <div className="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-widest">{mod.type}</div>
+                          <div className="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-widest">
+                            {typeSummary || "module"} · {mod.items.length} item{mod.items.length === 1 ? "" : "s"}
+                          </div>
                           <div className="text-sm font-medium text-white">{mod.title}</div>
                         </div>
                       </div>

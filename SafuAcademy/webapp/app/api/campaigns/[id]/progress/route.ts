@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/middleware/admin.middleware";
+import { getCampaignModuleCount, normalizeCompletedUntil } from "@/lib/campaign-modules";
 
 let completedUntilColumnEnsured = false;
 
@@ -63,6 +64,25 @@ export async function POST(
     );
   }
 
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { modules: true },
+  });
+  if (!campaign) {
+    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+  }
+
+  const moduleCount = getCampaignModuleCount(campaign.modules);
+  if (moduleCount === 0) {
+    return NextResponse.json({ error: "Campaign modules are not configured yet" }, { status: 400 });
+  }
+  if (moduleIndex >= moduleCount) {
+    return NextResponse.json(
+      { error: `moduleIndex must be between 0 and ${moduleCount - 1}` },
+      { status: 400 },
+    );
+  }
+
   const participantRows = await prisma.$queryRaw<
     Array<{ id: string; completedAt: Date | null; completedUntil: number }>
   >`
@@ -81,14 +101,22 @@ export async function POST(
   }
 
   if (participant.completedAt) {
+    const normalizedCompletedUntil = normalizeCompletedUntil(
+      campaign.modules,
+      participant.completedUntil,
+    );
     return NextResponse.json({
       saved: true,
-      completedUntil: participant.completedUntil,
+      completedUntil: normalizedCompletedUntil,
       completedAt: participant.completedAt,
     });
   }
 
-  const nextCompletedUntil = Math.max(participant.completedUntil, moduleIndex);
+  const normalizedCompletedUntil = normalizeCompletedUntil(
+    campaign.modules,
+    participant.completedUntil,
+  );
+  const nextCompletedUntil = Math.max(normalizedCompletedUntil, moduleIndex);
   if (nextCompletedUntil === participant.completedUntil) {
     return NextResponse.json({ saved: true, completedUntil: participant.completedUntil });
   }

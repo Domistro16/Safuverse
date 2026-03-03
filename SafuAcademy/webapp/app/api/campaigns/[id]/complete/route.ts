@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/middleware/admin.middleware";
 import { getCampaignRelayer } from "@/lib/services/campaign-relayer.service";
+import { getCampaignModuleCount, normalizeCompletedUntil } from "@/lib/campaign-modules";
+
+let completedUntilColumnEnsured = false;
+
+async function ensureCompletedUntilColumn() {
+  if (completedUntilColumnEnsured) {
+    return true;
+  }
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "CampaignParticipant"
+      ADD COLUMN IF NOT EXISTS "completedUntil" INTEGER NOT NULL DEFAULT -1
+    `);
+    completedUntilColumnEnsured = true;
+    return true;
+  } catch (error) {
+    console.error("Failed to ensure completedUntil column", error);
+    return false;
+  }
+}
 
 /**
  * POST /api/campaigns/[id]/complete
@@ -31,6 +51,7 @@ export async function POST(
     select: {
       id: true,
       status: true,
+      modules: true,
       contractType: true,
       onChainCampaignId: true,
       ownerType: true,
@@ -42,19 +63,55 @@ export async function POST(
     return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
   }
 
+  const moduleCount = getCampaignModuleCount(campaign.modules);
+  if (moduleCount === 0) {
+    return NextResponse.json({ error: "Campaign modules are not configured yet" }, { status: 400 });
+  }
+
+  const columnReady = await ensureCompletedUntilColumn();
+  if (!columnReady) {
+    return NextResponse.json(
+      { error: "Campaign progress storage is unavailable right now" },
+      { status: 500 },
+    );
+  }
+
   // Check enrollment
-  const participant = await prisma.campaignParticipant.findUnique({
-    where: { campaignId_userId: { campaignId, userId: auth.user.userId } },
-    select: {
-      id: true,
-      completedAt: true,
-    },
-  });
+  const participantRows = await prisma.$queryRaw<
+    Array<{ id: string; completedAt: Date | null; completedUntil: number }>
+  >`
+    SELECT
+      "id",
+      "completedAt",
+      COALESCE("completedUntil", -1) AS "completedUntil"
+    FROM "CampaignParticipant"
+    WHERE "campaignId" = ${campaignId} AND "userId" = ${auth.user.userId}
+    LIMIT 1
+  `;
+  const participant = participantRows[0];
   if (!participant) {
     return NextResponse.json({ error: "Not enrolled in this campaign" }, { status: 400 });
   }
   if (participant.completedAt) {
     return NextResponse.json({ error: "Campaign already completed" }, { status: 400 });
+  }
+
+  const normalizedCompletedUntil = normalizeCompletedUntil(
+    campaign.modules,
+    participant.completedUntil,
+  );
+  if (normalizedCompletedUntil < moduleCount - 1) {
+    return NextResponse.json(
+      { error: "Complete all modules before finishing this campaign" },
+      { status: 400 },
+    );
+  }
+  if (normalizedCompletedUntil !== participant.completedUntil) {
+    await prisma.$executeRaw`
+      UPDATE "CampaignParticipant"
+      SET "completedUntil" = ${normalizedCompletedUntil}, "updatedAt" = NOW()
+      WHERE "id" = ${participant.id}
+    `;
   }
 
   // On-chain completion

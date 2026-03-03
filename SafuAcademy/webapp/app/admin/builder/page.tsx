@@ -5,6 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import AdminShell from "../_components/AdminShell";
 import {
+  buildPartnerModuleGroupsFromItems,
+  flattenCampaignModuleItems,
+  type CampaignModuleItem,
+} from "@/lib/campaign-modules";
+import {
   useAdminContract,
   type NexIDCreateParams,
   type PartnerCreateParams,
@@ -12,25 +17,7 @@ import {
 
 type OwnerMode = "NEXID" | "PARTNER";
 
-type ModuleItem = {
-  type: "video" | "task" | "quiz" | "locked";
-  title: string;
-  // Video fields
-  videoUrl?: string;
-  // Task fields
-  description?: string;
-  actionUrl?: string;
-  actionLabel?: string;
-  verificationType?: "none" | "discord-join" | "discord-post";
-  guildId?: string;
-  channelId?: string;
-  // Quiz fields
-  question?: string;
-  options?: string[];
-  correctIndex?: number;
-  // Common
-  points: number;
-};
+type ModuleItem = CampaignModuleItem;
 
 export default function AdminBuilderPage() {
   const { address } = useAccount();
@@ -89,7 +76,13 @@ export default function AdminBuilderPage() {
         setPrizePoolUsdc(Number(c.prizePoolUsdc) || 0);
         setKeyTakeaways(Array.isArray(c.keyTakeaways) ? c.keyTakeaways.join("\n") : "");
         setCoverImageUrl(c.coverImageUrl || "");
-        if (Array.isArray(c.modules)) setModules(c.modules);
+        if (Array.isArray(c.modules)) {
+          const flattened = flattenCampaignModuleItems(c.modules).map((item) => ({
+            ...item,
+            points: typeof item.points === "number" ? item.points : 100,
+          }));
+          setModules(flattened);
+        }
       })
       .catch(() => setError("Failed to load campaign for editing."))
       .finally(() => setEditLoading(false));
@@ -118,6 +111,10 @@ export default function AdminBuilderPage() {
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean);
+      const partnerModuleGroups =
+        ownerMode === "PARTNER" ? buildPartnerModuleGroupsFromItems(modules) : null;
+      const modulesPayload = partnerModuleGroups ?? modules;
+      const moduleCountForProgress = modulesPayload.length;
 
       // If editing, use PATCH instead of POST
       if (editId) {
@@ -136,14 +133,14 @@ export default function AdminBuilderPage() {
             tier,
             ownerType: ownerMode,
             contractType: ownerMode === "NEXID" ? "NEXID_CAMPAIGNS" : "PARTNER_CAMPAIGNS",
-            prizePoolUsdc,
-            keyTakeaways: takeaways,
-            coverImageUrl: coverImageUrl.trim() || null,
-            modules,
-            status,
-            isPublished: status === "LIVE",
-          }),
-        });
+              prizePoolUsdc,
+              keyTakeaways: takeaways,
+              coverImageUrl: coverImageUrl.trim() || null,
+              modules: modulesPayload,
+              status,
+              isPublished: status === "LIVE",
+            }),
+          });
         const patchData = await patchRes.json();
         if (!patchRes.ok) {
           setError(patchData?.error || "Failed to update campaign.");
@@ -174,7 +171,7 @@ export default function AdminBuilderPage() {
           prizePoolUsdc,
           keyTakeaways: takeaways,
           coverImageUrl: coverImageUrl.trim() || null,
-          modules,
+          modules: modulesPayload,
           status,
           isPublished: status === "LIVE",
         }),
@@ -207,7 +204,7 @@ export default function AdminBuilderPage() {
             level: "Beginner",
             thumbnailUrl: coverImageUrl.trim() || "",
             duration: "4 weeks",
-            totalLessons: BigInt(modules.length || 1),
+            totalLessons: BigInt(moduleCountForProgress || 1),
           };
           contractResult = await createCampaignOnChain("NEXID_CAMPAIGNS", params);
         } else {
@@ -218,7 +215,7 @@ export default function AdminBuilderPage() {
             level: "Beginner",
             thumbnailUrl: coverImageUrl.trim() || "",
             duration: "4 weeks",
-            totalTasks: BigInt(modules.length || 1),
+            totalTasks: BigInt(moduleCountForProgress || 1),
             sponsor: (address || "0x0000000000000000000000000000000000000000") as `0x${string}`,
             sponsorName: resolvedSponsor,
             sponsorLogo: coverImageUrl.trim() || "",
@@ -566,7 +563,7 @@ export default function AdminBuilderPage() {
                             updated[activeSection] = {
                               type: newType,
                               title: mod.title,
-                              points: mod.points,
+                              points: mod.points ?? 100,
                               ...(newType === "video" ? { videoUrl: "", description: "" } : {}),
                               ...(newType === "task" ? { description: "", actionUrl: "", actionLabel: "" } : {}),
                               ...(newType === "quiz" ? { question: "", options: ["", "", "", ""], correctIndex: 0 } : {}),
@@ -604,7 +601,7 @@ export default function AdminBuilderPage() {
                           <input
                             type="number"
                             min={0}
-                            value={modules[activeSection].points}
+                            value={modules[activeSection].points ?? 100}
                             onChange={(e) => {
                               const updated = [...modules];
                               updated[activeSection] = { ...updated[activeSection], points: Number(e.target.value) };
