@@ -18,10 +18,13 @@ interface WalletModalProps {
 export function WalletModal({
     isOpen,
     onRequestClose,
+    address: propAddress,
     name,
 }: WalletModalProps) {
     const router = useRouter();
-    const { address: fullAddress } = useAccount();
+    const { address: wagmiAddress } = useAccount();
+    // Prefer the address passed as prop (which includes gateway auth fallback) over wagmi
+    const fullAddress = propAddress || wagmiAddress || '';
     const { logout, exportWallet, user, ready, authenticated } = usePrivy();
     const [mounted, setMounted] = useState(false);
 
@@ -135,6 +138,8 @@ export function WalletModal({
                         onClick={async () => {
                             localStorage.removeItem('auth_token');
                             localStorage.removeItem('auth_user');
+                            localStorage.removeItem('nexid_gateway_connected');
+                            localStorage.removeItem('nexid_gateway_address');
                             if (typeof window !== 'undefined') {
                                 window.dispatchEvent(new Event('nexid-auth-changed'));
                             }
