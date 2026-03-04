@@ -167,8 +167,9 @@ export function CustomConnect() {
         }
     }, [address, isAuthenticating, signMessageAsync]);
 
-    // Only trigger sign-message flow when truly not authenticated
-    // (i.e. no valid token in localStorage for this wallet)
+    // Only trigger sign-message flow when truly not authenticated.
+    // If the gateway already issued a valid auth_token (stored in localStorage),
+    // skip re-authentication entirely — the backend session is wallet-agnostic.
     useEffect(() => {
         if (
             isConnected &&
@@ -177,27 +178,20 @@ export function CustomConnect() {
             !isAuthenticating &&
             !hasAttemptedAuth.current
         ) {
-            // If already authenticated for this wallet, nothing to do
-            if (
-                authState.isAuthenticated &&
-                authState.user?.walletAddress?.toLowerCase() === address.toLowerCase()
-            ) {
+            // If we already have a valid backend token (from gateway or previous session), skip.
+            // This prevents MetaMask from popping up when the user already authenticated
+            // via Google/social login through the gateway with a Privy embedded wallet.
+            if (authState.isAuthenticated && authState.token) {
                 return;
             }
 
-            // Check localStorage one more time in case state is stale
+            // Check localStorage one more time in case React state is stale
             try {
                 const token = localStorage.getItem('auth_token');
-                const userStr = localStorage.getItem('auth_user');
-                if (token && userStr) {
-                    const parsedUser = JSON.parse(userStr);
-                    if (parsedUser.walletAddress?.toLowerCase() === address.toLowerCase()) {
-                        setAuthState({ isAuthenticated: true, token, user: parsedUser, domainName: null });
-                        return;
-                    }
-                }
-                if (token && !userStr) {
-                    setAuthState({ isAuthenticated: true, token, user: null, domainName: null });
+                if (token) {
+                    const userStr = localStorage.getItem('auth_user');
+                    const parsedUser = userStr ? JSON.parse(userStr) : null;
+                    setAuthState({ isAuthenticated: true, token, user: parsedUser, domainName: null });
                     return;
                 }
             } catch {
@@ -212,7 +206,7 @@ export function CustomConnect() {
         authenticated,
         address,
         authState.isAuthenticated,
-        authState.user,
+        authState.token,
         isAuthenticating,
         authenticate,
     ]);
