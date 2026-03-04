@@ -132,6 +132,11 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const [domainClaimed, setDomainClaimed] = useState<string | null>(null);
   const [domainSpotsRemaining, setDomainSpotsRemaining] = useState<number | null>(null);
 
+  // Per-item interaction tracking to prevent gaming completion
+  const [viewedItems, setViewedItems] = useState<Set<string>>(new Set());
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [quizCorrect, setQuizCorrect] = useState<Set<string>>(new Set());
+
   // Keep auth token in reactive state so connect/sign actions immediately update campaign UI.
   useEffect(() => {
     const syncAuthToken = () => {
@@ -183,6 +188,26 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   useEffect(() => {
     setActiveModuleItem(0);
   }, [activeModule]);
+
+  // Mark non-quiz items as viewed when selected
+  useEffect(() => {
+    if (!data || !enrolled) return;
+    const modules: ModuleGroup[] = normalizeCampaignModules(data.campaign.modules);
+    const mod = modules[activeModule];
+    if (!mod) return;
+    const item = mod.items[activeModuleItem];
+    if (!item) return;
+    // Quizzes require correct answer; videos/tasks are viewed on selection
+    if (item.type !== "quiz") {
+      const key = `${activeModule}-${activeModuleItem}`;
+      setViewedItems((prev) => {
+        if (prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+    }
+  }, [activeModule, activeModuleItem, data, enrolled]);
 
   // Check enrollment status
   useEffect(() => {
@@ -418,6 +443,16 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
   const activeItems: Module[] = active?.items ?? [];
   const activeContent = activeItems[activeModuleItem] ?? activeItems[0];
   const activeModuleLabel = active?.title || `Module ${activeModule + 1}`;
+
+  // Check if all items in active module have been interacted with
+  const allActiveItemsViewed = activeItems.length > 0 && activeItems.every((_item, itemIdx) => {
+    const key = `${activeModule}-${itemIdx}`;
+    if (_item.type === "quiz") return quizCorrect.has(key);
+    return viewedItems.has(key);
+  });
+  // Can only mark complete if this is the next module in sequence
+  const canMarkComplete = activeModule <= completedUntil + 1 && allActiveItemsViewed;
+
   const campaignImage = campaign.coverImageUrl || FALLBACK_IMAGE;
   const startDate = formatDate(campaign.startAt);
   const endDate = formatDate(campaign.endAt);
@@ -563,12 +598,67 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                           </div>
                         </div>
                       ) : activeContent?.type === "quiz" ? (
-                        <div className="absolute inset-0 flex items-center justify-center p-6 md:p-8">
-                          <div className="max-w-xl text-center">
+                        <div className="absolute inset-0 flex items-center justify-center p-6 md:p-8 overflow-y-auto">
+                          <div className="max-w-xl w-full text-center">
                             <h3 className="font-display text-2xl text-white">{activeContent.title}</h3>
                             {activeContent.question ? (
                               <p className="mt-3 text-sm text-nexid-muted">{activeContent.question}</p>
                             ) : null}
+                            {activeContent.options && activeContent.options.length > 0 ? (() => {
+                              const quizKey = `${activeModule}-${activeModuleItem}`;
+                              const selectedAnswer = quizAnswers[quizKey];
+                              const isCorrect = quizCorrect.has(quizKey);
+                              const hasAnswered = selectedAnswer !== undefined;
+                              return (
+                                <div className="mt-6 space-y-3 text-left">
+                                  {activeContent.options.map((option, optIdx) => {
+                                    const isSelected = selectedAnswer === optIdx;
+                                    const showResult = hasAnswered && isSelected;
+                                    return (
+                                      <button
+                                        key={optIdx}
+                                        type="button"
+                                        disabled={isCorrect}
+                                        onClick={() => {
+                                          const correct = activeContent.correctIndex === optIdx;
+                                          setQuizAnswers((prev) => ({ ...prev, [quizKey]: optIdx }));
+                                          if (correct) {
+                                            setQuizCorrect((prev) => {
+                                              const next = new Set(prev);
+                                              next.add(quizKey);
+                                              return next;
+                                            });
+                                            setViewedItems((prev) => {
+                                              const next = new Set(prev);
+                                              next.add(quizKey);
+                                              return next;
+                                            });
+                                          }
+                                        }}
+                                        className={`w-full rounded border px-4 py-3 text-sm text-left transition-colors ${
+                                          showResult && isCorrect
+                                            ? "border-green-500/60 bg-green-500/15 text-green-400"
+                                            : showResult && !isCorrect
+                                            ? "border-red-500/60 bg-red-500/15 text-red-400"
+                                            : isSelected
+                                            ? "border-nexid-gold/60 bg-nexid-gold/15 text-nexid-gold"
+                                            : "border-white/10 bg-black/40 text-white/80 hover:border-white/30 hover:text-white"
+                                        } ${isCorrect ? "cursor-default" : ""}`}
+                                      >
+                                        <span className="font-mono text-xs mr-2">{String.fromCharCode(65 + optIdx)}.</span>
+                                        {option}
+                                      </button>
+                                    );
+                                  })}
+                                  {hasAnswered && !isCorrect ? (
+                                    <p className="text-xs text-red-400 text-center mt-2">Incorrect - try again!</p>
+                                  ) : null}
+                                  {isCorrect ? (
+                                    <p className="text-xs text-green-400 text-center mt-2">Correct!</p>
+                                  ) : null}
+                                </div>
+                              );
+                            })() : null}
                           </div>
                         </div>
                       ) : (
@@ -590,20 +680,26 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                           ) : null}
                           {activeItems.length > 1 ? (
                             <div className="mt-3 flex flex-wrap gap-2">
-                              {activeItems.map((item, itemIndex) => (
-                                <button
-                                  key={`${activeModule}-${itemIndex}-${item.title}`}
-                                  type="button"
-                                  onClick={() => setActiveModuleItem(itemIndex)}
-                                  className={`rounded border px-2.5 py-1 text-[10px] font-mono uppercase tracking-wide ${
-                                    itemIndex === activeModuleItem
-                                      ? "border-nexid-gold/60 bg-nexid-gold/15 text-nexid-gold"
-                                      : "border-white/10 bg-black/40 text-nexid-muted hover:text-white"
-                                  }`}
-                                >
-                                  {item.type}
-                                </button>
-                              ))}
+                              {activeItems.map((item, itemIndex) => {
+                                const itemKey = `${activeModule}-${itemIndex}`;
+                                const itemViewed = viewedItems.has(itemKey) || quizCorrect.has(itemKey);
+                                return (
+                                  <button
+                                    key={`${activeModule}-${itemIndex}-${item.title}`}
+                                    type="button"
+                                    onClick={() => setActiveModuleItem(itemIndex)}
+                                    className={`rounded border px-2.5 py-1 text-[10px] font-mono uppercase tracking-wide ${
+                                      itemIndex === activeModuleItem
+                                        ? "border-nexid-gold/60 bg-nexid-gold/15 text-nexid-gold"
+                                        : itemViewed
+                                        ? "border-green-500/30 bg-green-500/10 text-green-400"
+                                        : "border-white/10 bg-black/40 text-nexid-muted hover:text-white"
+                                    }`}
+                                  >
+                                    {itemViewed ? "\u2713 " : ""}{String(itemIndex + 1).padStart(2, "0")} · {item.title || item.type}
+                                  </button>
+                                );
+                              })}
                             </div>
                           ) : null}
                         </div>
@@ -612,7 +708,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                           <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
                             <button
                               type="button"
-                              disabled={progressSaving || completing}
+                              disabled={progressSaving || completing || !canMarkComplete}
                               onClick={async () => {
                                 setProgressError(null);
                                 setProgressSaving(true);
@@ -673,8 +769,15 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                               }}
                               className="w-full rounded bg-nexid-gold px-6 py-2.5 text-sm font-bold text-black transition-all hover:shadow-gold-glow disabled:opacity-60 md:w-auto"
                             >
-                              {completing ? "Completing..." : progressSaving ? "Saving..." : "Mark Complete"}
+                              {completing ? "Completing..." : progressSaving ? "Saving..." : !canMarkComplete ? "Complete All Items First" : "Mark Complete"}
                             </button>
+                            {!canMarkComplete && !progressSaving && !completing ? (
+                              <div className="max-w-[280px] text-left text-[11px] text-nexid-muted md:text-right">
+                                {activeModule > completedUntil + 1
+                                  ? "Complete previous modules first"
+                                  : "View all items and answer quizzes correctly"}
+                              </div>
+                            ) : null}
                             {progressError ? (
                               <div className="max-w-[280px] text-left text-[11px] text-red-400 md:text-right">
                                 {progressError}
@@ -878,9 +981,18 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                         </div>
                         <div>
                           <div className="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-widest">
-                            {typeSummary || "module"} · {mod.items.length} item{mod.items.length === 1 ? "" : "s"}
+                            {String(idx + 1).padStart(2, "0")} · {typeSummary || "module"} · {mod.items.length} item{mod.items.length === 1 ? "" : "s"}
                           </div>
                           <div className="text-sm font-medium text-white">{mod.title}</div>
+                          {mod.items.length > 0 ? (
+                            <div className="mt-1 space-y-0.5">
+                              {mod.items.map((item, itemIdx) => (
+                                <div key={itemIdx} className="text-[10px] text-nexid-muted/60 truncate max-w-[260px]">
+                                  {String(itemIdx + 1).padStart(2, "0")}. {item.title || item.type}
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     );
