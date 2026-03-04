@@ -46,6 +46,12 @@ function getInitialAuthState(): AuthState {
     return { isAuthenticated: false, token: null, user: null, domainName: null };
 }
 
+// Check if the user authenticated through the gateway (not through wagmi/direct wallet)
+function hasGatewaySession(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('nexid_gateway_connected') === 'true' && Boolean(localStorage.getItem('auth_token'));
+}
+
 export function CustomConnect() {
     const { ready, authenticated } = usePrivy();
     const { address, isConnected, chainId } = useAccount();
@@ -57,9 +63,11 @@ export function CustomConnect() {
     const [showWalletModal, setShowWalletModal] = useState(false);
     const hasAttemptedAuth = useRef(false);
 
-    // Auto-switch to Base mainnet if on wrong chain
+    // Auto-switch to Base mainnet if on wrong chain.
+    // ONLY when the user authenticated directly via wallet (not via gateway social login),
+    // otherwise this triggers a MetaMask popup for users who logged in with Google.
     useEffect(() => {
-        if (isConnected && chainId && chainId !== base.id) {
+        if (isConnected && chainId && chainId !== base.id && !hasGatewaySession()) {
             switchChain({ chainId: base.id });
         }
     }, [isConnected, chainId, switchChain]);
@@ -246,9 +254,13 @@ export function CustomConnect() {
         );
     }
 
-    const fallbackAddress = authState.user?.walletAddress;
+    // For display, ALWAYS prefer the gateway/backend auth address over wagmi.
+    // wagmi may auto-reconnect to MetaMask even when the user signed in via Google,
+    // so showing wagmi's address would be confusing.
+    const gatewayAddress = authState.user?.walletAddress;
+    const displayAddress = gatewayAddress || address;
     const displayText = (domainName as string | undefined)
-        || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : fallbackAddress ? `${fallbackAddress.slice(0, 6)}...${fallbackAddress.slice(-4)}` : 'Connected');
+        || (displayAddress ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}` : 'Connected');
     return (
         <>
             <button
@@ -263,7 +275,7 @@ export function CustomConnect() {
             <WalletModal
                 isOpen={showWalletModal}
                 onRequestClose={() => setShowWalletModal(false)}
-                address={address || fallbackAddress || ''}
+                address={displayAddress || ''}
                 name={(domainName as string | undefined) || ''}
             />
         </>
