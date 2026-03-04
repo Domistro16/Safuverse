@@ -116,6 +116,15 @@ export async function POST(
     campaign.modules,
     participant.completedUntil,
   );
+
+  // Enforce sequential completion: can only complete the next module in order
+  if (moduleIndex > normalizedCompletedUntil + 1) {
+    return NextResponse.json(
+      { error: "Complete previous modules first" },
+      { status: 400 },
+    );
+  }
+
   const nextCompletedUntil = Math.max(normalizedCompletedUntil, moduleIndex);
   if (nextCompletedUntil === participant.completedUntil) {
     return NextResponse.json({ saved: true, completedUntil: participant.completedUntil });
