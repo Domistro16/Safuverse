@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { keccak256, toBytes, zeroAddress } from 'viem'
 import { constants } from '../constant'
 import { FaSearch } from 'react-icons/fa'
-import { FaXmark } from 'react-icons/fa6'
 import { AgentRegistrarControllerAbi as abi } from '@nexid/sdk'
 
 const reservedOwnersAbi = [
@@ -64,7 +63,6 @@ export default function Home() {
   const isDark = theme === 'dark'
   const [available, setAvailable] = useState('')
   const [search, setSearch] = useState('')
-  const [recents, setRecents] = useState<string[]>([])
   const [open, setOpen] = useState(false)
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
 
@@ -94,13 +92,6 @@ export default function Home() {
       localStorage.setItem('ref', ref)
     }
   }, [ref])
-
-  useEffect(() => {
-    const recent = JSON.parse(localStorage.getItem('Recent') as string)
-    if (recent?.length > 0) {
-      setRecents(recent)
-    }
-  }, [])
 
   useEffect(() => {
     const initial = getPreferredTheme()
@@ -143,26 +134,6 @@ export default function Home() {
   useEffect(() => {
     document.title = `id Domains - Get a Domain name with a id identity`
   }, [])
-
-  const setRecent = (search: string) => {
-    const recent = JSON.parse(localStorage.getItem('Recent') as string)
-    if (recent == null) {
-      localStorage.setItem('Recent', JSON.stringify([search]))
-    } else {
-      if (recent.includes(search)) {
-        return
-      }
-      recent.push(search)
-      localStorage.setItem('Recent', JSON.stringify(recent))
-    }
-  }
-
-  const updateRecent = (search: string) => {
-    const index = recents.indexOf(search)
-    const newArray = recents.filter((_, i) => i !== index)
-    setRecents(newArray)
-    localStorage.setItem('Recent', JSON.stringify(newArray))
-  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -210,7 +181,6 @@ export default function Home() {
 
   const route = () => {
     if (available == 'Available') {
-      setRecent(search)
       router.push(`/register/${search}`)
     }
     // Do nothing if domain is already registered
@@ -310,37 +280,6 @@ export default function Home() {
                 <FaSearch />
               </button>
             </div>
-
-            {recents.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ fontSize: '13px', color: '#888', marginBottom: '8px', textAlign: 'left' }}>Recent searches</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {recents.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all"
-                      style={{
-                        background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : '#f4f4f4',
-                        fontSize: '14px',
-                      }}
-                      onClick={() => {
-                        setSearch(item)
-                        setShowBox(true)
-                      }}
-                    >
-                      {item}
-                      <FaXmark
-                        style={{ opacity: 0.5, cursor: 'pointer' }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          updateRecent(item)
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {showBox && search && (
               <div

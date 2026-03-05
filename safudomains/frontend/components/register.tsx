@@ -300,7 +300,7 @@ const Register = () => {
                   <h3 style={{ fontSize: '18px', fontWeight: 600 }}>
                     Set as Primary Name
                   </h3>
-                  <p className="text-muted-foreground mt-2 text-sm max-w-[400px]">
+                  <p className="mt-2 text-sm max-w-[400px]" style={{ color: isDark ? '#c2c2c2' : '#787878' }}>
                     This links your address to this name, allowing dApps to display it as your profile when connected to them.
                   </p>
                 </div>
@@ -406,7 +406,7 @@ const Register = () => {
 
               {/* Price Summary */}
               {!loading && (
-                <p className="text-center mt-4 text-sm text-muted-foreground">
+                <p className="text-center mt-4 text-sm" style={{ color: isDark ? '#c2c2c2' : '#787878' }}>
                   ${price.usd} USDC • One-time payment • Lifetime ownership
                 </p>
               )}

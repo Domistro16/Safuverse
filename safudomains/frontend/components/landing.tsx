@@ -48,7 +48,6 @@ export default function Landing() {
   const [search, setSearch] = useState('')
   const [heroSubmitted, setHeroSubmitted] = useState(false)
   const [available, setAvailable] = useState('')
-  const [recents, setRecents] = useState<string[]>([])
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
   const [secTab, setSecTab] = useState(0)
   const [backToTopVisible, setBackToTopVisible] = useState(false)
@@ -86,14 +85,6 @@ export default function Landing() {
     else if (data === false) setAvailable('Registered')
     else setAvailable('')
   }, [search, isPending, data, isReserved, reservedLoading])
-
-  /* recents */
-  useEffect(() => {
-    try {
-      const r = JSON.parse(localStorage.getItem('Recent') as string)
-      if (r?.length > 0) setRecents(r)
-    } catch { /* empty */ }
-  }, [])
 
   /* scroll handler */
   useEffect(() => {
@@ -174,22 +165,8 @@ export default function Landing() {
     }
   }, [])
 
-  const setRecent = (s: string) => {
-    try {
-      const recent = JSON.parse(localStorage.getItem('Recent') as string) || []
-      if (!recent.includes(s)) { recent.push(s); localStorage.setItem('Recent', JSON.stringify(recent)) }
-    } catch { localStorage.setItem('Recent', JSON.stringify([s])) }
-  }
-
-  const removeRecent = (s: string) => {
-    const updated = recents.filter(r => r !== s)
-    setRecents(updated)
-    localStorage.setItem('Recent', JSON.stringify(updated))
-  }
-
   const handleRoute = () => {
     if (available === 'Available') {
-      setRecent(search)
       router.push(`/register/${search}`)
     }
   }
@@ -198,10 +175,6 @@ export default function Landing() {
     setModalOpen(true)
     setSearch('')
     setModalStage('search')
-    try {
-      const r = JSON.parse(localStorage.getItem('Recent') as string)
-      if (r?.length > 0) setRecents(r)
-    } catch { /* empty */ }
     setTimeout(() => modalInputRef.current?.focus(), 100)
   }
 
@@ -352,38 +325,12 @@ export default function Landing() {
                   <span className="landing-modal-suffix">.id</span>
                 </div>
 
-                {/* Recent searches */}
-                {recents.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-[13px] text-muted-foreground mb-2 text-left">Recent searches</p>
-                    <div className="flex flex-wrap gap-2">
-                      {recents.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all bg-[var(--secondary)] hover:bg-[var(--muted)] text-sm text-[var(--foreground)]"
-                          onClick={() => setSearch(item)}
-                        >
-                          {item}.id
-                          <X
-                            className="w-3.5 h-3.5 opacity-50 hover:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              removeRecent(item)
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Search result card */}
                 {search.length >= 1 && (
                   <div
-                    className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] mb-4 cursor-pointer transition-all hover:bg-[var(--accent)]"
+                    className="flex items-center justify-center p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] mb-4 cursor-pointer transition-all hover:bg-[var(--accent)]"
                     onClick={handleRoute}
                   >
-                    <span className="font-semibold text-[var(--foreground)]">{search}.id</span>
                     {available === 'Loading...' && (
                       <span className="text-xs px-3 py-1 rounded-full bg-gray-300 text-white font-semibold flex items-center gap-1.5">
                         <Loader className="w-3 h-3 animate-spin" /> Checking
@@ -402,6 +349,11 @@ export default function Landing() {
                     {available === 'Registered' && (
                       <span className="text-xs px-3 py-1 rounded-full bg-amber-500 text-white font-semibold">
                         Registered
+                      </span>
+                    )}
+                    {available === 'Reserved' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-violet-600 text-white font-semibold">
+                        Reserved
                       </span>
                     )}
                     {available === 'Invalid' && (
