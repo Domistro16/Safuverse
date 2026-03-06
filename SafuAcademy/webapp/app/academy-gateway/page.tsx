@@ -3,6 +3,7 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getEmbeddedConnectedWallet,
+  useCreateWallet,
   useLoginWithOAuth,
   usePrivy,
   useSignMessage,
@@ -31,6 +32,7 @@ export default function AcademyGatewayPage() {
   const [socialAuthInFlight, setSocialAuthInFlight] = useState(false);
   const { ready: privyReady, authenticated, logout, login } = usePrivy();
   const { wallets, ready: walletsReady } = useWallets();
+  const { createWallet } = useCreateWallet();
   const { signMessage: signPrivyMessage } = useSignMessage();
   const walletsRef = useRef<ConnectedWallet[]>([]);
   const authFlowRef = useRef<"none" | "social" | "wallet">("none");
@@ -180,29 +182,49 @@ export default function AcademyGatewayPage() {
 
     void (async () => {
       try {
-        let embeddedAddress = "";
-        const timeoutAt = Date.now() + 8000;
-
-        while (Date.now() < timeoutAt) {
+        const resolveConnectedWallet = () => {
           const embeddedWallet = getEmbeddedConnectedWallet(walletsRef.current);
-          if (embeddedWallet?.address) {
-            embeddedAddress = getAddress(embeddedWallet.address);
-            break;
+          if (embeddedWallet?.address) return embeddedWallet;
+          return walletsRef.current.find((wallet) => wallet.type === "ethereum" && Boolean(wallet.address)) ?? null;
+        };
+
+        const waitForConnectedWallet = async (timeoutMs: number) => {
+          const timeoutAt = Date.now() + timeoutMs;
+          while (Date.now() < timeoutAt) {
+            const wallet = resolveConnectedWallet();
+            if (wallet?.address) return wallet;
+            await new Promise((resolve) => setTimeout(resolve, 250));
           }
-          await new Promise((resolve) => setTimeout(resolve, 250));
+          return null;
+        };
+
+        let signingWallet = await waitForConnectedWallet(8000);
+
+        if (!signingWallet) {
+          try {
+            await createWallet();
+          } catch {
+            // Ignore and retry wallet discovery below (wallet may already exist).
+          }
+          signingWallet = await waitForConnectedWallet(12000);
         }
 
-        if (!embeddedAddress) {
+        if (!signingWallet?.address) {
           throw new Error("Social login succeeded, but no Academy auth session was issued. Please connect wallet.");
         }
 
-        await issueAcademySessionForWallet(embeddedAddress, async (message) => {
-          const signed = await signPrivyMessage({ message }, { address: embeddedAddress });
-          return signed.signature;
+        const signingAddress = getAddress(signingWallet.address);
+
+        await issueAcademySessionForWallet(signingAddress, async (message) => {
+          if (signingWallet.walletClientType === "privy" || signingWallet.connectorType === "embedded") {
+            const signed = await signPrivyMessage({ message }, { address: signingAddress });
+            return signed.signature;
+          }
+          return signingWallet.sign(message);
         });
 
-        setAddress((prev) => prev || embeddedAddress);
-        completeGatewayAuth(embeddedAddress);
+        setAddress((prev) => prev || signingAddress);
+        completeGatewayAuth(signingAddress);
       } catch (e) {
         const message = e instanceof Error
           ? e.message
@@ -217,6 +239,7 @@ export default function AcademyGatewayPage() {
   }, [
     authenticated,
     completeGatewayAuth,
+    createWallet,
     issueAcademySessionForWallet,
     privyReady,
     resetSocialAuthState,
