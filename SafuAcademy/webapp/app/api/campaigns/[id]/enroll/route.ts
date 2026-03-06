@@ -4,25 +4,7 @@ import { verifyAuth } from "@/lib/middleware/admin.middleware";
 import { getCampaignRelayer } from "@/lib/services/campaign-relayer.service";
 import { normalizeCompletedUntil } from "@/lib/campaign-modules";
 
-let completedUntilColumnEnsured = false;
-
-async function ensureCompletedUntilColumn() {
-  if (completedUntilColumnEnsured) {
-    return;
-  }
-  try {
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "CampaignParticipant"
-      ADD COLUMN IF NOT EXISTS "completedUntil" INTEGER NOT NULL DEFAULT -1
-    `);
-    completedUntilColumnEnsured = true;
-  } catch (error) {
-    console.error("Failed to ensure completedUntil column", error);
-  }
-}
-
 async function getCompletedUntil(campaignId: number, userId: string, modules: unknown) {
-  await ensureCompletedUntilColumn();
   try {
     const rows = await prisma.$queryRaw<Array<{ id: string; completedUntil: number }>>`
       SELECT

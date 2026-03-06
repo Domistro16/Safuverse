@@ -72,16 +72,18 @@ export class AuthService {
                 return { valid: false, error: 'Invalid wallet in message' };
             }
 
-            // Check timestamp is not too old (5 minutes max)
+            // Validate timestamp is present and not expired (5 minutes max)
             const timestampMatch = message.match(/Timestamp: (\d+)/);
-            if (timestampMatch) {
-                const messageTimestamp = parseInt(timestampMatch[1], 10);
-                const now = Math.floor(Date.now() / 1000);
-                const fiveMinutes = 5 * 60;
+            if (!timestampMatch) {
+                return { valid: false, error: 'Missing timestamp in message' };
+            }
 
-                if (now - messageTimestamp > fiveMinutes) {
-                    return { valid: false, error: 'Message expired. Please request a new nonce.' };
-                }
+            const messageTimestamp = parseInt(timestampMatch[1], 10);
+            const now = Math.floor(Date.now() / 1000);
+            const fiveMinutes = 5 * 60;
+
+            if (now - messageTimestamp > fiveMinutes) {
+                return { valid: false, error: 'Message expired. Please request a new nonce.' };
             }
 
             // Recover the address from the signature

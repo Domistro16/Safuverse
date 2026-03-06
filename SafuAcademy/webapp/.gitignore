@@ -27,3 +27,9 @@ vite.config.d.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js build
+.next
+
+# Debug/check scripts
+scripts/debug/

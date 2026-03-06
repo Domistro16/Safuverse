@@ -4,24 +4,7 @@ import { verifyAuth } from "@/lib/middleware/admin.middleware";
 import { getCampaignRelayer } from "@/lib/services/campaign-relayer.service";
 import { getCampaignModuleCount, normalizeCompletedUntil } from "@/lib/campaign-modules";
 
-let completedUntilColumnEnsured = false;
 
-async function ensureCompletedUntilColumn() {
-  if (completedUntilColumnEnsured) {
-    return true;
-  }
-  try {
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "CampaignParticipant"
-      ADD COLUMN IF NOT EXISTS "completedUntil" INTEGER NOT NULL DEFAULT -1
-    `);
-    completedUntilColumnEnsured = true;
-    return true;
-  } catch (error) {
-    console.error("Failed to ensure completedUntil column", error);
-    return false;
-  }
-}
 
 /**
  * POST /api/campaigns/[id]/complete
@@ -68,13 +51,6 @@ export async function POST(
     return NextResponse.json({ error: "Campaign modules are not configured yet" }, { status: 400 });
   }
 
-  const columnReady = await ensureCompletedUntilColumn();
-  if (!columnReady) {
-    return NextResponse.json(
-      { error: "Campaign progress storage is unavailable right now" },
-      { status: 500 },
-    );
-  }
 
   // Check enrollment
   const participantRows = await prisma.$queryRaw<

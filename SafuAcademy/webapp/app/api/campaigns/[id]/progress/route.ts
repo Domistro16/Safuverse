@@ -3,24 +3,7 @@ import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/middleware/admin.middleware";
 import { getCampaignModuleCount, normalizeCompletedUntil } from "@/lib/campaign-modules";
 
-let completedUntilColumnEnsured = false;
 
-async function ensureCompletedUntilColumn() {
-  if (completedUntilColumnEnsured) {
-    return true;
-  }
-  try {
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "CampaignParticipant"
-      ADD COLUMN IF NOT EXISTS "completedUntil" INTEGER NOT NULL DEFAULT -1
-    `);
-    completedUntilColumnEnsured = true;
-    return true;
-  } catch (error) {
-    console.error("Failed to ensure completedUntil column", error);
-    return false;
-  }
-}
 
 /**
  * POST /api/campaigns/[id]/progress
@@ -56,13 +39,6 @@ export async function POST(
     return NextResponse.json({ error: "moduleIndex must be a non-negative integer" }, { status: 400 });
   }
 
-  const columnReady = await ensureCompletedUntilColumn();
-  if (!columnReady) {
-    return NextResponse.json(
-      { error: "Campaign progress storage is unavailable right now" },
-      { status: 500 },
-    );
-  }
 
   const campaign = await prisma.campaign.findUnique({
     where: { id: campaignId },

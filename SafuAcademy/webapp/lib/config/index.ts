@@ -9,17 +9,13 @@ export const config = {
     databaseUrl: process.env.DATABASE_URL!,
 
     // JWT
-    jwtSecret:
-        process.env.JWT_SECRET ||
-        (process.env.NODE_ENV === 'development' ? 'dev-local-jwt-secret' : ''),
+    jwtSecret: process.env.JWT_SECRET || '',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
 
     // Blockchain
     chainId: parseInt(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || '8453', 10),
     rpcUrl: process.env.RPC_URL || 'https://mainnet.base.org',
     level3CourseAddress: process.env.LEVEL3_COURSE_ADDRESS || '',
-    relayerPrivateKey: process.env.RELAYER_PRIVATE_KEY,
-    ownerPrivateKey: process.env.OWNER_PRIVATE_KEY, // For Admin course management
 
     // Campaign contracts
     nexidCampaignsAddress: process.env.NEXID_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_NEXID_CAMPAIGNS_ADDRESS || '',

@@ -12,6 +12,7 @@ model User {
   id               String   @id @default(cuid())
   walletAddress    String   @unique
   nonce            String
+  discordId        String?
   totalPoints      Int      @default(0)
   isAdmin          Boolean  @default(false)
   createdAt        DateTime @default(now())

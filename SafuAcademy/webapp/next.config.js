@@ -9,7 +9,7 @@ const nextConfig = {
   // Allow larger file uploads for video lessons (500MB)
   experimental: {
     serverActions: {
-      bodySizeLimit: '500mb',
+      bodySizeLimit: '50mb',
     },
   },
   images: {

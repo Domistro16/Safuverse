@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const timestamp = Math.floor(Date.now() / 1000);
     const message = authService.createSignMessage(walletAddress.toLowerCase(), nonce, timestamp);
 
-    return NextResponse.json({ nonce, message, timestamp });
+    return NextResponse.json({ message, timestamp });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

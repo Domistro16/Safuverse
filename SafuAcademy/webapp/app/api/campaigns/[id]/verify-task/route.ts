@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { AuthService } from "@/lib/services/auth.service";
+import prisma from "@/lib/prisma";
+import { verifyAuth } from "@/lib/middleware/admin.middleware";
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? "";
-const authService = new AuthService(prisma);
 
 /**
  * POST /api/campaigns/[id]/verify-task
@@ -22,24 +21,17 @@ export async function POST(
     const campaignId = parseInt(id, 10);
 
     // Auth
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await verifyAuth(req);
+    if (!auth.authorized || !auth.user) {
+        return NextResponse.json({ error: auth.error }, { status: 401 });
     }
-
-    let userId: string;
-    const decoded = authService.verifyToken(token);
-    if (!decoded) {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    userId = decoded.userId;
 
     // Get user's discordId
-    const users = await prisma.$queryRawUnsafe<{ discordId: string | null }[]>(
-        `SELECT "discordId" FROM "User" WHERE "id" = $1 LIMIT 1`,
-        userId,
-    );
-    const discordId = users[0]?.discordId;
+    const user = await prisma.user.findUnique({
+        where: { id: auth.user.userId },
+        select: { discordId: true },
+    });
+    const discordId = user?.discordId;
 
     if (!discordId) {
         return NextResponse.json(

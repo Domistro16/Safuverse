@@ -42,13 +42,16 @@ export class RelayerService {
         this.provider = new JsonRpcProvider(config.rpcUrl, config.chainId);
 
         try {
+            const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
+            const ownerPrivateKey = process.env.OWNER_PRIVATE_KEY;
+
             const hasAddress = !!(
                 config.level3CourseAddress &&
                 config.level3CourseAddress.startsWith('0x')
             );
 
-            if (config.relayerPrivateKey && hasAddress) {
-                this.wallet = new Wallet(config.relayerPrivateKey, this.provider);
+            if (relayerPrivateKey && hasAddress) {
+                this.wallet = new Wallet(relayerPrivateKey, this.provider);
                 this.contract = new Contract(
                     config.level3CourseAddress,
                     LEVEL3_COURSE_ABI,
@@ -56,8 +59,8 @@ export class RelayerService {
                 );
             }
 
-            if (config.ownerPrivateKey && hasAddress) {
-                this.ownerWallet = new Wallet(config.ownerPrivateKey, this.provider);
+            if (ownerPrivateKey && hasAddress) {
+                this.ownerWallet = new Wallet(ownerPrivateKey, this.provider);
                 this.ownerContract = new Contract(
                     config.level3CourseAddress,
                     LEVEL3_COURSE_ABI,

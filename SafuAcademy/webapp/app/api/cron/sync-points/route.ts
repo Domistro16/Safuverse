@@ -19,11 +19,11 @@ import { getCampaignRelayer } from "@/lib/services/campaign-relayer.service";
  * Protected by CRON_SECRET header to prevent unauthorized access.
  */
 export async function POST(request: NextRequest) {
-  // Verify cron secret
+  // Verify cron secret (fail-closed: reject if CRON_SECRET is not configured)
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

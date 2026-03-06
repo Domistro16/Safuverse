@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { verifyAdmin } from "@/lib/middleware/admin.middleware";
 
 const VALID_STATUSES = new Set(["LIVE", "ENDED", "ARCHIVED", "DRAFT"]);
 
@@ -9,6 +10,14 @@ export async function GET(request: NextRequest) {
     const includeDraft = request.nextUrl.searchParams.get("includeDraft") === "true";
     const statusParam = request.nextUrl.searchParams.get("status")?.toUpperCase() ?? null;
     const statusFilter = statusParam && VALID_STATUSES.has(statusParam) ? statusParam : null;
+
+    // Require admin auth to view draft/unpublished campaigns
+    if (includeDraft) {
+      const auth = await verifyAdmin(request);
+      if (!auth.authorized) {
+        return NextResponse.json({ error: auth.error }, { status: 401 });
+      }
+    }
 
     const whereStatus = statusFilter
       ? Prisma.sql`AND c."status" = ${statusFilter}::"CampaignStatus"`

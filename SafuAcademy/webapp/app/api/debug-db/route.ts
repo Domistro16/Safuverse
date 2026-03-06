@@ -1,13 +1,9 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 
+/**
+ * Debug endpoint removed for security.
+ * Use Prisma Studio or admin endpoints to inspect database state.
+ */
 export async function GET() {
-    try {
-        const courses = await prisma.course.findMany({
-            select: { id: true, title: true }
-        });
-        return NextResponse.json({ courses });
-    } catch (error) {
-        return NextResponse.json({ error: (error as Error).message }, { status: 500 });
-    }
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }

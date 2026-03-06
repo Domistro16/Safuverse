@@ -60,25 +60,39 @@ export async function POST(request: NextRequest) {
     namespace = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }
 
-  // Ensure namespace uniqueness - append a suffix if collision
+  // Create partner with retry on namespace collision
   let finalNamespace = namespace;
   let attempts = 0;
-  while (attempts < 5) {
-    const collision = await prisma.partner.findUnique({
-      where: { namespace: finalNamespace },
-    });
-    if (!collision) break;
-    attempts++;
-    finalNamespace = `${namespace}-${attempts}`;
+  const MAX_ATTEMPTS = 5;
+
+  while (attempts < MAX_ATTEMPTS) {
+    try {
+      const partner = await prisma.partner.create({
+        data: {
+          userId: auth.user.userId,
+          orgName,
+          namespace: finalNamespace,
+        },
+      });
+      return NextResponse.json({ partner }, { status: 201 });
+    } catch (error: unknown) {
+      // Check if it's a Prisma unique constraint violation (P2002)
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        (error as { code: string }).code === "P2002"
+      ) {
+        attempts++;
+        finalNamespace = `${namespace}-${attempts}`;
+        continue;
+      }
+      throw error;
+    }
   }
 
-  const partner = await prisma.partner.create({
-    data: {
-      userId: auth.user.userId,
-      orgName,
-      namespace: finalNamespace,
-    },
-  });
-
-  return NextResponse.json({ partner }, { status: 201 });
+  return NextResponse.json(
+    { error: "Could not generate a unique namespace. Please try again." },
+    { status: 409 },
+  );
 }

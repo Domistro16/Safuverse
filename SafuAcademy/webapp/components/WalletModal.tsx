@@ -4,7 +4,7 @@ import { X, Copy, LogOut, ExternalLink, KeyRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Avatar } from './Avatar';
 import { useAccount } from 'wagmi';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -26,7 +26,9 @@ export function WalletModal({
     // Prefer the address passed as prop (which includes gateway auth fallback) over wagmi
     const fullAddress = propAddress || wagmiAddress || '';
     const { logout, exportWallet, user, ready, authenticated } = usePrivy();
+    const { wallets } = useWallets();
     const [mounted, setMounted] = useState(false);
+    const [isDisconnecting, setIsDisconnecting] = useState(false);
 
     // Handle SSR - only render portal after mount
     useEffect(() => {
@@ -136,6 +138,9 @@ export function WalletModal({
                     {/* Disconnect */}
                     <button
                         onClick={async () => {
+                            if (isDisconnecting) return;
+                            setIsDisconnecting(true);
+
                             localStorage.removeItem('auth_token');
                             localStorage.removeItem('auth_user');
                             localStorage.removeItem('nexid_gateway_connected');
@@ -143,13 +148,28 @@ export function WalletModal({
                             if (typeof window !== 'undefined') {
                                 window.dispatchEvent(new Event('nexid-auth-changed'));
                             }
-                            await logout();
-                            window.location.reload();
+
+                            for (const wallet of wallets) {
+                                try {
+                                    wallet.disconnect();
+                                } catch {
+                                    // Some wallets do not support programmatic disconnect.
+                                }
+                            }
+
+                            try {
+                                await logout();
+                            } finally {
+                                window.location.assign('/academy-gateway');
+                            }
                         }}
+                        disabled={isDisconnecting}
                         className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 hover:bg-red-900/20 border border-gray-700 hover:border-red-900/50 transition-all hover:scale-105 group col-span-2 sm:col-span-1"
                     >
                         <LogOut className="mb-2 text-red-500 group-hover:text-red-400 transition-colors" size={20} />
-                        <span className="text-sm font-medium text-red-500 group-hover:text-red-400">Disconnect</span>
+                        <span className="text-sm font-medium text-red-500 group-hover:text-red-400">
+                            {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                        </span>
                     </button>
                 </div>
             </div>

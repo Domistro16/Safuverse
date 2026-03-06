@@ -47,9 +47,10 @@ export class CampaignRelayerService {
     constructor() {
         this.provider = new JsonRpcProvider(config.rpcUrl, config.chainId);
 
-        if (!config.relayerPrivateKey) return;
+        const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
+        if (!relayerPrivateKey) return;
 
-        this.relayerWallet = new Wallet(config.relayerPrivateKey, this.provider);
+        this.relayerWallet = new Wallet(relayerPrivateKey, this.provider);
 
         if (config.nexidCampaignsAddress?.startsWith('0x')) {
             this.nexidContract = new Contract(

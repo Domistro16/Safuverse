@@ -27,10 +27,12 @@ export default function AcademyGatewayPage() {
   const [socialLoading, setSocialLoading] = useState(false);
   const [socialPendingSession, setSocialPendingSession] = useState(false);
   const [socialAuthInFlight, setSocialAuthInFlight] = useState(false);
-  const { ready: privyReady, authenticated } = usePrivy();
+  const { ready: privyReady, authenticated, logout } = usePrivy();
   const { wallets, ready: walletsReady } = useWallets();
   const { signMessage: signPrivyMessage } = useSignMessage();
   const walletsRef = useRef<ConnectedWallet[]>([]);
+  const authFlowRef = useRef<"none" | "social" | "wallet">("none");
+  const socialAuthRequestedRef = useRef(false);
   const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
 
   useEffect(() => {
@@ -91,21 +93,35 @@ export default function AcademyGatewayPage() {
     localStorage.setItem("auth_user", JSON.stringify(verifyBody.user ?? {}));
   }, []);
 
+  const resetSocialAuthState = useCallback(() => {
+    setSocialLoading(false);
+    setSocialPendingSession(false);
+    setSocialAuthInFlight(false);
+    socialAuthRequestedRef.current = false;
+    if (authFlowRef.current === "social") {
+      authFlowRef.current = "none";
+    }
+  }, []);
+
   const { initOAuth } = useLoginWithOAuth({
     onComplete: () => {
+      if (!socialAuthRequestedRef.current || authFlowRef.current !== "social") {
+        return;
+      }
       const token = localStorage.getItem("auth_token");
       if (token) {
-        setSocialLoading(false);
+        resetSocialAuthState();
         completeGatewayAuth();
         return;
       }
       setSocialPendingSession(true);
     },
     onError: (error) => {
+      if (!socialAuthRequestedRef.current || authFlowRef.current !== "social") {
+        return;
+      }
       setError(String(error) || "Social login failed.");
-      setSocialLoading(false);
-      setSocialPendingSession(false);
-      setSocialAuthInFlight(false);
+      resetSocialAuthState();
     },
   });
 
@@ -129,6 +145,7 @@ export default function AcademyGatewayPage() {
 
   useEffect(() => {
     if (!socialPendingSession || socialAuthInFlight) return;
+    if (!socialAuthRequestedRef.current || authFlowRef.current !== "social") return;
     if (!privyReady || !authenticated || !walletsReady) return;
 
     setSocialAuthInFlight(true);
@@ -166,9 +183,7 @@ export default function AcademyGatewayPage() {
         localStorage.removeItem("nexid_gateway_connected");
         setStep(1);
       } finally {
-        setSocialLoading(false);
-        setSocialPendingSession(false);
-        setSocialAuthInFlight(false);
+        resetSocialAuthState();
       }
     })();
   }, [
@@ -176,11 +191,22 @@ export default function AcademyGatewayPage() {
     completeGatewayAuth,
     issueAcademySessionForWallet,
     privyReady,
+    resetSocialAuthState,
     signPrivyMessage,
     socialAuthInFlight,
     socialPendingSession,
     walletsReady,
   ]);
+
+  const beginSocialLogin = (provider: "google" | "twitter") => {
+    authFlowRef.current = "social";
+    socialAuthRequestedRef.current = true;
+    setSocialLoading(true);
+    setError("");
+    setSocialPendingSession(false);
+    setSocialAuthInFlight(false);
+    initOAuth({ provider });
+  };
 
   const connectWithProvider = async (provider: "MetaMask" | "WalletConnect" | "Phantom") => {
     setProviderName(provider);
@@ -188,8 +214,19 @@ export default function AcademyGatewayPage() {
     setLogs([]);
     setStep(2);
     setNetworkStatus("syncing");
+    authFlowRef.current = "wallet";
+    socialAuthRequestedRef.current = false;
+    setSocialLoading(false);
+    setSocialPendingSession(false);
+    setSocialAuthInFlight(false);
 
     try {
+      if (authenticated) {
+        addLog("[AUTH] Clearing previous social session...");
+        await logout();
+        await sleep(150);
+      }
+
       const ethereum = (window as {
         ethereum?: {
           request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -297,12 +334,14 @@ export default function AcademyGatewayPage() {
       addLog("[SUCCESS] Identity resolved.");
       setNetworkStatus("connected");
       await sleep(400);
+      authFlowRef.current = "none";
       setStep(3);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to connect wallet.";
       setError(message);
       setStep(1);
       setNetworkStatus("disconnected");
+      authFlowRef.current = "none";
     }
   };
 
@@ -381,9 +420,7 @@ export default function AcademyGatewayPage() {
               type="button"
               disabled={socialLoading}
               onClick={() => {
-                setSocialLoading(true);
-                setError("");
-                initOAuth({ provider: "google" });
+                beginSocialLogin("google");
               }}
               className="social-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
             >
@@ -400,9 +437,7 @@ export default function AcademyGatewayPage() {
               type="button"
               disabled={socialLoading}
               onClick={() => {
-                setSocialLoading(true);
-                setError("");
-                initOAuth({ provider: "twitter" });
+                beginSocialLogin("twitter");
               }}
               className="social-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
             >
