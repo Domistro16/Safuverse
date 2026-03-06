@@ -182,45 +182,44 @@ export default function AcademyGatewayPage() {
 
     void (async () => {
       try {
-        const resolveConnectedWallet = () => {
+        const resolveEmbeddedWallet = () => {
           const embeddedWallet = getEmbeddedConnectedWallet(walletsRef.current);
           if (embeddedWallet?.address) return embeddedWallet;
-          return walletsRef.current.find((wallet) => wallet.type === "ethereum" && Boolean(wallet.address)) ?? null;
+          return walletsRef.current.find(
+            (wallet) => wallet.type === "ethereum" && wallet.walletClientType === "privy",
+          ) ?? null;
         };
 
-        const waitForConnectedWallet = async (timeoutMs: number) => {
+        const waitForEmbeddedWallet = async (timeoutMs: number) => {
           const timeoutAt = Date.now() + timeoutMs;
           while (Date.now() < timeoutAt) {
-            const wallet = resolveConnectedWallet();
+            const wallet = resolveEmbeddedWallet();
             if (wallet?.address) return wallet;
             await new Promise((resolve) => setTimeout(resolve, 250));
           }
           return null;
         };
 
-        let signingWallet = await waitForConnectedWallet(8000);
+        let embeddedWallet = await waitForEmbeddedWallet(10000);
 
-        if (!signingWallet) {
+        if (!embeddedWallet) {
           try {
             await createWallet();
           } catch {
             // Ignore and retry wallet discovery below (wallet may already exist).
           }
-          signingWallet = await waitForConnectedWallet(12000);
+          embeddedWallet = await waitForEmbeddedWallet(15000);
         }
 
-        if (!signingWallet?.address) {
+        if (!embeddedWallet?.address) {
           throw new Error("Social login succeeded, but no Academy auth session was issued. Please connect wallet.");
         }
 
-        const signingAddress = getAddress(signingWallet.address);
+        const signingAddress = getAddress(embeddedWallet.address);
 
         await issueAcademySessionForWallet(signingAddress, async (message) => {
-          if (signingWallet.walletClientType === "privy" || signingWallet.connectorType === "embedded") {
-            const signed = await signPrivyMessage({ message }, { address: signingAddress });
-            return signed.signature;
-          }
-          return signingWallet.sign(message);
+          const signed = await signPrivyMessage({ message }, { address: signingAddress });
+          return signed.signature;
         });
 
         setAddress((prev) => prev || signingAddress);
