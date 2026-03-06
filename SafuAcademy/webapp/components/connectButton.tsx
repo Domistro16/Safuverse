@@ -114,8 +114,12 @@ export function CustomConnect() {
         }
     }, [ready, isConnected, authenticated]);
 
+    const authWalletAddress = authState.user?.walletAddress;
+    const preferredWalletAddress = authWalletAddress || address || '';
     // Resolve primary .id domain name via the SafuDomains reverse lookup chain
-    const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
+    const { name: domainName } = useENSName({
+        owner: (preferredWalletAddress || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+    });
     const authenticate = useCallback(async () => {
         if (!address || isAuthenticating) return;
 
@@ -246,9 +250,10 @@ export function CustomConnect() {
         );
     }
 
-    const fallbackAddress = authState.user?.walletAddress;
     const displayText = (domainName as string | undefined)
-        || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : fallbackAddress ? `${fallbackAddress.slice(0, 6)}...${fallbackAddress.slice(-4)}` : 'Connected');
+        || (preferredWalletAddress
+            ? `${preferredWalletAddress.slice(0, 6)}...${preferredWalletAddress.slice(-4)}`
+            : 'Connected');
     return (
         <>
             <button
@@ -263,7 +268,7 @@ export function CustomConnect() {
             <WalletModal
                 isOpen={showWalletModal}
                 onRequestClose={() => setShowWalletModal(false)}
-                address={address || fallbackAddress || ''}
+                address={preferredWalletAddress}
                 name={(domainName as string | undefined) || ''}
             />
         </>
