@@ -411,7 +411,7 @@ export default function PartnerConsolePage() {
                   type="text"
                   value={orgNameInput}
                   onChange={(e) => setOrgNameInput(e.target.value)}
-                  placeholder="e.g., Soar Protocol"
+                  placeholder="e.g., Nexus Protocol"
                   className="b2b-input w-full px-4 py-3 text-sm"
                 />
               </div>
@@ -472,9 +472,8 @@ export default function PartnerConsolePage() {
         ) : null}
 
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[#1a1a1a] bg-[#050505] transition-transform duration-300 ease-in-out md:static md:w-64 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-          }`}
+          className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[#1a1a1a] bg-[#050505] transition-transform duration-300 ease-in-out md:static md:w-64 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            }`}
         >
           <div className="flex h-16 items-center justify-between border-b border-[#1a1a1a] px-6">
             <Link href="/" className="font-display text-xl font-bold tracking-tighter">
@@ -954,9 +953,8 @@ function NavItem({ label, active, onClick }: { label: string; active: boolean; o
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-md border px-3 py-2.5 text-left text-sm font-medium transition-all ${
-        active ? "border-[#222] bg-[#111] text-white" : "border-transparent text-nexid-muted hover:bg-[#111]/50 hover:text-white"
-      }`}
+      className={`w-full rounded-md border px-3 py-2.5 text-left text-sm font-medium transition-all ${active ? "border-[#222] bg-[#111] text-white" : "border-transparent text-nexid-muted hover:bg-[#111]/50 hover:text-white"
+        }`}
     >
       {label}
     </button>

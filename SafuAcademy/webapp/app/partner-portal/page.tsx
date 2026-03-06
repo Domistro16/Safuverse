@@ -179,7 +179,7 @@ export default function PartnerPortalPage() {
           <div className="reveal delay-200 w-full border-t border-[#1a1a1a]/50 bg-gradient-to-t from-[#030303] to-transparent pb-12 pt-12">
             <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 text-left md:grid-cols-4">
               <Metric value="100%" label="Sybil Resistant" highlight />
-              <Metric value="84k+" label="Verified Base" />
+              <Metric value="483" label="Verified Base" />
               <Metric value="$15k" label="Min. Deployment" />
               <Metric value="AI" label="Synthesia Curriculum" />
             </div>

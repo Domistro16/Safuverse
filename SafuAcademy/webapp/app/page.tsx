@@ -166,15 +166,15 @@ const HOME_HTML =
 
         <div class="grid grid-cols-3 gap-4 sm:gap-8 w-full border-t border-[#1a1a1a] pt-8">
           <div>
-            <div class="text-xl md:text-2xl font-display text-white font-bold">$2.4M+</div>
+            <div class="text-xl md:text-2xl font-display text-white font-bold">$0.00</div>
             <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">USDC Distributed</div>
           </div>
           <div class="border-l border-[#1a1a1a] pl-4 sm:pl-8">
-            <div class="text-xl md:text-2xl font-display text-white font-bold">84k+</div>
-            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Active Nodes</div>
+            <div class="text-xl md:text-2xl font-display text-white font-bold">483</div>
+            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Onchain activities</div>
           </div>
           <div class="border-l border-[#1a1a1a] pl-4 sm:pl-8">
-            <div class="text-xl md:text-2xl font-display text-nexid-gold font-bold">14 Live</div>
+            <div class="text-xl md:text-2xl font-display text-nexid-gold font-bold">0 Live</div>
             <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Partner Campaigns</div>
           </div>
         </div>
@@ -252,27 +252,7 @@ const HOME_HTML =
     </div>
   </section>
 
-  <section class="py-12 border-y border-[#1a1a1a] bg-[#050505] reveal relative z-10 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
-    <div class="text-center text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-10">Trusted by Tier-One Protocols</div>
-    <div class="marquee-wrapper w-full max-w-7xl mx-auto">
-      <div class="marquee-content">
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Uniswap</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Phantom</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">LayerZero</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tighter">SOAR</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Only Bags</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Linear</span></div>
-      </div>
-      <div class="marquee-content">
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Uniswap</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Phantom</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">LayerZero</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tighter">SOAR</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Only Bags</span></div>
-        <div class="protocol-logo flex items-center gap-3"><span class="font-display font-bold text-xl text-current tracking-tight">Linear</span></div>
-      </div>
-    </div>
-  </section>
+
 ` +
   String.raw`
   <section id="journey" class="py-24 lg:py-32 w-full max-w-7xl mx-auto px-6">
@@ -353,7 +333,7 @@ const HOME_HTML =
     <div id="live-campaign-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <div onclick="launchAction('Entering Secure Track...')" class="course-card hover-card premium-panel flex flex-col overflow-hidden bg-[#0a0a0a] reveal cursor-pointer">
         <div class="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a]">
-          <img src="https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-luminosity" alt="Soar campaign">
+          <img src="https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-luminosity" alt="DeFi campaign">
           <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
           <div class="absolute top-5 left-5 text-[10px] font-mono border border-nexid-gold/50 bg-nexid-gold/20 text-nexid-gold px-3 py-1.5 rounded tracking-widest uppercase shadow-gold-glow flex items-center gap-2 backdrop-blur-sm">
             <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]"></span>
@@ -361,8 +341,8 @@ const HOME_HTML =
           </div>
         </div>
         <div class="p-8 flex flex-col flex-1">
-          <h3 class="text-2xl font-display text-white mb-2 leading-tight">Soar Ecosystem: Liquidity & Routing</h3>
-          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By Soar Protocol</div>
+          <h3 class="text-2xl font-display text-white mb-2 leading-tight">DeFi Ecosystem: Liquidity & Routing</h3>
+          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By Core Protocol</div>
           <div class="mt-auto border-t border-[#1a1a1a] pt-5 flex justify-between items-end">
             <div>
               <div class="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-wider">Total Prize Pool</div>
@@ -375,13 +355,13 @@ const HOME_HTML =
 
       <div onclick="launchAction('Entering Secure Track...')" class="course-card hover-card premium-panel flex flex-col overflow-hidden bg-[#0a0a0a] reveal delay-100 cursor-pointer">
         <div class="course-image-wrapper relative h-64 overflow-hidden border-b border-[#1a1a1a]">
-          <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="Only Bags campaign">
+          <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="NFT campaign">
           <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
           <div class="absolute top-5 left-5 text-[10px] font-mono border border-nexid-gold/30 bg-nexid-gold/10 text-nexid-gold px-3 py-1.5 rounded tracking-widest uppercase shadow-inner-glaze backdrop-blur-sm">Live</div>
         </div>
         <div class="p-8 flex flex-col flex-1">
-          <h3 class="text-2xl font-display text-white mb-2 leading-tight">Only Bags Tokenomics</h3>
-          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By Only Bags</div>
+          <h3 class="text-2xl font-display text-white mb-2 leading-tight">NFT Tokenomics</h3>
+          <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">By NFT Collective</div>
           <div class="mt-auto border-t border-[#1a1a1a] pt-5 flex justify-between items-end">
             <div>
               <div class="text-[10px] font-mono text-nexid-muted mb-1 uppercase tracking-wider">Total Prize Pool</div>

@@ -309,14 +309,14 @@ export default function AdminBuilderPage() {
             tier,
             ownerType: ownerMode,
             contractType: ownerMode === "NEXID" ? "NEXID_CAMPAIGNS" : "PARTNER_CAMPAIGNS",
-              prizePoolUsdc,
-              keyTakeaways: takeaways,
-              coverImageUrl: coverImageUrl.trim() || null,
-              modules: modulesPayload,
-              status,
-              isPublished: status === "LIVE",
-            }),
-          });
+            prizePoolUsdc,
+            keyTakeaways: takeaways,
+            coverImageUrl: coverImageUrl.trim() || null,
+            modules: modulesPayload,
+            status,
+            isPublished: status === "LIVE",
+          }),
+        });
         const patchData = await patchRes.json();
         if (!patchRes.ok) {
           setError(patchData?.error || "Failed to update campaign.");
@@ -531,11 +531,10 @@ export default function AdminBuilderPage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scroll">
               <button
                 onClick={() => setActiveSection("global")}
-                className={`w-full text-left p-4 rounded-lg border transition-all ${
-                  activeSection === "global"
+                className={`w-full text-left p-4 rounded-lg border transition-all ${activeSection === "global"
                     ? "bg-[#111] border-[#333]"
                     : "border-transparent hover:bg-[#0a0a0a]"
-                }`}
+                  }`}
               >
                 <div className="text-sm font-bold text-white">Campaign Global Settings</div>
                 <div className="text-[10px] text-nexid-muted mt-1 font-mono">Core configuration</div>
@@ -546,9 +545,8 @@ export default function AdminBuilderPage() {
                 return (
                   <div
                     key={`module-${moduleIndex}`}
-                    className={`group flex items-start gap-2 rounded-lg border transition-all ${
-                      isActive ? "bg-[#111] border-[#333]" : "border-transparent hover:bg-[#0a0a0a]"
-                    }`}
+                    className={`group flex items-start gap-2 rounded-lg border transition-all ${isActive ? "bg-[#111] border-[#333]" : "border-transparent hover:bg-[#0a0a0a]"
+                      }`}
                   >
                     <button
                       onClick={() => setActiveSection(moduleIndex)}
@@ -651,7 +649,7 @@ export default function AdminBuilderPage() {
                         onChange={(e) => setSponsorName(e.target.value)}
                         disabled={ownerMode === "NEXID"}
                         className="admin-input py-3 disabled:opacity-50"
-                        placeholder="e.g. Soar Protocol"
+                        placeholder="e.g. Nexus Protocol"
                       />
                     </div>
 
@@ -803,9 +801,8 @@ export default function AdminBuilderPage() {
                           return (
                             <div
                               key={`module-${activeModuleIndex}-item-${itemIndex}`}
-                              className={`group flex items-center gap-2 rounded-lg border ${
-                                isActiveItem ? "border-[#444] bg-[#1a1a1a]" : "border-[#262626] bg-[#101010]"
-                              }`}
+                              className={`group flex items-center gap-2 rounded-lg border ${isActiveItem ? "border-[#444] bg-[#1a1a1a]" : "border-[#262626] bg-[#101010]"
+                                }`}
                             >
                               <button
                                 onClick={() => setActiveItem(activeModuleIndex, itemIndex)}
@@ -1008,39 +1005,39 @@ export default function AdminBuilderPage() {
 
                             {(activeItem.verificationType === "discord-join" ||
                               activeItem.verificationType === "discord-post") && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                <div>
-                                  <label className="block text-[10px] font-mono text-[#888] mb-1.5">Guild/Server ID</label>
-                                  <input
-                                    type="text"
-                                    value={activeItem.guildId || ""}
-                                    onChange={(e) =>
-                                      updateModuleItem(activeModuleIndex, activeItemIndex, (item) => ({
-                                        ...item,
-                                        guildId: e.target.value,
-                                      }))
-                                    }
-                                    className="admin-input py-2 font-mono text-xs"
-                                  />
-                                </div>
-                                {activeItem.verificationType === "discord-post" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                   <div>
-                                    <label className="block text-[10px] font-mono text-[#888] mb-1.5">Channel ID</label>
+                                    <label className="block text-[10px] font-mono text-[#888] mb-1.5">Guild/Server ID</label>
                                     <input
                                       type="text"
-                                      value={activeItem.channelId || ""}
+                                      value={activeItem.guildId || ""}
                                       onChange={(e) =>
                                         updateModuleItem(activeModuleIndex, activeItemIndex, (item) => ({
                                           ...item,
-                                          channelId: e.target.value,
+                                          guildId: e.target.value,
                                         }))
                                       }
                                       className="admin-input py-2 font-mono text-xs"
                                     />
                                   </div>
-                                )}
-                              </div>
-                            )}
+                                  {activeItem.verificationType === "discord-post" && (
+                                    <div>
+                                      <label className="block text-[10px] font-mono text-[#888] mb-1.5">Channel ID</label>
+                                      <input
+                                        type="text"
+                                        value={activeItem.channelId || ""}
+                                        onChange={(e) =>
+                                          updateModuleItem(activeModuleIndex, activeItemIndex, (item) => ({
+                                            ...item,
+                                            channelId: e.target.value,
+                                          }))
+                                        }
+                                        className="admin-input py-2 font-mono text-xs"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                           </div>
                         </div>
                       )}
@@ -1101,11 +1098,10 @@ export default function AdminBuilderPage() {
                                       })
                                     }
                                     placeholder={`Option ${optionIndex + 1}`}
-                                    className={`admin-input py-3 flex-1 ${
-                                      activeItem.correctIndex === optionIndex
+                                    className={`admin-input py-3 flex-1 ${activeItem.correctIndex === optionIndex
                                         ? "border-nexid-gold/50 bg-nexid-gold/5"
                                         : ""
-                                    }`}
+                                      }`}
                                   />
                                 </div>
                               ))}
