@@ -14,6 +14,8 @@ import { useENSName } from "@/hooks/getPrimaryName";
 import { getAddress } from "viem";
 
 type Step = 1 | 2 | 3 | 4 | 5;
+type SocialProvider = "google" | "twitter";
+const PENDING_SOCIAL_OAUTH_KEY = "nexid_gateway_pending_social_oauth";
 
 export default function AcademyGatewayPage() {
   const router = useRouter();
@@ -27,13 +29,28 @@ export default function AcademyGatewayPage() {
   const [socialLoading, setSocialLoading] = useState(false);
   const [socialPendingSession, setSocialPendingSession] = useState(false);
   const [socialAuthInFlight, setSocialAuthInFlight] = useState(false);
-  const { ready: privyReady, authenticated, logout } = usePrivy();
+  const { ready: privyReady, authenticated, logout, login } = usePrivy();
   const { wallets, ready: walletsReady } = useWallets();
   const { signMessage: signPrivyMessage } = useSignMessage();
   const walletsRef = useRef<ConnectedWallet[]>([]);
   const authFlowRef = useRef<"none" | "social" | "wallet">("none");
   const socialAuthRequestedRef = useRef(false);
   const { name: domainName } = useENSName({ owner: (address || "0x0000000000000000000000000000000000000000") as `0x${string}` });
+
+  const hasPendingSocialOAuthIntent = () => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(PENDING_SOCIAL_OAUTH_KEY) === "true";
+  };
+
+  const setPendingSocialOAuthIntent = () => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(PENDING_SOCIAL_OAUTH_KEY, "true");
+  };
+
+  const clearPendingSocialOAuthIntent = () => {
+    if (typeof window === "undefined") return;
+    sessionStorage.removeItem(PENDING_SOCIAL_OAUTH_KEY);
+  };
 
   useEffect(() => {
     walletsRef.current = wallets;
@@ -98,6 +115,7 @@ export default function AcademyGatewayPage() {
     setSocialPendingSession(false);
     setSocialAuthInFlight(false);
     socialAuthRequestedRef.current = false;
+    clearPendingSocialOAuthIntent();
     if (authFlowRef.current === "social") {
       authFlowRef.current = "none";
     }
@@ -105,9 +123,14 @@ export default function AcademyGatewayPage() {
 
   const { initOAuth } = useLoginWithOAuth({
     onComplete: () => {
-      if (!socialAuthRequestedRef.current || authFlowRef.current !== "social") {
+      const hasPendingSocialIntent =
+        socialAuthRequestedRef.current || hasPendingSocialOAuthIntent();
+      if (!hasPendingSocialIntent) {
         return;
       }
+      authFlowRef.current = "social";
+      socialAuthRequestedRef.current = true;
+
       const token = localStorage.getItem("auth_token");
       if (token) {
         resetSocialAuthState();
@@ -117,9 +140,14 @@ export default function AcademyGatewayPage() {
       setSocialPendingSession(true);
     },
     onError: (error) => {
-      if (!socialAuthRequestedRef.current || authFlowRef.current !== "social") {
+      const hasPendingSocialIntent =
+        socialAuthRequestedRef.current || hasPendingSocialOAuthIntent();
+      if (!hasPendingSocialIntent) {
         return;
       }
+      authFlowRef.current = "social";
+      socialAuthRequestedRef.current = true;
+
       setError(String(error) || "Social login failed.");
       resetSocialAuthState();
     },
@@ -198,14 +226,32 @@ export default function AcademyGatewayPage() {
     walletsReady,
   ]);
 
-  const beginSocialLogin = (provider: "google" | "twitter") => {
+  const beginSocialLogin = async (provider: SocialProvider) => {
     authFlowRef.current = "social";
     socialAuthRequestedRef.current = true;
+    setPendingSocialOAuthIntent();
     setSocialLoading(true);
     setError("");
     setSocialPendingSession(false);
     setSocialAuthInFlight(false);
-    initOAuth({ provider });
+
+    try {
+      await initOAuth({ provider });
+    } catch (oauthError) {
+      const message = oauthError instanceof Error ? oauthError.message : String(oauthError);
+
+      // Headless OAuth init can return 400 for some dashboard/provider configs.
+      // Fall back to Privy's modal login for the selected provider.
+      if (/unable to init|oauth\/init|headless oauth/i.test(message)) {
+        setSocialLoading(false);
+        login({ loginMethods: [provider] });
+        setSocialPendingSession(true);
+        return;
+      }
+
+      setError(message || "Social login failed.");
+      resetSocialAuthState();
+    }
   };
 
   const connectWithProvider = async (provider: "MetaMask" | "WalletConnect" | "Phantom") => {
@@ -216,6 +262,7 @@ export default function AcademyGatewayPage() {
     setNetworkStatus("syncing");
     authFlowRef.current = "wallet";
     socialAuthRequestedRef.current = false;
+    clearPendingSocialOAuthIntent();
     setSocialLoading(false);
     setSocialPendingSession(false);
     setSocialAuthInFlight(false);
@@ -420,7 +467,7 @@ export default function AcademyGatewayPage() {
               type="button"
               disabled={socialLoading}
               onClick={() => {
-                beginSocialLogin("google");
+                void beginSocialLogin("google");
               }}
               className="social-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
             >
@@ -437,7 +484,7 @@ export default function AcademyGatewayPage() {
               type="button"
               disabled={socialLoading}
               onClick={() => {
-                beginSocialLogin("twitter");
+                void beginSocialLogin("twitter");
               }}
               className="social-btn w-full rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-left text-white flex items-center gap-3"
             >
