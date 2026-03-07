@@ -16,7 +16,20 @@ import { getAddress } from "viem";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type SocialProvider = "google" | "twitter";
+type WalletProvider = "MetaMask" | "WalletConnect" | "Phantom";
 const PENDING_SOCIAL_OAUTH_KEY = "nexid_gateway_pending_social_oauth";
+const PENDING_WALLET_AUTH_KEY = "nexid_gateway_pending_wallet_auth";
+const PENDING_WALLET_AUTH_MAX_AGE_MS = 10 * 60 * 1000;
+const MAX_WALLET_RESUME_ATTEMPTS = 2;
+
+type PendingWalletAuthIntent = {
+  provider: WalletProvider;
+  startedAt: number;
+  resumeAttempts: number;
+};
+
+const isWalletProvider = (value: unknown): value is WalletProvider =>
+  value === "MetaMask" || value === "WalletConnect" || value === "Phantom";
 
 export default function AcademyGatewayPage() {
   const router = useRouter();
@@ -54,6 +67,58 @@ export default function AcademyGatewayPage() {
     sessionStorage.removeItem(PENDING_SOCIAL_OAUTH_KEY);
   };
 
+  const getPendingWalletAuthIntent = (): PendingWalletAuthIntent | null => {
+    if (typeof window === "undefined") return null;
+    const raw = sessionStorage.getItem(PENDING_WALLET_AUTH_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as Partial<PendingWalletAuthIntent>;
+      if (!isWalletProvider(parsed.provider)) {
+        sessionStorage.removeItem(PENDING_WALLET_AUTH_KEY);
+        return null;
+      }
+      const startedAt =
+        typeof parsed.startedAt === "number" && Number.isFinite(parsed.startedAt)
+          ? parsed.startedAt
+          : 0;
+      const resumeAttempts =
+        typeof parsed.resumeAttempts === "number" && Number.isFinite(parsed.resumeAttempts)
+          ? parsed.resumeAttempts
+          : 0;
+      if (!startedAt || Date.now() - startedAt > PENDING_WALLET_AUTH_MAX_AGE_MS) {
+        sessionStorage.removeItem(PENDING_WALLET_AUTH_KEY);
+        return null;
+      }
+      return {
+        provider: parsed.provider,
+        startedAt,
+        resumeAttempts,
+      };
+    } catch {
+      sessionStorage.removeItem(PENDING_WALLET_AUTH_KEY);
+      return null;
+    }
+  };
+
+  const setPendingWalletAuthIntent = (
+    provider: WalletProvider,
+    resumeAttempts = 0,
+    startedAt = Date.now(),
+  ) => {
+    if (typeof window === "undefined") return;
+    const payload: PendingWalletAuthIntent = {
+      provider,
+      startedAt,
+      resumeAttempts,
+    };
+    sessionStorage.setItem(PENDING_WALLET_AUTH_KEY, JSON.stringify(payload));
+  };
+
+  const clearPendingWalletAuthIntent = () => {
+    if (typeof window === "undefined") return;
+    sessionStorage.removeItem(PENDING_WALLET_AUTH_KEY);
+  };
+
   useEffect(() => {
     walletsRef.current = wallets;
   }, [wallets]);
@@ -62,6 +127,9 @@ export default function AcademyGatewayPage() {
     localStorage.setItem("nexid_gateway_connected", "true");
     if (walletAddress) {
       localStorage.setItem("nexid_gateway_address", walletAddress);
+    }
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(PENDING_WALLET_AUTH_KEY);
     }
     window.dispatchEvent(new Event("nexid-auth-changed"));
     setStep(5);
@@ -251,6 +319,7 @@ export default function AcademyGatewayPage() {
   const beginSocialLogin = async (provider: SocialProvider) => {
     authFlowRef.current = "social";
     socialAuthRequestedRef.current = true;
+    clearPendingWalletAuthIntent();
     setPendingSocialOAuthIntent();
     setSocialLoading(true);
     setError("");
@@ -276,7 +345,11 @@ export default function AcademyGatewayPage() {
     }
   };
 
-  const connectWithProvider = async (provider: "MetaMask" | "WalletConnect" | "Phantom") => {
+  const connectWithProvider = async (
+    provider: WalletProvider,
+    options?: { resume?: boolean },
+  ) => {
+    const isResume = options?.resume === true;
     setProviderName(provider);
     setError("");
     setLogs([]);
@@ -288,6 +361,9 @@ export default function AcademyGatewayPage() {
     setSocialLoading(false);
     setSocialPendingSession(false);
     setSocialAuthInFlight(false);
+    if (!isResume) {
+      setPendingWalletAuthIntent(provider);
+    }
 
     try {
       if (authenticated) {
@@ -403,6 +479,7 @@ export default function AcademyGatewayPage() {
       addLog("[SUCCESS] Identity resolved.");
       setNetworkStatus("connected");
       await sleep(400);
+      clearPendingWalletAuthIntent();
       authFlowRef.current = "none";
       setStep(3);
     } catch (e) {
@@ -410,9 +487,60 @@ export default function AcademyGatewayPage() {
       setError(message);
       setStep(1);
       setNetworkStatus("disconnected");
+      clearPendingWalletAuthIntent();
       authFlowRef.current = "none";
     }
   };
+
+  const resumePendingWalletAuth = useCallback(() => {
+    const pendingIntent = getPendingWalletAuthIntent();
+    if (!pendingIntent) return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      clearPendingWalletAuthIntent();
+      completeGatewayAuth();
+      return;
+    }
+
+    if (pendingIntent.resumeAttempts >= MAX_WALLET_RESUME_ATTEMPTS) {
+      clearPendingWalletAuthIntent();
+      return;
+    }
+
+    if (authFlowRef.current !== "none") {
+      return;
+    }
+
+    setPendingWalletAuthIntent(
+      pendingIntent.provider,
+      pendingIntent.resumeAttempts + 1,
+      pendingIntent.startedAt,
+    );
+    void connectWithProvider(pendingIntent.provider, { resume: true });
+  }, [
+    clearPendingWalletAuthIntent,
+    completeGatewayAuth,
+    connectWithProvider,
+    getPendingWalletAuthIntent,
+    setPendingWalletAuthIntent,
+  ]);
+
+  useEffect(() => {
+    const handleResume = () => {
+      resumePendingWalletAuth();
+    };
+
+    handleResume();
+    window.addEventListener("pageshow", handleResume);
+    document.addEventListener("visibilitychange", handleResume);
+
+    return () => {
+      window.removeEventListener("pageshow", handleResume);
+      document.removeEventListener("visibilitychange", handleResume);
+    };
+  }, [resumePendingWalletAuth]);
 
   const executeSignature = async () => {
     const token = localStorage.getItem("auth_token");
