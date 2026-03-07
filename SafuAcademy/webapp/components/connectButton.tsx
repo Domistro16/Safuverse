@@ -57,6 +57,24 @@ export function CustomConnect() {
     const [showWalletModal, setShowWalletModal] = useState(false);
     const hasAttemptedAuth = useRef(false);
 
+    const hasPendingWalletResumeIntent = () => {
+        if (typeof window === 'undefined') return false;
+        try {
+            return Boolean(sessionStorage.getItem('nexid_gateway_pending_wallet_auth'));
+        } catch {
+            return false;
+        }
+    };
+
+    const hasPendingSocialOAuthIntent = () => {
+        if (typeof window === 'undefined') return false;
+        try {
+            return sessionStorage.getItem('nexid_gateway_pending_social_oauth') === 'true';
+        } catch {
+            return false;
+        }
+    };
+
     // Auto-switch to Base mainnet if on wrong chain
     useEffect(() => {
         if (isConnected && chainId && chainId !== base.id) {
@@ -227,14 +245,22 @@ export function CustomConnect() {
     }
 
     const hasBackendAuth = authState.isAuthenticated && Boolean(authState.token);
+    const shouldFinalizeLogin =
+        !hasBackendAuth
+        && (
+            isAuthenticating
+            || (isConnected && authenticated && Boolean(address))
+            || hasPendingWalletResumeIntent()
+            || hasPendingSocialOAuthIntent()
+        );
 
-    if (!hasBackendAuth && isAuthenticating) {
+    if (shouldFinalizeLogin) {
         return (
             <button
                 disabled
                 className="rounded-full border border-[#222] bg-[#111] px-4 py-1.5 text-xs font-medium text-white opacity-60"
             >
-                Signing...
+                {isAuthenticating ? 'Signing...' : 'Finalizing login...'}
             </button>
         );
     }

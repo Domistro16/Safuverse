@@ -235,6 +235,12 @@ export default function AcademyGatewayPage() {
     return "orb-blue";
   }, [networkStatus]);
 
+  const socialSessionFinalizing =
+    socialLoading
+    || socialPendingSession
+    || socialAuthInFlight
+    || (privyReady && authenticated && hasPendingSocialOAuthIntent());
+
   const addLog = (line: string) => {
     setLogs((prev) => [...prev, line]);
   };
@@ -615,7 +621,7 @@ export default function AcademyGatewayPage() {
           <div className="mt-8 space-y-3">
             <button
               type="button"
-              disabled={socialLoading}
+              disabled={socialSessionFinalizing}
               onClick={() => {
                 void beginSocialLogin("google");
               }}
@@ -632,7 +638,7 @@ export default function AcademyGatewayPage() {
 
             <button
               type="button"
-              disabled={socialLoading}
+              disabled={socialSessionFinalizing}
               onClick={() => {
                 void beginSocialLogin("twitter");
               }}
@@ -644,6 +650,17 @@ export default function AcademyGatewayPage() {
               <span className="font-medium">Continue with X</span>
             </button>
           </div>
+
+          {socialSessionFinalizing ? (
+            <div className="mt-4 rounded-lg border border-nexid-gold/30 bg-nexid-gold/10 p-3 text-left">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-nexid-gold">
+                Social session detected
+              </p>
+              <p className="mt-1 text-xs text-white/85">
+                Finalizing login and preparing your signature prompt...
+              </p>
+            </div>
+          ) : null}
 
           {/* Divider */}
           <div className="gateway-divider my-6 flex items-center gap-4">
