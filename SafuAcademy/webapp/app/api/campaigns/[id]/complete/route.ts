@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/middleware/admin.middleware";
 import { getCampaignRelayer } from "@/lib/services/campaign-relayer.service";
 import { getCampaignModuleCount, normalizeCompletedUntil } from "@/lib/campaign-modules";
+import { getCampaignCompletionPoints } from "@/lib/campaign-rewards";
 
 
 
@@ -116,14 +117,8 @@ export async function POST(
     }
   }
 
-  // Reward campaigns grant Genesis points on completion.
-  const sponsor = campaign.sponsorName?.toLowerCase() ?? "";
-  const sponsorNamespace = campaign.sponsorNamespace?.toLowerCase() ?? "";
-  const isGenesisRewardCampaign =
-    campaign.ownerType === "NEXID" ||
-    sponsor.includes("nexid") ||
-    sponsorNamespace.includes("nexid");
-  const pointsToAward = isGenesisRewardCampaign ? 100 : 0;
+  // Only partner Genesis reward campaigns grant points on completion.
+  const pointsToAward = getCampaignCompletionPoints(campaign);
 
   // DB completion
   // Run both updates in a transaction to ensure atomic score assignment

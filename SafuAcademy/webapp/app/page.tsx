@@ -144,12 +144,12 @@ const HOME_HTML =
         </div>
 
         <h1 class="text-5xl md:text-6xl lg:text-7xl font-display font-black text-white mb-6 tracking-tighter leading-[1.05] crisp-text">
-          Prove your knowledge.<br>
-          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">Earn your allocation.</span>
+          Learn how a protocol works,<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">complete tasks, and earn rewards for showing you understood it.</span>
         </h1>
 
         <p class="text-lg md:text-xl text-nexid-muted font-sans leading-relaxed max-w-xl mb-10 crisp-text">
-          The ultimate decentralized education protocol. Complete technical tracks, verify your on-chain activity, and secure USDC prize pools directly to your .id namespace.
+          Complete short courses, perform simple on-chain tasks, and receive rewards in your NexID profile.
         </p>
 
         <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-14">
@@ -167,15 +167,15 @@ const HOME_HTML =
         <div class="grid grid-cols-3 gap-4 sm:gap-8 w-full border-t border-[#1a1a1a] pt-8">
           <div>
             <div class="text-xl md:text-2xl font-display text-white font-bold">$0.00</div>
-            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">USDC Distributed</div>
+            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Total rewards distributed to learners</div>
           </div>
           <div class="border-l border-[#1a1a1a] pl-4 sm:pl-8">
             <div class="text-xl md:text-2xl font-display text-white font-bold">483</div>
-            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Onchain activities</div>
+            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">On-chain tasks completed by users</div>
           </div>
           <div class="border-l border-[#1a1a1a] pl-4 sm:pl-8">
             <div class="text-xl md:text-2xl font-display text-nexid-gold font-bold">0 Live</div>
-            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Partner Campaigns</div>
+            <div class="text-[9px] sm:text-[10px] font-mono text-nexid-muted uppercase tracking-widest mt-1">Active campaigns currently running</div>
           </div>
         </div>
       </div>
@@ -258,14 +258,14 @@ const HOME_HTML =
   <section id="journey" class="py-24 lg:py-32 w-full max-w-7xl mx-auto px-6">
     <div class="text-center mb-20 reveal">
       <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-6 tracking-tight">The Proof of Knowledge Flow</h2>
-      <p class="text-nexid-muted max-w-2xl mx-auto text-lg leading-relaxed">A seamless, verifiable journey from abstract education to concrete on-chain execution.</p>
+      <p class="text-nexid-muted max-w-2xl mx-auto text-lg leading-relaxed">A simple process where users learn how a protocol works and prove it through real actions.</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div class="premium-panel hover-card p-10 reveal bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.04),transparent_50%)]">
         <div class="w-14 h-14 rounded-full border border-[#333] bg-[#111] flex items-center justify-center font-mono text-white mb-8 shadow-inner-glaze animate-[float_6s_ease-in-out_infinite]">01</div>
         <h3 class="text-2xl font-display text-white mb-4">Interactive Learning</h3>
-        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Consume high-fidelity Synthesia video modules directly in the NexID terminal. Answer integrated quizzes to prove comprehension and unlock subsequent chapters.</p>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Watch short video lessons and answer questions to show you understood the material before moving forward.</p>
         <div class="w-full h-32 rounded-xl bg-[#050505] border border-[#222] overflow-hidden relative shadow-inner-glaze flex items-center justify-center">
           <div class="absolute inset-0 flex items-center justify-center opacity-30">
             <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
@@ -277,7 +277,7 @@ const HOME_HTML =
       <div class="premium-panel hover-card p-10 reveal delay-100 bg-[radial-gradient(ellipse_at_top_left,rgba(255,176,0,0.06),transparent_50%)]">
         <div class="w-14 h-14 rounded-full border border-nexid-gold/40 bg-nexid-gold/10 flex items-center justify-center font-mono text-nexid-gold mb-8 shadow-gold-glow animate-[float_5s_ease-in-out_infinite]">02</div>
         <h3 class="text-2xl font-display text-white mb-4">On-Chain Verification</h3>
-        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Perform real ecosystem microtasks. Swap on a testnet, provide liquidity, or sign messages. Our AI oracle verifies your on-chain activity instantly.</p>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Complete simple blockchain actions like swaps or wallet signatures. The platform checks that the action happened before allowing you to continue.</p>
         <div class="w-full bg-[#050505] border border-[#222] p-5 rounded-xl flex items-center justify-between shadow-inner-glaze">
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded border border-[#333] flex items-center justify-center bg-[#111]">
@@ -295,7 +295,7 @@ const HOME_HTML =
       <div class="premium-panel hover-card p-10 reveal bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,197,94,0.06),transparent_50%)]">
         <div class="w-14 h-14 rounded-full border border-green-500/40 bg-green-500/10 flex items-center justify-center font-mono text-green-400 mb-8 shadow-[0_0_20px_rgba(34,197,94,0.2)] animate-[float_6s_ease-in-out_infinite_reverse]">03</div>
         <h3 class="text-2xl font-display text-white mb-4">Claim Allocations</h3>
-        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Accumulate points on the campaign leaderboard. When the protocol campaign concludes, eligible users sign a gasless transaction to claim rewards directly to their vault.</p>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Earn points as you complete lessons and tasks. When the campaign ends, qualifying users can claim rewards without paying gas fees.</p>
         <div class="w-full bg-[#050505] border border-green-500/20 p-6 rounded-xl text-center shadow-[inset_0_0_20px_rgba(34,197,94,0.05)]">
           <div class="text-[10px] font-mono text-green-400 uppercase tracking-widest mb-1.5">Eligible Settlement</div>
           <div class="text-3xl font-display font-bold text-white">$500.00 <span class="text-base text-nexid-muted font-normal">USDC</span></div>
@@ -305,7 +305,7 @@ const HOME_HTML =
       <div class="premium-panel hover-card p-10 reveal delay-100 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.04),transparent_50%)]">
         <div class="w-14 h-14 rounded-full border border-[#333] bg-[#111] flex items-center justify-center font-mono text-white mb-8 shadow-inner-glaze animate-[float_7s_ease-in-out_infinite]">04</div>
         <h3 class="text-2xl font-display text-white mb-4">Mint Sovereign SBTs</h3>
-        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Your achievements become immutable. Mint Soulbound Tokens directly to your .id namespace, building a verifiable, on-chain professional reputation.</p>
+        <p class="text-sm text-nexid-muted leading-relaxed mb-8">Record your completed campaigns as permanent credentials tied to your NexID profile.</p>
         <div class="flex gap-4 items-center h-24">
           <div class="w-16 h-16 rounded-xl rotate-12 border border-[#333] bg-[#0a0a0a] flex items-center justify-center shadow-premium"><div class="text-nexid-gold font-display font-black text-xl opacity-50">S</div></div>
           <div class="w-20 h-20 rounded-xl -rotate-6 border-2 border-nexid-gold/60 bg-[#111] flex items-center justify-center shadow-gold-glow z-10"><div class="text-white font-display font-black text-3xl crisp-text">O</div></div>
@@ -399,28 +399,28 @@ const HOME_HTML =
     <div class="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-16 relative z-10 reveal">
       <div class="max-w-xl">
         <div class="text-[10px] font-mono text-white/60 border border-white/10 bg-[#111] px-3 py-1.5 rounded-full inline-flex mb-8 uppercase tracking-widest shadow-inner-glaze">For Protocols & Developers</div>
-        <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-6 leading-tight">Bootstrap your ecosystem with verifiable intelligence.</h2>
+        <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-6 leading-tight">Educate new users and confirm they actually used your product.</h2>
         <p class="text-nexid-muted leading-relaxed mb-8 text-lg">
-          Stop paying for bot interactions and sybil farms. Launch a targeted campaign on the NexID Academy to educate real users, verify their on-chain interactions with your smart contracts, and distribute USDC rewards dynamically.
+          Instead of rewarding wallet activity alone, create a campaign that teaches users how your protocol works and checks that they completed real actions.
         </p>
         <ul class="space-y-5 mb-10">
           <li class="flex items-center gap-4 text-sm text-white/90 font-medium">
             <div class="p-1 rounded-full bg-nexid-gold/20">
               <svg class="w-4 h-4 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            AI-generated Synthesia video curriculum.
+            Short video lessons generated with Synthesia.
           </li>
           <li class="flex items-center gap-4 text-sm text-white/90 font-medium">
             <div class="p-1 rounded-full bg-nexid-gold/20">
               <svg class="w-4 h-4 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            Smart contract task verification (Swaps, Mints, Staking).
+            Verification of basic actions like swaps, mints, and staking.
           </li>
           <li class="flex items-center gap-4 text-sm text-white/90 font-medium">
             <div class="p-1 rounded-full bg-nexid-gold/20">
               <svg class="w-4 h-4 text-nexid-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            Enterprise deployment tiers starting at $15,000.
+            Campaign packages starting at $15,000.
           </li>
         </ul>
         <button onclick="openConnectionModal('Partner Console')" class="px-8 py-4 bg-white text-black font-bold text-sm rounded-xl hover:bg-gray-200 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center gap-2 group">

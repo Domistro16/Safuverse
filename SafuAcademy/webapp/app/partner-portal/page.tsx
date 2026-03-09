@@ -4,17 +4,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const NEGATIVES = [
-  "Treasury drained by automated bot networks.",
-  "Users click through without reading documentation.",
-  "Immediate liquidity dumping post-distribution.",
-  "No verifiable metric of long-term user comprehension.",
+  "Bots often claim a large share of rewards.",
+  "Most participants skip the educational material.",
+  "Many users sell tokens immediately after receiving them.",
+  "Projects cannot measure whether users actually understood the protocol.",
 ];
 
 const POSITIVES = [
-  "Baked in gamification boosting retention by 70%",
-  "Cryptographic verification for on-chain testnet/mainnet tasks.",
-  "Built-in AI Overwatch blocks botnets and VPN farms.",
-  "Permanent SBT mints turn users into long-term advocates.",
+  "Interactive lessons and quizzes help keep users engaged.",
+  "Blockchain actions are checked before rewards are given.",
+  "Basic filtering to reduce bot participation.",
+  "Campaign completions can be recorded as on-chain credentials.",
 ];
 
 const TIERS = [
@@ -22,7 +22,7 @@ const TIERS = [
     name: "Standard Flow",
     price: "$15,000",
     sub: "USDC Min",
-    blurb: "Perfect for baseline protocol awareness and social growth.",
+    blurb: "A basic campaign to introduce users to your protocol.",
     features: [
       "1 Week Campaign",
       "Up to 5 Video Modules",
@@ -36,7 +36,7 @@ const TIERS = [
     name: "Premium Hub",
     price: "$50,000",
     sub: "USDC Min",
-    blurb: "Deep technical integration for mainnet scaling and stress testing.",
+    blurb: "A larger campaign with deeper on-chain task verification.",
     features: [
       "3 Week Campaign Logic",
       "Up to 10 Video Modules",
@@ -50,7 +50,7 @@ const TIERS = [
     name: "Ecosystem Custom",
     price: "$100k+",
     sub: "USDC Pool",
-    blurb: "White-glove concierge deployment for massive token generation events.",
+    blurb: "Custom campaign design for large protocol launches.",
     features: [
       "1+ Month Campaign",
       "Bespoke Sybil AI Tuning",
@@ -148,17 +148,17 @@ export default function PartnerPortalPage() {
           <div className="reveal relative z-10 flex w-full max-w-5xl flex-1 flex-col items-center justify-center py-20">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-nexid-gold/30 bg-nexid-gold/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-nexid-gold shadow-inner-glaze">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-nexid-gold shadow-gold-glow" />
-              B2B Protocol Growth Engine
+              A platform for protocols to educate and onboard users.
             </div>
             <h1 className="crisp-text font-display mb-6 text-5xl font-black leading-[1.05] tracking-tighter text-white md:text-7xl lg:text-[5.5rem]">
-              Airdrops farm sybils.
+              Airdrops attract bots.
               <br />
               <span className="bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
-                NexID farms intelligence.
+                NexID focuses on real users who learn how the protocol works.
               </span>
             </h1>
             <p className="crisp-text mx-auto mb-14 max-w-3xl text-lg leading-relaxed text-nexid-muted md:text-xl">
-              Stop bleeding treasury funds to bot networks. Launch an interactive educational campaign to acquire high-signal users, enforce on-chain verifications, and distribute USDC strictly to verified human identities.
+              Run a campaign that teaches users your protocol and only rewards wallets that complete verified actions.
             </p>
             <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row">
               <a
@@ -194,14 +194,14 @@ export default function PartnerPortalPage() {
           </div>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <CardPanel
-              title="Capital Inefficient"
+              title="High reward costs with low user quality."
               badge="Traditional Airdrops / Quests"
               badgeClass="border-red-500/30 bg-red-500/10 text-red-500"
               items={NEGATIVES}
               negative
             />
             <CardPanel
-              title="Verifiable Intelligence"
+              title="User understanding can be measured."
               badge="The NexID Protocol"
               badgeClass="border-nexid-gold/30 bg-nexid-gold/10 text-nexid-gold"
               items={POSITIVES}
@@ -216,10 +216,10 @@ export default function PartnerPortalPage() {
                 Ecosystem Architecture
               </div>
               <h2 className="font-display mb-6 text-3xl font-bold leading-tight text-white md:text-5xl">
-                Engineered for capital-efficient growth.
+                Designed to reward users who actually interact with the protocol.
               </h2>
               <p className="mb-8 text-lg leading-relaxed text-nexid-muted">
-                Deploying a campaign on NexID ensures your treasury is spent exclusively on acquiring and educating real users.
+                Campaign rewards are given only to users who complete lessons and verified tasks.
               </p>
               <div className="inline-flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-medium text-green-400">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
@@ -227,12 +227,12 @@ export default function PartnerPortalPage() {
               </div>
             </div>
             <div className="reveal delay-100 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:col-span-7">
-              <ImpactCard value="100%" title="On-Chain Verification" text="Every action is cryptographically proven before rewards are assigned." tone="green" />
-              <ImpactCard value="0%" title="Sybil Exploitation" text="AI Overwatch filters botnets and VPN proxy farms." tone="red" />
+              <ImpactCard value="100%" title="On-Chain Verification" text="Tasks are checked against blockchain activity before rewards are assigned." tone="green" />
+              <ImpactCard value="0%" title="Sybil Exploitation" text="Filtering is applied to reduce bot participation." tone="red" />
               <div className="premium-panel hover-card border-nexid-gold/20 bg-[radial-gradient(ellipse_at_top,rgba(255,176,0,0.05),transparent_60%)] p-8 sm:col-span-2">
                 <div className="font-display mb-2 text-2xl font-bold text-white">Automated Escrow Distribution</div>
                 <div className="text-sm text-nexid-muted">
-                  Smart contracts handle precise USDC and token dispersion to eligible human wallets.
+                  Rewards are distributed automatically through smart contracts.
                 </div>
               </div>
             </div>
@@ -245,7 +245,7 @@ export default function PartnerPortalPage() {
               Ecosystem Deployment Tiers
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-nexid-muted">
-              Choose the magnitude of your campaign. We handle curriculum design, video generation, and smart contract integration.
+              Choose a campaign size. We help create the lessons and configure the tasks.
             </p>
           </div>
           <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
