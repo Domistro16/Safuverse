@@ -227,13 +227,15 @@ export default function PartnerPortalPage() {
               </div>
             </div>
             <div className="reveal delay-100 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:col-span-7">
-              <ImpactCard value="100%" title="On-Chain Verification" text="Tasks are checked against blockchain activity before rewards are assigned." tone="green" />
-              <ImpactCard value="0%" title="Sybil Exploitation" text="Filtering is applied to reduce bot participation." tone="red" />
-              <div className="premium-panel hover-card border-nexid-gold/20 bg-[radial-gradient(ellipse_at_top,rgba(255,176,0,0.05),transparent_60%)] p-8 sm:col-span-2">
-                <div className="font-display mb-2 text-2xl font-bold text-white">Automated Escrow Distribution</div>
-                <div className="text-sm text-nexid-muted">
-                  Rewards are distributed automatically through smart contracts.
-                </div>
+              <div className="premium-panel hover-card p-8 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,197,94,0.08),transparent_60%)] flex flex-col justify-center">
+                <div className="font-display text-2xl font-bold text-white mb-2">Tasks are checked against blockchain activity before rewards are assigned.</div>
+
+              </div>
+              <div className="premium-panel hover-card p-8 border-red-500/20 bg-[radial-gradient(ellipse_at_bottom_left,rgba(239,68,68,0.05),transparent_60%)] flex flex-col justify-center">
+                <div className="font-display text-2xl font-bold text-white mb-2">Filtering is applied to reduce bot participation</div>
+              </div>
+              <div className="premium-panel hover-card border-nexid-gold/20 bg-[radial-gradient(ellipse_at_top,rgba(255,176,0,0.05),transparent_60%)] p-8 sm:col-span-2 flex flex-col justify-center">
+                <div className="font-display text-2xl font-bold text-white mb-2">Rewards are distributed automatically through smart contracts.</div>
               </div>
             </div>
           </div>
