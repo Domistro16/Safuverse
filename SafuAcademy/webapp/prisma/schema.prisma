@@ -27,6 +27,7 @@ model User {
   transactions     BlockchainTx[]
 
   campaignParticipations        CampaignParticipant[]
+  domainClaims                  DomainClaim[]
   submittedCampaignRequests     CampaignRequest[]          @relation("SubmittedCampaignRequests")
   reviewedCampaignRequests      CampaignRequest[]          @relation("ReviewedCampaignRequests")
   executedCampaignDistributions CampaignRewardDistribution[] @relation("CampaignDistributionExecutor")
@@ -326,6 +327,7 @@ model Campaign {
 
   request             CampaignRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
   participants        CampaignParticipant[]
+  domainClaims        DomainClaim[]
   distributions       CampaignRewardDistribution[]
 
   @@index([status, isPublished])
@@ -382,6 +384,21 @@ model CampaignParticipant {
 
   @@unique([campaignId, userId])
   @@index([campaignId, rank])
+}
+
+model DomainClaim {
+  id            String   @id
+  campaignId    Int
+  userId        String
+  walletAddress String
+  domainName    String   @unique
+  claimedAt     DateTime @default(now())
+
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
 }
 
 model CampaignRewardDistribution {

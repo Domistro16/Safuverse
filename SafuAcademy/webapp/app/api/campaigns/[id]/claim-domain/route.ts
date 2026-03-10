@@ -15,40 +15,43 @@ export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
-    const { id } = await params;
-    const campaignId = parseInt(id, 10);
+    try {
+        const { id } = await params;
+        const campaignId = parseInt(id, 10);
 
-    if (!Number.isFinite(campaignId)) {
-        return NextResponse.json({ error: "Invalid campaign id" }, { status: 400 });
+        if (!Number.isFinite(campaignId)) {
+            return NextResponse.json({ error: "Invalid campaign id" }, { status: 400 });
+        }
+
+        const auth = await verifyAuth(req);
+        if (!auth.authorized || !auth.user) {
+            return NextResponse.json({ error: auth.error }, { status: 401 });
+        }
+        const userId = auth.user.userId;
+
+        const totalClaims = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+            `SELECT COUNT(*) as count FROM "DomainClaim" WHERE "campaignId" = $1`,
+            campaignId,
+        );
+        const claimedCount = Number(totalClaims[0]?.count ?? 0);
+
+        const existing = await prisma.$queryRawUnsafe<{ id: string; domainName: string }[]>(
+            `SELECT "id", "domainName" FROM "DomainClaim" WHERE "campaignId" = $1 AND "userId" = $2 LIMIT 1`,
+            campaignId,
+            userId,
+        );
+
+        return NextResponse.json({
+            claimed: existing.length > 0,
+            domainName: existing[0]?.domainName ?? null,
+            claimedCount,
+            maxClaims: MAX_CLAIMS,
+            spotsRemaining: Math.max(0, MAX_CLAIMS - claimedCount),
+        });
+    } catch (error) {
+        console.error("GET /api/campaigns/[id]/claim-domain error", error);
+        return NextResponse.json({ error: "Failed to fetch domain claim status" }, { status: 500 });
     }
-
-    const auth = await verifyAuth(req);
-    if (!auth.authorized || !auth.user) {
-        return NextResponse.json({ error: auth.error }, { status: 401 });
-    }
-    const userId = auth.user.userId;
-
-    // Count total claims for this campaign
-    const totalClaims = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-        `SELECT COUNT(*) as count FROM "DomainClaim" WHERE "campaignId" = $1`,
-        campaignId,
-    );
-    const claimedCount = Number(totalClaims[0]?.count ?? 0);
-
-    // Check if this user already claimed
-    const existing = await prisma.$queryRawUnsafe<{ id: string; domainName: string }[]>(
-        `SELECT "id", "domainName" FROM "DomainClaim" WHERE "campaignId" = $1 AND "userId" = $2 LIMIT 1`,
-        campaignId,
-        userId,
-    );
-
-    return NextResponse.json({
-        claimed: existing.length > 0,
-        domainName: existing[0]?.domainName ?? null,
-        claimedCount,
-        maxClaims: MAX_CLAIMS,
-        spotsRemaining: Math.max(0, MAX_CLAIMS - claimedCount),
-    });
 }
 
 /**
@@ -60,120 +63,119 @@ export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
-    const { id } = await params;
-    const campaignId = parseInt(id, 10);
-
-    if (!Number.isFinite(campaignId)) {
-        return NextResponse.json({ error: "Invalid campaign id" }, { status: 400 });
-    }
-
-    const auth = await verifyAuth(req);
-    if (!auth.authorized || !auth.user) {
-        return NextResponse.json({ error: auth.error }, { status: 401 });
-    }
-    const userId = auth.user.userId;
-
-    let body: unknown;
     try {
-        body = await req.json();
-    } catch {
-        return NextResponse.json(
-            { error: "Invalid request body. Please submit valid JSON." },
-            { status: 400 },
+        const { id } = await params;
+        const campaignId = parseInt(id, 10);
+
+        if (!Number.isFinite(campaignId)) {
+            return NextResponse.json({ error: "Invalid campaign id" }, { status: 400 });
+        }
+
+        const auth = await verifyAuth(req);
+        if (!auth.authorized || !auth.user) {
+            return NextResponse.json({ error: auth.error }, { status: 401 });
+        }
+        const userId = auth.user.userId;
+
+        let body: unknown;
+        try {
+            body = await req.json();
+        } catch {
+            return NextResponse.json(
+                { error: "Invalid request body. Please submit valid JSON." },
+                { status: 400 },
+            );
+        }
+
+        const domainName =
+            body && typeof body === "object" && "domainName" in body
+                ? String(body.domainName ?? "").trim().toLowerCase()
+                : "";
+
+        if (domainName.length < MIN_DOMAIN_LENGTH) {
+            return NextResponse.json(
+                { error: `Domain name must be at least ${MIN_DOMAIN_LENGTH} characters` },
+                { status: 400 },
+            );
+        }
+        if (domainName.length > MAX_DOMAIN_LENGTH) {
+            return NextResponse.json(
+                { error: `Domain name must be no more than ${MAX_DOMAIN_LENGTH} characters` },
+                { status: 400 },
+            );
+        }
+        if (!/^[a-z0-9]+$/.test(domainName)) {
+            return NextResponse.json(
+                { error: "Domain name must contain only letters and numbers" },
+                { status: 400 },
+            );
+        }
+
+        const participant = await prisma.$queryRawUnsafe<{ completedAt: Date | null }[]>(
+            `SELECT "completedAt" FROM "CampaignParticipant" WHERE "campaignId" = $1 AND "userId" = $2 LIMIT 1`,
+            campaignId,
+            userId,
         );
-    }
 
-    const domainName =
-        body && typeof body === "object" && "domainName" in body
-            ? String(body.domainName ?? "").trim().toLowerCase()
-            : "";
+        if (!participant[0]?.completedAt) {
+            return NextResponse.json(
+                { error: "You must complete the course before claiming a domain" },
+                { status: 403 },
+            );
+        }
 
-    // Validate domain name: at least 5 alphanumeric characters.
-    if (domainName.length < MIN_DOMAIN_LENGTH) {
-        return NextResponse.json(
-            { error: `Domain name must be at least ${MIN_DOMAIN_LENGTH} characters` },
-            { status: 400 },
+        const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
+            `SELECT "id" FROM "DomainClaim" WHERE "campaignId" = $1 AND "userId" = $2 LIMIT 1`,
+            campaignId,
+            userId,
         );
-    }
-    if (domainName.length > MAX_DOMAIN_LENGTH) {
-        return NextResponse.json(
-            { error: `Domain name must be no more than ${MAX_DOMAIN_LENGTH} characters` },
-            { status: 400 },
+        if (existing.length > 0) {
+            return NextResponse.json(
+                { error: "You have already claimed a domain for this course" },
+                { status: 400 },
+            );
+        }
+
+        const totalClaims = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+            `SELECT COUNT(*) as count FROM "DomainClaim" WHERE "campaignId" = $1`,
+            campaignId,
         );
-    }
-    if (!/^[a-z0-9]+$/.test(domainName)) {
-        return NextResponse.json(
-            { error: "Domain name must contain only letters and numbers" },
-            { status: 400 },
+        if (Number(totalClaims[0]?.count ?? 0) >= MAX_CLAIMS) {
+            return NextResponse.json(
+                { error: `All ${MAX_CLAIMS} domain spots have been claimed` },
+                { status: 400 },
+            );
+        }
+
+        const domainTaken = await prisma.$queryRawUnsafe<{ id: string }[]>(
+            `SELECT "id" FROM "DomainClaim" WHERE "domainName" = $1 LIMIT 1`,
+            domainName,
         );
-    }
+        if (domainTaken.length > 0) {
+            return NextResponse.json(
+                { error: `"${domainName}" is already taken. Please choose another name.` },
+                { status: 409 },
+            );
+        }
 
-    // Check user has completed this campaign
-    const participant = await prisma.$queryRawUnsafe<{ completedAt: Date | null }[]>(
-        `SELECT "completedAt" FROM "CampaignParticipant" WHERE "campaignId" = $1 AND "userId" = $2 LIMIT 1`,
-        campaignId,
-        userId,
-    );
-
-    if (!participant[0]?.completedAt) {
-        return NextResponse.json(
-            { error: "You must complete the course before claiming a domain" },
-            { status: 403 },
+        const claimId = crypto.randomUUID();
+        await prisma.$executeRawUnsafe(
+            `INSERT INTO "DomainClaim" ("id", "campaignId", "userId", "walletAddress", "domainName", "claimedAt")
+	         VALUES ($1, $2, $3, $4, $5, NOW())`,
+            claimId,
+            campaignId,
+            userId,
+            auth.user.walletAddress,
+            domainName,
         );
+
+        return NextResponse.json({
+            success: true,
+            domainName,
+            message: `You have claimed "${domainName}.id"!`,
+        });
+    } catch (error) {
+        console.error("POST /api/campaigns/[id]/claim-domain error", error);
+        return NextResponse.json({ error: "Failed to claim domain" }, { status: 500 });
     }
-
-    // Check if user already claimed
-    const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
-        `SELECT "id" FROM "DomainClaim" WHERE "campaignId" = $1 AND "userId" = $2 LIMIT 1`,
-        campaignId,
-        userId,
-    );
-    if (existing.length > 0) {
-        return NextResponse.json(
-            { error: "You have already claimed a domain for this course" },
-            { status: 400 },
-        );
-    }
-
-    // Check spots remaining
-    const totalClaims = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-        `SELECT COUNT(*) as count FROM "DomainClaim" WHERE "campaignId" = $1`,
-        campaignId,
-    );
-    if (Number(totalClaims[0]?.count ?? 0) >= MAX_CLAIMS) {
-        return NextResponse.json(
-            { error: `All ${MAX_CLAIMS} domain spots have been claimed` },
-            { status: 400 },
-        );
-    }
-
-    // Check domain name not already taken
-    const domainTaken = await prisma.$queryRawUnsafe<{ id: string }[]>(
-        `SELECT "id" FROM "DomainClaim" WHERE "domainName" = $1 LIMIT 1`,
-        domainName,
-    );
-    if (domainTaken.length > 0) {
-        return NextResponse.json(
-            { error: `"${domainName}" is already taken. Please choose another name.` },
-            { status: 409 },
-        );
-    }
-
-    // Insert claim
-    const claimId = crypto.randomUUID();
-    await prisma.$executeRawUnsafe(
-        `INSERT INTO "DomainClaim" ("id", "campaignId", "userId", "walletAddress", "domainName", "claimedAt")
-	     VALUES ($1, $2, $3, $4, $5, NOW())`,
-        claimId,
-        campaignId,
-        userId,
-        auth.user.walletAddress,
-        domainName,
-    );
-
-    return NextResponse.json({
-        success: true,
-        domainName,
-        message: `You have claimed "${domainName}.id"!`,
-    });
 }
