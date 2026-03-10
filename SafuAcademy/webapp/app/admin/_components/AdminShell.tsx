@@ -5,12 +5,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useAccount } from "wagmi";
 import { useENSName } from "@/hooks/getPrimaryName";
 
-type AdminSection = "overview" | "projects" | "matrix" | "builder" | "analytics";
+type AdminSection = "overview" | "projects" | "matrix" | "domains" | "builder" | "analytics";
 
 const HEADER_BY_SECTION: Record<AdminSection, string> = {
   overview: "Global Overview & Treasury",
   projects: "Project Matrix",
   matrix: "Global Student Matrix",
+  domains: "Reserved Domain Claims",
   builder: "Campaign Architect",
   analytics: "AI Overwatch",
 };
@@ -95,6 +96,10 @@ export default function AdminShell({ active, children, noPadding = false }: Admi
           <Link href="/admin/matrix" className={navClasses(active === "matrix")}>
             <span className="w-4 h-4 shrink-0 text-center">LB</span>
             <span className="opacity-0 group-hover:opacity-100 transition-opacity">Student Matrix (Global LB)</span>
+          </Link>
+          <Link href="/admin/domains" className={navClasses(active === "domains")}>
+            <span className="w-4 h-4 shrink-0 text-center">ID</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity">Reserved Domains</span>
           </Link>
           <Link href="/admin/builder" className={navClasses(active === "builder", true)}>
             <span className="w-4 h-4 shrink-0 text-center">&lt;/&gt;</span>
