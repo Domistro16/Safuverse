@@ -73,6 +73,9 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
 }
 
+const MIN_DOMAIN_LENGTH = 5;
+const MAX_DOMAIN_LENGTH = 63;
+
 function shortAddress(value: string) {
   if (value.length < 12) return value;
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
@@ -381,8 +384,12 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
 
   async function handleClaimDomain() {
     const value = domainInput.trim().toLowerCase();
-    if (value.length !== 5) {
-      setDomainClaimError("Domain name must be exactly 5 characters.");
+    if (value.length < MIN_DOMAIN_LENGTH) {
+      setDomainClaimError(`Domain name must be at least ${MIN_DOMAIN_LENGTH} characters.`);
+      return;
+    }
+    if (value.length > MAX_DOMAIN_LENGTH) {
+      setDomainClaimError(`Domain name must be no more than ${MAX_DOMAIN_LENGTH} characters.`);
       return;
     }
     setDomainClaiming(true);
@@ -393,7 +400,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
         headers: authHeaders(),
         body: JSON.stringify({ domainName: value }),
       });
-      const body = await res.json();
+      const body = await res.json().catch(() => null);
       if (!res.ok) {
         throw new Error(body?.error || "Failed to claim domain");
       }
@@ -830,7 +837,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
             <div className="premium-panel bg-[#0a0a0a] p-6">
               <h3 className="font-display mb-2 text-lg text-white">Genesis Rewards</h3>
               <p className="mb-4 text-xs text-nexid-muted">
-                Complete the campaign to receive 100 Genesis Points and claim a 5-character .id domain.
+                Complete the campaign to receive 100 Genesis Points and claim a .id domain with 5 or more characters.
               </p>
               <div className="rounded border border-[#222] bg-[#111] p-3 text-xs text-white/90">
                 <div>Genesis Points: 100 on completion</div>
@@ -847,12 +854,15 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
               ) : (
                 <div className="mt-4">
                   <label className="mb-1 block text-[10px] uppercase tracking-widest text-nexid-muted">
-                    Claim Your 5-Character Domain
+                    Claim Your Domain
                   </label>
+                  <div className="mb-2 text-[11px] text-nexid-muted">
+                    Use 5 or more letters or numbers.
+                  </div>
                   <div className="flex items-stretch">
                     <input
                       type="text"
-                      maxLength={5}
+                      maxLength={MAX_DOMAIN_LENGTH}
                       value={domainInput}
                       onChange={(e) => {
                         setDomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""));
@@ -868,7 +878,7 @@ export default function CampaignDetailClient({ campaignId }: CampaignDetailClien
                   <button
                     type="button"
                     onClick={handleClaimDomain}
-                    disabled={domainClaiming || domainInput.length !== 5}
+                    disabled={domainClaiming || domainInput.trim().length < MIN_DOMAIN_LENGTH}
                     className="mt-3 rounded bg-nexid-gold px-4 py-2 text-xs font-bold text-black disabled:opacity-50"
                   >
                     {domainClaiming ? "Claiming..." : "Claim Domain"}

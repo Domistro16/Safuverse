@@ -144,8 +144,8 @@ const HOME_HTML =
         </div>
 
         <h1 class="text-5xl md:text-6xl lg:text-7xl font-display font-black text-white mb-6 tracking-tighter leading-[1.05] crisp-text">
-          Learn how a protocol works,<br>
-          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">complete tasks, and earn rewards for showing you understood it.</span>
+          Interactive campaigns.<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">Learn, verify and earn rewards.</span>
         </h1>
 
         <p class="text-lg md:text-xl text-nexid-muted font-sans leading-relaxed max-w-xl mb-10 crisp-text">

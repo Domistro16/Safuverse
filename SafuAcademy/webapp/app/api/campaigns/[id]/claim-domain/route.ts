@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/middleware/admin.middleware";
 
 const MAX_CLAIMS = 1000;
-const DOMAIN_LENGTH = 5;
+const MIN_DOMAIN_LENGTH = 5;
+const MAX_DOMAIN_LENGTH = 63;
 
 /**
  * GET /api/campaigns/[id]/claim-domain
@@ -52,7 +53,7 @@ export async function GET(
 
 /**
  * POST /api/campaigns/[id]/claim-domain
- * Claim a 5-character domain name for this campaign.
+ * Claim a domain name for this campaign.
  * Requirements: user must have completed the campaign, must be first 1000.
  */
 export async function POST(
@@ -72,14 +73,31 @@ export async function POST(
     }
     const userId = auth.user.userId;
 
-    // Parse body
-    const body = await req.json();
-    const domainName = (body.domainName ?? "").trim().toLowerCase();
-
-    // Validate domain name: exactly 5 alphanumeric characters
-    if (domainName.length !== DOMAIN_LENGTH) {
+    let body: unknown;
+    try {
+        body = await req.json();
+    } catch {
         return NextResponse.json(
-            { error: `Domain name must be exactly ${DOMAIN_LENGTH} characters` },
+            { error: "Invalid request body. Please submit valid JSON." },
+            { status: 400 },
+        );
+    }
+
+    const domainName =
+        body && typeof body === "object" && "domainName" in body
+            ? String(body.domainName ?? "").trim().toLowerCase()
+            : "";
+
+    // Validate domain name: at least 5 alphanumeric characters.
+    if (domainName.length < MIN_DOMAIN_LENGTH) {
+        return NextResponse.json(
+            { error: `Domain name must be at least ${MIN_DOMAIN_LENGTH} characters` },
+            { status: 400 },
+        );
+    }
+    if (domainName.length > MAX_DOMAIN_LENGTH) {
+        return NextResponse.json(
+            { error: `Domain name must be no more than ${MAX_DOMAIN_LENGTH} characters` },
             { status: 400 },
         );
     }

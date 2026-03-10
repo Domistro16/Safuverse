@@ -154,8 +154,7 @@ export default function PartnerPortalPage() {
               Airdrops attract bots.
               <br />
               <span className="bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
-                NexID focuses on real users who learn how the protocol works.
-              </span>
+                But we focus on real users.              </span>
             </h1>
             <p className="crisp-text mx-auto mb-14 max-w-3xl text-lg leading-relaxed text-nexid-muted md:text-xl">
               Run a campaign that teaches users your protocol and only rewards wallets that complete verified actions.
