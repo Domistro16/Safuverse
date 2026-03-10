@@ -68,7 +68,7 @@ function shortAddr(addr: string) {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
-export default function SovereignTerminalPage() {
+export default function InteractiveTerminalPage() {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   const [authWalletAddress, setAuthWalletAddress] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export default function SovereignTerminalPage() {
           setLeaderboard(body.leaderboard ?? []);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function SovereignTerminalPage() {
           setUserCampaigns(body.campaigns ?? []);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [hasToken]);
 
   // ── Fetch user stats (authenticated) ──
@@ -168,7 +168,7 @@ export default function SovereignTerminalPage() {
           setTotalPoints((prev) => body.totalPoints ?? prev);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [hasToken]);
 
   // ── Fetch featured campaigns for carousel (public) ──
@@ -181,7 +181,7 @@ export default function SovereignTerminalPage() {
           setFeaturedCampaigns(campaigns.slice(0, 5));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // ── Carousel rotation ──
@@ -396,7 +396,7 @@ export default function SovereignTerminalPage() {
                           NexID<span className="text-nexid-gold">.</span>
                         </div>
                         <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.25em] text-nexid-gold">
-                          Sovereign Asset
+                          Interactive Asset
                         </div>
                       </div>
                       {isConnected ? (

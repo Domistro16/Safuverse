@@ -12,7 +12,7 @@ export const FAQS = [
     a: "Time-locked modules run on exact block timestamps. If you miss the initial drop, you can still complete the module anytime before the campaign officially ends. However, early completion yields a slight point multiplier on the leaderboard.",
   },
   {
-    q: "Can I transfer my Sovereign Scorecard (SBT)?",
+    q: "Can I transfer my Interactive Scorecard (SBT)?",
     a: "No. Scorecards are Soulbound Tokens (SBTs) permanently bound to your `.id` identity. They serve as immutable, non-transferable proof of your knowledge and on-chain activity.",
   },
   {

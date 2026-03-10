@@ -613,7 +613,7 @@ export default function AcademyGatewayPage() {
               Initialize Session
             </h2>
             <p className="text-sm text-nexid-muted">
-              Connect your provider to access the Sovereign Knowledge Layer.
+              Connect your provider to access the Interactive Knowledge Layer.
             </p>
           </div>
 
@@ -824,7 +824,7 @@ export default function AcademyGatewayPage() {
               Authentication Successful
             </h2>
             <p className="font-mono text-sm text-nexid-muted">
-              Routing to Sovereign Dashboard in {redirectCount}...
+              Routing to Interactive Dashboard in {redirectCount}...
             </p>
           </div>
         </StepWrap>

@@ -373,7 +373,7 @@ export default function PartnerPortalPage() {
             N<span className="hidden sm:inline">ex</span>ID<span className="text-nexid-gold">.</span>
           </div>
           <div className="mb-6 font-mono text-[10px] uppercase tracking-widest text-nexid-muted">
-            Sovereign Identity Protocol
+            Interactive Identity Protocol
           </div>
           <div className="mt-8 font-mono text-[10px] text-[#444]">2026 NexID. Built for the decentralized web.</div>
         </footer>

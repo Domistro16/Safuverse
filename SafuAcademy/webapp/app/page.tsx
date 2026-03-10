@@ -140,7 +140,7 @@ const HOME_HTML =
       <div class="lg:col-span-6 flex flex-col items-start text-left reveal">
         <div class="text-[10px] font-mono text-nexid-gold border border-nexid-gold/30 bg-nexid-gold/5 px-3 py-1.5 rounded-full inline-flex mb-6 uppercase tracking-widest shadow-inner-glaze items-center gap-2">
           <span class="w-1.5 h-1.5 bg-nexid-gold rounded-full animate-pulse shadow-gold-glow"></span>
-          Sovereign Knowledge Engine
+          Interactive Knowledge Engine
         </div>
 
         <h1 class="text-5xl md:text-6xl lg:text-7xl font-display font-black text-white mb-6 tracking-tighter leading-[1.05] crisp-text">
@@ -304,7 +304,7 @@ const HOME_HTML =
 
       <div class="premium-panel hover-card p-10 reveal delay-100 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.04),transparent_50%)]">
         <div class="w-14 h-14 rounded-full border border-[#333] bg-[#111] flex items-center justify-center font-mono text-white mb-8 shadow-inner-glaze animate-[float_7s_ease-in-out_infinite]">04</div>
-        <h3 class="text-2xl font-display text-white mb-4">Mint Sovereign SBTs</h3>
+        <h3 class="text-2xl font-display text-white mb-4">Mint Interactive SBTs</h3>
         <p class="text-sm text-nexid-muted leading-relaxed mb-8">Record your completed campaigns as permanent credentials tied to your NexID profile.</p>
         <div class="flex gap-4 items-center h-24">
           <div class="w-16 h-16 rounded-xl rotate-12 border border-[#333] bg-[#0a0a0a] flex items-center justify-center shadow-premium"><div class="text-nexid-gold font-display font-black text-xl opacity-50">S</div></div>
@@ -459,7 +459,7 @@ const HOME_HTML =
 
   <footer class="py-10 border-t border-[#1a1a1a] bg-[#030303] text-center relative z-10">
     <div class="font-display font-black text-2xl tracking-tighter text-white mb-3">N<span class="hidden sm:inline">ex</span>ID<span class="text-nexid-gold">.</span></div>
-    <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">Sovereign Identity Protocol</div>
+    <div class="text-[10px] font-mono text-nexid-muted uppercase tracking-widest mb-6">Interactive Identity Protocol</div>
     <div class="flex justify-center gap-6 text-sm font-medium text-nexid-muted">
       <a href="https://x.com/SafuVerse" target="_blank" rel="noreferrer" class="nav-link hover:text-white transition-colors">X (Twitter)</a>
       <a href="https://discord.gg/safuverse" target="_blank" rel="noreferrer" class="nav-link hover:text-white transition-colors">Discord</a>
