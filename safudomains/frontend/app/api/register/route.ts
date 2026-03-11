@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@nexid/sdk'
+import { rateLimit } from '@/lib/rateLimit'
+import { NexDomains } from '@nexid/sdk'
 import { encodeFunctionData, namehash } from 'viem'
 import { constants } from '@/constant'
 import { AgentPublicResolverABI, AgentRegistrarControllerABI } from '@/lib/abi'
@@ -47,6 +48,8 @@ const ResolverABI = [
  * Returns transaction data that agent must sign and broadcast
  */
 export async function POST(request: NextRequest) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
     let body
     try {
         body = await request.json()
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         // Check availability

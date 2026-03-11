@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWalletClient } from 'wagmi'
-import { SafuDomainsClient } from '@nexid/sdk'
+import { NexDomains } from '@nexid/sdk'
 import { CHAIN_ID } from '../constant'
 
 interface PaymentConfigProps {
@@ -22,7 +22,7 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
     useEffect(() => {
         const fetchConfig = async () => {
             try {
-                const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+                const sdk = new NexDomains({ chainId: CHAIN_ID })
                 const [endpoint, enabled] = await Promise.all([
                     sdk.getX402Endpoint(name),
                     sdk.isPaymentEnabled(name),
@@ -49,7 +49,7 @@ export const PaymentConfig = ({ name, onClose }: PaymentConfigProps) => {
         setMessage(null)
 
         try {
-            const sdk = new SafuDomainsClient({
+            const sdk = new NexDomains({
                 chainId: CHAIN_ID,
                 walletClient: walletClient as any,
             })

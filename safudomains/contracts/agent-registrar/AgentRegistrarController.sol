@@ -47,6 +47,7 @@ error UnexpiredCommitmentExists(bytes32 commitment);
 error InsufficientValue();
 error InsufficientUSDC();
 error InvalidName(string name);
+error ReservedName(string name);
 error BatchTooLarge(uint256 count);
 error BatchOnlyForAgentNames(string name);
 
@@ -108,6 +109,9 @@ contract AgentRegistrarController is
     /// @notice Mapping of commitments to timestamps
     mapping(bytes32 => uint256) public commitments;
 
+    /// @notice Reserved owner for a name (zero address = not reserved)
+    mapping(bytes32 => address) public reservedOwners;
+
     /// @notice Whether to skip commit-reveal for agent names
     bool public agentModeEnabled;
 
@@ -152,6 +156,9 @@ contract AgentRegistrarController is
     event CommitmentMade(bytes32 indexed commitment, address indexed sender);
     event AgentModeToggled(bool enabled);
     event SkipCommitForNonAgentsUpdated(bool enabled);
+    event NameReserved(bytes32 indexed label, string name, address indexed owner);
+    event NameReservationCleared(bytes32 indexed label, string name);
+    event ReservedNameMinted(bytes32 indexed label, string name, address indexed owner);
     event FundsWithdrawn(address indexed to, uint256 amount);
     event USDCWithdrawn(address indexed to, uint256 amount);
 
@@ -231,6 +238,42 @@ contract AgentRegistrarController is
      */
     function setTreasury(address _treasury) external onlyOwner {
         treasury = _treasury;
+    }
+
+    /**
+     * @notice Reserve a name for a specific owner (blocks public registration)
+     */
+    function reserveName(
+        string calldata name,
+        address owner
+    ) external onlyOwner {
+        bytes32 label = keccak256(bytes(name));
+        reservedOwners[label] = owner;
+        emit NameReserved(label, name, owner);
+    }
+
+    /**
+     * @notice Batch reserve names for specific owners
+     */
+    function reserveNamesBatch(
+        string[] calldata names,
+        address[] calldata owners
+    ) external onlyOwner {
+        require(names.length == owners.length, "Length mismatch");
+        for (uint256 i = 0; i < names.length; i++) {
+            bytes32 label = keccak256(bytes(names[i]));
+            reservedOwners[label] = owners[i];
+            emit NameReserved(label, names[i], owners[i]);
+        }
+    }
+
+    /**
+     * @notice Clear a reservation
+     */
+    function clearReservation(string calldata name) external onlyOwner {
+        bytes32 label = keccak256(bytes(name));
+        reservedOwners[label] = address(0);
+        emit NameReservationCleared(label, name);
     }
 
     // ============ External View Functions ============
@@ -383,7 +426,7 @@ contract AgentRegistrarController is
             }
         }
 
-        _executeRegistrationInternal(req, price.isAgentName);
+        _executeRegistrationInternal(req, price.isAgentName, false, false);
 
         // Deploy AA wallet if requested
         if (req.deployWallet && address(accountFactory) != address(0)) {
@@ -445,7 +488,7 @@ contract AgentRegistrarController is
             }
         }
 
-        _executeRegistrationInternal(req, price.isAgentName);
+        _executeRegistrationInternal(req, price.isAgentName, false, false);
 
         // Deploy AA wallet if requested
         if (req.deployWallet && address(accountFactory) != address(0)) {
@@ -497,7 +540,7 @@ contract AgentRegistrarController is
                 requests[i].name
             );
 
-            _executeRegistrationInternal(requests[i], price.isAgentName);
+            _executeRegistrationInternal(requests[i], price.isAgentName, false, false);
 
             // Deploy AA wallet if requested
             if (
@@ -588,7 +631,7 @@ contract AgentRegistrarController is
         IAgentPriceOracle.AgentPrice memory price = prices.getPrice(req.name);
         cost = price.priceWei;
 
-        _executeRegistrationInternal(req, price.isAgentName);
+        _executeRegistrationInternal(req, price.isAgentName, false, false);
 
         // Deploy AA wallet if requested
         if (req.deployWallet && address(accountFactory) != address(0)) {
@@ -603,7 +646,9 @@ contract AgentRegistrarController is
      */
     function _executeRegistrationInternal(
         RegisterRequest calldata req,
-        bool isAgentName
+        bool isAgentName,
+        bool skipCommitOverride,
+        bool ignoreReserved
     ) internal {
         // Validate name
         if (!valid(req.name)) {
@@ -617,8 +662,14 @@ contract AgentRegistrarController is
             revert NameNotAvailable(req.name);
         }
 
+        // Block public registration if reserved
+        if (!ignoreReserved && reservedOwners[label] != address(0)) {
+            revert ReservedName(req.name);
+        }
+
         // Check commitment (skip for agent names if agent mode is enabled)
-        bool skipCommit = (agentModeEnabled && isAgentName) ||
+        bool skipCommit = skipCommitOverride ||
+            (agentModeEnabled && isAgentName) ||
             (skipCommitForNonAgents && !isAgentName);
         if (!skipCommit) {
             bytes32 commitment = makeCommitment(req);
@@ -652,6 +703,30 @@ contract AgentRegistrarController is
             expires,
             0 // No premium
         );
+    }
+
+    /**
+     * @notice Mint a reserved name to its reserved owner (no fee)
+     */
+    function mintReserved(
+        RegisterRequest calldata req
+    ) external onlyOwner {
+        bytes32 label = keccak256(bytes(req.name));
+        address reservedOwner = reservedOwners[label];
+        require(reservedOwner != address(0), "Not reserved");
+        require(req.owner == reservedOwner, "Owner mismatch");
+
+        IAgentPriceOracle.AgentPrice memory price = prices.getPrice(req.name);
+        _executeRegistrationInternal(req, price.isAgentName, true, true);
+
+        // Clear reservation after mint
+        reservedOwners[label] = address(0);
+        emit NameReservationCleared(label, req.name);
+        emit ReservedNameMinted(label, req.name, req.owner);
+
+        // Award registration points
+        _awardPoints(req.owner, req.name);
+        totalMints++;
     }
 
     /**

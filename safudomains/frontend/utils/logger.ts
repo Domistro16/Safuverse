@@ -30,7 +30,7 @@ interface LoggerConfig {
 const defaultConfig: LoggerConfig = {
   enabled: process.env.NODE_ENV !== 'production', // Only log in development
   minLevel: LogLevel.DEBUG,
-  prefix: '[safuDomains]',
+  prefix: '[NexDomains]',
 }
 
 /**

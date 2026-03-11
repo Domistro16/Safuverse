@@ -52,7 +52,7 @@ const ReferralProgress = ({ referrals }: { referrals: number }) => {
     ? (referrals / nextTier.threshold) * 100
     : 100;
 
-  const referralLink = `https://names.safuverse.com/?ref=${data as string}`;
+  const referralLink = `https://names.nexdomains.com/?ref=${data as string}`;
 
   return (
     <Card className="w-full mx-auto p-4 mt-3 bg-neutral-900 border-[0.5px] border-neutral-500 text-gray-300">

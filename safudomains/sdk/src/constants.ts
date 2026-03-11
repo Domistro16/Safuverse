@@ -9,16 +9,16 @@ export const CHAIN_CONFIGS: Record<number, ChainConfig> = {
     // Base Mainnet
     8453: {
         chainId: 8453,
-        registrar: '0x59cd36ada823a03A34431F0A881B9b4eAb9d70f9' as Address, // AgentRegistrarController
-        priceOracle: '0xA6efF1Fc115eEeB89Fa09d3aCe740c006451aa22' as Address, // AgentPriceOracle
-        resolver: '0x66a779e85F762B387478b4309398b174527eE358' as Address, // AgentPublicResolver
+        registrar: '0xB5f3F983368e993b5f42D1dd659e4dC36fa5C494' as Address, // AgentRegistrarController
+        priceOracle: '0x15E2ccAeb4D1eeA1A7b8d839FFA30D63519D1c50' as Address, // AgentPriceOracle
+        resolver: '0x0a8C0f71C3Ec3FC8cB59F27885eb52C033780b6f' as Address, // AgentPublicResolver
         nameWrapper: '0x90d848F20589437EF2e05a91130aEEA253512736' as Address,
         reverseRegistrar: '0x38171C9Dc51c5F9b2Be96b8fde3D0CA8C6050eAA' as Address,
         registry: '0xA590B208e7F2e62a3987424D2E1b00cd62986fAd' as Address,
         baseRegistrar: '0xCAfd2aCA95B79Ce2De0047F2309FCaB33Da75E9C' as Address,
         referralVerifier: '0x212c27756529679efBd46cb35440b2e4DC28e33C' as Address,
         premiumRegistry: '0xd88dfd4E3B9a14C66E40bD931eCA713192DD2Dba' as Address,
-        auction: '0x0F362C1D04F422c6C8a7A28A3e87d8E0A07766Db' as Address,
+        auction: '0x7589b51FF60cf40046ec05247a68Eae397E37d30' as Address,
         bulkRenewal: '0xeCE5eA613C203f5235c736c139bde431D23738eA' as Address,
         accountFactory: '0x594D8baAc764A91113E5AAC91DAcFDf9eeF066C8' as Address,
         usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address,

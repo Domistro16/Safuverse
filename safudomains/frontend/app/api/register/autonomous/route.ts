@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 import { createPublicClient, http, decodeFunctionData } from 'viem'
 import { base } from 'viem/chains'
 import { constants } from '@/constant'
@@ -30,6 +31,8 @@ const BUNDLER_URL = process.env.PIMLICO_BUNDLER_URL
  * }
  */
 export async function POST(request: NextRequest) {
+  const rl = rateLimit(request)
+  if (!rl.ok) return rl.response!
   try {
     if (!BUNDLER_URL) {
       return NextResponse.json(
