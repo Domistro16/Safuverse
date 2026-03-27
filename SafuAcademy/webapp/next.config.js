@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Keep this explicit so Next.js 16 Turbopack builds don't fail when webpack config exists.
+  turbopack: {},
   // Allow larger file uploads for video lessons (500MB)
   experimental: {
     serverActions: {

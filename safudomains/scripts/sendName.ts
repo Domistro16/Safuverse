@@ -8,7 +8,7 @@ async function main() {
   const base = await viem.getContract('BaseRegistrarImplementation')
   const registry = await viem.getContract('ENSRegistry')
 
-  const DOMAIN_NAMES = ['Oscar', 'domistro', 'destro']
+  const DOMAIN_NAMES = ['nadya']
 
   for (const name of DOMAIN_NAMES) {
     const label = normalize(name)
@@ -18,8 +18,8 @@ async function main() {
     console.log('Resolver set for', label)
     if (wrapped) {
       const sendHash = await wrapper.write.safeTransferFrom([
-        '0x54b268AAB70C3Eda916C166D912ff8AB107c84fd',
-        '0xd83defba240568040b39bb2c8b4db7db02d40593',
+       '0xd83defba240568040b39bb2c8b4db7db02d40593',
+        '0xc8111c2689d866A88291811cb5b0B31665F08350',
         BigInt(node),
         1n,
         '0x',

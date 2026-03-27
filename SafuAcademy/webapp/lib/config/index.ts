@@ -1,4 +1,4 @@
-// Environment configuration for SafuAcademy
+// Environment configuration for Nex Academy
 // Works with Next.js environment variables
 
 export const config = {
@@ -13,11 +13,16 @@ export const config = {
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
 
     // Blockchain
-    rpcUrl: process.env.RPC_URL || 'https://bsc-dataseed.binance.org/',
-    chainId: parseInt(process.env.CHAIN_ID || '56', 10),
+    chainId: parseInt(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || '8453', 10),
+    rpcUrl: process.env.RPC_URL || 'https://mainnet.base.org',
     level3CourseAddress: process.env.LEVEL3_COURSE_ADDRESS || '',
     relayerPrivateKey: process.env.RELAYER_PRIVATE_KEY,
     ownerPrivateKey: process.env.OWNER_PRIVATE_KEY, // For Admin course management
+
+    // Campaign contracts
+    nexidCampaignsAddress: process.env.NEXID_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_NEXID_CAMPAIGNS_ADDRESS || '',
+    partnerCampaignsAddress: process.env.PARTNER_CAMPAIGNS_ADDRESS || process.env.NEXT_PUBLIC_PARTNER_CAMPAIGNS_ADDRESS || '',
+    campaignEscrowAddress: process.env.CAMPAIGN_ESCROW_ADDRESS || process.env.NEXT_PUBLIC_CAMPAIGN_ESCROW_ADDRESS || '',
 
     // S3/R2 Storage
     s3Region: process.env.S3_REGION || 'auto',

@@ -1,4 +1,6 @@
-export const Deploy = "0x1988Bc593015Fe29ED7562Ba672a8798b3B13e88";
+export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "8453");
+export const BASESCAN_URL = "https://basescan.org";
+export const Deploy = (process.env.NEXT_PUBLIC_LEVEL3_COURSE_ADDRESS || "0xa511b792CeF798d193DCf8F247B90CF47A3Ea1B7") as `0x${string}`;
 
 // ============ On-Chain Types (from contract) ============
 // Note: Lessons are stored OFF-CHAIN in PostgreSQL, not on-chain
@@ -17,8 +19,7 @@ export interface OnChainCourse {
   thumbnailUrl: string;
   duration: string;
   totalLessons: bigint;
-  minPointsToAccess: bigint;
-  enrollmentCost: bigint;
+  isIncentivized: boolean;
 }
 
 // ============ Backend Types (from database) ============
@@ -28,7 +29,6 @@ export interface Lesson {
   description: string | null;
   orderIndex: number;
   watchPoints: number;
-  hasQuiz?: boolean;
 }
 
 export interface Course {
@@ -46,8 +46,6 @@ export interface Course {
   duration: string;
   totalLessons?: number;
   completionPoints?: number;
-  minPointsToAccess?: number;
-  enrollmentCost?: number;
   isPublished?: boolean;
 }
 
@@ -73,22 +71,6 @@ export const abi = [
   { inputs: [], name: "NotEnrolled", type: "error" },
   { inputs: [], name: "AlreadyCompleted", type: "error" },
   {
-    inputs: [
-      { internalType: "uint256", name: "required", type: "uint256" },
-      { internalType: "uint256", name: "available", type: "uint256" },
-    ],
-    name: "InsufficientPointsToAccess",
-    type: "error",
-  },
-  {
-    inputs: [
-      { internalType: "uint256", name: "cost", type: "uint256" },
-      { internalType: "uint256", name: "available", type: "uint256" },
-    ],
-    name: "InsufficientPointsForCost",
-    type: "error",
-  },
-  {
     inputs: [{ internalType: "address", name: "owner", type: "address" }],
     name: "OwnableInvalidOwner",
     type: "error",
@@ -106,8 +88,7 @@ export const abi = [
       { indexed: true, internalType: "uint256", name: "courseId", type: "uint256" },
       { indexed: false, internalType: "string", name: "title", type: "string" },
       { indexed: false, internalType: "string", name: "level", type: "string" },
-      { indexed: false, internalType: "uint256", name: "minPointsToAccess", type: "uint256" },
-      { indexed: false, internalType: "uint256", name: "enrollmentCost", type: "uint256" },
+      { indexed: false, internalType: "bool", name: "isIncentivized", type: "bool" },
     ],
     name: "CourseCreated",
     type: "event",
@@ -132,7 +113,6 @@ export const abi = [
     inputs: [
       { indexed: true, internalType: "address", name: "user", type: "address" },
       { indexed: true, internalType: "uint256", name: "courseId", type: "uint256" },
-      { indexed: false, internalType: "uint256", name: "pointsSpent", type: "uint256" },
     ],
     name: "UserEnrolled",
     type: "event",
@@ -142,7 +122,9 @@ export const abi = [
     inputs: [
       { indexed: true, internalType: "address", name: "user", type: "address" },
       { indexed: true, internalType: "uint256", name: "courseId", type: "uint256" },
-      { indexed: false, internalType: "uint256", name: "totalPoints", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "score", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "flags", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "timestamp", type: "uint256" },
     ],
     name: "CourseCompleted",
     type: "event",
@@ -202,8 +184,7 @@ export const abi = [
           { internalType: "string", name: "thumbnailUrl", type: "string" },
           { internalType: "string", name: "duration", type: "string" },
           { internalType: "uint256", name: "totalLessons", type: "uint256" },
-          { internalType: "uint256", name: "minPointsToAccess", type: "uint256" },
-          { internalType: "uint256", name: "enrollmentCost", type: "uint256" },
+          { internalType: "bool", name: "isIncentivized", type: "bool" },
         ],
         internalType: "struct ILevel3Course.Course",
         name: "",
@@ -234,8 +215,7 @@ export const abi = [
           { internalType: "string", name: "thumbnailUrl", type: "string" },
           { internalType: "string", name: "duration", type: "string" },
           { internalType: "uint256", name: "totalLessons", type: "uint256" },
-          { internalType: "uint256", name: "minPointsToAccess", type: "uint256" },
-          { internalType: "uint256", name: "enrollmentCost", type: "uint256" },
+          { internalType: "bool", name: "isIncentivized", type: "bool" },
         ],
         internalType: "struct ILevel3Course.Course",
         name: "course",
@@ -266,8 +246,7 @@ export const abi = [
           { internalType: "string", name: "thumbnailUrl", type: "string" },
           { internalType: "string", name: "duration", type: "string" },
           { internalType: "uint256", name: "totalLessons", type: "uint256" },
-          { internalType: "uint256", name: "minPointsToAccess", type: "uint256" },
-          { internalType: "uint256", name: "enrollmentCost", type: "uint256" },
+          { internalType: "bool", name: "isIncentivized", type: "bool" },
         ],
         internalType: "struct ILevel3Course.Course[]",
         name: "",
@@ -305,25 +284,6 @@ export const abi = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "address", name: "_user", type: "address" },
-      { internalType: "uint256", name: "_courseId", type: "uint256" },
-    ],
-    name: "canUserEnroll",
-    outputs: [
-      { internalType: "bool", name: "canEnroll", type: "bool" },
-      { internalType: "uint256", name: "userPoints", type: "uint256" },
-      { internalType: "uint256", name: "minPointsToAccess", type: "uint256" },
-      { internalType: "uint256", name: "enrollmentCost", type: "uint256" },
-      { internalType: "bool", name: "meetsAccessRequirement", type: "bool" },
-      { internalType: "bool", name: "meetsCostRequirement", type: "bool" },
-      { internalType: "bool", name: "alreadyEnrolled", type: "bool" },
-      { internalType: "bool", name: "alreadyCompleted", type: "bool" },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [{ internalType: "uint256", name: "_courseId", type: "uint256" }],
     name: "getParticipantCount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
@@ -334,16 +294,6 @@ export const abi = [
     inputs: [],
     name: "numCourses",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_courseId", type: "uint256" }],
-    name: "getCourseRequirements",
-    outputs: [
-      { internalType: "uint256", name: "minPointsToAccess", type: "uint256" },
-      { internalType: "uint256", name: "enrollmentCost", type: "uint256" },
-    ],
     stateMutability: "view",
     type: "function",
   },
@@ -417,8 +367,7 @@ export const abi = [
       { internalType: "string", name: "_thumbnailUrl", type: "string" },
       { internalType: "string", name: "_duration", type: "string" },
       { internalType: "uint256", name: "_totalLessons", type: "uint256" },
-      { internalType: "uint256", name: "_minPointsToAccess", type: "uint256" },
-      { internalType: "uint256", name: "_enrollmentCost", type: "uint256" },
+      { internalType: "bool", name: "_isIncentivized", type: "bool" },
     ],
     name: "createCourse",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
@@ -439,8 +388,7 @@ export const abi = [
       { internalType: "string", name: "_thumbnailUrl", type: "string" },
       { internalType: "string", name: "_duration", type: "string" },
       { internalType: "uint256", name: "_totalLessons", type: "uint256" },
-      { internalType: "uint256", name: "_minPointsToAccess", type: "uint256" },
-      { internalType: "uint256", name: "_enrollmentCost", type: "uint256" },
+      { internalType: "bool", name: "_isIncentivized", type: "bool" },
     ],
     name: "updateCourse",
     outputs: [],
@@ -469,7 +417,7 @@ export const abi = [
     type: "function",
   },
 
-  // Relayer Functions
+  // Enrollment + Relayer Functions
   {
     inputs: [
       { internalType: "uint256", name: "_courseId", type: "uint256" },
@@ -484,9 +432,31 @@ export const abi = [
     inputs: [
       { internalType: "uint256", name: "_courseId", type: "uint256" },
       { internalType: "address", name: "_user", type: "address" },
-      { internalType: "uint256", name: "_totalPoints", type: "uint256" },
+      { internalType: "uint256", name: "_score", type: "uint256" },
+      { internalType: "uint256", name: "_flags", type: "uint256" },
     ],
     name: "completeCourse",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "uint256", name: "_newPoints", type: "uint256" },
+    ],
+    name: "updateUserPoints",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_courseId", type: "uint256" },
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "bool", name: "_completed", type: "bool" },
+    ],
+    name: "setCourseCompletionStatus",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

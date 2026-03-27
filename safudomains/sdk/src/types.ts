@@ -140,19 +140,12 @@ export interface PaymentConfig {
     enabled?: boolean
 }
 
-export interface PaymentLimits {
-    minAmount: bigint
-    maxAmount: bigint
-}
-
 export interface FullPaymentProfile {
     x402Endpoint: string
     paymentAddress: Address
     supportedChains: number[]
-    acceptedTokens: Address[]
     agentMetadata: string
     paymentEnabled: boolean
-    paymentLimits: PaymentLimits
 }
 
 // ============ Premium / Auction Types ============
@@ -307,10 +300,9 @@ export interface ApiPaymentProfileResponse {
     name: string
     paymentAddress: Address
     supportedChains: number[]
-    acceptedTokens: Address[]
-    limits: PaymentLimits
-    metadata: string
     x402Endpoint: string
+    paymentEnabled: boolean
+    agentMetadata: string
 }
 
 // ============ SDK Configuration ============

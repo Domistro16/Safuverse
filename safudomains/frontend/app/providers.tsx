@@ -23,7 +23,7 @@ function createApolloClient() {
     return new ApolloClient({
         link: new HttpLink({
             // TODO: Update subgraph URL for Base chain
-            uri: 'https://api.studio.thegraph.com/query/112443/safunames/v0.9.2',
+            uri: 'https://api.goldsky.com/api/public/project_cmljmvtx91xj101zn37ok8d6c/subgraphs/nexid/2.0.0/gn',
         }),
         cache: new InMemoryCache(),
     });

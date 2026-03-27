@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SafuDomainsClient } from '@nexid/sdk'
+import { NexDomains } from '@nexid/sdk'
+import { rateLimit } from '@/lib/rateLimit'
+
+export const dynamic = 'force-dynamic'
 
 const CHAIN_ID = 8453 // Base mainnet
 
@@ -8,30 +11,28 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ name: string }> }
 ) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
+
     const { name } = await params
     const cleanName = name.replace('.id', '')
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         const profile = await sdk.getPaymentProfile(cleanName, CHAIN_ID)
 
-        if (!profile.paymentEnabled) {
-            return NextResponse.json(
-                { error: 'Payments not enabled for this name' },
-                { status: 404 }
-            )
-        }
+        // Return x402 compatible response regardless of enabled status for dashboard visibility
+        // Clients should check paymentEnabled flag
 
         // Return x402 compatible response
         return NextResponse.json({
             name: `${cleanName}.id`,
             paymentAddress: profile.paymentAddress,
             supportedChains: profile.supportedChains,
-            acceptedTokens: profile.acceptedTokens,
-            limits: profile.paymentLimits,
-            metadata: profile.agentMetadata,
             x402Endpoint: profile.x402Endpoint,
+            paymentEnabled: profile.paymentEnabled,
+            agentMetadata: profile.agentMetadata,
         })
     } catch (error) {
         console.error('Failed to resolve payment profile:', error)
@@ -47,6 +48,9 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ name: string }> }
 ) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
+
     const { name } = await params
     const cleanName = name.replace('.id', '')
 
@@ -63,7 +67,7 @@ export async function POST(
     const { amount, token, chainId } = body
     const targetChainId = chainId || CHAIN_ID
 
-    const sdk = new SafuDomainsClient({ chainId: CHAIN_ID })
+    const sdk = new NexDomains({ chainId: CHAIN_ID })
 
     try {
         const profile = await sdk.getPaymentProfile(cleanName, targetChainId)
@@ -79,23 +83,6 @@ export async function POST(
                     headers: { 'X-Payment-Required': 'true' }
                 }
             )
-        }
-
-        // Validate amount against limits
-        if (amount) {
-            const amountBigInt = BigInt(amount)
-            if (profile.paymentLimits.minAmount > 0n && amountBigInt < profile.paymentLimits.minAmount) {
-                return NextResponse.json(
-                    { error: `Minimum payment: ${profile.paymentLimits.minAmount.toString()}` },
-                    { status: 400 }
-                )
-            }
-            if (profile.paymentLimits.maxAmount > 0n && amountBigInt > profile.paymentLimits.maxAmount) {
-                return NextResponse.json(
-                    { error: `Maximum payment: ${profile.paymentLimits.maxAmount.toString()}` },
-                    { status: 400 }
-                )
-            }
         }
 
         // Return payment instructions

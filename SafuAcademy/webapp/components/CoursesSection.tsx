@@ -12,8 +12,8 @@ const CoursesSection = ({
   isHomePage = false,
 }: any) => {
   const defaultSubtitle = isHomePage
-    ? "Explore our top AI-driven courses designed for Web3 creators. Mint your .safu domain to unlock full potential."
-    : 'Mint your <code class="text-primary font-bold p-1.5 rounded-md bg-primary/10 shadow-sm">.safu</code> domain to unlock these exclusive AI-driven courses and supercharge your skills.';
+    ? "Explore our top AI-driven courses designed for Web3 creators. Mint your .id domain to unlock full potential."
+    : 'Mint your <code class="text-primary font-bold p-1.5 rounded-md bg-primary/10 shadow-sm">.id</code> domain to unlock these exclusive AI-driven courses and supercharge your skills.';
 
   const displayedCourses = isHomePage ? courses.slice(0, 3) : courses;
 
@@ -91,20 +91,20 @@ const CoursesSection = ({
                     {course.title}
                   </h3>
                   <p className="text-sm text-gray-400 mb-5 h-12 line-clamp-2 flex-grow">
-                    {course.description.split(" Access with .safu domain.")[0]}
+                    {course.description.split(" Access with .id domain.")[0]}
                   </p>
 
                   <div className="mt-auto">
                     {/* Always show "View Details" button for consistency in this section */}
-                    <Link href={`/courses/${course.id}`}>
+                    <Link href={`/academy/campaign/${course.id}`}>
                       <Button className="w-full bg-gradient-to-r from-primary to-orange-400 hover:from-orange-500 hover:to-primary text-background font-semibold text-sm py-3 rounded-lg shadow-lg hover:shadow-primary/40 transition-all duration-300 transform hover:scale-105">
                         View Details
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
                     </Link>
-                    {/* Always show "Mint .safu domain to enroll" text */}
+                    {/* Always show "Mint .id domain to enroll" text */}
                     <p className="text-xs text-amber-400 mt-2 text-center flex items-center justify-center">
-                      <Lock size={12} className="mr-1" /> Mint .safu domain to
+                      <Lock size={12} className="mr-1" /> Mint .id domain to
                       enroll
                     </p>
                   </div>
@@ -121,7 +121,7 @@ const CoursesSection = ({
             viewport={{ once: true }}
             className="text-center mt-16"
           >
-            <Link href="/courses">
+            <Link href="/academy">
               <Button
                 size="lg"
                 variant="outline"

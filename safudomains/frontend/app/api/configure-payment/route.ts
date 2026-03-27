@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 import { encodeFunctionData, namehash } from 'viem'
 import { constants } from '@/constant'
 import { AgentPublicResolverABI } from '@/lib/abi'
@@ -36,6 +37,8 @@ const PaymentResolverABI = [
  * }
  */
 export async function POST(request: NextRequest) {
+    const rl = rateLimit(request)
+    if (!rl.ok) return rl.response!
     let body
     try {
         body = await request.json()

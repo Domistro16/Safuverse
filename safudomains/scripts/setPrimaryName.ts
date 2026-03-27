@@ -6,15 +6,15 @@ async function main() {
   const { deployer } = await viem.getNamedClients()
 
   const reverseRegistrar = await viem.getContract('ReverseRegistrar', deployer)
-  const resolver = await viem.getContract('PublicResolver', deployer)
+  const resolver = await viem.getContract('AgentPublicResolver', deployer)
   const setPrimaryNameHash = await reverseRegistrar.write.setNameForAddr([
-    '0xD83deFbA240568040b39bb2C8B4DB7dB02d40593',
-    '0xD83deFbA240568040b39bb2C8B4DB7dB02d40593',
+    '0xc8111c2689d866A88291811cb5b0B31665F08350',
+    '0xc8111c2689d866A88291811cb5b0B31665F08350',
     resolver.address,
-    'domistro.id',
+    'nadya.id',
   ])
   console.log(
-    `Setting primary name for ${'0x95c1a272b5bb421272a445c301a6e3ad764ce07a'} to admiano.id (tx: ${setPrimaryNameHash})...`,
+    `Setting primary name for ${'0xc8111c2689d866A88291811cb5b0B31665F08350'} to nadya.id (tx: ${setPrimaryNameHash})...`,
   )
   await viem.waitForTransactionSuccess(setPrimaryNameHash)
 }
